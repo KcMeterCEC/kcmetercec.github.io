@@ -1,0 +1,1780 @@
+#+TITLE: [What]linux -> ALSA 基本驱动实现
+#+DATE:  <2018-04-08 Sun> 
+#+TAGS: driver
+#+LAYOUT: post 
+#+CATEGORIES: linux, driver, ALSA
+#+NAME: <linux_driver_ALSA_client.org>
+#+OPTIONS: ^:nil 
+#+OPTIONS: ^:{}
+
+参考书籍: =Linux设备驱动开发详解=
+参考文档: =Documentation/sound/alsa/soc=
+
+整理ALSA在嵌入式Linux上的设备驱动实现。
+
+#+BEGIN_EXPORT html
+<!--more-->
+#+END_EXPORT
+
+* 硬件连接与驱动
+** 硬件连接
+soc与外部音频芯片的连接如下图所示：
+
+#+HTML:<img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[driver]/[What]Linux--ALSA/audio_hw.jpg?raw=true" alt="audio_hw.jpg">
+根据 [[https://kcmetercec.github.io/2018/03/05/linux_driver_overview_structure/][Linux设备驱动思想]] 可以知道与硬件相关的软件包括以下几部分：
+1. IIC控制器驱动(platform driver)以及其对应的设备树
+2. IIC客户端驱动(i2c client)以及其对应的设备树
+3. DMA控制器驱动(dma engine driver)以及其对应的设备树
+4. IIS控制器驱动(platform driver)以及其对应的设备树
+   + IIS的操作一般会与DMA结合，所以其设备树中会包含对应的DMA节点
+5. 有关音频子系统的软件分层
+** 驱动接口
+Linux下使用了 [[https://www.alsa-project.org/main/index.php/Main_Page][ALSA]] 来完成音频部分的驱动接口，要完成驱动的编写需要完成的底层驱动有：
+1. 音频芯片控制驱动(Codec class drivers)：对应于IIC客户端驱动，并完成ALSA所必要的接口
+   + 此部分是完全与芯片相关的，不涉及任何SOC，所以可以复用到其他任意SOC
+2. 数据流驱动/平台驱动(Platform class drivers): 对应于IIS控制器驱动(包含DMA客户端操作),并完成ALSA所必要的接口
+   + 此部分是完全与SOC相关的，不涉及任何外部芯片，所有可以与各种符合接口的芯片连接
+3. 板级驱动(Machine class driver): 用于将控制驱动和数据流驱动建立连接关系并完成ALSA所必要的接口
+   + 此部分指明了连接关系，不同的开发板可能具有不同的连接情况
+
+ALSA在总体上都使用一个信息结构体和一个回调函数结构体来抽象化以上3种驱动：
+- 信息结构体(DAI)是为了驱动主动向核心层反应此设备的能力范围
+- 回调函数结构体(ops)是为了告诉核心层此设备可以如何操作
+
+如下图所示:
+#+HTML:<img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[driver]/[What]Linux--ALSA/alsa_overview.jpg?raw=true" alt="alsa_overview.jpg">
+* 驱动中的概念
+** DAPM(Dynamic Audio Power Management)
+音频动态电源管理是为了在操作音频芯片期间，其功耗尽量的小。这整个过程是在 ASOC core 中完成的，不需要应用代码的干预。
+
+与DAPM相关的部分有：
+1. codec 相关控制
+2. 平台/板级控制
+3. 数字信号控制(Path domain)
+4. DAC和ADC控制(Stream Domain):根据当前情况使能或关闭相应的AD/DA
+*** DAPM 相关小部件(include/sound/soc-dapm.h)
+DAPM将其可以控制的部分抽象为小部件以单独控制，使用 =enum snd_soc_dapm_type= 来定义：
+#+BEGIN_SRC c
+/* dapm widget types */
+enum snd_soc_dapm_type {
+        snd_soc_dapm_input = 0,/* input pin */
+        snd_soc_dapm_output,/* output pin */
+        snd_soc_dapm_mux,/* selects 1 analog signal from many inputs */
+        snd_soc_dapm_demux,/* connects the input to one of multiple outputs */
+        snd_soc_dapm_mixer,/* mixes several analog signals together */
+        snd_soc_dapm_mixer_named_ctl,/* mixer with named controls */
+        snd_soc_dapm_pga,/* programmable gain/attenuation (volume) */
+        snd_soc_dapm_out_drv,/* output driver */
+        snd_soc_dapm_adc,/* analog to digital converter */
+        snd_soc_dapm_dac,/* digital to analog converter */
+        snd_soc_dapm_micbias,/* microphone bias (power) */
+        snd_soc_dapm_mic,/* microphone */
+        snd_soc_dapm_hp,/* headphones */
+        snd_soc_dapm_spk,/* speaker */
+        snd_soc_dapm_line,/* line input/output */
+        snd_soc_dapm_switch,/* analog switch */
+        snd_soc_dapm_vmid,/* codec bias/vmid - to minimise pops */
+        snd_soc_dapm_pre,/* machine specific pre widget - exec first */
+        snd_soc_dapm_post,/* machine specific post widget - exec last */
+        snd_soc_dapm_supply,/* power/clock supply */
+        snd_soc_dapm_regulator_supply,/* external regulator */
+        snd_soc_dapm_clock_supply,/* external clock */
+        snd_soc_dapm_aif_in,/* audio interface input */
+        snd_soc_dapm_aif_out,/* audio interface output */
+        snd_soc_dapm_siggen,/* signal generator */
+        snd_soc_dapm_dai_in,/* link to DAI structure */
+        snd_soc_dapm_dai_out,
+        snd_soc_dapm_dai_link,/* link between two DAI structures */
+        snd_soc_dapm_kcontrol,/* Auto-disabled kcontrol */
+};
+#+END_SRC
+*** 小部件的表示和连接
+- 每个小部件是通过结构 =snd_soc_dapm_widget= 来表示的，ALSA提供了宏 =SND_SOC_DAPM_XXX= 来帮助用户快速的填充 =snd_soc_dapm_widget=.
+- 小部件应该按照顺序连接，使用 =snd_soc_dapm_route= 来表示这个连接顺序，依次是 sink<-control<-sink 的顺序。
+#+BEGIN_SRC c
+static const struct snd_soc_dapm_widget ssm2518_dapm_widgets[] = {
+        SND_SOC_DAPM_DAC("DACL", "HiFi Playback", SSM2518_REG_POWER2, 1, 1),
+        SND_SOC_DAPM_DAC("DACR", "HiFi Playback", SSM2518_REG_POWER2, 2, 1),
+
+        SND_SOC_DAPM_OUTPUT("OUTL"),
+        SND_SOC_DAPM_OUTPUT("OUTR"),
+};
+//DACL -> OUTL DACR -> OUTR
+static const struct snd_soc_dapm_route ssm2518_routes[] = {
+        { "OUTL", NULL, "DACL" },
+        { "OUTR", NULL, "DACR" },
+};
+...
+static struct snd_soc_codec_driver ssm2518_codec_driver = {
+        .set_bias_level = ssm2518_set_bias_level,
+        .set_sysclk = ssm2518_set_sysclk,
+        .idle_bias_off = true,
+
+        .controls = ssm2518_snd_controls,
+        .num_controls = ARRAY_SIZE(ssm2518_snd_controls),
+        .dapm_widgets = ssm2518_dapm_widgets,
+        .num_dapm_widgets = ARRAY_SIZE(ssm2518_dapm_widgets),
+        .dapm_routes = ssm2518_routes,
+        .num_dapm_routes = ARRAY_SIZE(ssm2518_routes),
+};
+...
+return snd_soc_register_codec(&i2c->dev, &ssm2518_codec_driver,
+                              &ssm2518_dai, 1);
+...
+#+END_SRC
+*** 与流相关的小部件
+流相关的就是包括snd_soc_dapm_adc、snd_soc_dapm_dac、snd_soc_dapm_aif_in、snd_soc_dapm_aif_out 部件的控制。
+
+与之相关的宏是：
+#+BEGIN_SRC c
+//部件名，流名，寄存器，寄存器位，是否翻转
+SND_SOC_DAPM_DAC(wname, stname, wreg, wshift, winvert)
+SND_SOC_DAPM_AIF_IN(wname, stname, wslot, wreg, wshift, winvert)
+
+/**
+ ,* @brief 示例
+ ,*/
+...
+SND_SOC_DAPM_DAC("HiFi DAC", "HiFi Playback", REG, 3, 1),
+SND_SOC_DAPM_ADC("HiFi ADC", "HiFi Capture", REG, 2, 1),
+...
+SND_SOC_DAPM_AIF_IN("AIF1RX", "AIF1 Playback", 0, SND_SOC_NOPM, 0, 0),
+SND_SOC_DAPM_AIF_OUT("AIF1TX", "AIF1 Capture", 0, SND_SOC_NOPM, 0, 0),
+...
+#+END_SRC
+*** 与数字信号相关小部件
+数字信号部件控制音频信号流向，与之相关的宏是:
+#+BEGIN_SRC c
+SND_SOC_DAPM_PGA(wname, wreg, wshift, winvert,\
+wcontrols, wncontrols)
+
+/**
+ ,* @brief : 示例设置混音
+ ,*/
+/* Output Mixer */
+static const snd_kcontrol_new_t wm8731_output_mixer_controls[] = {
+        SOC_DAPM_SINGLE("Line Bypass Switch", WM8731_APANA, 3, 1, 0),
+        SOC_DAPM_SINGLE("Mic Sidetone Switch", WM8731_APANA, 5, 1, 0),
+        SOC_DAPM_SINGLE("HiFi Playback Switch", WM8731_APANA, 4, 1, 0),
+};
+...
+SND_SOC_DAPM_MIXER("Output Mixer", WM8731_PWR, 4, 1, wm8731_output_mixer_controls,
+                   ARRAY_SIZE(wm8731_output_mixer_controls)),
+...
+#+END_SRC
+
+*** 平台相关小部件
+平台相关部件主要控制除音频芯片外的部分，比如扬声器。
+#+BEGIN_SRC c
+/**
+ ,* @brief 当外部麦克风插入时，使能其偏置电压
+ ,*/
+static int spitz_mic_bias(struct snd_soc_dapm_widget* w, int event)
+{
+        gpio_set_value(SPITZ_GPIO_MIC_BIAS, SND_SOC_DAPM_EVENT_ON(event));
+        return 0;
+}
+...
+SND_SOC_DAPM_MIC("Mic Jack", spitz_mic_bias),
+...
+#+END_SRC
+** DAI(Digital Audio Interface)
+数字音频接口，因为平台驱动和芯片驱动分离，所以在这两个驱动下都需要提供这个接口的操作信息及回调函数，相当于各管各。
+* 音频芯片驱动(Codec class driver)
+从总体来说，音频芯片驱动需要告诉ALSA的是：
+1. DAI(Digital Audio Interface) : 此部分告知ALSA该设备所具备的可操作参数范围
+2. 芯片具体驱动代码: 此部分通过统一接口告知ALSA可以通过统一接口来具体操作设备
+
+此驱动必须实现以下接口：
+1. DAI(Digital Audio Interface) 和 PCM 配置
+2. 芯片控制IO操作
+3. 混音(mixer)及音频控制
+4. 编解码器音频控制
+5. DAPM描述
+6. DAPM事件处理
+
+可选的实现以下接口：
+1. DAC数字静音控制
+** DAI和PCM配置
+内核使用 =snd_soc_dai_driver= 来表示DAI和PCM配置：
+#+BEGIN_SRC c
+struct snd_soc_dai_ops {
+        /*
+         ,* DAI clocking configuration, all optional.
+         ,* Called by soc_card drivers, normally in their hw_params.
+         ,*/
+        int (*set_sysclk)(struct snd_soc_dai *dai,
+                          int clk_id, unsigned int freq, int dir);
+        int (*set_pll)(struct snd_soc_dai *dai, int pll_id, int source,
+                       unsigned int freq_in, unsigned int freq_out);
+        int (*set_clkdiv)(struct snd_soc_dai *dai, int div_id, int div);
+        int (*set_bclk_ratio)(struct snd_soc_dai *dai, unsigned int ratio);
+
+        /*
+         ,* DAI format configuration
+         ,* Called by soc_card drivers, normally in their hw_params.
+         ,*/
+        int (*set_fmt)(struct snd_soc_dai *dai, unsigned int fmt);
+        int (*xlate_tdm_slot_mask)(unsigned int slots,
+                                   unsigned int *tx_mask, unsigned int *rx_mask);
+        int (*set_tdm_slot)(struct snd_soc_dai *dai,
+                            unsigned int tx_mask, unsigned int rx_mask,
+                            int slots, int slot_width);
+        int (*set_channel_map)(struct snd_soc_dai *dai,
+                               unsigned int tx_num, unsigned int *tx_slot,
+                               unsigned int rx_num, unsigned int *rx_slot);
+        int (*set_tristate)(struct snd_soc_dai *dai, int tristate);
+
+        /*
+         ,* DAI digital mute - optional.
+         ,* Called by soc-core to minimise any pops.
+         ,*/
+        int (*digital_mute)(struct snd_soc_dai *dai, int mute);
+        int (*mute_stream)(struct snd_soc_dai *dai, int mute, int stream);
+
+        /*
+         ,* ALSA PCM audio operations - all optional.
+         ,* Called by soc-core during audio PCM operations.
+         ,*/
+        int (*startup)(struct snd_pcm_substream *,
+                       struct snd_soc_dai *);
+        void (*shutdown)(struct snd_pcm_substream *,
+                         struct snd_soc_dai *);
+        int (*hw_params)(struct snd_pcm_substream *,
+                         struct snd_pcm_hw_params *, struct snd_soc_dai *);
+        int (*hw_free)(struct snd_pcm_substream *,
+                       struct snd_soc_dai *);
+        int (*prepare)(struct snd_pcm_substream *,
+                       struct snd_soc_dai *);
+        /*
+         ,* NOTE: Commands passed to the trigger function are not necessarily
+         ,* compatible with the current state of the dai. For example this
+         ,* sequence of commands is possible: START STOP STOP.
+         ,* So do not unconditionally use refcounting functions in the trigger
+         ,* function, e.g. clk_enable/disable.
+         ,*/
+        int (*trigger)(struct snd_pcm_substream *, int,
+                       struct snd_soc_dai *);
+        int (*bespoke_trigger)(struct snd_pcm_substream *, int,
+                               struct snd_soc_dai *);
+        /*
+         ,* For hardware based FIFO caused delay reporting.
+         ,* Optional.
+         ,*/
+        snd_pcm_sframes_t (*delay)(struct snd_pcm_substream *,
+                                   struct snd_soc_dai *);
+};
+/* SoC PCM stream information */
+struct snd_soc_pcm_stream {
+        const char *stream_name;
+        u64 formats;/* SNDRV_PCM_FMTBIT_* */
+        unsigned int rates;/* SNDRV_PCM_RATE_* */
+        unsigned int rate_min;/* min rate */
+        unsigned int rate_max;/* max rate */
+        unsigned int channels_min;/* min channels */
+        unsigned int channels_max;/* max channels */
+        unsigned int sig_bits;/* number of bits of content */
+};
+/*
+ ,* Digital Audio Interface Driver.
+ ,*
+ ,* Describes the Digital Audio Interface in terms of its ALSA, DAI and AC97
+ ,* operations and capabilities. Codec and platform drivers will register this
+ ,* structure for every DAI they have.
+ ,*
+ ,* This structure covers the clocking, formating and ALSA operations for each
+ ,* interface.
+ ,*/
+struct snd_soc_dai_driver {
+        /* DAI description */
+        const char *name;
+        unsigned int id;
+        unsigned int base;
+
+        /* DAI driver callbacks */
+        int (*probe)(struct snd_soc_dai *dai);
+        int (*remove)(struct snd_soc_dai *dai);
+        int (*suspend)(struct snd_soc_dai *dai);
+        int (*resume)(struct snd_soc_dai *dai);
+        /* compress dai */
+        int (*compress_new)(struct snd_soc_pcm_runtime *rtd, int num);
+        /* DAI is also used for the control bus */
+        bool bus_control;
+
+        /* ops */
+        const struct snd_soc_dai_ops *ops;
+
+        /* DAI capabilities */
+        struct snd_soc_pcm_stream capture;
+        struct snd_soc_pcm_stream playback;
+        unsigned int symmetric_rates:1;
+        unsigned int symmetric_channels:1;
+        unsigned int symmetric_samplebits:1;
+
+        /* probe ordering - for components with runtime dependencies */
+        int probe_order;
+        int remove_order;
+};
+#+END_SRC
+比如：
+#+BEGIN_SRC c
+#define SSM2518_FORMATS (SNDRV_PCM_FMTBIT_S8 | SNDRV_PCM_FMTBIT_S16_LE | \
+                         SNDRV_PCM_FMTBIT_S24_LE | SNDRV_PCM_FMTBIT_S32)
+
+static const struct snd_soc_dai_ops ssm2518_dai_ops = {
+        .startup = ssm2518_startup,
+        .hw_params= ssm2518_hw_params,
+        .digital_mute= ssm2518_mute,
+        .set_fmt= ssm2518_set_dai_fmt,
+        .set_tdm_slot= ssm2518_set_tdm_slot,
+};
+static struct snd_soc_dai_driver ssm2518_dai = {
+        .name = "ssm2518-hifi",
+        .playback = {
+                .stream_name = "Playback",
+                .channels_min = 2,
+                .channels_max = 2,
+                .rates = SNDRV_PCM_RATE_8000_96000,
+                .formats = SSM2518_FORMATS,
+        },
+        .ops = &ssm2518_dai_ops,
+};
+
+...
+return snd_soc_register_codec(&i2c->dev, &ssm2518_codec_driver,
+                              &ssm2518_dai, 1);
+...
+#+END_SRC
+** 芯片控制IO操作
+使用 =include/linux/regmap.h= 中的regmap来操作设备。
+#+BEGIN_SRC c
+...
+ssm2518->regmap = devm_regmap_init_i2c(i2c, &ssm2518_regmap_config);
+if (IS_ERR(ssm2518->regmap))
+        return PTR_ERR(ssm2518->regmap);
+...
+ret = regmap_write(ssm2518->regmap, SSM2518_REG_SAI_CTRL1, ctrl1);
+if (ret)
+        return ret;
+#+END_SRC
+** 混音及音频控制 
+所有的混音及音频控制都是使用宏来描述,存储于 =snd_kcontrol_new= 结构中:
+#+BEGIN_SRC c
+//名称,寄存器,寄存器位,屏蔽位,是否倒叙或反转
+#define SOC_SINGLE(xname, reg, shift, max, invert) ...
+#define SOC_DOUBLE(xname, reg, shift_left, shift_right, max, invert) ...
+#+END_SRC
+比如:
+#+BEGIN_SRC c
+static const struct snd_kcontrol_new ssm2518_snd_controls[] = {
+        SOC_SINGLE("Playback De-emphasis Switch", SSM2518_REG_MUTE_CTRL,
+                   4, 1, 0),
+        SOC_DOUBLE_R_TLV("Master Playback Volume", SSM2518_REG_LEFT_VOL,
+                         SSM2518_REG_RIGHT_VOL, 0, 0xff, 1, ssm2518_vol_tlv),
+        SOC_DOUBLE("Master Playback Switch", SSM2518_REG_MUTE_CTRL, 2, 1, 1, 1),
+
+        SOC_SINGLE("Amp Low Power Mode Switch", SSM2518_REG_POWER2, 4, 1, 0),
+        SOC_SINGLE("DAC Low Power Mode Switch", SSM2518_REG_POWER2, 3, 1, 0),
+
+        SOC_SINGLE("DRC Limiter Switch", SSM2518_REG_DRC_1, 5, 1, 0),
+        SOC_SINGLE("DRC Compressor Switch", SSM2518_REG_DRC_1, 4, 1, 0),
+        SOC_SINGLE("DRC Expander Switch", SSM2518_REG_DRC_1, 3, 1, 0),
+        SOC_SINGLE("DRC Noise Gate Switch", SSM2518_REG_DRC_1, 2, 1, 0),
+        SOC_DOUBLE("DRC Switch", SSM2518_REG_DRC_1, 0, 1, 1, 0),
+
+        SOC_SINGLE_TLV("DRC Limiter Threshold Volume",
+                       SSM2518_REG_DRC_3, 4, 15, 1, ssm2518_limiter_tlv),
+        SOC_SINGLE_TLV("DRC Compressor Lower Threshold Volume",
+                       SSM2518_REG_DRC_3, 0, 15, 1, ssm2518_compressor_tlv),
+        SOC_SINGLE_TLV("DRC Expander Upper Threshold Volume", SSM2518_REG_DRC_4,
+                       4, 15, 1, ssm2518_expander_tlv),
+        SOC_SINGLE_TLV("DRC Noise Gate Threshold Volume",
+                       SSM2518_REG_DRC_4, 0, 15, 1, ssm2518_noise_gate_tlv),
+        SOC_SINGLE_TLV("DRC Upper Output Threshold Volume",
+                       SSM2518_REG_DRC_5, 4, 15, 1, ssm2518_limiter_tlv),
+        SOC_SINGLE_TLV("DRC Lower Output Threshold Volume",
+                       SSM2518_REG_DRC_5, 0, 15, 1, ssm2518_noise_gate_tlv),
+        SOC_SINGLE_TLV("DRC Post Volume", SSM2518_REG_DRC_8,
+                       2, 15, 1, ssm2518_post_drc_tlv),
+
+        SOC_ENUM("DRC Peak Detector Attack Time",
+                 ssm2518_drc_peak_detector_attack_time_enum),
+        SOC_ENUM("DRC Peak Detector Release Time",
+                 ssm2518_drc_peak_detector_release_time_enum),
+        SOC_ENUM("DRC Attack Time", ssm2518_drc_attack_time_enum),
+        SOC_ENUM("DRC Decay Time", ssm2518_drc_decay_time_enum),
+        SOC_ENUM("DRC Hold Time", ssm2518_drc_hold_time_enum),
+        SOC_ENUM("DRC Noise Gate Hold Time",
+                 ssm2518_drc_noise_gate_hold_time_enum),
+        SOC_ENUM("DRC RMS Averaging Time", ssm2518_drc_rms_averaging_time_enum),
+};
+static struct snd_soc_codec_driver ssm2518_codec_driver = {
+        .set_bias_level = ssm2518_set_bias_level,
+        .set_sysclk = ssm2518_set_sysclk,
+        .idle_bias_off = true,
+
+        .controls = ssm2518_snd_controls,
+        .num_controls = ARRAY_SIZE(ssm2518_snd_controls),
+        .dapm_widgets = ssm2518_dapm_widgets,
+        .num_dapm_widgets = ARRAY_SIZE(ssm2518_dapm_widgets),
+        .dapm_routes = ssm2518_routes,
+        .num_dapm_routes = ARRAY_SIZE(ssm2518_routes),
+};
+return snd_soc_register_codec(&i2c->dev, &ssm2518_codec_driver,
+                              &ssm2518_dai, 1);
+
+#+END_SRC
+** 编解码控制
+使用 =snd_soc_ops= 来表示控制操作:
+#+BEGIN_SRC c
+/* SoC audio ops */
+struct snd_soc_ops {
+        int (*startup)(struct snd_pcm_substream *);
+        void (*shutdown)(struct snd_pcm_substream *);
+        int (*hw_params)(struct snd_pcm_substream *, struct snd_pcm_hw_params *);
+        int (*hw_free)(struct snd_pcm_substream *);
+        int (*prepare)(struct snd_pcm_substream *);
+        int (*trigger)(struct snd_pcm_substream *, int);
+};
+#+END_SRC
+** DAPM描述
+** DAPM事件处理
+通过回调函数来处理这个过程。
+** DAC数字静音控制
+也是通过回调函数来处理此过程。
+#+BEGIN_SRC c
+static int wm8974_mute(struct snd_soc_dai *dai, int mute)
+{
+        struct snd_soc_codec *codec = dai->codec;
+        u16 mute_reg = snd_soc_read(codec, WM8974_DAC) & 0xffbf;
+
+        if (mute)
+                snd_soc_write(codec, WM8974_DAC, mute_reg | 0x40);
+        else
+                snd_soc_write(codec, WM8974_DAC, mute_reg);
+        return 0;
+}
+#+END_SRC
+** 实例
+参考 [[https://elixir.bootlin.com/linux/v4.4/source/sound/soc/codecs/ssm2518.c][/sound/soc/codecs/ssm2518.c]]
+** 设备树
+#+begin_example
+ssm2518_label: ssm2518@34{
+            compatible = "adi,ssm2518";
+            reg = <0x34>;
+            gpios = <&gpio 5 0>;
+            };
+#+end_example
+* 平台驱动
+平台驱动主要由DMA操作和DAI接口操作组成,分别用于产生数据流和告知上层平台接口的能力。
+** DMA 操作
+DMA操作需要填充结构体 =snd_soc_platform_driver= 
+#+BEGIN_SRC c
+/**
+ ,* @brief pcm 流操作类
+ ,* @param open: 当PCM流被打开时调用
+ ,* @param close: 当PCM流被关闭时调用
+ ,* @param ioctl: 与上层 snd_pcm_lib_ioctl() 函数对应
+ ,* @param hw_params: 设置硬件参数
+ ,* @param hw_free: 释放由 hw_params() 分配的资源
+ ,* @param prepare: PCM被准备(snd_pcm_prepare())时调用，可以设置采样率、格式等
+ ,* @param trigger: 控制PCM的开始、停止或暂停
+ ,* @param pointer: 查询目前缓冲区的硬件位置
+ ,*/
+struct snd_pcm_ops {
+        int (*open)(struct snd_pcm_substream *substream);
+        int (*close)(struct snd_pcm_substream *substream);
+        int (*ioctl)(struct snd_pcm_substream * substream,
+                     unsigned int cmd, void *arg);
+        int (*hw_params)(struct snd_pcm_substream *substream,
+                         struct snd_pcm_hw_params *params);
+        int (*hw_free)(struct snd_pcm_substream *substream);
+        int (*prepare)(struct snd_pcm_substream *substream);
+        int (*trigger)(struct snd_pcm_substream *substream, int cmd);
+        snd_pcm_uframes_t (*pointer)(struct snd_pcm_substream *substream);
+        int (*get_time_info)(struct snd_pcm_substream *substream,
+                             struct timespec *system_ts, struct timespec *audio_ts,
+                             struct snd_pcm_audio_tstamp_config *audio_tstamp_config,
+                             struct snd_pcm_audio_tstamp_report *audio_tstamp_report);
+        int (*copy)(struct snd_pcm_substream *substream, int channel,
+                    snd_pcm_uframes_t pos,
+                    void __user *buf, snd_pcm_uframes_t count);
+        int (*silence)(struct snd_pcm_substream *substream, int channel,
+                       snd_pcm_uframes_t pos, snd_pcm_uframes_t count);
+        struct page *(*page)(struct snd_pcm_substream *substream,
+                             unsigned long offset);
+        int (*mmap)(struct snd_pcm_substream *substream, struct vm_area_struct *vma);
+        int (*ack)(struct snd_pcm_substream *substream);
+};
+/* SoC platform interface */
+struct snd_soc_platform_driver {
+
+        int (*probe)(struct snd_soc_platform *);
+        int (*remove)(struct snd_soc_platform *);
+        struct snd_soc_component_driver component_driver;
+
+        /* pcm creation and destruction */
+        int (*pcm_new)(struct snd_soc_pcm_runtime *);
+        void (*pcm_free)(struct snd_pcm *);
+
+        /*
+         ,* For platform caused delay reporting.
+         ,* Optional.
+         ,*/
+        snd_pcm_sframes_t (*delay)(struct snd_pcm_substream *,
+                                   struct snd_soc_dai *);
+
+        /* platform stream pcm ops */
+        const struct snd_pcm_ops *ops;
+
+        /* platform stream compress ops */
+        const struct snd_compr_ops *compr_ops;
+
+        int (*bespoke_trigger)(struct snd_pcm_substream *, int);
+};
+#+END_SRC
+** DAI接口
+与音频芯片类似，只是它描述的是CPU这边的DAI接口说明。
+** 实例
+#+BEGIN_SRC c
+/*  axi-i2s.c - The simplest kernel module.
+ ,*/
+
+#define pr_fmt(fmt)     "[driver] i2s:"fmt
+
+#include <linux/kernel.h>
+#include <linux/init.h>
+#include <linux/module.h>
+#include <linux/slab.h>
+#include <linux/io.h>
+#include <linux/interrupt.h>
+#include <linux/dmaengine.h>
+#include <linux/dma-mapping.h>
+#include <linux/spinlock.h>
+
+#include <linux/platform_device.h>
+#include <linux/of_address.h>
+#include <linux/of_device.h>
+#include <linux/of_platform.h>
+#include <asm-generic/io.h>
+
+#include <sound/core.h>
+#include <sound/pcm.h>
+#include <sound/pcm_params.h>
+#include <sound/soc.h>
+#include <sound/dmaengine_pcm.h>
+
+
+/* Standard module information, edit as appropriate */
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("KCL.");
+MODULE_DESCRIPTION("axi-i2s - it's used for pl i2s to audio");
+
+#define DRIVER_NAME "axi-i2s"
+//1 -> sg mode ; 0 -> circular mode
+#define DMA_SG_MODE 1
+
+#define DMA_SELF_BUFFER 1
+
+#define DEBUG_VALUE_CHECK 0
+
+
+
+struct i2s_dma{
+        struct dma_chan                 *channel;
+        struct dma_async_tx_descriptor  *tx_desc;
+        dma_cookie_t                    cookie;
+        uint32_t                        buf_bytes;
+        uint32_t                        period_bytes;
+        dma_addr_t                      phy_addr;
+        unsigned char                   *vir_addr;
+        enum dma_transfer_direction     direction;
+        uint32_t                        current_send;
+        uint32_t                        have_send;
+};
+
+struct i2s_dma_common{
+        unsigned char                   *vir_addr;
+        dma_addr_t                      phy_addr;
+        uint32_t                        size;
+};
+
+struct axi_i2s {
+        struct device                   *dev;
+        struct i2s_dma                  dma_playback;
+        struct i2s_dma                  dma_capture;
+        struct i2s_dma_common           dma_common;
+        struct snd_pcm_substream        *substream;
+        struct tasklet_struct           tasklet;
+        bool                            is_running;
+        spinlock_t                      lock;
+};
+/**
+ ,*  @brief DAI operation
+ ,*/
+static int axi_i2s_trigger(struct snd_pcm_substream *substream, int cmd,
+                           struct snd_soc_dai *dai)
+{
+        struct axi_i2s *i2s = snd_soc_dai_get_drvdata(dai);
+        unsigned int mask, val;
+
+        pr_info("%s\n", __func__);
+        if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
+        {
+
+        }
+        else
+        {
+
+        }
+
+        switch (cmd) {
+        case SNDRV_PCM_TRIGGER_START:
+        case SNDRV_PCM_TRIGGER_RESUME:
+        case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+                val = mask;
+                break;
+        case SNDRV_PCM_TRIGGER_STOP:
+        case SNDRV_PCM_TRIGGER_SUSPEND:
+        case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+                val = 0;
+                break;
+        default:
+                return -EINVAL;
+        }
+
+        return 0;
+}
+
+//static int axi_i2s_hw_params(struct snd_pcm_substream *substream,
+//struct snd_pcm_hw_params *params, struct snd_soc_dai *dai)
+//{
+//pr_info("%s\n", __func__);
+//struct axi_i2s *i2s = snd_soc_dai_get_drvdata(dai);
+
+//return 0;
+//}
+
+//static int axi_i2s_startup(struct snd_pcm_substream *substream,
+//struct snd_soc_dai *dai)
+//{
+//pr_info("%s\n", __func__);
+//struct axi_i2s *i2s = snd_soc_dai_get_drvdata(dai);
+//int ret = 0;
+
+//return ret;
+//}
+
+//static void axi_i2s_shutdown(struct snd_pcm_substream *substream,
+//struct snd_soc_dai *dai)
+//{
+//pr_info("%s\n", __func__);
+//struct axi_i2s *i2s = snd_soc_dai_get_drvdata(dai);
+
+//}
+
+static const struct snd_soc_dai_ops axi_i2s_dai_ops = {
+        //.startup = axi_i2s_startup,
+        //.shutdown = axi_i2s_shutdown,
+        .trigger = axi_i2s_trigger,
+        //.hw_params = axi_i2s_hw_params,
+};
+
+#define AXI_I2S_RATE    (SNDRV_PCM_RATE_44100)
+#define AXI_I2S_FORMAT  (SNDRV_PCM_FMTBIT_S16_LE)
+
+static struct snd_soc_dai_driver axi_i2s_dai = {
+        .name = "axi-i2s-dai",
+        .playback = {
+                .stream_name = "Playback",
+                .channels_min = 2,
+                .channels_max = 2,
+                .rates = AXI_I2S_RATE,
+                .formats = AXI_I2S_FORMAT,
+        },
+        .capture = {
+                .stream_name = "Capture",
+                .channels_min = 2,
+                .channels_max = 2,
+                .rates = AXI_I2S_RATE,
+                .formats = AXI_I2S_FORMAT,
+        },
+        .ops = &axi_i2s_dai_ops,
+        .symmetric_rates = 1,
+};
+
+static const struct snd_soc_component_driver axi_i2s_component = {
+        .name = "axi-i2s",
+};
+
+/**
+ ,* @brief dma operation
+ ,*/
+#define DMA_PERIOD_BYTES_MIN    (256)
+#define DMA_PERIOD_BYTES_MAX    (10240)
+#define DMA_PERIOD_COUNT_MIN    (4)
+#define DMA_PERIOD_COUNT_MAX    (20)
+#define DMA_BUFFER_SIZE         (DMA_PERIOD_BYTES_MAX * DMA_PERIOD_COUNT_MAX)
+#define DMA_AUDIO_CHANNEL       (2)
+static const struct snd_pcm_hardware i2s_pcm_hardware = {
+        .info = SNDRV_PCM_INFO_INTERLEAVED,
+        .formats = AXI_I2S_FORMAT,
+        .rates = AXI_I2S_RATE,
+        .channels_min = DMA_AUDIO_CHANNEL,
+        .channels_max = DMA_AUDIO_CHANNEL,
+        .period_bytes_min = DMA_PERIOD_BYTES_MIN,
+        .period_bytes_max = DMA_PERIOD_BYTES_MAX,
+        .periods_min = DMA_PERIOD_COUNT_MIN,
+        .periods_max = DMA_PERIOD_COUNT_MAX,
+        .buffer_bytes_max = DMA_BUFFER_SIZE,
+        .fifo_size = 0,
+};
+static struct axi_i2s *i2s_data_get(struct snd_pcm_substream *ss)
+{
+        struct device *card_dev = ss->pcm->card->dev;
+        struct snd_soc_card *soc_card = card_dev->driver_data;
+        struct device_node *platform_node = soc_card->dai_link->platform_of_node;
+        struct device *dev = &of_find_device_by_node(platform_node)->dev;
+        struct axi_i2s *i2s = dev_get_drvdata(dev);
+
+        i2s->dev = dev;
+
+        return i2s;
+}
+static int i2s_pcm_open(struct snd_pcm_substream *ss)
+{
+        struct axi_i2s *i2s = i2s_data_get(ss);
+        int ret = 0;
+
+        pr_info("%s\n", __func__);
+        if(ss->stream == SNDRV_PCM_STREAM_PLAYBACK)
+        {
+                if((i2s->dma_playback.channel = dma_request_slave_channel(i2s->dev, "dma_playback")) == NULL)
+                {
+                        dev_info(i2s->dev, "channel addr = %p\n", i2s->dma_playback.channel);
+                        dev_err(i2s->dev, "dma request playback channel failed!\n");
+                        ret = -EINVAL;
+                        goto quick_out;
+                }
+        }
+        else
+        {
+                if((i2s->dma_capture.channel = dma_request_slave_channel(i2s->dev, "dma_capture")) == NULL)
+                {
+                        dev_err(i2s->dev, "dma request capture channel failed!\n");
+                        ret = -EINVAL;
+                        goto quick_out;
+                }
+        }
+
+        i2s->substream = ss;
+
+        snd_soc_set_runtime_hwparams(ss, &i2s_pcm_hardware);
+
+        struct i2s_dma *dma_stream = NULL;
+
+        if(ss->stream == SNDRV_PCM_STREAM_PLAYBACK)
+        {
+                dma_stream = &i2s->dma_playback;
+                dma_stream->direction = DMA_MEM_TO_DEV;
+        }
+        else
+        {
+                dma_stream = &i2s->dma_capture;
+                dma_stream->direction = DMA_DEV_TO_MEM;
+        }
+quick_out:
+        return ret;
+}
+
+static int i2s_pcm_close(struct snd_pcm_substream *ss)
+{
+        struct axi_i2s *i2s = i2s_data_get(ss);
+
+        pr_info("%s\n", __func__);
+        if(ss->stream == SNDRV_PCM_STREAM_PLAYBACK)
+        {
+                dma_release_channel(i2s->dma_playback.channel);
+        }
+        else
+        {
+                dma_release_channel(i2s->dma_capture.channel);
+        }
+        return 0;
+}
+
+static int i2s_pcm_prepare(struct snd_pcm_substream *ss)
+{
+        struct axi_i2s *i2s = i2s_data_get(ss);
+        struct snd_pcm_runtime *rt = ss->runtime;
+        struct i2s_dma *dma_stream = NULL;
+
+        if(ss->stream == SNDRV_PCM_STREAM_PLAYBACK)
+        {
+                dma_stream = &i2s->dma_playback;
+                dma_stream->direction = DMA_MEM_TO_DEV;
+        }
+        else
+        {
+                dma_stream = &i2s->dma_capture;
+                dma_stream->direction = DMA_DEV_TO_MEM;
+        }
+        dma_stream->buf_bytes = snd_pcm_lib_buffer_bytes(ss);
+        dma_stream->period_bytes = snd_pcm_lib_period_bytes(ss);
+        dma_stream->phy_addr = rt->dma_addr;
+        dma_stream->vir_addr = rt->dma_area;
+        i2s->is_running = false;
+
+        dev_info(i2s->dev,"dma buf size = %d, period size = %d\n", dma_stream->buf_bytes,
+                 dma_stream->period_bytes);
+
+        return 0;
+}
+
+static void i2s_dma_callback(void *completion)
+{
+        struct axi_i2s *i2s = completion;
+        struct snd_pcm_substream *ss = i2s->substream;
+        struct i2s_dma *dma_stream = NULL;
+        if(ss->stream == SNDRV_PCM_STREAM_PLAYBACK)
+        {
+                dma_stream = &i2s->dma_playback;
+        }
+        else
+        {
+                dma_stream = &i2s->dma_capture;
+        }
+
+        dma_stream->have_send += dma_stream->current_send;
+        //pr_info("dma callback -> %d!\n", dma_stream->have_send);
+        snd_pcm_period_elapsed(i2s->substream);
+        #if DMA_SG_MODE
+        tasklet_schedule(&i2s->tasklet);
+        #endif
+}
+
+static int dma_trigger_once(struct axi_i2s *i2s)
+{
+        int ret = 0;
+        struct snd_pcm_substream *ss = i2s->substream;
+        struct i2s_dma *dma_stream = NULL;
+        enum dma_ctrl_flags flags = DMA_CTRL_ACK | DMA_PREP_INTERRUPT;
+
+        if(ss->stream == SNDRV_PCM_STREAM_PLAYBACK)
+        {
+                dma_stream = &i2s->dma_playback;
+        }
+        else
+        {
+                dma_stream = &i2s->dma_capture;
+        }
+
+        if(dma_stream->have_send == dma_stream->buf_bytes)
+        {
+                dma_stream->have_send = 0;
+        }
+
+        uint32_t remain_bytes = dma_stream->buf_bytes - dma_stream->have_send;
+        if(remain_bytes >= dma_stream->period_bytes)
+        {
+                dma_stream->current_send = dma_stream->period_bytes;
+        }
+        else
+        {
+                dma_stream->current_send = remain_bytes;
+        }
+        //dev_info(i2s->dev,"trigger byte: %d\n", dma_stream->current_send);
+
+        #if DMA_SG_MODE
+        struct scatterlist sg;
+        sg_init_table(&sg, 1);
+
+        dma_addr_t buf_addr = dma_stream->phy_addr + dma_stream->have_send;
+        #if DEBUG_VALUE_CHECK
+        uint32_t *buf = (uint32_t *)(dma_stream->vir_addr + dma_stream->have_send);
+        uint32_t i;
+        uint32_t str = buf[0];
+        //printk(KERN_INFO "\naddr -> %p, phy = %d, tr = %d\n", buf, buf_addr, virt_to_phys(buf));
+        for(i = 0; i < dma_stream->period_bytes / 4; i++)
+        {
+                //if(buf[i] != str)
+                //{
+                //printk(KERN_INFO "buf = %8x != str = %8x, index = %d", buf[i], str, i);
+                //}
+                //str += 0x10001;
+                //if(str > 0x90009)
+                //{
+                //str = 0;
+                //}
+                //printk(KERN_INFO "%4d --> %8x\n", i, buf[i]);
+                printk(KERN_INFO "%d ", buf[i]);
+        }
+        #endif
+
+        sg_set_page(&sg, pfn_to_page(PFN_DOWN(buf_addr)),
+                    dma_stream->current_send,
+                    offset_in_page(buf_addr));
+        sg_dma_len(&sg) = dma_stream->current_send;
+        sg_dma_address(&sg) = buf_addr;
+        dma_stream->tx_desc = dmaengine_prep_slave_sg(dma_stream->channel,
+                                                      &sg, 1, dma_stream->direction, flags);
+        if (!dma_stream->tx_desc) {
+                dev_err(i2s->dev, "Failed to allocate a dma descriptor\n");
+                return -ENOMEM;
+        }
+        #else
+        dma_stream->tx_desc = dmaengine_prep_dma_cyclic(dma_stream->channel,
+                                                        dma_stream->phy_addr, dma_stream->buf_bytes,
+                                                        dma_stream->period_bytes, dma_stream->direction,
+                                                        flags);
+        if (!dma_stream->tx_desc) {
+                dev_err(i2s->dev, "Failed to allocate a dma descriptor\n");
+                return -ENOMEM;
+        }
+        #endif
+        dma_stream->tx_desc->callback = i2s_dma_callback;
+        dma_stream->tx_desc->callback_param = i2s;
+        dma_stream->cookie = dmaengine_submit(dma_stream->tx_desc);
+        if(dma_submit_error(dma_stream->cookie))
+        {
+                dev_err(i2s->dev, "submit dma failed!\n");
+                ret = -EINVAL;
+                goto quick_out;
+        }
+        dma_async_issue_pending(dma_stream->channel);
+quick_out:
+        return ret;
+}
+static void dma_start(struct axi_i2s *i2s)
+{
+        struct snd_pcm_substream *ss = i2s->substream;
+        struct i2s_dma *dma_stream = NULL;
+
+        if(ss->stream == SNDRV_PCM_STREAM_PLAYBACK)
+        {
+                dma_stream = &i2s->dma_playback;
+        }
+        else
+        {
+                dma_stream = &i2s->dma_capture;
+        }
+        dma_stream->current_send = 0;
+        dma_stream->have_send = 0;
+        i2s->is_running = true;
+        tasklet_schedule(&i2s->tasklet);
+}
+static void dma_stop(struct axi_i2s *i2s)
+{
+        struct snd_pcm_substream *ss = i2s->substream;
+        struct i2s_dma *dma_stream = NULL;
+
+        if(ss->stream == SNDRV_PCM_STREAM_PLAYBACK)
+        {
+                dma_stream = &i2s->dma_playback;
+        }
+        else
+        {
+                dma_stream = &i2s->dma_capture;
+        }
+        spin_lock(&i2s->lock);
+        i2s->is_running = false;
+        dmaengine_terminate_all(dma_stream->channel);
+        spin_unlock(&i2s->lock);
+}
+
+static int i2s_pcm_trigger(struct snd_pcm_substream *ss, int cmd)
+{
+        int ret = 0;
+        struct axi_i2s *i2s = i2s_data_get(ss);
+
+        switch(cmd)
+        {
+        case SNDRV_PCM_TRIGGER_START:
+        {
+                dev_info(i2s->dev, "starting dma!\n");
+                dma_start(i2s);
+        }break;
+        case SNDRV_PCM_TRIGGER_STOP:
+        {
+                dev_info(i2s->dev, "stopping dma!\n");
+                dma_stop(i2s);
+        }break;
+        default:
+                dev_err(i2s->dev, "unsupported cmd = %d\n", cmd);
+                ret = -EINVAL;
+        }
+
+quick_out:
+        return ret;
+}
+
+static void dma_task_let(unsigned long i2s_addr)
+{
+        struct axi_i2s *i2s = (struct axi_i2s *)i2s_addr;
+        unsigned long flags = 0;
+
+        spin_lock_irqsave(&i2s->lock, flags);
+        if(i2s->is_running == true)
+        {
+                dma_trigger_once(i2s);
+        }
+        else
+        {
+                pr_info("tasklet stop!\n");
+        }
+        spin_unlock_irqrestore(&i2s->lock, flags);
+}
+
+/*
+ ,* So far only resolution of one period is supported, subject to extending the
+ ,* dmangine API
+ ,*/
+static snd_pcm_uframes_t i2s_pcm_pointer_dma(struct snd_pcm_substream *ss)
+{
+        struct axi_i2s *i2s = i2s_data_get(ss);
+        struct i2s_dma *dma_stream = NULL;
+        struct snd_pcm_runtime *rt = ss->runtime;
+        snd_pcm_uframes_t   frame_index = 0;
+
+        if(ss->stream == SNDRV_PCM_STREAM_PLAYBACK)
+        {
+                dma_stream = &i2s->dma_playback;
+        }
+        else
+        {
+                dma_stream = &i2s->dma_capture;
+        }
+
+        if(dma_stream->have_send >= dma_stream->buf_bytes)
+        {
+                dma_stream->have_send = 0;
+        }
+
+        frame_index =  bytes_to_frames(rt, dma_stream->have_send);
+        //dev_info(i2s->dev, "return addr = %d, frame = %d\n", dma_stream->have_send, frame_index);
+
+        return frame_index;
+}
+
+static int i2s_pcm_new(struct snd_soc_pcm_runtime *rtd)
+{
+        int ret = 0;
+        struct snd_pcm *pcm = rtd->pcm;
+        struct snd_card *card = rtd->card->snd_card;
+
+        pr_info("%s\n", __func__);
+
+        #if DMA_SELF_BUFFER
+        struct device * dev = rtd->platform->dev;
+        struct axi_i2s *i2s = dev->driver_data;
+        pr_info("i2s ->addr = %p\n", i2s);
+        i2s->dma_common.size = DMA_BUFFER_SIZE;
+        i2s->dma_common.vir_addr = (unsigned char *)dmam_alloc_coherent(dev,
+                                                                        i2s->dma_common.size, &i2s->dma_common.phy_addr, GFP_KERNEL);
+        if(i2s->dma_common.vir_addr == NULL)
+        {
+                dev_err(dev,"can not prealloc dma buffer\n");
+                ret = -ENOMEM;
+                goto quick_out;
+        }
+        dev_info(dev, "alloced dma vir = %p, phy = %d, size = %d\n",
+                 i2s->dma_common.vir_addr, i2s->dma_common.phy_addr,
+                 i2s->dma_common.size);
+        #else
+        if((ret = snd_pcm_lib_preallocate_pages_for_all(pcm,
+                                                        SNDRV_DMA_TYPE_CONTINUOUS, snd_dma_continuous_data(GFP_KERNEL),
+                                                        DMA_BUFFER_SIZE, DMA_BUFFER_SIZE)) != 0)
+        {
+                dev_err(card->dev,"can not prealloc dma buffer\n");
+                ret = -ENOMEM;
+                goto quick_out;
+        }
+        #endif
+
+quick_out:
+        return ret;
+}
+
+static void i2s_pcm_free(struct snd_pcm *pcm)
+{
+        pr_info("%s\n", __func__);
+}
+static int i2s_pcm_hw_params(struct snd_pcm_substream *ss,
+                             struct snd_pcm_hw_params *hw_params)
+{
+        struct axi_i2s *i2s = i2s_data_get(ss);
+        struct device *dev = ss->pcm->card->dev;
+        struct snd_pcm_runtime *rt = ss->runtime;
+        struct snd_dma_buffer  *dmab = rt->dma_buffer_p;
+        int ret  = 0;
+        pr_info("%s\n", __func__);
+        #if DMA_SELF_BUFFER
+        if(dmab == NULL)
+        {
+                dev_info(dev, "alloc dmab memory!\n");
+                if((dmab = kzalloc(sizeof(struct snd_dma_buffer), GFP_KERNEL)) == NULL)
+                {
+                        dev_err(dev, "can not alloc dmab buffer!\n");
+                        ret = -ENOMEM;
+                        goto quick_out;
+                }
+        }
+        dmab->dev = ss->dma_buffer.dev;
+        dmab->bytes = params_buffer_bytes(hw_params);
+        dev_info(dev, "alloc %d bytes dma buffer, virt = %p, phy = %d\n",
+                 dmab->bytes, dmab->area, dmab->addr);
+        if(dmab->bytes > i2s->dma_common.size)
+        {
+                dev_err(dev, "request memory is larger than dma common have\n");
+                ret = -ENOMEM;
+                goto quick_out;
+        }
+
+        dmab->area = i2s->dma_common.vir_addr;
+        dmab->addr = i2s->dma_common.phy_addr;
+        if(dmab->area == NULL)
+        {
+                dev_err(dev, "can not alloc dma buffer!\n");
+                ret = -ENOMEM;
+                goto quick_out;
+        }
+        dev_info(dev, "alloced %d bytes dma buffer, virt = %p, phy = %d\n",
+                 dmab->bytes, dmab->area, dmab->addr);
+
+        rt->dma_buffer_p = dmab;
+        rt->dma_area = dmab->area;
+        rt->dma_addr = dmab->addr;
+        rt->dma_bytes = dmab->bytes;
+        #else
+        if((ret = snd_pcm_lib_malloc_pages(ss, params_buffer_bytes(hw_params))) < 0)
+        {
+                dev_err(dev, "malloc pages failed, ret = %d, size = %d\n", ret,
+                        params_buffer_bytes(hw_params));
+                ret = -EINVAL;
+        }
+        #endif
+        if(rt->dma_addr == 0)
+        {
+                dev_info(dev, "translate addr\n");
+                rt->dma_addr = virt_to_phys(rt->dma_area);
+        }
+quick_out:
+        return ret;
+}
+
+static int i2s_pcm_hw_free(struct snd_pcm_substream *ss)
+{
+        pr_info("%s\n", __func__);
+        #if DMA_SELF_BUFFER
+        struct snd_pcm_runtime *rt = ss->runtime;
+        struct snd_dma_buffer  *dmab = rt->dma_buffer_p;
+
+        kfree(dmab);
+        return 0;
+        #else
+        return snd_pcm_lib_free_pages(ss);
+        #endif
+}
+static struct snd_pcm_ops i2s_pcm_ops = {
+        .open= i2s_pcm_open,
+        .close= i2s_pcm_close,
+        .hw_params= i2s_pcm_hw_params,
+        .hw_free= i2s_pcm_hw_free,
+        .prepare= i2s_pcm_prepare,
+        .trigger= i2s_pcm_trigger,
+        .pointer= i2s_pcm_pointer_dma,
+};
+struct snd_soc_platform_driver i2s_platform = {
+        .ops= &i2s_pcm_ops,
+        .pcm_new= i2s_pcm_new,
+        .pcm_free= i2s_pcm_free,
+};
+/**
+ ,* @brief driver probe and remove
+ ,*/
+static int axi_i2s_probe(struct platform_device *pdev)
+{
+        struct axi_i2s *i2s;
+        int rc = 0;
+
+        i2s = devm_kzalloc(&pdev->dev, sizeof(*i2s), GFP_KERNEL);
+        if (i2s == NULL)
+        {
+                dev_err(&pdev->dev, "alloc memory failed!\n");
+                rc =  -ENOMEM;
+                goto quick_out;
+        }
+        tasklet_init(&i2s->tasklet, dma_task_let,(unsigned long)i2s);
+        spin_lock_init(&i2s->lock);
+
+        platform_set_drvdata(pdev, i2s);
+        dev_set_drvdata(&pdev->dev, i2s);
+
+
+        pr_info("i2s ->addr = %p\n", i2s);
+        rc = devm_snd_soc_register_component(&pdev->dev, &axi_i2s_component,
+                                             &axi_i2s_dai, 1);
+        if (rc)
+        {
+                dev_err(&pdev->dev, "can not register component\n");
+                goto quick_out;
+        }
+        rc = devm_snd_soc_register_platform(&pdev->dev, &i2s_platform);
+        if (rc < 0)
+        {
+                dev_err(&pdev->dev, "can not register platform\n");
+                goto quick_out;
+        }
+        dev_info(&pdev->dev, "%s\n", __func__);
+
+quick_out:
+        return rc;
+}
+
+static int axi_i2s_remove(struct platform_device *pdev)
+{
+
+        return 0;
+}
+
+#ifdef CONFIG_OF
+static struct of_device_id axi_i2s_of_match[] = {
+        { .compatible = "zynq,axi-i2s", },
+        { /* end of list */ },
+};
+MODULE_DEVICE_TABLE(of, axi_i2s_of_match);
+#else
+# define axi_i2s_of_match
+#endif
+
+
+static struct platform_driver axi_i2s_driver = {
+        .driver = {
+                .name = DRIVER_NAME,
+                .owner = THIS_MODULE,
+                .of_match_table= axi_i2s_of_match,
+        },
+        .probe= axi_i2s_probe,
+        .remove= axi_i2s_remove,
+};
+
+static int __init axi_i2s_init(void)
+{
+        pr_info("module initialize\n");
+        return platform_driver_register(&axi_i2s_driver);
+}
+
+
+static void __exit axi_i2s_exit(void)
+{
+        pr_info("module exit\n");
+        platform_driver_unregister(&axi_i2s_driver);
+}
+
+module_init(axi_i2s_init);
+module_exit(axi_i2s_exit);
+#+END_SRC
+** 设备树
+#+begin_example
+kc_audio_i2s_label:kc_audio_i2s{
+                    compatible = "zynq,axi-i2s";
+                    dmas = <&axi_dma_IQ0 0
+                    &axi_dma_IQ0 1>;
+                    dma-names = "dma_playback", "dma_capture";
+                   };
+#+end_example
+* 板级驱动
+板级驱动用于将芯片驱动和平台驱动连接在一起，并且还用来描述其他附加信息。
+
+** 声卡的表示
+使用 =snd_soc_card= 来表示一个声卡：
+#+BEGIN_SRC c
+/* SoC card */
+struct snd_soc_card {
+        const char *name;
+        const char *long_name;
+        const char *driver_name;
+        struct device *dev;
+        struct snd_card *snd_card;
+        struct module *owner;
+
+        struct mutex mutex;
+        struct mutex dapm_mutex;
+
+        bool instantiated;
+
+        int (*probe)(struct snd_soc_card *card);
+        int (*late_probe)(struct snd_soc_card *card);
+        int (*remove)(struct snd_soc_card *card);
+
+        /* the pre and post PM functions are used to do any PM work before and
+         ,* after the codec and DAI's do any PM work. */
+        int (*suspend_pre)(struct snd_soc_card *card);
+        int (*suspend_post)(struct snd_soc_card *card);
+        int (*resume_pre)(struct snd_soc_card *card);
+        int (*resume_post)(struct snd_soc_card *card);
+
+        /* callbacks */
+        int (*set_bias_level)(struct snd_soc_card *,
+                              struct snd_soc_dapm_context *dapm,
+                              enum snd_soc_bias_level level);
+        int (*set_bias_level_post)(struct snd_soc_card *,
+                                   struct snd_soc_dapm_context *dapm,
+                                   enum snd_soc_bias_level level);
+
+        long pmdown_time;
+
+        /* CPU <--> Codec DAI links  */
+        struct snd_soc_dai_link *dai_link;
+        int num_links;
+        struct snd_soc_pcm_runtime *rtd;
+        int num_rtd;
+
+        /* optional codec specific configuration */
+        struct snd_soc_codec_conf *codec_conf;
+        int num_configs;
+
+        /*
+         ,* optional auxiliary devices such as amplifiers or codecs with DAI
+         ,* link unused
+         ,*/
+        struct snd_soc_aux_dev *aux_dev;
+        int num_aux_devs;
+        struct snd_soc_pcm_runtime *rtd_aux;
+        int num_aux_rtd;
+
+        const struct snd_kcontrol_new *controls;
+        int num_controls;
+
+        /*
+         ,* Card-specific routes and widgets.
+         ,* Note: of_dapm_xxx for Device Tree; Otherwise for driver build-in.
+         ,*/
+        const struct snd_soc_dapm_widget *dapm_widgets;
+        int num_dapm_widgets;
+        const struct snd_soc_dapm_route *dapm_routes;
+        int num_dapm_routes;
+        const struct snd_soc_dapm_widget *of_dapm_widgets;
+        int num_of_dapm_widgets;
+        const struct snd_soc_dapm_route *of_dapm_routes;
+        int num_of_dapm_routes;
+        bool fully_routed;
+
+        struct work_struct deferred_resume_work;
+
+        /* lists of probed devices belonging to this card */
+        struct list_head codec_dev_list;
+
+        struct list_head widgets;
+        struct list_head paths;
+        struct list_head dapm_list;
+        struct list_head dapm_dirty;
+
+        /* attached dynamic objects */
+        struct list_head dobj_list;
+
+        /* Generic DAPM context for the card */
+        struct snd_soc_dapm_context dapm;
+        struct snd_soc_dapm_stats dapm_stats;
+        struct snd_soc_dapm_update *update;
+
+        #ifdef CONFIG_DEBUG_FS
+        struct dentry *debugfs_card_root;
+        struct dentry *debugfs_pop_time;
+        #endif
+        u32 pop_time;
+
+        void *drvdata;
+};
+#+END_SRC
+** 板级DAI配置
+板级DAI配置将所有的设备驱动和平台驱动连接在一起， =snd_soc_dai_link= 用于连接二者：
+#+BEGIN_SRC c
+struct snd_soc_dai_link {
+        /* config - must be set by machine driver */
+        const char *name;/* Codec name */
+        const char *stream_name;/* Stream name */
+        /*
+         ,* You MAY specify the link's CPU-side device, either by device name,
+         ,* or by DT/OF node, but not both. If this information is omitted,
+         ,* the CPU-side DAI is matched using .cpu_dai_name only, which hence
+         ,* must be globally unique. These fields are currently typically used
+         ,* only for codec to codec links, or systems using device tree.
+         ,*/
+        const char *cpu_name;
+        struct device_node *cpu_of_node;
+        /*
+         ,* You MAY specify the DAI name of the CPU DAI. If this information is
+         ,* omitted, the CPU-side DAI is matched using .cpu_name/.cpu_of_node
+         ,* only, which only works well when that device exposes a single DAI.
+         ,*/
+        const char *cpu_dai_name;
+        /*
+         ,* You MUST specify the link's codec, either by device name, or by
+         ,* DT/OF node, but not both.
+         ,*/
+        const char *codec_name;
+        struct device_node *codec_of_node;
+        /* You MUST specify the DAI name within the codec */
+        const char *codec_dai_name;
+
+        struct snd_soc_dai_link_component *codecs;
+        unsigned int num_codecs;
+
+        /*
+         ,* You MAY specify the link's platform/PCM/DMA driver, either by
+         ,* device name, or by DT/OF node, but not both. Some forms of link
+         ,* do not need a platform.
+         ,*/
+        const char *platform_name;
+        struct device_node *platform_of_node;
+        int be_id;/* optional ID for machine driver BE identification */
+
+        const struct snd_soc_pcm_stream *params;
+        unsigned int num_params;
+
+        unsigned int dai_fmt;           /* format to set on init */
+
+        enum snd_soc_dpcm_trigger trigger[2]; /* trigger type for DPCM */
+
+        /* codec/machine specific init - e.g. add machine controls */
+        int (*init)(struct snd_soc_pcm_runtime *rtd);
+
+        /* optional hw_params re-writing for BE and FE sync */
+        int (*be_hw_params_fixup)(struct snd_soc_pcm_runtime *rtd,
+                                  struct snd_pcm_hw_params *params);
+
+        /* machine stream operations */
+        const struct snd_soc_ops *ops;
+        const struct snd_soc_compr_ops *compr_ops;
+
+        /* For unidirectional dai links */
+        bool playback_only;
+        bool capture_only;
+
+        /* Mark this pcm with non atomic ops */
+        bool nonatomic;
+
+        /* Keep DAI active over suspend */
+        unsigned int ignore_suspend:1;
+
+        /* Symmetry requirements */
+        unsigned int symmetric_rates:1;
+        unsigned int symmetric_channels:1;
+        unsigned int symmetric_samplebits:1;
+
+        /* Do not create a PCM for this DAI link (Backend link) */
+        unsigned int no_pcm:1;
+
+        /* This DAI link can route to other DAI links at runtime (Frontend)*/
+        unsigned int dynamic:1;
+
+        /* DPCM capture and Playback support */
+        unsigned int dpcm_capture:1;
+        unsigned int dpcm_playback:1;
+
+        /* DPCM used FE & BE merged format */
+        unsigned int dpcm_merged_format:1;
+
+        /* pmdown_time is ignored at stop */
+        unsigned int ignore_pmdown_time:1;
+};
+#+END_SRC
+比如：
+#+BEGIN_SRC c
+/* corgi digital audio interface glue - connects codec <--> CPU */
+static struct snd_soc_dai_link corgi_dai = {
+        .name = "WM8731",
+        .stream_name = "WM8731",
+        .cpu_dai_name = "pxa-is2-dai",
+        .codec_dai_name = "wm8731-hifi",
+        .platform_name = "pxa-pcm-audio",
+        .codec_name = "wm8713-codec.0-001a",
+        .init = corgi_wm8731_init,
+        .ops = &corgi_ops,
+};
+/* corgi audio machine driver */
+static struct snd_soc_card snd_soc_corgi = {
+        .name = "Corgi",
+        .dai_link = &corgi_dai,
+        .num_links = 1,
+};
+#+END_SRC
+** 实例
+#+BEGIN_SRC c
+/*  audio_speaker.c - The simplest kernel module.
+ ,*/
+#define pr_fmt(fmt)   "[driver] machine:"fmt
+#include <linux/kernel.h>
+#include <linux/init.h>
+#include <linux/module.h>
+#include <linux/slab.h>
+#include <linux/io.h>
+#include <linux/interrupt.h>
+
+#include <linux/of_address.h>
+#include <linux/of_device.h>
+#include <linux/of_platform.h>
+
+#include <sound/core.h>
+#include <sound/pcm.h>
+#include <sound/soc.h>
+
+/* Standard module information, edit as appropriate */
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("kcl");
+MODULE_DESCRIPTION("audio_speaker - loadable module template generated by petalinux-create -t modules");
+
+#define DRIVER_NAME "audio_speaker"
+
+#define SSM2518_SYSCLK 0
+
+enum ssm2518_sysclk_src {
+        SSM2518_SYSCLK_SRC_MCLK = 0,
+        SSM2518_SYSCLK_SRC_BCLK = 1,
+};
+
+struct audio_speaker{
+        uint32_t data;
+};
+
+static int audio_speaker_chip_init(struct snd_soc_pcm_runtime *rtd)
+{
+        pr_info("%s\n", __func__);
+        return snd_soc_codec_set_sysclk(rtd->codec, SSM2518_SYSCLK, SSM2518_SYSCLK_SRC_MCLK,11289600, SND_SOC_CLOCK_IN);
+}
+static const struct snd_soc_dapm_widget audio_speaker_widgets[] =
+{
+        SND_SOC_DAPM_SPK("Speaker Out", NULL),
+};
+
+static const struct snd_soc_dapm_route audio_speaker_routes[] =
+{
+        {"Speaker Out", NULL, "OUTL"},
+        {"Speaker Out", NULL, "OUTR"},
+};
+
+static struct snd_soc_dai_link audio_speaker_link = {
+        .name = "ssm2518",
+        .stream_name = "ssm2518",
+        .codec_dai_name = "ssm2518-hifi",
+            .dai_fmt = SND_SOC_DAIFMT_LEFT_J |
+                SND_SOC_DAIFMT_NB_NF |
+        SND_SOC_DAIFMT_CBS_CFS,
+        .init = audio_speaker_chip_init,
+};
+static struct snd_soc_card audio_speaker_card = {
+        .name = "zynq ssm2518",
+        .owner = THIS_MODULE,
+        .dai_link = &audio_speaker_link,
+        .num_links = 1,
+        .dapm_widgets = audio_speaker_widgets,
+        .num_dapm_widgets = ARRAY_SIZE(audio_speaker_widgets),
+        .dapm_routes = audio_speaker_routes,
+        .num_dapm_routes = ARRAY_SIZE(audio_speaker_routes),
+        .fully_routed = true,
+};
+
+static int audio_speaker_probe(struct platform_device *pdev)
+{
+        int rc = 0;
+
+        struct snd_soc_card *card = &audio_speaker_card;
+        struct device_node *of_node = pdev->dev.of_node;
+        if(!of_node)
+        {
+                dev_err(&pdev->dev,"can not get of node\n");
+                rc = -ENXIO;
+                goto quick_out;
+        }
+        platform_set_drvdata(pdev, card);
+
+        card->dev = &pdev->dev;
+
+
+        audio_speaker_link.codec_of_node = of_parse_phandle(of_node, "audio-codec", 0);
+        audio_speaker_link.cpu_of_node = of_parse_phandle(of_node, "cpu-dai", 0);
+        audio_speaker_link.platform_of_node = audio_speaker_link.cpu_of_node;
+
+        if(!audio_speaker_link.codec_of_node ||
+           !audio_speaker_link.cpu_of_node)
+        {
+                dev_err(&pdev->dev,"can not find node codec ->%p, cpu -> %p\n",
+                        audio_speaker_link.codec_of_node,
+                        audio_speaker_link.cpu_of_node);
+                rc = -ENXIO;
+                goto quick_out;
+        }
+        if((rc = snd_soc_register_card(card))!=0)
+        {
+                dev_err(&pdev->dev, "can not register card!\n");
+                rc = -ENXIO;
+                goto quick_out;
+        }
+        dev_info(&pdev->dev, "%s\n", __func__);
+
+quick_out:
+
+        return rc;
+}
+
+static int audio_speaker_remove(struct platform_device *pdev)
+{
+        struct snd_soc_card *card = platform_get_drvdata(pdev);
+
+        snd_soc_unregister_card(card);
+
+        return 0;
+}
+
+#ifdef CONFIG_OF
+static struct of_device_id audio_speaker_of_match[] = {
+        { .compatible = "zynq, audio_speaker", },
+        { /* end of list */ },
+};
+MODULE_DEVICE_TABLE(of, audio_speaker_of_match);
+#else
+# define audio_speaker_of_match
+#endif
+
+
+static struct platform_driver audio_speaker_driver = {
+        .driver = {
+                .name = DRIVER_NAME,
+                .owner = THIS_MODULE,
+                .of_match_table= audio_speaker_of_match,
+        },
+        .probe= audio_speaker_probe,
+        .remove= audio_speaker_remove,
+};
+
+static int __init audio_speaker_init(void)
+{
+        printk("<1>Hello module world.\n");
+
+        return platform_driver_register(&audio_speaker_driver);
+}
+
+
+static void __exit audio_speaker_exit(void)
+{
+        platform_driver_unregister(&audio_speaker_driver);
+        printk(KERN_ALERT "Goodbye module world.\n");
+}
+
+module_init(audio_speaker_init);
+module_exit(audio_speaker_exit);
+
+
+#+END_SRC
+** 设备树
+#+begin_example
+kc_audio_speaker_label:kc_audio_speaker{
+                     compatible = "zynq, audio_speaker";
+                     audio-codec = <&ssm2518_label>;
+                     cpu-dai = <&kc_audio_i2s_label>;
+                    };
+#+end_example
+** 关于一个I2S接2个及以上codec的连接
+这种情况ALSA也是支持的，只需要修改相应的设备树和注册函数即可：
+#+begin_example
+sound: n900-audio {
+                   compatible = "nokia,n900-audio";
+
+                    nokia,cpu-dai = <&mcbsp2>;
+                    nokia,audio-codec = <&tlv320aic3x>, <&tlv320aic3x_aux>;
+                    nokia,headphone-amplifier = <&tpa6130a2>;
+                    tvout-selection-gpios = <&gpio2 8 GPIO_ACTIVE_HIGH>; /* 40 */
+                    jack-detection-gpios = <&gpio6 17 GPIO_ACTIVE_HIGH>; /* 177 */
+                    eci-switch-gpios = <&gpio6 22 GPIO_ACTIVE_HIGH>; /* 182 */
+                    speaker-amplifier-gpios = <&twl_gpio 7 GPIO_ACTIVE_HIGH>;
+                   };
+#+end_example
+
+#+BEGIN_SRC c
+#include <linux/module.h>
+#include <linux/of.h>
+#include <linux/platform_device.h>
+
+#include <sound/soc.h>
+
+static struct snd_soc_dai_link xilinx_dp_dai_links[] = {
+        {
+                .name= "xilinx-dp0",
+                .codec_dai_name= "xilinx-dp-snd-codec-dai",
+        },
+        {
+                .name= "xilinx-dp1",
+                .codec_dai_name= "xilinx-dp-snd-codec-dai",
+        },
+
+};
+
+static struct snd_soc_card xilinx_dp_card = {
+        .name= "DisplayPort monitor",
+        .owner= THIS_MODULE,
+        .dai_link= xilinx_dp_dai_links,
+        .num_links= 2,
+};
+
+static int xilinx_dp_probe(struct platform_device *pdev)
+{
+        struct snd_soc_card *card = &xilinx_dp_card;
+        struct device_node *node = pdev->dev.of_node;
+        struct device_node *codec, *pcm;
+        int ret;
+
+        card->dev = &pdev->dev;
+
+        codec = of_parse_phandle(node, "xlnx,dp-snd-codec", 0);
+        if (!codec)
+                return -ENODEV;
+
+        pcm = of_parse_phandle(node, "xlnx,dp-snd-pcm", 0);
+        if (!pcm)
+                return -ENODEV;
+        xilinx_dp_dai_links[0].platform_of_node = pcm;
+        xilinx_dp_dai_links[0].cpu_of_node = codec;
+        xilinx_dp_dai_links[0].codec_of_node = codec;
+
+        pcm = of_parse_phandle(node, "xlnx,dp-snd-pcm", 1);
+        if (!pcm)
+                return -ENODEV;
+        xilinx_dp_dai_links[1].platform_of_node = pcm;
+        xilinx_dp_dai_links[1].cpu_of_node = codec;
+        xilinx_dp_dai_links[1].codec_of_node = codec;
+
+        ret = devm_snd_soc_register_card(&pdev->dev, card);
+        if (ret)
+                return ret;
+
+        dev_info(&pdev->dev, "Xilinx DisplayPort Sound Card probed\n");
+
+        return 0;
+}
+
+static int xilinx_dp_remove(struct platform_device *pdev)
+{
+        return 0;
+}
+
+static const struct of_device_id xilinx_dp_of_match[] = {
+        { .compatible = "xlnx,dp-snd-card", },
+        {},
+};
+MODULE_DEVICE_TABLE(of, xilinx_dp_of_match);
+
+static struct platform_driver xilinx_dp_aud_driver = {
+        .driver= {
+                .name= "xilinx-dp-snd-card",
+                .of_match_table= xilinx_dp_of_match,
+                .pm= &snd_soc_pm_ops,
+        },
+        .probe= xilinx_dp_probe,
+        .remove= xilinx_dp_remove,
+};
+module_platform_driver(xilinx_dp_aud_driver);
+
+MODULE_DESCRIPTION("Xilinx DisplayPort Sound Card module");
+MODULE_LICENSE("GPL v2");
+#+END_SRC

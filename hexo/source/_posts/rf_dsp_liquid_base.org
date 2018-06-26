@@ -1,0 +1,54 @@
+#+TITLE: [What]liquid-dsp 体验
+#+DATE: <2018-05-17 四> 
+#+TAGS: dsp
+#+LAYOUT: post 
+#+CATEGORIES: RF, DSP, liquid
+#+NAME: <rf_dsp_liquid_base.org>
+#+OPTIONS: ^:nil 
+#+OPTIONS: ^:{}
+
+[[https://github.com/jgaeddert/liquid-dsp][liquid-dsp]] 是用于嵌入式平台的SDR库，包含的功能相当丰富，大大提高了开发效率。
+
+#+BEGIN_EXPORT html
+<!--more-->
+#+END_EXPORT
+
+* 安装及检验
+** 在PC上安装
+#+BEGIN_EXAMPLE
+  #安装工具
+  sudo apt install automake autoconf
+  #获取源码
+  git clone git://github.com/jgaeddert/liquid-dsp.git
+  cd liquid-dsp
+  #编译
+  ./bootstrap.sh     
+  ./configure
+  make
+  sudo make install
+  sudo ldconfig
+  #检验代码
+  make check
+#+END_EXAMPLE
+** 安装到嵌入式
+按照惯例使用命令 =./configure --help= 查看使用方式，得出交叉编译命令为：
+#+BEGIN_EXAMPLE
+  make distclean
+
+  ##### 注意 ！！！
+  #使用vim编辑 configure.ac 屏蔽掉 AC_FUNC_MALLOC AC_FUNC_REALLOC 两行
+  #如果不屏蔽则会出现错误  undefined reference to rpl_malloc / rpl_realloc
+  #具体原因参看 http://rickfoosusa.blogspot.com/2011/11/howto-fix-undefined-reference-to.html
+
+  ./bootstrap.sh     
+  export CC=arm-linux-gnueabihf-gcc
+  #如果要修改在目标机的安装路径，还要增加 --prefix=<path>
+  ./configure --host=arm 
+  make
+  make install  DESTDIR=/home/cec/liquid
+#+END_EXAMPLE
+然后将文件夹下的内容对应拷贝到嵌入式文件系统 =/usr/local/lib,/usr/local/include= 即可。
+* 体验
+** fsk 调制
+使用命令 =make examples/fskmodem_example= 生成 =fskmodem_example.m= 文件，然后使用 =matlab= 运行此脚本得到下图：
+#+HTML:<img src="https://github.com/KcMeterCEC/explore/blob/master/[RF]/[DSP]/[liquid-dsp]/[What]liquid--base/fskmodem.jpg?raw=true" alt="fskmodem.jpg">

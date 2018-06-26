@@ -8,9 +8,138 @@
 #+OPTIONS: ^:{}
 
 perf 是Linux(2.6+)内置的强大的分析工具，所以其既可以用于PC也可以用于嵌入式Linux。
-#+BEGIN_HTML
+
+#+BEGIN_EXPORT html
 <!--more-->
-#+END_HTML
+#+END_EXPORT
+
+* 目标机安装
+但在编译过程中发现交叉编译器有很多的库提示没有安装，下面进行一一安装( *如果忽略这些警告，就会出现perf输出文件中很多符号都是 [unknown] 的情况，即使应用编译时使用了 =-g= 选项*):
+- 其中最为重要的就是 *elf,binutils,unwind* 库
+- 编译器使用的库路径一般在其安装在其目录下的 =/libc/usr/= 。
+- 而目标机文件系统路径一般安装在 =/usr= 目录下
+** 安装zlib(elfutils依赖)
+在[[https://sourceforge.net/projects/libpng/files/zlib/1.2.11/zlib-1.2.11.tar.gz/download?use_mirror=jaist&download=][sourceforge]]下载源码。
+- *安装到编译器路径*
+#+BEGIN_EXAMPLE
+  tar -xzf zlib-1.2.11.tar.gz
+  cd zlib-1.2.11/
+  CC=arm-linux-gnueabihf-gcc ./configure --prefix=/opt/Xilinx/SDK/2016.2/gnu/aarch32/lin/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr
+  make
+  make install
+#+END_EXAMPLE
+- *安装到目标机根文件系统* (可使用busybox中的库代替这种方式，以减小image大小)
+#+BEGIN_EXAMPLE
+  CC=arm-linux-gnueabihf-gcc ./configure --prefix=/usr
+  make
+  make install DESTDIR=/home/cec/zlib
+#+END_EXAMPLE
+最后将此文件夹内容拷入根文件系统 =/usr= 即可。
+** 安装libc6(elfutils依赖)
+在[[https://packages.debian.org/search?keywords=libc6][Debian]]找到交叉编译版本的libc6。
+- *安装到编译器路径*
+#+BEGIN_EXAMPLE
+  mkdir libc6
+  dpkg-deb -x libc6-armel-cross_2.24-10cross1_all.deb libc6
+  cd libc6
+  cp -R usr/arm-linux-gnueabi/lib/** /opt/Xilinx/SDK/2016.2/gnu/aarch32/lin/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/lib/
+#+END_EXAMPLE
+- *安装到目标机根文件系统* (可使用busybox中的库代替这种方式，以减小image大小)
+最后将此文件夹内容拷入根文件系统 =/usr= 即可。
+** 安装elfutils
+根据编译提示，在[[https://sourceware.org/elfutils/][下载站]]下载与之更新的版本。
+- *安装到编译器路径*
+#+BEGIN_EXAMPLE
+  #下载及解压
+  axel -n 20 https://sourceware.org/elfutils/ftp/0.172/elfutils-0.172.tar.bz2
+  tar -xjf elfutils-0.172.tar.bz2
+  cd elfutils-0.172/
+  #查看其INSTALL文件得出其配置命令
+  CC=arm-linux-gnueabihf-gcc ./configure --host=arm --prefix=/opt/Xilinx/SDK/2016.2/gnu/aarch32/lin/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr
+  make
+  make install
+#+END_EXAMPLE
+- *安装到目标机根文件系统* (可使用busybox中的库代替这种方式，以减小image大小)
+#+BEGIN_EXAMPLE
+  CC=arm-linux-gnueabihf-gcc ./configure --host=arm --prefix=/usr
+  make
+  make install DESTDIR=/home/cec/elflib
+#+END_EXAMPLE
+最后将此文件夹内容拷入根文件系统 =/usr= 即可。
+** 安装liblzma(libunwind 依赖)
+在[[https://tukaani.org/xz/][官网下载]]源码。
+- *安装到编译器路径*
+#+BEGIN_EXAMPLE
+  CC=arm-linux-gnueabihf-gcc ./configure --host=arm-linux-gnueabihf --prefix=/opt/Xilinx/SDK/2016.2/gnu/aarch32/lin/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr --enable-shared=yes
+  make
+  make install
+#+END_EXAMPLE
+
+** 安装libunwind
+*** bug修复
+目前libunwind还有一个bug造成函数 =arm_search_unwind_table= 重复定义，解决方案[[https://www.mail-archive.com/libunwind-devel@nongnu.org/msg02617.html][在此patch]]
+*** 编译及安装
+- *安装到编译器路径*
+#+BEGIN_EXAMPLE
+  git clone git://git.sv.gnu.org/libunwind.git
+  cd libunwind/
+  #查看README
+  ./autogen.sh 
+  CC=arm-linux-gnueabihf-gcc ./configure --host=arm-linux-gnueabihf --prefix=/opt/Xilinx/SDK/2016.2/gnu/aarch32/lin/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr --enable-shared=yes
+  make
+  make install
+#+END_EXAMPLE
+*说明：* 此步出现错误 =undefined reference to `_Uarm_is_signal_frame'= 还未解决。
+- *安装到目标机根文件系统*
+** 安装libaudit(失败,但不影响使用,可忽略)
+- *安装到编译器路径*
+#+BEGIN_EXAMPLE
+  git clone https://github.com/linux-audit/audit-userspace
+  cd audit-userspace/
+#+END_EXAMPLE
+- *安装到目标机根文件系统*
+** 安装libiberty(binutils依赖)
+libiberty 是gcc项目中[[https://github.com/gcc-mirror/gcc/tree/master/libiberty][自带的库]]，其安装说明位于[[https://gcc.gnu.org/onlinedocs/libiberty/Using.html][官网]]， *需要根据当前的编译器版本拷贝对应版本的代码进行编译！！！*
+- *安装到编译器路径*
+#+BEGIN_EXAMPLE
+  CC=arm-linux-gnueabihf-gcc ./configure --host=arm --target=arm --prefix=/opt/Xilinx/SDK/2016.2/gnu/aarch32/lin/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr --enable-install-libiberty
+  make
+  make install
+#+END_EXAMPLE
+** 安装binutils
+- *安装到编译器路径*
+在[[http://ftp.gnu.org/gnu/binutils/][官网]]下载源码。
+#+BEGIN_EXAMPLE
+  tar -xjf binutils-2.25.tar.bz2
+  cd binutils-2.25/
+  mkdir build
+  cd build/
+  CC=arm-linux-gnueabihf-gcc ../configure --host=arm-linux-gnueabihf --target=arm-linux-gnueabihf --prefix=/opt/Xilinx/SDK/2016.2/gnu/aarch32/lin/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr --enable-shared=yes
+  make
+  make install
+#+END_EXAMPLE
+- *安装到目标机根文件系统* (可使用busybox中的库代替这种方式，以减小image大小)
+#+BEGIN_EXAMPLE
+  CC=arm-linux-gnueabihf-gcc ../configure --host=arm-linux-gnueabihf --target=arm-linux-gnueabihf --prefix=/usr --enable-shared=yes
+  make install DESTDIR=/home/cec/binutils
+#+END_EXAMPLE
+最后将此文件夹内容拷入根文件系统 =/usr= 即可。
+** 安装perf
+perf 是在 =tools/perf= 文件中的一个独立应用软件，所以需要先编译它以可以用在目标机上。
+
+在此目录下查看文件 =Makefile.perf= 发现有如下几行:
+#+BEGIN_EXAMPLE
+  Define ARCH as name of target architecture if you want cross-builds.
+  Define CROSS_COMPILE as prefix name of compiler if you want cross-builds.
+#+END_EXAMPLE
+可以通过这两个选项来指定编译器和编译架构:
+#+BEGIN_EXAMPLE
+  #也可以使用静态编译的方式，这样前面的库也就不用加入根文件系统了，
+  #需要在下面命令的基础上加上选项 "LDFLAGS=-static" ,更多选项需参考Makefile.perf
+  make CROSS_COMPILE=arm-linux-gnueabihf- ARCH=arm
+#+END_EXAMPLE
+- *安装到目标机根文件系统*
+将编译出的可执行文件拷贝进目标机 =/usr/bin/= 即可。
 * 全局概览
 在shell中输入 =perf= 便可列出其可执行的所有命令：
 #+begin_example
