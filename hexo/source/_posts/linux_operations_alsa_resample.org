@@ -1,0 +1,210 @@
+#+TITLE: [What]Linux ALSA重采样
+#+DATE:  <2018-07-05 四> 
+#+TAGS: operations
+#+LAYOUT: post 
+#+CATEGORIES: linux, operations, ALSA
+#+NAME: <linux_operations_alsa_resample.org>
+#+OPTIONS: ^:nil 
+#+OPTIONS: ^:{}
+
+
+音频速率不匹配是很正常的事，所以在将源输出到声卡时，需要重采样。这里分别使用[[https://github.com/erikd/libsamplerate][libsamplerate]] 以及 [[https://github.com/jgaeddert/liquid-dsp][liquid-dsp]] 库来实现。
+
+#+BEGIN_EXPORT html
+<!--more-->
+#+END_EXPORT
+
+* libsamplerate编译
+** 交叉编译到目标板
+#+BEGIN_EXAMPLE
+  #获取源码
+  git clone https://github.com/erikd/libsamplerate
+  cd libsamplerate
+
+  #编译以及安装
+  ./autogen.sh
+  ./configure CC=arm-linux-gnueabihf-gcc --host=arm --prefix=/usr
+  make
+  make install DESTDIR=/home/cec/libsamplerate/
+
+  #对应拷贝入根文件系统 /usr 即可
+#+END_EXAMPLE
+* libsamplerate编写
+在 =doc= 文件夹下具有此库的完整说明，以 =index.html= 为起始索引页打开即可。
+** 数据结构与操作函数
+*** 错误输出
+很多函数都具有错误标记，使用以下函数可以打印错误字符串:
+#+BEGIN_SRC c
+  const char* src_strerror (int error) ;
+#+END_SRC
+*** 重采样数据类型
+重采样具有以下几种数据类型，其精度依次由高到低:
+#+BEGIN_SRC c
+  enum
+    {    
+      SRC_SINC_BEST_QUALITY       = 0,
+      SRC_SINC_MEDIUM_QUALITY     = 1,
+      SRC_SINC_FASTEST            = 2,
+      SRC_ZERO_ORDER_HOLD         = 3,
+      SRC_LINEAR                  = 4
+    } ;
+
+  //通过下面函数获取转换类型名及描述
+  const char *src_get_name (int converter_type) ;
+  const char *src_get_description (int converter_type) ;
+#+END_SRC
+
+*** 数据描述
+输入输出数据通过 =SRC_DATA= 来描述:
+#+BEGIN_SRC c
+  /**
+   ,* @param data_in :指向输入数据缓存，当是双通道时，数据应该是交替存放
+   ,* @param data_out :指向输出数据缓存
+   ,* @param input_frames,output_frames : 输入输出的帧数，当为双通道时此值应该是缓存长度的一半
+   ,* @param end_of_input :用于全功能采样，为0代表后面还有数据，为1代表这是最后一次
+   ,* @param src_ratio : 输出采样率与输入采样率的比值
+   ,* @param input_frames_used,output_frames_gen : 用于全功能采样，处理函数向此变量赋值以表示使用了多少帧并生成了多少帧
+   ,*/
+  typedef struct
+  {
+    const float  *data_in;
+    float *data_out ;
+
+    long   input_frames, output_frames ;
+    long   input_frames_used, output_frames_gen ;
+
+    int    end_of_input ;
+
+    double src_ratio ;
+  } SRC_DATA ;
+#+END_SRC
+
+由于 =SRC_DATA= 的缓存为浮点型，而很多音频采样是16位双通道，所以此库还提供了类型转换函数:
+- 在转换为浮点数时，库进行了归一化处理
+- 在转换为整数时，库又进行了还原
+#+BEGIN_SRC c
+  void src_short_to_float_array (const short *in, float *out, int len) ;
+  void src_float_to_short_array (const float *in, short *out, int len) ;
+  void src_int_to_float_array (const int *in, float *out, int len) ;
+  void src_float_to_int_array (const float *in, int *out, int len) ;
+#+END_SRC
+** 简易重采样
+简易重采样文档中有说明: =src_simple= API仅适用于预先知道音频数据的总长度，然后进行一次性转换的场合。
+
+也就是说这个API适用于播放音频文件，而不适用于播放连续产生的音频流!
+** 全功能重采样(full api)
+全功能重采样适用于连续的数据流，按照以下步骤编写即可:
+*** 设置重采样质量及通道
+#+BEGIN_SRC c
+  int err = 0;
+  //SRC_LINEAR目前来看可以满足要求
+  str_demo.state = src_new(SRC_LINEAR, 2, &err);
+  if((str_demo.state == NULL) || (err != 0))
+  {
+    ERR("src new failed: %s\n", src_strerror(err));
+  }
+  //申请归一化缓存
+  str_demo.resample_in = (float *)malloc(str_demo.iqPairNum * sizeof(IQ_TYPE));
+  ASSERT(str_demo.resample_in != NULL);
+  str_demo.resample_out = (float *)malloc(str_demo.iqPairNum * sizeof(IQ_TYPE));
+  ASSERT(str_demo.resample_out != NULL);
+#+END_SRC
+*** 归一化处理
+#+BEGIN_SRC c
+  #define PI      (3.141592653f)
+  float f = 600.0f;
+  unsigned int rate = 48000;
+  double temp = 2 * PI * f / (double)rate;
+  //模拟产生双通道音频
+  for(uint16_t i = 0; i < 480;i++)
+    {
+      int16_t temp1 = cos(i * temp) * 32760;
+      int16_t temp2 = sin(i * temp) * 32760;
+      out[2 *i] = temp1 ;
+      out[2 *i + 1] = temp2;
+    }
+  //归一化
+  src_short_to_float_array(out, str_demo.resample_in, 480 * 2);
+#+END_SRC
+*** 设置转换参数
+#+BEGIN_SRC c
+  SRC_DATA  src_data =
+    {
+      .data_in = str_demo.resample_in,
+      .data_out = str_demo.resample_out,
+      .input_frames = 480,
+      .output_frames = SIMULATE_FRAME_COUNT,
+      .src_ratio = 44100 / (double)rate, //此处比例关系别搞错
+      .end_of_input = 0,
+    };
+#+END_SRC
+*** 开始转换
+#+BEGIN_SRC c
+  int err = 0;
+  if((err = src_process(str_demo.state, &src_data)) != 0)
+    {
+      ERR("src process failed %s!\n", src_strerror(err));
+    }
+#+END_SRC
+*** 信号还原
+#+BEGIN_SRC c
+  src_float_to_short_array(str_demo.resample_out, out, SIMULATE_FRAME_COUNT * 2);
+#+END_SRC
+* liquid-dsp编写
+- 关于liquid-dsp的编译参考[[https://kcmetercec.github.io/2018/05/17/rf_dsp_liquid_base/][liquid-dsp体验]]。
+- 重采样的官方资料位于[[http://liquidsdr.org/doc/resamp/][此链接]]。
+
+对于音频而言其步骤依次为:
+** 生成滤波器
+注意：生成滤波器的过程消耗的时间很长，所以建议在初始化时生成一次即可，而不是每次重采样都生成一次。
+
+#+BEGIN_SRC c
+  //速率配比
+  float r = (float)44100 / (float)48000;
+  //边带抑制
+  float slsl = 80.0f;
+
+  resamp_crcf q = msresamp_crcf_create(r, slsl);
+  unsigned int nx = 2048 ;
+  unsigned int ny = 2 * (float)nx * r;
+  float complex *x;
+  float complex *y;
+
+  //用于存储输入输出数据
+  x = (float complex *)realloc(x, sizeof(float complex) * nx);
+  y = (float complex *)realloc(y, sizeof(float complex) * ny);
+#+END_SRC
+** 归一化数据并转为complex
+#+BEGIN_SRC c
+  static void src_short_to_float_array (const short *in, float *out, int len)
+  {
+    while (len)
+      {	len -- ;
+        out [len] = (float) (in [len] / (1.0 * 0x8000)) ;
+      } ;
+
+    return ;
+  }
+  static void demodulate(void)
+  {
+    src_short_to_float_array(out_buf, resample_in, 4096);
+    for(uint16_t i = 0; i < 2048; i++)
+      {
+        x[i] = resample_in[2*i] + resample_in[2*i + 1]*I;
+      }
+  }
+#+END_SRC
+** 进行重采样处理
+#+BEGIN_SRC c
+  unsigned int num_written;
+  msresamp_crcf_execute(q, x,2048, y,&num_written);
+#+END_SRC
+** 还原信号
+#+BEGIN_SRC c
+  for(uint16_t i = 0; i < num_written; i++)
+  {
+      resample_out[2 * i] = creal(y[i]);
+      resample_out[2 * i + 1] = cimag(y[i]);
+  }
+  src_float_to_short_array(resample_out, out, num_written * 2);
+#+END_SRC
