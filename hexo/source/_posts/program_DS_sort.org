@@ -1,0 +1,673 @@
+#+TITLE: [What]数据结构与算法 -> 排序
+#+DATE:  <2018-11-07 Wed> 
+#+TAGS: 数据结构与算法
+#+LAYOUT: post 
+#+CATEGORIES: program,数据结构与算法
+#+NAME: <program_DS_sort.org>
+#+OPTIONS: ^:nil 
+#+OPTIONS: ^:{}
+
+课程：王争 --> <数据结构与算法之美>
+
+整理常用的几种排序算法。
+| 算法 | 时间复杂度 | 是否基于比较 | 是否稳定排序 | 是否原地排序 |
+|------+------------+--------------+--------------+--------------|
+| 冒泡 | O(n ^ 2)   | 是           | 是           | 是           |
+| 插入 | O(n ^ 2)   | 是           | 是           | 是           |
+| 选择 | O(n ^ 2)   | 是           | 否           | 是           |
+| 快排 | O(nlogn)   | 是           | 否           | 是           |
+| 归并 | O(nlogn)   | 是           | 是           | 否           |
+| 桶   | O(n)       | 否           | 是           | 否           |
+| 计数 | O(n)       | 否           | 是           | 否           |
+| 基数 | O(m*n)     | 否           | 是           | 否           |
+
+
+#+BEGIN_EXPORT html
+<!--more-->
+#+END_EXPORT
+
+* 分析一个排序算法
+要分析一个排序算法，需要从以下几个方面入手：
+** 排序算法的执行效率
+1. 为了比较不同的算法以及该算法在不同数据结构情况下的性能，需要得出：
+  - 最好情况时间复杂度
+  - 最坏情况时间复杂度
+  - 平均情况时间复杂度
+2. 为了能更精确的比较，在分析时间复杂度时，还需要包含其系数、常数、低阶
+3. 基于比较的算法，还需要包含其比较的次数和数据交换的次数
+** 排序算法的内存消耗
+通过空间复杂度分析其内存消耗。
+** 排序算法的稳定性
+所谓的 *稳定性* 是指：排序算法对一连串数据排序后，这里面的 *相同数据* 在排序前和排序后的 *相对位置关系没有变* 。
+
+当要对一组数据结构以不同的角度进行排序时，稳定性就尤为重要。
+- 不能让之后的几次排序把前面排序好的相同数据的相对位置关系给破坏了。
+* 冒泡排序(bubble sort)
+** 概念
+冒泡排序只会操作相邻的两个数据，当相邻的两个数据不满足大小关系时则互换它们的位置。
+- 每次冒泡都会使得至少一个数据移动到它应有的位置，所以最多重复n次就可将n个数据排序完成。
+ 
+在实际使用冒泡时，可以判断此次是否有冒泡操作，如果没有冒泡操作则代表已经排序完毕，即可退出循环。
+
+代码如下:
+#+BEGIN_SRC c
+  #include <stdio.h>
+  #include <stdbool.h>
+
+  #define SIZEOF_BUF  (10)
+
+  static int buf[SIZEOF_BUF] = {1,0,6,7,5,4,3,2,8,9};
+
+  static bool bubble_sort(int *in, int size)
+  {
+    bool ret = false;
+    for(int i = 0; i < (size - 1); i++)
+      {
+        if(in[i] > in[i + 1])
+          {
+            int tmp = in[i];
+            in[i] = in[i + 1];
+            in[i + 1] = tmp;
+            ret = true;
+          }
+      }
+
+    printf("buffer contents:\n");
+    for(int i = 0; i < size; i++)
+      {
+        printf("%d,", in[i]);
+      }
+    printf("\n");
+
+    return ret;
+  }
+
+  int main(int argc, char *argv[])
+  {
+    printf("sort buffer:");
+    for(int i = 0; i < SIZEOF_BUF; i++)
+      {
+        printf("%d,", buf[i]);
+      }
+    printf("\n");
+    for(int i = 0; i < SIZEOF_BUF; i++)
+      {
+        if(bubble_sort(buf, SIZEOF_BUF) == false)
+          {
+            break;
+          }
+      }
+    return 0;
+  }
+#+END_SRC
+
+输出结果如下:
+#+BEGIN_EXAMPLE
+  sort buffer:1,0,6,7,5,4,3,2,8,9,
+  buffer contents:
+  0,1,6,5,4,3,2,7,8,9,
+  buffer contents:
+  0,1,5,4,3,2,6,7,8,9,
+  buffer contents:
+  0,1,4,3,2,5,6,7,8,9,
+  buffer contents:
+  0,1,3,2,4,5,6,7,8,9,
+  buffer contents:
+  0,1,2,3,4,5,6,7,8,9,
+  buffer contents:
+  0,1,2,3,4,5,6,7,8,9,
+#+END_EXAMPLE
+** 分析
+*** 在执行效率上分析
+- 最好情况时间复杂度: 
+
+假设数据事先就已经排列好了，那么就没有冒泡操作，所以仅需要遍历1次缓存便退出。
+
+遍历一次的时间为 =n-1=, 其 *最好情况时间复杂度为 O(n)*
+
+- 最坏情况时间复杂度: 
+
+假设所有的数据都未按照相对大小排列，那么每次遍历都会有冒泡操作,对应的公式为:
+#+HTML:<img src="https://github.com/KcMeterCEC/explore/blob/master/[program]/[What]program--datastruct/bubble_sort_complication.jpg?raw=true" alt="bubble_sort_complication.jpg">
+去掉常量、系数、低阶后，其 *最坏情况时间复杂度为: O(n^2)*
+
+- 平均情况时间复杂度:
+若要是按照概率论的方式来计算概率分布其公式有些复杂，而对排序的平均情况时间复杂度分析使用 *有序度* 来计算。
+
+有序度用于描述数据的有序程度，以有序元素对个数来量化，分为 有序度和逆有序度。
+#+BEGIN_EXAMPLE
+    有序度: a[i] <= a[j] ，且 i < j
+
+    逆有序度: a[i] > a[j] , 且 i < j
+
+    满有序度: n * ( n - 1) / 2
+
+    有序度 = 满有序度 - 逆有序度
+
+    当有序度等于满有序度时，则代表已经排序完成
+#+END_EXAMPLE
+比如一组数据排列为 "2,4,3,1,5,6"，那么其有序度对有11对
+#+BEGIN_EXAMPLE
+  (2,4) (2,3) (2,5) (2,6)
+  (4,5) (4,6)
+  (3,5) (3,6)
+  (1,5) (1,6)
+  (5,6)
+#+END_EXAMPLE 
+对应的其逆有序对有 6 * (6 - 1) / 2 - 11 = 4 对
+
+*而平均情况时间复杂度则为满有序度的一半，也就是 n * (n-1) / 4 ，去掉常量、低阶、系数后也是 O(n^2)* 
+*** 在空间复杂度上分析
+冒泡排序在进行数据交换时，仅需要一个变量做缓存即可，并且不随数据量的增大而有所改变。
+
+其 *空间复杂度为 O(1),也叫做原地排序算法*
+*** 在稳定性上分析
+由于数据的交换只发生在不满足既定顺序的情况下，也就是说当两个数据相同时，并不会发生交换。
+
+所以 *冒泡排序是稳定性排序* 。
+
+* 插入排序(insertion sort)
+** 概念
+插入排序将数组分为已排序和未排序两部分，每次从未排序部分取出一个数据插入已排序部分，直至未排序部分中的数据个数为0。
+- 初始情况下，已排序数只有数据第一个元素，而剩下的部分均为未排序数
+- 在将未排序数插入到已排序部分时，不仅有比较操作，还有数据的搬移操作
+- 数据的移动个数 = 满有序度 - 有序度
+  
+代码如下:
+#+BEGIN_SRC c
+  #include <stdio.h>
+
+  static void insertion_sort(int *buf, int size)
+  {
+    for(int i = 1; i < size; i++)
+      {
+        int tmp = buf[i];
+        //因为前面的数据都是有序数列，所以使用倒序比较效率最高
+        int j = i - 1;
+        for(; j >= 0; j--)
+          {
+            if(buf[j] > tmp)
+              {
+                buf[j + 1] = buf[j];
+              }
+            else
+              {
+                break;
+              }
+          }
+        buf[j + 1] = tmp;
+        for(int i = 0; i < size; i++)
+          {
+            printf("%d,", buf[i]);
+          }
+        printf("\n");
+      }
+  }
+
+  #define BUF_SIZE   (6)
+  static int sort_buf[BUF_SIZE] = {6,5,4,3,2,1};
+
+  int main(int argc , char *argv[])
+  {
+    printf("sort buffer is :\n");
+    for(int i = 0; i < BUF_SIZE; i++)
+      {
+        printf("%d,", sort_buf[i]);
+      }
+    printf("\n");
+
+    insertion_sort(sort_buf, BUF_SIZE);
+    return 0;
+  }
+#+END_SRC
+
+结果如下:
+#+BEGIN_EXAMPLE
+  sort buffer is :
+  6,5,4,3,2,1,
+  5,6,4,3,2,1,
+  4,5,6,3,2,1,
+  3,4,5,6,2,1,
+  2,3,4,5,6,1,
+  1,2,3,4,5,6,
+#+END_EXAMPLE
+** 分析
+*** 在执行效率上分析
+- 最好情况时间复杂度：
+当数据是已经排列好的有序数列时，那么并不要数据搬移，第二级for循环都只会执行一次。
+
+*最好情况时间复杂度为O(n)*
+- 最坏情况时间复杂度
+当数据是完全反序时，那么数据都需要搬移全部，也就是:
+#+HTML:<img src="https://github.com/KcMeterCEC/explore/blob/master/[program]/[What]program--datastruct/insertion_sort_complication.jpg?raw=true" alt="insertion_sort_complication.jpg">
+所以其 *最坏情况时间复杂度为O(n^2)*
+- 平均情况时间复杂度
+与冒泡分析方法一样， *其复杂度也是O(n^2)*
+
+*** 在空间复杂度上分析
+无论数据序列如何，都消耗恒定的多余内存。
+
+其 *空间复杂度为 O(1),也叫做原地排序算法*
+*** 在稳定性上分析
+由于数据的交换只发生在不满足既定顺序的情况下，也就是说当两个数据相同时，并不会发生交换。
+
+所以 *插入排序是稳定性排序* 。
+* 选择排序(selection sort)
+** 概念
+选择排序将数组分为已排序和未排序两部分，每次从未排序部分取出最小数据插入已排序部分的末尾，直至未排序部分中的数据个数为0。
+- 初始情况下，已排序数只有数据第一个元素，而剩下的部分均为未排序数
+- 在将未排序数插入到已排序部分时，就是一个交换操作
+  
+代码如下:
+#+BEGIN_SRC c
+  #include <stdio.h>
+
+
+  void selection_sort(int *buf, int size)
+  {
+    for(int i = 1; i < size; i++)
+      {
+        //get minimum
+        int *minimum = &buf[i];
+        for(int j = i; j < size; j++)
+          {
+            if(*minimum > buf[j])
+              {
+                minimum = &buf[j];
+              }
+          }
+
+        if(*minimum < buf[i - 1])
+          {
+            //exchange
+            int tmp = buf[i - 1];
+            buf[i - 1] = *minimum;
+            ,*minimum = tmp;
+          }
+
+        printf("buffer:");
+        for(int k = 0; k < size; k++)
+          {
+            printf("%d,", buf[k]);
+          }
+        printf("\n");
+      }
+  }
+
+  #define BUF_SIZE  (6)
+  static int test_buf[6] = {6,5,4,3,1,2};
+
+  int main(int argc, char *argv[])
+  {
+    selection_sort(test_buf, BUF_SIZE);
+
+    return 0;
+  }
+#+END_SRC
+
+运行结果如下:
+#+BEGIN_EXAMPLE
+  buffer:1,5,4,3,6,2,
+  buffer:1,2,4,3,6,5,
+  buffer:1,2,3,4,6,5,
+  buffer:1,2,3,4,6,5,
+  buffer:1,2,3,4,5,6,
+#+END_EXAMPLE
+** 分析
+*** 在执行效率上分析
+无论数据是如何排列的，此算法都会需要依次做比较，公式如下:
+#+HTML:<img src="https://github.com/KcMeterCEC/explore/blob/master/[program]/[What]program--datastruct/bubble_sort_complication.jpg][./bubble_sort_complication.jpg?raw=true" alt="bubble_sort_complication.jpg][./bubble_sort_complication.jpg">
+也就是说其 *最坏、最好、平均时间复杂度都是O(n^2)*
+*** 在空间复杂度上分析
+无论数据序列如何，都消耗恒定的多余内存。
+
+其 *空间复杂度为 O(1),也叫做原地排序算法*
+*** 在稳定性上分析
+当大数被交换时，就会导致相同数据顺序被交换，比如 "6,6,5,5,4,3,2"
+
+所以 *选择排序不是稳定性排序算法*
+
+* 前3种排序总结
+无论是从时间复杂度还是从稳定性来说，排序算法当然选择冒泡排序和插入排序，那这二者又该如何选呢？
+
+根据代码实现数据交换来看，插入排序比冒泡排序更为简洁，所以从工程应用上来讲，插入排序比冒泡排序的效率更高。
+
+插入排序适用于数据量较小的场合。
+* 归并排序(merge sort)
+** 概念
+归并排序使用的是分治思想：将一组数据分为两部分，将这两部分分别先进行排序，最终再合并起来排序。
+- 将一个个小问题解决，那么大问题也就解决了。
+
+这种排序方式，可以使用递归的编程方式来实现。
+
+根据前面[[http://kcmetercec.top/2018/11/07/program_DS_recursion/#org8c20391][递归的实现思路]]，可以得出其递推公式和终止条件:
+- 递归公式: 当前数组的排序 = 合并(数组前半部的排序 + 数组后半部的排序)
+- 终止条件: 当前数组已无法再被分解,也就是说只剩下1个元素了
+  
+那么最为关键的算法便是如何合并，因为合并前的前半部和后半部都排好了序，那么我们将其按照顺序插入即可。
+1. 为要合并的数组建立一个临时空间
+2. 将索引分别指向两个子数组的开头
+3. 分别依次比较索引下的值，将小值放入临时数组
+4. 大值索引不变，小值往后移动一下，然后重复上一步
+5. 当其中一个数组遍历完毕，那么将另一个数组剩下的值依次写入临时数组即可
+6. 将临时空间的值写入合并后的数组
+   
+代码如下:
+#+BEGIN_SRC c
+  #include <stdio.h>
+  #include <stdlib.h>
+  #include <assert.h>
+  #include <string.h>
+
+  static void merge(int *buf, int start, int end_first, int end)
+  {
+      int *buf1 = buf + start;
+      int buf1_size = end_first - start + 1;
+      int buf1_index = 0;
+      int *buf2 = buf + end_first + 1;
+      int buf2_size = end - end_first;
+      int buf2_index = 0;
+
+      //printf("merge start1 = %d, end1 = %d, start2 = %d, end2 = %d\n",
+              //start, end_first, end_first+1, end);
+
+      int *tmp_buf = (int *)malloc((buf1_size + buf2_size) * sizeof(int));
+      assert(tmp_buf);
+      int tmp_buf_index = 0;
+
+      int loop_size = buf1_size > buf2_size ? buf2_size : buf1_size;
+      //printf("loop size = %d\n", loop_size);
+      for(int i = 0; i < loop_size; i++)
+      {
+          printf("compare : %d <=> %d\n", buf1[buf1_index], buf2[buf2_index]);
+          if(buf1[buf1_index] > buf2[buf2_index])
+          {
+              tmp_buf[tmp_buf_index] = buf2[buf2_index];
+              buf2_index++;
+          }
+          else
+          {
+              tmp_buf[tmp_buf_index] = buf1[buf1_index];
+              buf1_index++;
+          }
+          printf("grep %d\n", tmp_buf[tmp_buf_index]);
+          tmp_buf_index++;
+      }
+      if(buf1_index < buf1_size)
+      {
+          memcpy(tmp_buf + tmp_buf_index, buf1 + buf1_index, (buf1_size - buf1_index) * sizeof(int));
+      }
+      else
+      {
+          memcpy(tmp_buf + tmp_buf_index, buf2 + buf2_index, (buf2_size - buf2_index) * sizeof(int));
+      }
+      printf("tmp buf:\n");
+      for(int i = 0; i< buf1_size + buf2_size; i++)
+      {
+          printf("%d,", tmp_buf[i]);
+      }
+      printf("\n\n");
+      memcpy(buf + start, tmp_buf, (buf1_size + buf2_size) * sizeof(int));
+
+      free(tmp_buf);
+  }
+
+  static void merge_sort(int *buf, int start, int end)
+  {
+      int end_first = (start + end) / 2;
+      int start_second = end_first + 1;
+
+      printf("merge sort start->%d, end = %d\n",
+              start, end);
+
+      if(end - start_second < 0)
+      {
+          return;
+      }
+
+      merge_sort(buf, start, end_first);
+      merge_sort(buf, start_second, end);
+
+      merge(buf, start, end_first, end);
+  }
+
+  #define BUF_SIZE    (7)
+  static int buffer[BUF_SIZE] = {7,6,5,4,3,2,1};
+
+  int main(int argc, char *argv[])
+  {
+      printf("buffer before merge sort: ");
+      for(int i = 0; i < BUF_SIZE; i++)
+      {
+          printf("%d,", buffer[i]);
+      }
+      printf("\n");
+      merge_sort(buffer, 0, BUF_SIZE - 1);
+      printf("buffer after merge sort: ");
+      for(int i = 0; i < BUF_SIZE; i++)
+      {
+          printf("%d,", buffer[i]);
+      }
+      printf("\n");
+      return 0;
+  }
+#+END_SRC
+
+执行结果如下:
+#+BEGIN_EXAMPLE
+  buffer before merge sort: 7,6,5,4,3,2,1,
+  merge sort start->0, end = 6
+  merge sort start->0, end = 3
+  merge sort start->0, end = 1
+  merge sort start->0, end = 0
+  merge sort start->1, end = 1
+  compare : 7 <=> 6
+  grep 6
+  tmp buf:
+  6,7,
+
+  merge sort start->2, end = 3
+  merge sort start->2, end = 2
+  merge sort start->3, end = 3
+  compare : 5 <=> 4
+  grep 4
+  tmp buf:
+  4,5,
+
+  compare : 6 <=> 4
+  grep 4
+  compare : 6 <=> 5
+  grep 5
+  tmp buf:
+  4,5,6,7,
+
+  merge sort start->4, end = 6
+  merge sort start->4, end = 5
+  merge sort start->4, end = 4
+  merge sort start->5, end = 5
+  compare : 3 <=> 2
+  grep 2
+  tmp buf:
+  2,3,
+
+  merge sort start->6, end = 6
+  compare : 2 <=> 1
+  grep 1
+  tmp buf:
+  1,2,3,
+
+  compare : 4 <=> 1
+  grep 1
+  compare : 4 <=> 2
+  grep 2
+  compare : 4 <=> 3
+  grep 3
+  tmp buf:
+  1,2,3,4,5,6,7,
+
+  buffer after merge sort: 1,2,3,4,5,6,7,
+#+END_EXAMPLE
+** 分析
+*** 在执行效率上分析
+合并部分的代码，无论原先数组是否有序，它都要遍历一次，所以其最小、最大、平均时间复杂度都是一样的。
+
+分析其时间复杂度，也可以通过递推公式的思维来分析:
+#+HTML:<img src="https://github.com/KcMeterCEC/explore/blob/master/[program]/[What]program--datastruct/merge_sort_complication.jpg?raw=true" alt="merge_sort_complication.jpg">
+到最后一级时： n/2^k=1 , 也就是 k=log_{2}n，那么最终的公式就是: T(n)=n + n*log_{2}n
+
+所以其时间复杂度就是 O(n*log(n))
+*** 在空间复杂度上分析
+在实现合并的过程中，每次都要申请临时内存，但在退出此函数后内存又被释放掉了，整个过程中申请的最大内存都不会超过n。
+
+所以 *其空间复杂度为O(n).*
+*** 在稳定性上分析
+当两个数据大小一致时，它们是被按顺序存放的，并不会改变先前的位置。
+
+所以归并排序 *是稳定性算法.*
+
+* 快速排序(Quick sort)
+** 概念
+快速排序也使用的是分治思想,但与归并排序不同的是：
+- 归并排序先将数组进行分组，待分组完成之后再进行排序，然后层层向上合并
+- 快速排序是先排序再分组，待最后分组完成后，排序也就完成了
+
+也就是说归并排序是自下而上的排序方式，快速排序是自上而下的排序方式。
+
+快速排序的核心思想:
+1. 假设要排序数组中下标从p到r之间的一组数据，那么选择从p到r之间的任意一个数据作为pivot(分区点)
+2. 遍历从p到r之间的数据，将小于pivot的值放到左边，将大于pivot的值放到右边
+  - pivot最初一般取尾部的数据
+3. 以pivot为分割点，再次排序pivot前和后的区间
+4. 当区间只有一个数时，排序便完成了
+   
+递推公式如下:
+#+BEGIN_EXAMPLE
+  //递推公式: q 即为pivot
+  quick_sort(p...r) = quick_sort(p...q-1) + quick_sort(q+1..r)
+  //终止条件
+  p >= r
+#+END_EXAMPLE
+
+代码如下:
+#+BEGIN_SRC c
+  #include <stdio.h>
+  #include <stdint.h>
+
+  static void swap(int *a, int *b)
+  {
+      int tmp = *a;
+      ,*a = *b;
+      ,*b = tmp;
+  }
+
+  static int partition(int *buf, int p, int r)
+  {
+      int i = p;
+
+      for(int j = p; j <= r - 1; j++)
+      {
+          if(buf[j] < buf[r])
+          {
+              if(i != j)
+              {
+                  swap(&buf[j], &buf[i]);
+              }
+              i++;
+          }
+      }
+
+      swap(&buf[i], &buf[r]);
+
+      return i;
+  }
+
+  static void quick_sort_frame(int *buf, int p, int r)
+  {
+      if(p >= r)
+      {
+          return ;
+      }
+      int q = partition(buf, p, r);
+
+      printf("quick_sort p = %d, r = %d, q = %d\n", p, r, q);
+      for(int i = p; i <= r; i++)
+      {
+          printf("%d,", buf[i]);
+      }
+      printf("\n");
+      quick_sort_frame(buf, p, q - 1);
+      quick_sort_frame(buf, q + 1, r);
+  }
+  static void quick_sort(int *buf, int size)
+  {
+      quick_sort_frame(buf, 0, size - 1);
+  }
+
+  #define BUF_SIZE 10
+  int buf[BUF_SIZE];
+  int main(int argc, char *argv[])
+  {
+      printf("before sort, buffer contents are:\n");
+      for(int8_t i = 0; i < BUF_SIZE; i++)
+      {
+          buf[i] = BUF_SIZE - i;
+          printf("%d,", buf[i]);
+      }
+      printf("\n");
+
+      quick_sort(buf, BUF_SIZE);
+
+      printf("after sort, buffer contents are:\n");
+      for(int8_t i = 0; i < BUF_SIZE; i++)
+      {
+          printf("%d,", buf[i]);
+      }
+      printf("\n");
+      return 0;
+  }
+#+END_SRC
+结果如下:
+#+BEGIN_EXAMPLE
+  before sort, buffer contents are:
+  10,9,8,7,6,5,4,3,2,1,
+  quick_sort p = 0, r = 9, q = 0
+  1,9,8,7,6,5,4,3,2,10,
+  quick_sort p = 1, r = 9, q = 9
+  9,8,7,6,5,4,3,2,10,
+  quick_sort p = 1, r = 8, q = 1
+  2,8,7,6,5,4,3,9,
+  quick_sort p = 2, r = 8, q = 8
+  8,7,6,5,4,3,9,
+  quick_sort p = 2, r = 7, q = 2
+  3,7,6,5,4,8,
+  quick_sort p = 3, r = 7, q = 7
+  7,6,5,4,8,
+  quick_sort p = 3, r = 6, q = 3
+  4,6,5,7,
+  quick_sort p = 4, r = 6, q = 6
+  6,5,7,
+  quick_sort p = 4, r = 5, q = 4
+  5,6,
+  after sort, buffer contents are:
+  1,2,3,4,5,6,7,8,9,10,
+#+END_EXAMPLE
+
+** 分析
+*** 在执行效率上分析
+在理想情况下，每次正好二等分数组，那么其时间复杂度与归并排序一样，也是O(nlogn).
+
+但当数据原来就是有序的，那么就需要约n次递归且每次扫描约n个元素，那么时间复杂度就是O(n^2)
+*** 在空间复杂度上分析
+这个计算过程中，每次分类并不会消耗多余的内存，但是递归的栈调用也会消耗内存:
+- 当每次正好二等分数组，那么空间复杂度就是 O(logn)
+- 当数组正好有序，那么就需要n递归，空间复杂度就是O(n)
+*** 在稳定性上分析
+因为在排序过程中存在数据的交换，所以此算法会改变数据的相对先后顺序，所以它 *不是稳定性算法*
+
+** 优化
+如果被排序数据是有序的，并且我们还将分区点死板的选择在最后，那么将会造成其时间复杂度为O(n^2)，
+所以其分区点的选择是有技巧的:
+1. 多数取中法：从被排序数据中每间隔一段数据取出一个值，将这些值的中间值作为分区点。
+- 取值的多少根据数据量的大小不同，数据越多取值越多。
+2. 随机法：随机选择一个元素作为分区点，这从概率上来讲会尽量避免出现时间复杂度为O(n^2)的情况
+

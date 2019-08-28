@@ -1,0 +1,581 @@
+#+TITLE: [What]数据结构与算法 -> 散列表
+#+DATE:  <2019-01-23 三> 
+#+TAGS: 数据结构与算法
+#+LAYOUT: post 
+#+CATEGORIES: program,数据结构与算法
+#+NAME: <program_DS_hash_table.org>
+#+OPTIONS: ^:nil 
+#+OPTIONS: ^:{}
+
+课程：王争 --> <数据结构与算法之美>
+
+散列表(Hash Table)也叫"哈希表"或"Hash 表",用于快速读写数据的内容。
+
+#+BEGIN_EXPORT html
+<!--more-->
+#+END_EXPORT
+
+* 概念
+数组按照下标进行随机访问的时间复杂度是O(1)，数据的内容则是按照编号存储在数组内的。
+每个我们需要使用的元素都有一个键值(Key value)，散列表中的散列函数(Hash function)实现将键值转换为数组对应下标（散列值、哈希值、Hash值）的功能。
+得到数组下标后便可以进行读写了。
+
+#+HTML:<img src="https://github.com/KcMeterCEC/explore/blob/master/[program]/[What]program--datastruct/hash_table_overview.jpg?raw=true" alt="hash_table_overview.jpg">
+** 散列函数
+由上面可以看出最为重要的便是散列函数了，散列函数的设计有以下基本要求：
+1. 散列函数计算得到的散列值是一个非负整数
+  - 数组的下标必须是非负整数
+2. 如果 key1 = = key2 ，那么必须要有 hash(key1) == hash(key2)
+3. 如果 key1 ! = key2 ，那么必须要有 hash(key1) != hash(key2)
+  - 为了避免散列冲突，需要通过其他途径解决
+
+常用的散列冲突解决方法有以下两种:
+*** 开放寻址法(open addressing)
+开放寻址法的核心思想是：如果出现了散列冲突，就重新探测一个空闲位置将其插入。
+
+当空闲位置不多时，冲突的概率会大大提高，每次探测的时间就越长。
+
+为了尽可能保证散列表的操作效率，需要保证散列表中有一定比例的空闲槽位，称为 *装载因子(load factor)* ：
+#+BEGIN_EXAMPLE
+  装载因子 = 已存储的元素个数 / 散列表长度
+#+END_EXAMPLE
+
+- 优点： 由于这种方法的查询对象是数组，它可以有效的利用cpu cache加快查询速度
+- 缺点： 仅用数组存储，冲突的概率比较高，其装载因子不能太大，比链表法更浪费内存空间。
+- 应用场景：数据量较小、装载因子小的时候
+
+探测算法有以下几种：
+**** 1. 线性探测(Linear Probing)
+- 插入: 某个数据经过散列函数得出对应散列值后，如果对应的存储位置已经被占用了，那就从当前位置开始依次往后循环查找，以找到空闲位置写入。
+- 查找: 通过散列函数得出键值对应的散列值后，比较数组对应位置的元素与要查找的元素是否相等，如果不等则顺序往后查找，如果遍历到数组中的空闲位置，说明要找的元素不在散列表中。
+- 删除: 删除操作是将数组对应位置标记为 =deleted= 而不是直接置空，否则在查找数据的时候会由于此次的空白而无法遍历后面的数据导致查找失败
+
+当数组中存储的数据越来越多时，出现冲突的可能性也会越来越大，在以上的增删改查操作时，最坏的时间复杂度为O(n)。
+
+示例如下:
+#+BEGIN_SRC c
+  #include <stdio.h>
+  #include <stdint.h>
+  #include <stdbool.h>
+
+  typedef struct 
+  {
+      uint32_t number;
+      char     *name;
+      uint8_t  age;
+  }student_t;
+
+  #define HASH_TABLE_SIZE     (4)
+
+  typedef struct 
+  {
+      student_t student;
+      bool     empty;
+      bool     deleted;
+  }hash_element_t;
+
+  struct 
+  {
+      hash_element_t  buf[HASH_TABLE_SIZE];
+      uint32_t        empty_size;
+  }hash_table;
+
+  static student_t bruce =
+  {
+      .number = 10102,
+      .name = "Bruce",
+      .age = 16,
+  };
+  static student_t tom =
+  {
+      .number = 10103,
+      .name = "Tom",
+      .age = 18,
+  };
+  static student_t may =
+  {
+      .number = 10205,
+      .name = "May",
+      .age = 20,
+  };
+  static student_t jim =
+  {
+      .number = 10303,
+      .name = "Jim",
+      .age = 27,
+  };
+  static student_t tony =
+  {
+      .number = 10503,
+      .name = "tony",
+      .age = 25,
+  };
+
+
+  static void hash_init(void)
+  {
+      hash_table.empty_size = HASH_TABLE_SIZE;
+      for(uint32_t i = 0; i < HASH_TABLE_SIZE; ++i)
+      {
+          hash_table.buf[i].empty = true;
+      }
+  }
+
+  static uint32_t hash_val_get(uint32_t key)
+  {
+      return (key % HASH_TABLE_SIZE);
+  }
+  static bool hash_save(student_t *student, uint32_t index, bool is_modify)
+  {
+      bool ret = false;
+
+      if((hash_table.buf[index].empty == true) ||
+      (is_modify == true))
+      {
+          printf("I edit index : %d -> [%s]\n", index, student->name);
+
+          hash_table.buf[index].student = *student;
+          hash_table.buf[index].empty = false;
+          hash_table.buf[index].deleted = false;
+
+          if(is_modify == false)
+          {
+              --hash_table.empty_size;
+          }
+
+          ret = true;
+      }
+
+      return ret;
+  }
+  static bool hash_insert(student_t *student)
+  {
+      bool ret = true;
+
+      if(hash_table.empty_size == 0)
+      {
+          ret = false;
+          printf("hash table is full!I can't insert [%s] into.\n", student->name);
+          goto out;
+      }
+      uint32_t index = hash_val_get(student->number);
+      if(hash_save(student, index, false) == false)
+      {
+          while(hash_table.empty_size)
+          {
+              index += 1;
+              if(index >= HASH_TABLE_SIZE)
+              {
+                  index = 0;
+              }
+              if(hash_save(student, index, false) == true)
+              {
+                  break;
+              }
+          }   
+      }
+
+  out:
+      return ret;
+  }
+  static int32_t hash_find_index(uint32_t key)
+  {
+      int32_t ret = -1;
+      uint32_t index = hash_val_get(key);
+
+      for(uint32_t i = 0; i < HASH_TABLE_SIZE; i++)
+      {
+          if(hash_table.buf[index].empty == true)
+          {
+              break;
+          }
+          if(hash_table.buf[index].deleted == true)
+          {
+              if((++index) >= HASH_TABLE_SIZE)
+              {
+                  index = 0;
+              }            
+              continue;
+          }
+          if(hash_table.buf[index].student.number == key)
+          {
+              ret = index;
+              break;
+          }
+          if((++index) >= HASH_TABLE_SIZE)
+          {
+              index = 0;
+          }
+      }
+
+      if(ret == -1)
+      {
+          printf("error: I can't find index!\n");
+      }
+
+      return ret;
+  }
+  static bool hash_rm(uint32_t key)
+  {
+      bool ret = false;
+      int32_t index = hash_find_index(key);
+      if(index != -1)
+      {
+          ret = true;
+          printf("rm [%s]\n", hash_table.buf[index].student.name);
+          hash_table.buf[index].deleted = true;
+          hash_table.buf[index].empty = true;
+          ++hash_table.empty_size;
+      }
+
+      return ret;
+  }
+  static bool hash_modify(student_t *student)
+  {
+      bool ret = false;
+      int32_t index = hash_find_index(student->number);
+      if(index != -1)
+      {
+          ret = true;
+          hash_save(student, index, true);
+      }
+
+      return ret;
+  }
+  static bool hash_find(student_t *student, uint32_t key)
+  {
+      bool ret = false;
+      int32_t index = hash_find_index(key);
+      if(index != -1)
+      {
+          ret = true;
+
+          ,*student = hash_table.buf[index].student;
+      }
+
+      return ret;
+  }
+
+  static void print_student(const student_t *student)
+  {
+      printf("Hi, my name is [%s], and my number is [%d], and I'm [%d]\n", 
+      student->name,
+      student->number,
+      student->age);
+  }
+
+  int main(int argc, char *argv[])
+  {
+      hash_init();
+
+      hash_insert(&bruce);
+      hash_insert(&tom);
+      hash_insert(&may);
+      hash_insert(&jim);
+      hash_insert(&tony);
+
+      hash_rm(may.number);
+
+      bruce.age = 50;
+      hash_modify(&bruce);
+
+      hash_insert(&tony);
+
+      jim.age = 50;
+      hash_modify(&jim);
+
+      printf("Hash table list:\n");
+      for(uint8_t i = 0; i < HASH_TABLE_SIZE; i++)
+      {
+          printf("[%s] is located in index [%d]\n", 
+          hash_table.buf[i].student.name, i);
+      }
+
+      student_t student;
+
+      if(hash_find(&student, bruce.number) == true) 
+      print_student(&student);
+
+      if(hash_find(&student, tom.number) == true) 
+      print_student(&student);
+
+      if(hash_find(&student, may.number) == true) 
+      print_student(&student);
+
+      if(hash_find(&student, jim.number) == true) 
+      print_student(&student);
+
+      if(hash_find(&student, tony.number) == true) 
+      print_student(&student);            
+
+      return 0;
+  }
+#+END_SRC
+**** 2. 二次探测(Quadratic probing)
+线性探测如果遇到冲突后进行探测的步长为1，而二次探测的步长为原来的二次方:
+- 线程探测: hash(key) + 0, hash(key) + 1, hash(key) + 2 .....
+- 二次探测: hash(key) + 0, hash(key) + 1, hash(key) + 4 .....
+**** 3. 双重散列(Double hashing)
+使用多个散列函数来寻找空闲位置: hash1(key), hash2(key), hash3(key)...
+*** 链表法(chaining)
+#+HTML:<img src="https://github.com/KcMeterCEC/explore/blob/master/[program]/[What]program--datastruct/hash_table_list.jpg?raw=true" alt="hash_table_list.jpg">
+链表法就是在数组中存储的是链表头的首地址，将具有相同值的数据插入到同一个链表中。
+
+可以看出其插入的时间复杂度是O(1)。
+
+查找和删除的复杂度与链表的长度k有关，也就是O(k)，如果散列表分布比较平均那么 k=n/m(n是总个数，m是数组槽的个数)。
+
+- 优点：对内存的利用率比开放寻址法高，可以容忍高的装载因子
+- 缺点：数据分布不连续，无法很好利用cpu cache。且对于小的对象存储比较消耗内存(节点指针也会占用内存)
+  + 可以将链表由跳表、红黑树等代替，以提高查询效率
+- 应用场景：存储大对象、大数据量
+  
+示例如下:
+#+BEGIN_SRC c
+  #include "unidir_list.h"
+  #include <stdint.h>
+  #include <stdlib.h>
+  #include <assert.h>
+
+  typedef struct 
+  {
+      uint32_t number;
+      char     *name;
+      uint8_t  age;
+  }student_t;
+
+  #define HASH_TABLE_SIZE     (4)
+
+  typedef struct 
+  {
+      student_t student;
+      struct list_node   node;
+  }hash_element_t;
+
+  struct 
+  {
+      hash_element_t  buf[HASH_TABLE_SIZE];
+  }hash_table;
+
+  static student_t bruce =
+  {
+      .number = 10102,
+      .name = "Bruce",
+      .age = 16,
+  };
+  static student_t tom =
+  {
+      .number = 10103,
+      .name = "Tom",
+      .age = 18,
+  };
+  static student_t may =
+  {
+      .number = 10205,
+      .name = "May",
+      .age = 20,
+  };
+  static student_t jim =
+  {
+      .number = 10303,
+      .name = "Jim",
+      .age = 27,
+  };
+  static student_t tony =
+  {
+      .number = 10503,
+      .name = "tony",
+      .age = 25,
+  };
+
+
+  static void hash_init(void)
+  {
+      for(uint32_t i = 0; i < HASH_TABLE_SIZE; ++i)
+      {
+          undir_list.init_obj(&hash_table.buf[i].node);
+      }
+  }
+
+  static uint32_t hash_val_get(uint32_t key)
+  {
+      return (key % HASH_TABLE_SIZE);
+  }
+  static void hash_save(student_t *student, uint32_t index)
+  {
+      hash_element_t   *obj;
+      bool             have_obj = false;
+
+      unidir_list_for_each_entry(obj, &hash_table.buf[index].node, hash_element_t, node)
+      {
+          if(obj->student.number == student->number)
+          {
+              obj->student = *student;
+              printf("modify student [%s]\n", student->name);
+              have_obj = true;
+              break;
+          }
+      }
+      if(have_obj == false)
+      {
+          printf("insert student [%s]\n", student->name);
+
+          obj = (hash_element_t *)malloc(sizeof(hash_element_t));
+          assert(obj != NULL);
+          obj->student = *student;
+          undir_list.insert(&hash_table.buf[index].node, &obj->node);  
+      }
+  }
+  static void hash_insert(student_t *student)
+  {
+      uint32_t index = hash_val_get(student->number);
+      printf("insert index = %d\n", index);
+
+      hash_save(student, index);
+  }
+  static bool hash_rm(uint32_t key)
+  {
+      bool ret = false;
+      int32_t index = hash_val_get(key);
+      printf("rm index = %d\n", index);
+      if(index != -1)
+      {
+          struct list_node  *current_node = &hash_table.buf[index].node;
+          hash_element_t   *obj;
+          do
+          {
+              obj = unidir_list_first_entry(current_node, hash_element_t, node);
+              if(obj->student.number == key)
+              {
+                  printf("rm student [%s]\n", obj->student.name);
+                  undir_list.remove_next(current_node);
+                  ret = true;
+                  break;
+              }
+              current_node = current_node->next;
+          }while(current_node != &hash_table.buf[index].node);
+      }
+      if(ret == false)
+      {
+          printf("can not find !\n");
+      }
+
+      return ret;
+  }
+  static void  hash_modify(student_t *student)
+  {
+      hash_insert(student);
+  }
+  static bool hash_find(student_t *student, uint32_t key)
+  {
+      bool ret = false;
+      int32_t index = hash_val_get(key);
+      printf("find index = %d\n", index);
+      if(index != -1)
+      {
+          hash_element_t   *obj;
+          unidir_list_for_each_entry(obj, &hash_table.buf[index].node, hash_element_t, node)
+          {
+              if(obj->student.number == key)
+              {
+                  ,*student = obj->student;
+                  ret = true;
+                  break;
+              }
+          }
+      }
+      if(ret == false)
+      {
+          printf("can not find !\n");
+      }
+
+      return ret;
+  }
+
+  static void print_student(const student_t *student)
+  {
+      printf("Hi, my name is [%s], and my number is [%d], and I'm [%d]\n", 
+      student->name,
+      student->number,
+      student->age);
+  }
+
+  int main(int argc, char *argv[])
+  {
+      unidir_list_str_init();
+    
+      hash_init();
+
+      hash_insert(&bruce);
+      hash_insert(&tom);
+      hash_insert(&may);
+      hash_insert(&jim);
+      hash_insert(&tony);
+
+      hash_rm(may.number);
+
+      bruce.age = 50;
+      hash_modify(&bruce);
+
+      hash_insert(&tony);
+
+      jim.age = 50;
+      hash_modify(&jim);
+
+      printf("Hash table list:\n");
+      for(uint8_t i = 0; i < HASH_TABLE_SIZE; i++)
+      {
+          hash_element_t   *obj;
+          unidir_list_for_each_entry(obj, &hash_table.buf[i].node, hash_element_t, node)
+          {
+              printf("[%s] is located in index [%d]\n", 
+              obj->student.name, i);
+          }
+      }
+
+      student_t student;
+
+      if(hash_find(&student, bruce.number) == true) 
+      print_student(&student);
+
+      if(hash_find(&student, tom.number) == true) 
+      print_student(&student);
+
+      if(hash_find(&student, may.number) == true) 
+      print_student(&student);
+
+      if(hash_find(&student, jim.number) == true) 
+      print_student(&student);
+
+      if(hash_find(&student, tony.number) == true) 
+      print_student(&student);            
+
+      return 0;
+  }
+#+END_SRC
+* 散列函数的设计
+** 一般设计方法
+好的散列函数需要:
+1. 设计不能太复杂:不能消耗太多的计算时间
+2. 生成的散列值要尽可能随机并且均匀分布，以最小化散列冲突
+
+一般的设计方法有如下几种:
+- 数据分析法:当key为随机数或递增递减这类数时，可以直接取数据的后几位作为散列值
+- 转换法:将key通过一个固定的公式转换为一个数值，再根据数据的大小进行求余作为散列值
+** 装载因子
+当装载因子大于其阀值的时候，冲突的概览会大大增加。应对这种情况的方法便是动态扩容，比如将内存扩展到原来的两倍。
+- 需要注意的是：当扩容以后，需要重新执行散列函数计算元素存放位置，这个时候的时间复杂度就是O(n)
+  
+阀值的设置需要根据应用场景而定，当对效率要求较高而内存空间较足时，可以降低阀值，反之则可以升高阀值。
+*** 动态扩容的优化
+当需要动态扩容时，首先就得重新计算原来数据的散列值然后再进行数据搬移。当散列表的容量特别大时，这个操作就会比较耗时。
+
+可以想象当用户进行插入操作时遇到了动态扩容而等待时间极长，这将是多么沮丧的事。
+
+对应的解决方案为：
+- 当遇到动态扩容时，仅为其申请新的内存空间，但并不进行所有数据的计算和搬移。
+  + 在数据插入时，将新数据放入新申请的空间同时在老空间中取一个数来插入。这样多次插入操作后便可以将所有数据都搬移过去。
+- 在进行数据查找时，先在新空间中查找数据，如果没有找到再到老空间中查找。
+
+上面的方法在任何情况下的时间复杂度都是O(1).
+
