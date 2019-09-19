@@ -1,0 +1,697 @@
+#+TITLE: [What]Yocto Project --> 构建定制化的 linux
+#+DATE: <2019-09-12 四> 
+#+TAGS: yocto
+#+LAYOUT: post 
+#+CATEGORIES: linux, make, yocto
+#+NAME: <yocto_build_linux.org>
+#+OPTIONS: ^:nil
+#+OPTIONS: ^:{}
+
+参考书籍:Embedded Linux System with the Yocto Project
+- 书籍比实际的yocto版本要低，所以yocto的详细命令需要参考其[[https://www.yoctoproject.org/docs/][对应版本手册]]
+
+运行环境:
+- ubuntu18.04 amd64
+- yocto 2.5.1
+
+应用前面所学，构建定制化 linux，最为重要的一章。
+
+#+BEGIN_EXPORT html
+<!--more-->
+#+END_EXPORT
+
+* linux 发行版全局概览
+OpenEmbedded Core 和其他 yocto 项目都带有一些示例镜像文件 recipe，以 =core-image= 开头。
+
+这些镜像包括仅仅带命令行的镜像，也有带 X11 的窗口服务，还有带 UI 接口的。
+#+BEGIN_EXAMPLE
+  cec@box:~/github/poky$ find ./meta*/recipes*/images -name "*.bb" -print
+
+  # 相比 core-image-minimal ，包含了 initramfs
+  ./meta/recipes-core/images/core-image-minimal-initramfs.bb
+
+  # 基于 core-image-minimal，增加了 mtd 子系统工具
+  ./meta/recipes-core/images/core-image-minimal-mtdutils.bb
+
+  # 这也是和 core-image-minimal 一样的基础包，但是可以支持更多硬件
+  ./meta/recipes-core/images/core-image-base.bb
+
+  # 基于 core-image-minimal，增加了开发所使用到的工具链，可以在目标机上开发
+  ./meta/recipes-core/images/core-image-minimal-dev.bb
+
+  ./meta/recipes-core/images/core-image-tiny-initramfs.bb
+
+  # 用于产生整个 yocto 项目的虚拟镜像文件，用于 VMware 打开
+  ./meta/recipes-core/images/build-appliance-image_15.0.0.bb
+
+  # 最基础的，用于设备启动到命令行登录
+  ./meta/recipes-core/images/core-image-minimal.bb
+
+  # 增加了 linux 标准库
+  ./meta/recipes-extended/images/core-image-lsb.bb
+
+  ./meta/recipes-extended/images/core-image-kernel-dev.bb
+
+  # 用于在主机环境（QEMU）测试
+  ./meta/recipes-extended/images/core-image-testmaster.bb
+  ./meta/recipes-extended/images/core-image-testmaster-initramfs.bb
+
+  # 增加了 linux 标准库和对应的开发包
+  ./meta/recipes-extended/images/core-image-lsb-dev.bb
+
+  # 相比 core-image-lsb-dev 增加了开发工具
+  ./meta/recipes-extended/images/core-image-lsb-sdk.bb
+
+  # 在基础 image 中增加了命令行工具（bash,acl,grep,tar 等）
+  ./meta/recipes-extended/images/core-image-full-cmdline.bb
+
+
+  # 基于 x11 提供了 clutter 工具
+  ./meta/recipes-graphics/images/core-image-clutter.bb
+
+  # 使用 weston 代替 x11
+  ./meta/recipes-graphics/images/core-image-weston.bb
+
+  # 包含 X11 窗口服务
+  ./meta/recipes-graphics/images/core-image-x11.bb
+
+  # 相比 core-image-rt 还多了 sdk
+  ./meta/recipes-rt/images/core-image-rt-sdk.bb
+
+  # 基于 core-image-minimal，构建实时内核，并且提供相应工具给用户空间
+  ./meta/recipes-rt/images/core-image-rt.bb
+
+  # 基于 core-image-sato-dev，包含了开发工具链
+  ./meta/recipes-sato/images/core-image-sato-sdk.bb
+  ./meta/recipes-sato/images/core-image-sato-sdk-ptest.bb
+
+  # 基于 core-image-sato ，包含了开发包
+  ./meta/recipes-sato/images/core-image-sato-dev.bb
+
+  # 基于 sato 主题的发行版，基于 X11 提供了很多应用程序
+  ./meta/recipes-sato/images/core-image-sato.bb
+
+  ./meta-selftest/recipes-test/images/error-image.bb
+  ./meta-selftest/recipes-test/images/wic-image-minimal.bb
+  ./meta-selftest/recipes-test/images/oe-selftest-image.bb
+  ./meta-selftest/recipes-test/images/test-empty-image.bb
+
+  # 支持多种库（比如 32,64 位库）
+  ./meta-skeleton/recipes-multilib/images/core-image-multilib-example.bb
+#+END_EXAMPLE
+- 上面的这些 recipe 都继承于 =core-image= 类，而 =core-image= 类又继承于 =image= 类。
+- 这些 recipe 会设置 =IMAGE_INSTALL= 变量，此变量表示这些包会被安装在目标机根文件系统什么位置
+  + =core-image= 类中设置了 =packagegroup-core-boot= 和 =packagegroup-base-extended= 以创建最基本的启动文件系统
+    
+用户可以往变量 =IMAGE_INSTALL= 中插入值以扩展这些基础镜像。
+- 只能扩展不能删除原镜像固有的
+** 使用 package 扩展基础发行版
+最简单的扩展方式便是在构建目录的 =conf/local.conf= 中将需要添加的包写入 =IMAGE_INSTALL= 变量：
+#+BEGIN_EXAMPLE
+  # 为所有 image 增加以下 package
+  IMAGE_INSTALL_append = " <package> <package group>"
+  - 需要注意引号后及 package 之间的空格， append 是不会主动添加空格的
+  - 使用 append 的原因是它可以使得修改立即生效
+
+  # 为特定 Image 增加
+  IMAGE_INSTALL_append_pn-<image name> = " <package> <package group>"
+  # 比如 IMAGE_INSTALL_append_pn-core-image-minimal = " strace"
+
+  # IMAGE_INSTLL 继承自 core-image 类，更为合适的是使用变量 CORE_IMAGE_EXTRA_INSTALL
+
+  # 为所有 image 添加以下包，但不影响 core-image
+  CORE_IMAGE_EXTRA_INSTALL = "strace sudo sqlite3"
+#+END_EXAMPLE
+** 使用 QEMU 测试发行版
+在构建目录的 =conf/local.conf= 中的 =MACHINE= 可以设置 QEMU 的模拟目标板：
+#+BEGIN_EXAMPLE
+  # 启动最后一次构建测试
+  runqemu qemux86
+
+  # 启动指定的 image
+  runqemu qemux86 core-image-minimal
+
+  # 启动指定的内核和根文件系统
+  runqemu <path>/bzImage-qemux86.bin <path>/core-image-minimal-qemux86.ext3
+#+END_EXAMPLE
+** 检验和比较 image
+在 =conf/local.conf= 中加入：
+#+BEGIN_EXAMPLE
+  INHERIT += "buildhistory"
+  BUILDHISTORY_COMMIT = "1"
+#+END_EXAMPLE
+以后每次构建，bitbake 都会将历史存入 git 库中，存放路径为 =${TOPDIR}/buildhistory=
+
+此路径中会存放 =images= 和 =package= 文件夹，image 文件夹是关注的重点：
+#+BEGIN_EXAMPLE
+  ${TOPDIR}/buildhistory/images/<machine>/<c library>/<image>
+#+END_EXAMPLE
+- image-info.txt：对 image 的全局说明
+- installed-packages.txt：已安装的 package 列表
+- installed-package-names.txt：已安装的 package 列表，仅包含名称
+- file-in-image.txt：根文件系统所有文件夹、文件列表
+** 使用 recipe 扩展 image
+在测试阶段，制作 package 是麻烦的事，直接用 recipe 扩展 image 是最简单粗暴的做法。   
+- 首先需要建立一个 recipe，并填写下面类似的内容
+  + 建议将此 recipe 放在一个单独的 layer 里面
+#+BEGIN_EXAMPLE
+  # 这里可以使用 include 也可以使用 require
+  # 使用 require 在对应的 image 找不到时会报错
+  # 这里的意思是当前 bb 文件用于扩展 core-image-base
+  require recipe-core/images/core-image-base.bb
+
+  IMAGE_INSTALL += "sqlite3 mtd-utils coreutils"
+  IMAGE_FEATURES = "dev-pkgs"
+#+END_EXAMPLE
+- 然后在 =conf/bblayers.conf= 中添加此 layer
+** image 的特征
+image 的特征功能，允许用户可以加入 package、修改配置文件等。
+- 这种方式相当于将一些配置和安装都取了一个别名，用户只需要选择是否开启即可
+
+使用方式为：
+#+BEGIN_EXAMPLE
+  IMAGE_FEATURES = "<feature>"
+
+  # EXTRA_IMAGE_FEATURES 中的内容会被附加到 IMAGE_FEATURES 中
+  EXTRA_IMAGE_FEATURES = "<feature>"
+#+END_EXAMPLE
+
+image.bbclass 中定义了以下 feature：
+- debug-tweaks：用于开发目的，比如取消 root 密码
+- package-management：安装包管理系统
+- read-only-rootfs：设置根文件系统为只读
+- splash：显示 Logo 开机而不是命令行字符串
+
+populate_sdk_base.bbclass 中定义了以下特征：
+- dbg-pkgs：设置安装包包含符号表，这是为了便于调试
+- dev-pkgs：设置安装包包含开发所需要的文件
+- doc-pkgs：设置安装包包含文档
+- staticdev-pkgs：以静态库的方式安装包
+- ptest-pkgs：安装包测试工具
+
+core-image.bbclass 中定义了以下特征：
+- eclipse-debug：为 eclipse 安装其调试工具（GDB server、TCF 等）
+- hwcodecs：如果硬件平台支持，为其安装硬件编解码器
+- nfs-server：安装网络文件系统工具
+- qt4-pkgs：安装 Qt 框架
+- ssh-server-dropbear：安装 ssh 服务
+- ssh-server-openssh：按装 ssh 服务，与上面两个只能选择其一
+- tools-debug：安装调试工具（GDB,strace 等）
+- tools-profile：安装性能监控工具
+- tools-sdk：安装 sdk 工具
+- tools-testapps：安装测试工具
+- x11：安装 x11 服务
+- x11-base ： 不带窗口的 x11
+- x11-sato ： 安装 sato 
+
+** 包组(package groups)
+包组将一些包捆绑在一起，用于 =IMAGE_INSTALL= ，一个名字便可以安装多个包。
+
+包组使用recipe 文件定义，recipe 文件以 =packagegroup-= 开头，并且放在 =meta-xxx/recipes-xxx/packagegroup= 文件夹中
+*** 默认包组
+yocto 提供了一下默认包组（与前面的 image 特征遥相互应）：
+- packagegroup-core-ssh-dropbear：dropbear ssh
+- packagegroup-core-ssh-openssh：openssh
+- packagegroup-core-buildessential：基础开发工具（Autotools,binutils,compiler...）
+- packagegroup-core-tools-debug：基础调试工具（gdb,strace...）
+- packagegroup-core-sdk：基于 buildessential，增加了开发工具链
+- packagegroup-core-standalone-sdk-target：提供 gcc 和 c++ 库
+- packagegroup-core-eclipse-debug：用于 eclipse 的调试工具
+- packagegroup-core-tools-testapps：提供测试工具
+- packagegroup-self-hosted：用于 =build-appliance=
+- packagegroup-core-boot：用于基本启动的最小镜像文件
+- packagegroup-core-nfs：网络文件系统
+- packagegroup-base：支持更多硬件的包
+- packagegroup-cross-canadian：多个平台交叉编译
+- packagegroup-core-tools-profile：性能测试
+- packagegroup-core-device-devel：distcc 支持
+- packagegroup-qt-toolchain-target：基于 x11 的 Qt 开发工具
+- packagegroup-qte-toolchain-target：嵌入式平台的 Qt 开发工具
+- packagegroup-core-qt ： 基于 x11 的 qt 包
+- packagegroup-core-qt4e：嵌入式 qt 工具
+- packagegroup-core-x11-xserver：仅提供 x11 服务
+- packagegroup-core-x11：x11 全套
+- packagegroup-core-x11-base：x11 基础服务
+- packagegroup-core-x11-sato：sato 主题
+- packagegroup-core-clutter-core ： clutter
+- packagegroup-core-directfb：提供基于 frame buffer 的触摸支持
+- packagegroup-core-lsb：提供 lsb
+- packagegroup-core-full-cmdline：命令行工具
+*** 定义包组
+定义包组的 recipe 文件名称为 =packagegroup-<name>.bb==
+#+BEGIN_EXAMPLE
+  SUMMARY	=	“Custom	package	group	for	our	IoT	devices”
+
+  DESCRIPTION	=	“This	package	group	adds	standard	functionality	required	by our	IoT	devices.”
+
+  LICENSE	=	“MIT”
+
+  # 需要继承 packagegroup 类
+  inherit	packagegroup
+
+  # 此 recipe 需要定义的包组名称，以空格分隔
+  PACKAGES	=	“\
+        packagegroup-databases	\
+        packagegroup-python	\
+        packagegroup-servers”
+
+  # 需要依赖的 package
+  RDEPENDS_packagegroup-databases	=	“\
+        db	\
+        sqlite3”
+
+  RDEPENDS_packagegroup-python	=	“\
+        python	\
+        python-sqlite3”
+
+  RDEPENDS_packagegroup-servers	=	“\
+        openssh	\
+        openssh-sftp-server”
+
+  # 如果有就包含，但不是必须的
+  RRECOMMENDS_packagegroup-python	=	“\
+        ncurses	\
+        readline	\
+        zip”
+#+END_EXAMPLE
+
+当然，这些 recipe 一样可以被 bitbake 直接执行：
+- 便于最开始的调试
+#+BEGIN_EXAMPLE
+  bitbake packagegroup-<name>
+#+END_EXAMPLE
+* 构建独立 image
+如果想要构建不一来默认 image 的 image，那么需要至少继承 =image= 或 =core-image= 类，然后在此基础上再添加一些 feature,package,recipe。
+
+比如下面这样的 recipe，创建的 image 启动包含基本的控制台：
+#+BEGIN_EXAMPLE
+  SUMMARY	=	“Custom	image	recipe	that	does	not	get	any	simpler”
+  DESCRIPTION	=	“Well	yes,	you	could	remove	SUMMARY,	DESCRIPTION,	LICENSE.”
+  LICENSE	=	“MIT”
+
+  #	We	are	using	the	append	operator	(+=)	below	to	preserve	the	default
+  #	values	set	by	the	core-image	class	we	are	inheriting.
+  IMAGE_INSTALL	+=	“mtd-utils”
+  IMAGE_FEATURES	+=	“splash”
+
+  #如果不想依赖默认的 IMAGE_INSTALL 和 IMAGE_FEATURES ，那么可以使用直接赋值
+  IMAGE_INSTALL	=	“packagegroup-core-boot	packagegroup-base-extended	\
+                                    ${CORE_IMAGE_EXTRA_INSTALL}	mtd-utils”
+  IMAGE_FEATURES	=	“${EXTRA_IMAGE_FEATURES}	splash”
+
+  inherit	core-image
+#+END_EXAMPLE
+- core-image 包含了 =packagegroup-core-boot= 和 =packagegroup-base-ectended= 两个包组
+- 上面直接附加至变量 =IMAGE_INSTALL= 和 =IMAGE_FEATURES=
+  + =EXTRA_IMAGE_FEATURES= 和 =CORE_IMAGE_EXTERA_INSTALL= 是专门用于 =conf/local.conf= 的变量
+* 根文件系统 image 的选项
+下面的这些选项用于配置根文件系统：
+** 语言及位置的设置
+变量 =IMAGE_LINGUAS= 用于配置文件系统需要增加支持的语言：
+- 默认就是 =en-us=
+#+BEGIN_EXAMPLE
+  IMAGE_LINGUAS	=	“en-gb	pt-br”
+#+END_EXAMPLE
+** 包管理机制
+构建系统可以以 4 种方式打包软件包：
+- opkg(Open Package Management)
+  + 使用的元数据少于 dpkg 和 RPM，创建的包体积更小
+- dpkg(Debia Package Management)
+  + 使用更多的元数据处理依赖和版本控制
+- RPM(Red Hat Package Manager)
+  + 使用更多的元数据处理依赖和版本控制，由于它使用 python 编写，所以需要目标机也要安装 python
+- tar
+  
+只有前 3 种可以被用于创建根文件系统。
+
+在 =conf/local.conf= 中设置 =PACKAGE_CLASSES= 变量来配置使用哪种打包机制：
+- 可以定义多个，但至少定义 1 个
+  + 有多个时，第一个用作跟文件系统的创建，同时构建系统会为普通安装对象创建所有指定的包
+#+BEGIN_EXAMPLE
+  PACKAGE_CLASSES	=	“package_rpm	package_ipk	package_tar”
+#+END_EXAMPLE
+
+包的存放路径在构建目录中的 =tmp/deploy/<pms>= ，比如 =tmp/deploy/rpm= 包含了所有以 rpm 结构打包的软件。
+** image 的大小
+以下这些变量可以设置 image 大小：
+- IMAGE_ROOTFS_SIZE：设置跟文件系统 image 的 *最小大小* ，单位为 kB，默认值为 65536
+- IMAGE_ROOTFS_ALIGNMENT：根文件系统大小的对齐值，单位为 kB，默认值为 1。
+- IMAGE_ROOTFS_EXTRA_SPACE：分配额外的空空间给根文件系统，单位为 kB，默认值为 0。
+- IMAGE_OVERHEAD_FACTOR：指定文件大小的倍数，默认为 1.3。
+
+** 根文件系统类型
+使用变量 =IMAGE_FATYPES= 设置根文件系统类型：
+#+BEGIN_EXAMPLE
+  IMAGE_FSTYPES	=	“ext3	tar.bz2”
+#+END_EXAMPLE
+- tar,tar.gz,tar.bz2,tar.xz,tar.lz3：创建非压缩和压缩的根文件系统 image
+- ext2,ext2.gz,ext2.bz,ext2.lzma：使用 ext2 文件系统的压缩或非压缩
+- ext3,ext3.gz：使用 ext3 文件系统的压缩或非压缩
+- btrfs：使用 btrfs 格式化
+- jffs2,jffs2.sum：
+- cramfs：rom fs
+- iso：使用 ISO 9660 标准的文件系统，支持 CD-ROM
+- hddimg：支持硬盘启动
+- squashfs,squashfs-xz：SquashFS 格式
+- ubi,ubifs：
+- cpio,cpio.gz,cpio.xz,cpio.lzma
+- vmdk：用于 VMware 的文件系统格式
+- elf：使用 mkelfImage 工具制作
+** 用户，组，密码
+#+BEGIN_EXAMPLE
+  SUMMARY	=	“Custom	image	recipe	from	scratch”
+  DESCRIPTION	=	“Directly	assign	IMAGE_INSTALL	and	IMAGE_FEATURES	for	\
+                                for	direct	control	over	image	contents.”
+  LICENSE	=	“MIT”
+  #	We	are	using	the	assignment	operator	(=)	below	to	purposely	overwrite
+  #	the	default	from	the	core-image	class.
+  IMAGE_INSTALL	=	“packagegroup-core-boot	packagegroup-base-extended	\
+                                    ${CORE_IMAGE_EXTRA_INSTALL}”
+  inherit	core-image
+  inherit	extrausers
+  #	set	image	root	password
+  ROOT_PASSWORD	=	“secret”
+  DEV_PASSWORD	=	“hackme”
+
+  # useradd : 增加用户
+  # usermode: 修改用户
+  # userdel : 删除用户
+  # groupadd : 增加组
+  # groupmode: 修改组
+  # groupdel : 删除组
+  EXTRA_USERS_PARAMS	=	“\
+        groupadd	developers;	\
+        useradd	-p	`openssl	passwd	${DEV_PASSWORD}`	developer;	\
+        useradd	-g	developers	developer;	\
+        usermod	-p	`openssl	passwd	${ROOT_PASSWORD}`	root;	\
+        ”
+#+END_EXAMPLE
+** 其他
+对于根文件系统其他杂项的调整，可以用 =ROOTFS_POSTPROCESS_COMMAND= 来完成：
+#+BEGIN_EXAMPLE
+  SUMMARY	=	“Custom	image	recipe	from	scratch”
+  DESCRIPTION	=	“Directly	assign	IMAGE_INSTALL	and	IMAGE_FEATURES	for	\
+                                for	direct	control	over	image	contents.”
+  LICENSE	=	“MIT”
+  #	We	are	using	the	assignment	operator	(=)	below	to	purposely	overwrite
+  #	the	default	from	the	core-image	class.
+  IMAGE_INSTALL	=	“packagegroup-core-boot	packagegroup-base-extended	\
+                                    ${CORE_IMAGE_EXTRA_INSTALL}”
+  inherit	core-image
+  #	Additional	root	filesystem	processing
+  modify_shells()	{
+        printf	“#	/etc/shells:	valid	login	shells\n/bin/sh\n/bin/bash\n”	\
+                        >	${IMAGE_ROOTFS}/etc/shells
+  }
+  ROOTFS_POSTPROCESS_COMMAND	+=	“modify_shells;”
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  modify_sudoers()	{
+        sed	‘s/#	%sudo/%sudo/’	<	${IMAGE_ROOTFS}/etc/sudoers	>	\
+                  ${IMAGE_ROOTFS}/etc/sudoers.tmp
+        mv	${IMAGE_ROOTFS}/etc/sudoers.tmp	${IMAGE_ROOTFS}/etc/sudoers
+  }
+  ROOTFS_POSTPROCESS_COMMAND	+=	“modify_sudoers;”
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  configure_sshd()	{
+        #	disallow	password	authentication
+        echo	“PasswordAuthentication	no”	>>	${IMAGE_ROOTFS}/etc/ssh/sshd_config
+        #	create	keys	in	tmp/deploy/keys
+        mkdir	-p	${DEPLOY_DIR}/keys
+        if	[	!	-f	${DEPLOY_DIR}/keys/${IMAGE_BASENAME}-sshroot	];	then
+              ssh-keygen	-t	rsa	-N	”	\
+                    -f	${DEPLOY_DIR}/keys/${IMAGE_BASENAME}-sshroot
+        fi
+        #	add	public	key	to	authorized_keys	for	root
+        mkdir	-p	${IMAGE_ROOTFS}/home/root/.ssh
+        cat	${DEPLOY_DIR}/keys/${IMAGE_BASENAME}-sshroot.pub	\
+                >>	${IMAGE_ROOTFS}/home/root/.ssh/authorized_keys
+  }
+  ROOTFS_POSTPROCESS_COMMAND	+=	“configure_sshd;”
+#+END_EXAMPLE
+* 发行版配置
+发行版的配置是全局配置，会影响所有 image 的构建。
+
+在构建目录的 =conf/local.conf= 中，使用 =DISTRO= 指定构建系统的配置：
+#+BEGIN_EXAMPLE
+  # 构建系统会在其包含的元数据层中的 conf/distro 文件搜寻文件 poky.conf
+  DISTRO	=	“poky”
+#+END_EXAMPLE
+yocto 默认提供了以下几种发行版的配置文件：
+- poky：yocto 默认就是使用的这种配置，也是推荐在其基础上来做修改
+- poky-bleeding：这个是基于 yocto 的版本，所有的 package 都是使用最新版本，不建议使用
+- poky-lsb：包含 LSB，与 =core-image-lsb= 联合使用
+- poky-tiny：与 =core-image-minimal= 联合使用，精简了 poky 的配置
+** poky 的具体配置
+=poky= 的配置文件 =poky.conf= 位于 =meta-poky/conf/distro/= 中：
+#+BEGIN_EXAMPLE
+  DISTRO = "poky"
+  DISTRO_NAME = "Poky (Yocto Project Reference Distro)"
+  DISTRO_VERSION = "2.5.3"
+  DISTRO_CODENAME = "sumo"
+  SDK_VENDOR = "-pokysdk"
+  SDK_VERSION := "${@'${DISTRO_VERSION}'.replace('snapshot-${DATE}','snapshot')}"
+
+  MAINTAINER = "Poky <poky@yoctoproject.org>"
+
+  TARGET_VENDOR = "-poky"
+
+  LOCALCONF_VERSION = "1"
+
+  DISTRO_VERSION[vardepsexclude] = "DATE"
+  SDK_VERSION[vardepsexclude] = "DATE"
+
+  # Override these in poky based distros
+  POKY_DEFAULT_DISTRO_FEATURES = "largefile opengl ptest multiarch wayland vulkan"
+  POKY_DEFAULT_EXTRA_RDEPENDS = "packagegroup-core-boot"
+  POKY_DEFAULT_EXTRA_RRECOMMENDS = "kernel-module-af-packet"
+
+  DISTRO_FEATURES ?= "${DISTRO_FEATURES_DEFAULT} ${DISTRO_FEATURES_LIBC} ${POKY_DEFAULT_DISTRO_FEATURES}"
+
+  PREFERRED_VERSION_linux-yocto ?= "4.14%"
+
+  SDK_NAME = "${DISTRO}-${TCLIBC}-${SDK_ARCH}-${IMAGE_BASENAME}-${TUNE_PKGARCH}"
+  SDKPATH = "/opt/${DISTRO}/${SDK_VERSION}"
+
+  DISTRO_EXTRA_RDEPENDS += " ${POKY_DEFAULT_EXTRA_RDEPENDS}"
+  DISTRO_EXTRA_RRECOMMENDS += " ${POKY_DEFAULT_EXTRA_RRECOMMENDS}"
+
+  POKYQEMUDEPS = "${@bb.utils.contains("INCOMPATIBLE_LICENSE", "GPL-3.0", "", "packagegroup-core-device-devel",d)}"
+  DISTRO_EXTRA_RDEPENDS_append_qemuarm = " ${POKYQEMUDEPS}"
+  DISTRO_EXTRA_RDEPENDS_append_qemuarm64 = " ${POKYQEMUDEPS}"
+  DISTRO_EXTRA_RDEPENDS_append_qemumips = " ${POKYQEMUDEPS}"
+  DISTRO_EXTRA_RDEPENDS_append_qemuppc = " ${POKYQEMUDEPS}"
+  DISTRO_EXTRA_RDEPENDS_append_qemux86 = " ${POKYQEMUDEPS}"
+  DISTRO_EXTRA_RDEPENDS_append_qemux86-64 = " ${POKYQEMUDEPS}"
+
+  TCLIBCAPPEND = ""
+
+  QEMU_TARGETS ?= "arm aarch64 i386 mips mipsel mips64 mips64el nios2 ppc x86_64"
+  # Other QEMU_TARGETS "sh4"
+
+  PREMIRRORS ??= "\
+  bzr://.*/.*   http://downloads.yoctoproject.org/mirror/sources/ \n \
+  cvs://.*/.*   http://downloads.yoctoproject.org/mirror/sources/ \n \
+  git://.*/.*   http://downloads.yoctoproject.org/mirror/sources/ \n \
+  gitsm://.*/.* http://downloads.yoctoproject.org/mirror/sources/ \n \
+  hg://.*/.*    http://downloads.yoctoproject.org/mirror/sources/ \n \
+  osc://.*/.*   http://downloads.yoctoproject.org/mirror/sources/ \n \
+  p4://.*/.*    http://downloads.yoctoproject.org/mirror/sources/ \n \
+  svn://.*/.*   http://downloads.yoctoproject.org/mirror/sources/ \n"
+
+  MIRRORS =+ "\
+  ftp://.*/.*      http://downloads.yoctoproject.org/mirror/sources/ \n \
+  http://.*/.*     http://downloads.yoctoproject.org/mirror/sources/ \n \
+  https://.*/.*    http://downloads.yoctoproject.org/mirror/sources/ \n"
+
+  # The CONNECTIVITY_CHECK_URI's are used to test whether we can succesfully
+  # fetch from the network (and warn you if not). To disable the test set
+  # the variable to be empty.
+  # Git example url: git://git.yoctoproject.org/yocto-firewall-test;protocol=git;rev=master
+  CONNECTIVITY_CHECK_URIS ?= "https://www.example.com/"
+
+  SANITY_TESTED_DISTROS ?= " \
+              poky-2.4 \n \
+              poky-2.5 \n \
+              ubuntu-15.04 \n \
+              ubuntu-16.04 \n \
+              ubuntu-18.04 \n \
+              fedora-28 \n \
+              centos-7 \n \
+              debian-8 \n \
+              debian-9 \n \
+              opensuse-42.3 \n \
+              "
+  #
+  # OELAYOUT_ABI allows us to notify users when the format of TMPDIR changes in
+  # an incompatible way. Such changes should usually be detailed in the commit
+  # that breaks the format and have been previously discussed on the mailing list
+  # with general agreement from the core team.
+  #
+  OELAYOUT_ABI = "12"
+
+  # add poky sanity bbclass
+  INHERIT += "poky-sanity"
+
+  # QA check settings - a little stricter than the OE-Core defaults
+  WARN_TO_ERROR_QA = "already-stripped compile-host-path install-host-path \
+                      installed-vs-shipped ldflags pn-overrides rpaths staticdev \
+                      useless-rpaths"
+  WARN_QA_remove = "${WARN_TO_ERROR_QA}"
+  ERROR_QA_append = " ${WARN_TO_ERROR_QA}"
+
+  require conf/distro/include/poky-world-exclude.inc
+  require conf/distro/include/no-static-libs.inc
+  require conf/distro/include/yocto-uninative.inc
+  INHERIT += "uninative"
+#+END_EXAMPLE
+
+*** 发行版的信息
+以下这些变量用于表示发行版的一些信息：
+- DISTRO：发行版的简称，其值 *必须与配置文件名称一致* ，比如 =poky.conf= 文件中此值必须是 =poky=
+- DISTRO_NAME：发行版的全称，很多 recipe 文件都会引用这个变量。
+  + 其值会在控制台的启动输出中显示
+- DISTRO_VERSION：发行版的版本号，很多 recipe 文件都会引用这个变量。
+  + 其值会在控制台的启动输出中显示
+- DISTRO_CODENAME：发行版的代号
+- MAINTAINER：发行版的维护者联系方式，一般是 名称和 email 的方式
+- TARGET_VENDOR：发行版厂商名称， *需要以连词号开头* ， 比如 "-poky"。
+  + 与 =TARGET_ARCH= , =TARGET_OS= 连接在一起，比如 "i586-poky-linux"
+*** SDK 信息
+- SDK_NAME：SDK 名称， SDK_NAME = "${DISTRO}-${TCLIBC}-${SDK_ARCH}-${IMAGE_BASENAME}-${TUNE_PKGARCH}"
+- SDK_VERSION：SDK 版本号
+- SDK_VENDOR：SDK 发行商，和 =TARGET-VENDOR= 一样，也是需要连词号开头
+- SDK_PATH：SDK 的安装路径
+*** 发行版的特征
+用于设置发行版所具备的功能：
+- DISTRO_FEATURES：DISTRO_FEATURES ?= "${DISTRO_FEATURES_DEFAULT} ${DISTRO_FEATURES_LIBC} ${POKY_DEFAULT_DISTRO_FEATURES}"
+*** 指定特定版本
+- PREFERRED_VERSION : 用于指定某部分的特定版本号，而不是最新版本，这通常用于指定 linux 内核的版本。
+*** 依赖
+指定运行时的依赖：
+- DISTRO_EXTRA_RDEPENDS：运行时的必须依赖，如果不存在这些依赖则会构建失败
+- DISTRO_EXTRA_RRECOMMENDS：建议运行时依赖，如果有则会被加入，没有也不会构建失败
+*** 工具链配置
+用于构建过程中的工具链配置：
+- TCMODE：构建时的工具链，默认值是 =default= ，对应于 =conf/distro/include= 中的 =tcmode-${TCMODE}.inc= 文件
+- TCLIBC：构建时的 C 库，对应于 =conf/distro/include= 中的 =tclibc-${TCLIBC}.inc= 文件
+- TCLIBCAPPEND：c 库的附加
+*** 镜像配置
+- PREMIRRORS 和 MIRRORS：镜像文件的地址
+*** 构建系统的配置
+- LOCALCONF_VERSION：构建系统所需求的 =local.conf= 的版本。
+  + 它与 =local.conf= 中的 =CONF_VERSION= 比较，如果它比较大则会自动升级 =local.conf= 到新版本，否则报错
+- LAYER_CONF_VERSION：与 =bblayers.conf= 中的 =LAYER_CONF_VERSION= 比较，小于则报错
+- OELAYOUT_ABI：对 =TMPDIR= 布局版本的要求，不匹配则报错
+- BB_SIGNATURE_HANDLER：签名机制，用于判断缓存文件是否已经被改变
+*** 构建系统的检验
+- INHERIT += "poky-sanity: 继承 =poky-sanity.bbclass= 以完成系统基础检查
+- CONNECTIVITY_CHECK_URIS：用于检查网络是否连接的 URL
+- SANITY_TESTED_DISTROS：表示这个发行版在哪些主机系统上已经经过了验证
+*** QA 检查
+- WARN_QA：哪些 QA 检查会触发警告，但不会停止构建过程
+- ERROR_QA：哪些 QA 检查会触发错误并停止构建过程
+
+** 发行版的特征
+通过设置变量 =DISTRO_FEATURES= ，来配置对应软件包使用哪部份配置。
+
+比如一个软件包既可以配置为控制台模式，也可以配置为带 UI 模式，当 =DISTRO_FEATURES= 中包含
+x11 这个特征时，这个软件包在构建时就会加入其 UI 特性。
+
+发行版特征和 image 特征不一样， image 特征是指定了某部分软件会被安装进根文件系统，而发行版特性
+是配置整个发行版可以支持软件包的哪些特性。
+- 也就是说一些 recipe 会根据 =DISTRO_FEATURES= 的值来决定自己的构建方式
+
+一般在 recipe 中使用 =DISTRO_FEATURES= 的方式为:
+#+BEGIN_EXAMPLE
+  # 如果 DISTRO_FEATURES 包含 feature 则返回 true_val，否则返回 falase_val
+  if bb.utils.contains('DISTRO_FEATURES', <feature>, <true_val>, <false_val>, d)
+      ...
+#+END_EXAMPLE
+
+下面这些特征可以被加入 =DISTRO_FEATURES= ：
+- alsa：ALSA 音频处理构架
+- bluetooth：蓝牙
+- cramfs：CramFS
+- directfb：直接帧缓存
+- ext2：ext2 文件系统
+- ipsec：IPSec 机制
+- ipv6：IPv6 支持
+- irda：IrDA 标准
+- keyborad：键盘支持
+- nfs：网络文件系统支持
+- opengl：OpenGL 库包含
+- pci：pci 支持
+- pcmcia：使能 PCMCIA
+- ppp:PPP 协议
+- smbfs：网络共享文件系统
+- systemd：使用 systemd 代替 SysVinit
+- sysvinit：使用 SysVinit
+- usbgadget：使能 usb gadget 框架，让 linux 设备作为从设备
+- usbhost：使能 usb host 框架
+- wayland：
+- wifi：使能 wifi
+- x11：使能 x11 框架
+  
+还有一个变量叫做 =MACHINE_FEATURES= ，这个变量主要是在 bsp 层中配置。
+- 比如 =DISTRO_FEATURES= 和 =MACHINE_FEATURES= 都使能了 =bluetooth= ， =DISTRO_FEATURES= 会使能底层驱动
+和上层应用，而 =MACHINE_FEATURES= 只会使能底层驱动。
+** 系统管理器
+构建系统支持 SysVinit 和 systemd 两种系统管理器，默认情况下就是使用的 SysVinit。
+
+如果想要使用 systemd，那么需要在发行版的配置文件中增加：
+#+BEGIN_EXAMPLE
+  # 安装 systemd 到根文件系统（注意空格）
+  DISTRO_FEATURES_append = " systemd"
+
+  # 配置 systemd 为系统管理器
+  VIRTUAL-RUNTIME_init_manager = "systemd"
+
+  # 取消 sysvinit 的安装
+  DISTRO_FEATURES_BACKFULL_CONSIDERED = "sysvinit"
+#+END_EXAMPLE
+** 发行版的默认设置
+OE Core 元数据层文件 =meta/conf/distro/defaultsetup.conf= 提供了发行版的默认配置：
+- 这个文件会被 =bitbake.conf= 所包含。
+#+BEGIN_EXAMPLE
+  include conf/distro/include/default-providers.inc
+  include conf/distro/include/default-versions.inc
+  
+# default-distrovars 设置了以下变量：
+# DISTRO_FEATURES,DISTRO_FEATURES_DEFAULT,DISTRO_FEATURES_LIBC,DISTRO_FEATURES_LIBC_DEFAULT
+  include conf/distro/include/default-distrovars.inc
+  include conf/distro/include/world-broken.inc
+
+  TCMODE ?= "default"
+  require conf/distro/include/tcmode-${TCMODE}.inc
+
+  TCLIBC ?= "glibc"
+  require conf/distro/include/tclibc-${TCLIBC}.inc
+
+  require conf/distro/include/uninative-flags.inc
+
+  # Allow single libc distros to disable this code
+  TCLIBCAPPEND ?= "-${TCLIBC}"
+  TMPDIR .= "${TCLIBCAPPEND}"
+
+  CACHE = "${TMPDIR}/cache/${TCMODE}-${TCLIBC}${@['', '/' + str(d.getVar('MACHINE'))][bool(d.getVar('MACHINE'))]}${@['', '/' + str(d.getVar('SDKMACHINE'))][bool(d.getVar('SDKMACHINE'))]}"
+
+  USER_CLASSES ?= ""
+  PACKAGE_CLASSES ?= "package_ipk"
+  INHERIT_BLACKLIST = "blacklist"
+  INHERIT_DISTRO ?= "debian devshell sstate license remove-libtool"
+  INHERIT += "${PACKAGE_CLASSES} ${USER_CLASSES} ${INHERIT_DISTRO} ${INHERIT_BLACKLIST}"
+#+END_EXAMPLE
+
+** 第三方的层
+在[[http://layers.openembedded.org][官方层共享网站]]中提供了很多经过测试的 recipe、layer，所以当我们需要将某个软件包安装进
+根文件系统时，可以提前现在这个网站搜索一下，就不用自己造轮子了。
+
+一旦下载了 layer，就只需要：
+1. 在构建环境的 =conf/bblayers.conf= 中加入此层的路径
+2. 在 image 中加入该 package
+** Toaster
+Toaster 是图形化的与 bitbake 网络接口的工具，但不如编辑文本和命令行的方式可以修改任何位置。
