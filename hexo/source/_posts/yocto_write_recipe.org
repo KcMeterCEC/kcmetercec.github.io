@@ -80,3 +80,1113 @@ version 指的是 tag，而 SRCREV 值的是其修订版。
   BBCLASSEXTEND = "native nativesdk"
 #+END_EXAMPLE
 ** recipe 的内容结构
+recipe 的内容可以分为多个小节来看，以 =meta/recipes-core/gettext/gettext_0.19.8.1.bb= 为例：
+#+BEGIN_EXAMPLE
+  # 对此 recipe（元数据）的说明
+  SUMMARY = "Utilities and libraries for producing multi-lingual messages"
+  DESCRIPTION = "GNU gettext is a set of tools that provides a framework to help other programs produce multi-lingual messages. \
+  These tools include a set of conventions about how programs should be written to support message catalogs, a directory and file \
+  naming organization for the message catalogs themselves, a runtime library supporting the retrieval of translated messages, and \
+  a few stand-alone programs to massage in various ways the sets of translatable and already translated strings."
+  HOMEPAGE = "http://www.gnu.org/software/gettext/gettext.html"
+
+  # 包管理方式
+  SECTION = "libs"
+
+  # 授权
+  LICENSE = "GPLv3+ & LGPL-2.1+"
+  LIC_FILES_CHKSUM = "file://COPYING;md5=d32239bcb673463ab874e80d47fae504"
+
+  # 继承说明
+  inherit autotools texinfo pkgconfig
+
+  # 构建说明
+  DEPENDS = "gettext-native virtual/libiconv"
+  DEPENDS_class-native = "gettext-minimal-native"
+  PROVIDES = "virtual/libintl virtual/gettext"
+  PROVIDES_class-native = "virtual/gettext-native"
+  RCONFLICTS_${PN} = "proxy-libintl"
+  SRC_URI = "${GNU_MIRROR}/gettext/gettext-${PV}.tar.gz \
+       file://parallel.patch \
+       file://add-with-bisonlocaledir.patch \
+       file://cr-statement.c-timsort.h-fix-formatting-issues.patch \
+       file://use-pkgconfig.patch \
+  "
+
+  SRC_URI[md5sum] = "97e034cf8ce5ba73a28ff6c3c0638092"
+  SRC_URI[sha256sum] = "ff942af0e438ced4a8b0ea4b0b6e0d6d657157c5e2364de57baa279c1c125c43"
+
+
+  EXTRA_OECONF += "--without-lispdir \
+                   --disable-csharp \
+                   --disable-libasprintf \
+                   --disable-java \
+                   --disable-native-java \
+                   --disable-openmp \
+                   --disable-acl \
+                   --without-emacs \
+                   --without-cvs \
+                   --without-git \
+                  "
+  EXTRA_OECONF_append_class-target = " \
+                   --with-bisonlocaledir=${datadir}/locale \
+  "
+
+  PACKAGECONFIG ??= "croco glib libxml"
+  PACKAGECONFIG_class-native = ""
+  PACKAGECONFIG_class-nativesdk = ""
+
+  PACKAGECONFIG[croco] = "--without-included-libcroco,--with-included-libcroco,libcroco"
+  PACKAGECONFIG[glib] = "--without-included-glib,--with-included-glib,glib-2.0"
+  PACKAGECONFIG[libxml] = "--without-included-libxml,--with-included-libxml,libxml2"
+  # Need paths here to avoid host contamination but this can cause RPATH warnings
+  # or problems if $libdir isn't $prefix/lib.
+  PACKAGECONFIG[libunistring] = "--with-libunistring-prefix=${STAGING_LIBDIR}/..,--with-included-libunistring,libunistring"
+  PACKAGECONFIG[msgcat-curses] = "--with-libncurses-prefix=${STAGING_LIBDIR}/..,--disable-curses,ncurses,"
+
+  acpaths = '-I ${S}/gettext-runtime/m4 \
+             -I ${S}/gettext-tools/m4'
+
+  do_install_append_libc-musl () {
+    rm -f ${D}${libdir}/charset.alias
+    rm -f ${D}${includedir}/libintl.h
+    rm -f ${D}${libdir}/libintl.la
+  }
+
+  # 打包说明
+  # these lack the .x behind the .so, but shouldn't be in the -dev package
+  # Otherwise you get the following results:
+  # 7.4M    glibc/images/ep93xx/Angstrom-console-image-glibc-ipk-2008.1-test-20080104-ep93xx.rootfs.tar.gz
+  # 25M     uclibc/images/ep93xx/Angstrom-console-image-uclibc-ipk-2008.1-test-20080104-ep93xx.rootfs.tar.gz
+  # because gettext depends on gettext-dev, which pulls in more -dev packages:
+  # 15228   KiB /ep93xx/libstdc++-dev_4.2.2-r2_ep93xx.ipk
+  # 1300    KiB /ep93xx/uclibc-dev_0.9.29-r8_ep93xx.ipk
+  # 140     KiB /armv4t/gettext-dev_0.14.1-r6_armv4t.ipk
+  # 4       KiB /ep93xx/libgcc-s-dev_4.2.2-r2_ep93xx.ipk
+
+  PACKAGES =+ "libgettextlib libgettextsrc"
+  FILES_libgettextlib = "${libdir}/libgettextlib-*.so*"
+  FILES_libgettextsrc = "${libdir}/libgettextsrc-*.so*"
+
+  PACKAGES =+ "gettext-runtime gettext-runtime-dev gettext-runtime-doc"
+
+  FILES_${PN} += "${libdir}/${BPN}/*"
+
+  # The its/Makefile.am has defined:
+  # itsdir = $(pkgdatadir)$(PACKAGE_SUFFIX)/its
+  # not itsdir = $(pkgdatadir), so use wildcard to match the version.
+  FILES_${PN} += "${datadir}/${BPN}-*/*"
+
+  FILES_gettext-runtime = "${bindir}/gettext \
+                           ${bindir}/ngettext \
+                           ${bindir}/envsubst \
+                           ${bindir}/gettext.sh \
+                           ${libdir}/libasprintf.so* \
+                           ${libdir}/GNU.Gettext.dll \
+                          "
+  FILES_gettext-runtime-dev += "${libdir}/libasprintf.a \
+                        ${includedir}/autosprintf.h \
+                       "
+  FILES_gettext-runtime-doc = "${mandir}/man1/gettext.* \
+                               ${mandir}/man1/ngettext.* \
+                               ${mandir}/man1/envsubst.* \
+                               ${mandir}/man1/.* \
+                               ${mandir}/man3/* \
+                               ${docdir}/gettext/gettext.* \
+                               ${docdir}/gettext/ngettext.* \
+                               ${docdir}/gettext/envsubst.* \
+                               ${docdir}/gettext/*.3.html \
+                               ${datadir}/gettext/ABOUT-NLS \
+                               ${docdir}/gettext/csharpdoc/* \
+                               ${docdir}/libasprintf/autosprintf.html \
+                               ${infodir}/autosprintf.info \
+                              "
+
+  # 重写任务
+  do_install_append() {
+      rm -f ${D}${libdir}/preloadable_libintl.so
+  }
+
+  do_install_append_class-native () {
+    rm ${D}${datadir}/aclocal/*
+    rm ${D}${datadir}/gettext/config.rpath
+    rm ${D}${datadir}/gettext/po/Makefile.in.in
+    rm ${D}${datadir}/gettext/po/remove-potcdate.sin
+
+          create_wrapper ${D}${bindir}/msgfmt \
+                  GETTEXTDATADIR="${STAGING_DATADIR_NATIVE}/gettext-0.19.8/"
+
+  }
+
+  # 扩展
+  BBCLASSEXTEND = "native nativesdk"
+#+END_EXAMPLE
+*** 描述 recipe 的元数据
+- SUMMARY：对软件包的简要描述，以一行描述且最多 80 个字符
+- DESCRIPTION：对软件包的详细描述
+- AUTHOR：描述作者的名字和 email 方式，可以列出多个作者。
+#+BEGIN_EXAMPLE
+  AUTHOR = "Santa Claus <santa@northpole.com>"
+#+END_EXAMPLE
+- HOMEPAGE：软件包的主站
+- BUGTRACKER：追踪软件包 BUG 的站点
+*** 软件包管理的元数据
+这部分用于提供给包管理系统。
+- SECTION：说明包的类型，包管理系统根据此变量来组织该包，可用的值有：
+  + app,audio,base,devel,libs
+- PRIORITY：描述此包可以作用于哪种系统，仅仅在 dpkg 和 opkg 包管理器下使用
+  + standard：任何 linux 系统都适用的标准包
+  + required：系统所必需的
+  + optional：可选的
+  + extra：可能会与系统的其他包相冲突
+*** 许可说明
+许可说明是 yocto 强制要求的：
+- LICENSE：许可名称
+- LIC_FILES_CHECKSUM：许可文件的校验
+*** 继承与包含
+- =inherit <class name>= ：继承自 class，这个语句在文件中的位置并不会影响 bitbake 的解析
+- =include <file name>= , =requirde <file name>= ：包含文件， *这句话在文件中的位置就很重要了，bitbake 会在语句处展开文件*
+*** 构建说明
+- PROVIDES：给 recipe 取别名，详细参考[[http://kcmetercec.top/2018/09/16/linux_make_yocto_bitbake_hello/#org9b9b4dc][此处]]。
+- DEPENDS：在构建此包前，必须构建指定的依赖包，详细参考[[http://kcmetercec.top/2018/09/16/linux_make_yocto_bitbake_hello/#org662313f][此处]]。
+- PN：包的名字，可以由 bitbake 从文件中获取，也可以用户显示指定，[[http://kcmetercec.top/2018/09/16/linux_make_yocto_bitbake_hello/#org9b9b4dc][此处有详细说明]]。
+- PV：包版本
+- PR：包修订版，默认值为 r0。
+- SRC_URI：源码、补丁及其他文件的下载路径，详细参考[[http://kcmetercec.top/2018/09/16/linux_bitbake_build_engine/#org441957f][此处]]。
+- SRCDATA：源码的日期，这个只有在使用 SCM 为源时才有用。
+- S：指定存放源码的路径，默认为 =${WORKDIR}/${PN}-${PV}= ，如果使用 SCM 方式获取，需要修改为 =${WORKDIR}/git=
+- B：构建过程中，中间对象的存放路径，默认和 =S= 的值一致
+- FILESEXTRAPATHS：扩展构建系统的搜寻路径
+- PACKAGECONFIG：对包的特征进行配置，比如有如下 3 个 feature：
+#+BEGIN_EXAMPLE
+  PACKAGECONFIG[f1]	=	“—with-f1,—wo-f1,build-deps-f1,rt-deps-f1”
+  PACKAGECONFIG[f2]	=	“—with-f2,—wo-f2,build-deps-f2,rt-deps-f2”
+  PACKAGECONFIG[f3]	=	“—with-f3,—wo-f3,build-deps-f3,rt-deps-f3”
+#+END_EXAMPLE
+每个 feature 通过逗号分割了 4 个配置，当对应的 feature 被使能时：
+1. 第一个配置被应用于配置脚本的参数列表
+2. 第二个配置被附加于 =EXTRA_OECONF= 
+3. 第三个参数被附加于 =DEPENDS= 构建依赖
+4. 第四个参数被附加于 =RDEPENDS= 运行时依赖
+   
+为了能使能这些特征，可以使用以下两种方式：
+1. 使用附加文件 =append file= ，创建附加文件 =<recipe file name>.bbappend= ，然后可以使能特征。
+#+BEGIN_EXAMPLE
+  PACKAGECONFIG = "f2 f3"
+  # 或者
+  PACKAGECONFIG_append = " f2 f3"
+#+END_EXAMPLE
+2. 使用配置文件 =local.conf= ：
+#+BEGIN_EXAMPLE
+  PACKAGECONFIG_pn-<packagename> = "f2 f3"
+  # 或者
+  PACKAGECONFIG_append_pn-<packagename> = " f2 f3"
+#+END_EXAMPLE
+- EXTRA_OECONF：配置脚本（指的是 autotools 中的 =configure= 配置脚本 ）的附加参数
+- EXTRA_OEMAKE：GUN Make 的附加配置
+- EXTRA_OECMAKE：CMake 的附加配置
+- LDFLAGS：链接脚本配置
+- PACKAGE_ARCH：软件包应用的硬件构建。
+  + 默认情况下，对于目标板这个值设置为 =TUNE_PAGARCH= ， 对于主机这个值设置为 =BUILD_ARCH= ，对于 SDK 这个值设置为 =${SDK_ARCH}-{SDKPKGSUFFIX}=
+  + 如果这个软件包是完全独立于任何构架的，那么可以主动将其设置为 =${MACHINE_ARCH}=
+*** 打包
+这部分设置使用打包器如何打包此编译好的软件，打包在软件被构建并被安装到根文件系统目录后执行。
+- PACKAGES：指定该包被打包的几种形式的列表，默认值为 =${PN}-dbg ${PN}-staticdev ${PN}-dev ${PN}-doc ${PN}-locale ${PACKAGE_BEFORE_PN} ${PN}=
+- FILES：指定哪些文件会被包含进包，默认情况下不需要修改此值。
+  + 但如果需要包含额外的文件，或者是在 =PACKAGES= 中新增了包类型时，就需要修改此值了
+- PACKAGE_BEFORE_PN：在包名字被创建之前，新增一个包
+- PACKAGE_DEBUG_SPLIT_STYLE：当 =${PN}-dbg= 包被创建时，指定其文件组织方式
+  + ".debug"：将带有调试信息的文件存放在 =.debug= 文件夹中，这个文件夹和编译产生的二进制文件放在一起
+  + "debug-file-directory"：将带有调试信息的文件存放在 =/usr/lib/debug=
+  + "debug-without_src"：与 =.debug= 的放置位置一样，只是不包含源码了
+- PACKAGESPLITFUNCS：制定包存放方式的任务，默认由 =package.bbclass= 的 =package_do_split_locales_populate_packages= 任务来做。
+*** 任务
+用户可以重写，附加默认的任务。
+*** 变量和类的扩展
+=BBCLASSEXTEND= 变量可以扩展包。
+*** 运行时配置
+- RDEPENDS：指定包在运行时的依赖，一般都要指定哪个包的依赖，比如：
+#+BEGIN_EXAMPLE
+  # 此软件的 dev 包依赖于 perl 包
+  RDEPENDS_${PN}-dev += "perl"
+  # 包依赖还支持版本选择
+  # RDEPENDS_${PN}	=	“<package>	(<operator>	<version>)” , <operator> 可以是 =,<,>,<=,>=
+  RDEPENDS_${PN}	=	“gettext	(>	0.16)”
+#+END_EXAMPLE
+- RRECOMMENDS：与 =RDEPENDS= 一样，只是并不强制要求被依赖的包必须存在
+- RSUGGESTS：与 =RRECOMMENDS= 一样，只是当包存在时构建系统也不会构建此包，而是提醒用户有这个包存在
+- RPROVIDES：此包的别名，用于其他包可以通过此名字来依赖它
+- RCONFLICTS：指定此包与哪些包冲突，如果已经构建了那些包，那么此包不会被构建。实际使用时应该加上包名称：
+#+BEGIN_EXAMPLE
+  RCONFILCTS_${PN} = "conflicting-package-name"
+#+END_EXAMPLE
+- RREPLACES：这个软件包可以替代哪些软件包，如果与那些包还有冲突，那么应该设置 =RCONFLICTS= 变量，实际使用事应该加上包名称：
+#+BEGIN_EXAMPLE
+RREPLACES_${PN} = "other_package_being_replaced"
+#+END_EXAMPLE
+** recipe 格式
+- 变量的赋值：等号两端由空格分割，等号右边由双引号包含值
+#+BEGIN_EXAMPLE
+  VARIABLE = "VALUE"
+#+END_EXAMPLE
+- 续行：使用右斜杠（\）来续行，斜杠后不能有空格，引号使用单独一行
+#+BEGIN_EXAMPLE
+  VARIABLE	=	“\
+               value1	\
+               value2	\
+              ”
+#+END_EXAMPLE
+- python 和 shell 函数：统一使用 4 个空格来代替 Tab
+- 注释：注释要单独占用一个行或多行，不能在语句同一行后加入注释
+- task 的顺序：按照以下顺序来放置 task
+#+BEGIN_EXAMPLE
+  # 这个就是构建软件包的标准流程
+  do_fetch
+  do_unpack
+  do_patch
+  do_configure
+  do_compile
+  do_install
+  do_populate_sysroot
+  do_package
+#+END_EXAMPLE
+- 组织顺序：recipe 组织的先后顺序如下：
+#+BEGIN_EXAMPLE
+  SUMMARY：简要说明，最多 80 字符
+  DESCRIPTION：详细说明，可选
+  AUTHOR
+  HOMEPAGE
+  BUGTRACKER
+  SECTION
+  LICENSE
+  LIC_FILES_CHKSUM
+  DEPENDS
+  PROVIDES
+  PV
+  SRC_URI
+  SRCREV
+  S
+  inherit ...
+  PACKAGECONFIG
+  build class specific variables, i.e. EXTRA_QMAKEVARS_POST, EXTRA_OECONF
+  task overrides, i.e. do_configure
+  PACKAGE_ARCH
+  PACKAGES
+  FILES
+  RDEPENDS
+  RRECOMMENDS
+  RSUGGESTS
+  RPROVIDES
+  RCONFLICTS
+  BBCLASSEXTEND
+#+END_EXAMPLE
+* 从头开始写一个新的 recipe
+** 编写 recipe 的思路
+编写 recipe 时，按照下图思路然后再按照前面说的 recipe 组织格式排列即可。
+- 可以先从[[http://layers.openembedded.org/layerindex/branch/master/layers/][官方 layer]] 或 github 中寻找一个相似的 recipe，然后在此基础上做修改
+#+HTML:<img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[make]/[What]Linux--yocto/create_new_recipe.jpg?raw=true" alt="create_new_recipe.jpg">
+如果想对包的某个步骤做单独检查，可以只运行对应的任务：
+#+BEGIN_EXAMPLE
+  bitbake -c fetch <recipe name>
+  bitbake -c unpack <recipe name>
+#+END_EXAMPLE
+** 新建层后创建 recipe
+在对默认的工程增加 recipe 时，首先要做的就是新建一个层。
+
+这样即有便于今后维护，也不会破坏原有的工程。
+
+新建层使用命令：
+#+BEGIN_EXAMPLE
+  bitbake-layers create-layer meta-<layername>
+#+END_EXAMPLE
+
+然后新建的层便会提供一个示例的 recipe 以及 =conf/layer.conf= ：
+- 一般使用此默认设置即可
+#+BEGIN_EXAMPLE
+  # We have a conf and classes directory, add to BBPATH
+  BBPATH .= ":${LAYERDIR}"
+
+  # We have recipes-* directories, add to BBFILES
+  # 由 BBFILES 可以看出，当前层中的 recipes-* 文件夹下的所有子文件夹中的 *.bb 和 *.bbappend 文件都会被包含。
+  BBFILES += "${LAYERDIR}/recipes-*/*/*.bb \
+              ${LAYERDIR}/recipes-*/*/*.bbappend"
+
+  BBFILE_COLLECTIONS += "meta-nano"
+  BBFILE_PATTERN_meta-nano = "^${LAYERDIR}/"
+  BBFILE_PRIORITY_meta-nano = "6"
+  LAYERSERIES_COMPAT_meta-nano = "sumo"
+#+END_EXAMPLE
+
+比如对于当前系统，我想要写 app，那么就可以在层中新建 =recipes-apps/apps= 文件夹，然后新建 recipe 来包含 app 代码。
+- 关于 recipe 的文件的命名，前面已经详细说过了，一般使用 =<package_name>_<version>.bb= 即可。
+
+** 获取源码
+可以在 bitbake 提供的示例 recipe 的基础之上开始调整。
+
+获取源码最关键的就是设置 =SRC_URI= ,在[[http://kcmetercec.top/2018/09/16/linux_bitbake_build_engine/][源码的下载]]一节中已经详细说明了此变量该如何设置。
+- 一般来讲默认使用 =base.bbclass= 中的 =do_fetch= 方法即可，也就是不用单独实现一次了
+  
+在填写源码地址时，一般会含有包的版本，这种情况下使用 =PV= 来替代比较好以后移植。
+#+BEGIN_EXAMPLE
+  SRC_URI = "https://nano-editor.org/dist/v4/nano-${PV}.tar.xz"
+#+END_EXAMPLE
+
+在填写压缩包的 MD5 或 SHA256 校验时，一般为包单独取名并为其指定校验和。
+
+而对于 git 方式获取的源码不需要提供校验和，但一般需要指定 =branch= 。
+** 解压缩
+对于通过压缩包的方式获取的源码，需要解压缩。
+- 一般来讲默认使用 =base.bbclass= 中的 =do_unpack= 方法即可，也就是不用单独实现一次了
+  
+下载的文件会被存放于 =DL_DIR= 中。
+  
+被解压缩的文件存放于变量 =S= 所指定的路径中。
+#+BEGIN_EXAMPLE
+  BPN = "${@oe.utils.prune_suffix(d.getVar('PN'), d.getVar('SPECIAL_PKGSUFFIX').split(), d)}"
+  BP = "${BPN}-${PV}"
+  S = "${WORKDIR}/${BP}"
+#+END_EXAMPLE
+从上面设置可以看出默认解压缩包文件名为： <package_name>-<packager_version>
+- 比如一个名为 =hello_2.9.bb= 的 recipe 下载 =hello-2.9.tar.gz= 文件包，最后被解压缩到 =hello-2.9= 文件夹中
+  
+对于使用 SCM 获取的代码会被存放于 =${WORKDIR}/<scm>=
+- scm 就是对应工具的名称，比如 =${WORKDIR}/git= 
+** 打补丁
+=base.bbclass= 继承了 =patch.bbclass= ，所以一般情况下用户也不用编写 =do_patch= 任务。
+
+当一个软件包需要打补丁时，需要做如下工作：
+- 在对应的 recipe 文件旁新建与 recipe name 一样的文件夹，用于存放补丁文件。
+  + 比如在 =meta-openembedded/meta-perl/recipes-perl/libnet= 下有 recipe 文件： =libnet-ssleay-perl_1.85.bb= 。那么对应的补丁文件夹名称就是 =libnet-ssleay-perl= 。
+- 在补丁文件夹中方式补丁，确保补丁使用 =-p1= 选项（忽略顶层文件夹）
+- 只需要在 =SRC_URI= 中加入补丁文件（.patch / .diff）在补丁文件夹中的路径。
+  + 当需要忽略多级路径时，需要增加 =striplevel= 选项
+  + 当路径在其他文件夹时，需要增加 =patchdir= 选项
+#+BEGIN_EXAMPLE
+  SRC_URI = "http://search.cpan.org/CPAN/authors/id/M/MI/MIKEM/Net-SSLeay-${PV}.tar.gz \
+             file://no-exec-on-configure.patch "
+#+END_EXAMPLE
+** 增加许可
+构建系统在下载和解压缩源码后，便会检查它的许可。   
+
+所有的 recipe 必须增加许可说明，不然构建系统会报错：
+- LICENSE：许可名称
+  + 在 =meta/files/common-licenses/= 中列出了业内的可用许可
+- LIC_FILES_CHKSUM：许可文件的校验和
+#+BEGIN_EXAMPLE
+  LICENSE = "Artistic-1.0 | GPL-1.0+"
+  LIC_FILES_CHKSUM = "file://README;beginline=274;endline=294;md5=67d67095d83e339da538a082fad5f38e"
+#+END_EXAMPLE
+
+有些开源软件包只是在说明中提出了该软件的许可，但并没有给出许可文件，这个时候使用 =COMMON_LICENSE_DIR= ：
+#+BEGIN_EXAMPLE
+  LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
+#+END_EXAMPLE
+这种情况下，如果不知道该文件的 md5，那可以先不填，然后等构建系统报错以后从提示中拷贝过来即可。
+** 源码的配置
+源码的构建一般有 =makefile= , =autotools= , =cmake= 等，但 =makefile= 基本上属于上世纪的产物了。
+- 最推荐的当然是优秀的 =cmake= 。
+
+在配置当前源码前，需要先确认当前源码是否还依赖其他的源码，如果有需要将其加入 =DEPENDS= 变量中。
+
+*** GNU Autotools
+当源码包中包含 =configure.ac= 文件时，代表它使用的构建系统是 =GNU Autotools= 。
+
+对于这种构建系统，用户只需要继承 =autotools= 类即可，这个类已经提供了 =do_configure= 任务。
+
+当需要修改配置时，需要配置变量 =EXTRA_OECONF= ：
+#+BEGIN_EXAMPLE
+  # set default mailgroup to mail
+  # --with-libnfslock specify where to install nfslock.so.NVER
+  EXTRA_OECONF = "--enable-shared \
+                  --with-mailgroup=mail \
+                  --with-libnfslock=${libdir} \
+                 "
+#+END_EXAMPLE
+*** cmake
+当源码包中包含 =CMakeLists.txt= 时，代表它使用的构建系统是 =CMake= 。
+
+对于这种构建系统，用户只需要继承 =cmake= 类即可，这个类已经提供了 =do_configure= 任务。
+
+当需要修改配置时，需要配置变量 =EXTRA_OECMAKE= ：
+#+BEGIN_EXAMPLE
+  EXTRA_OECMAKE = "-DBUILD_WSI_MIR_SUPPORT=OFF \
+                   -DBUILD_LAYERS=OFF \
+                   -DBUILD_TESTS=OFF"
+#+END_EXAMPLE
+*** 其他
+如果既不是 =autotools= 也不是 =cmake= 构建，用户就需要自己来完成 =do_configure= 任务。
+
+修改配置时，需要配置变量 =EXTRA_OEMAKE= :
+#+BEGIN_EXAMPLE
+  EXTRA_OEMAKE = "'CC=${CC}' 'BIND=${CC}' 'AS=${CC} -c' 'CPP=${CPP}' \
+      'CFLAGS=-I. -DUNIX ${CFLAGS}' \
+      'CFLAGS_NOOPT=-I. -DUNIX ${CFLAGS}' \
+      'INSTALL=install' 'INSTALL_D=install -d' \
+      'BINFLAGS=0755'"
+#+END_EXAMPLE
+** 源码的编译
+前面经过源码的配置以后，最终就都是由 =Makefile= 来编译了。
+- =base.bbclass= 中已经提供了 =do_compile= 任务，所以一般来讲用户不需要任何多余工作。
+
+当编译失败时，一般会有以下 3 种可能：
+*** 并行构建错误
+构建系统默认情况下使能了并行构建，也就是多线程使用 Make 来同时编译。
+
+但在有些情况下由于编译的先后顺序问题，导致 Make 报错。
+
+简单粗暴的办法就是将变量 =PRALLEL_MAKE= 设置为空字符串。
+*** 主机泄漏
+就是指本来应该使用交叉编译工具链的头文件和库，却使用了主机自己的头文件和库。
+
+这类错误会由构建系统报错，根据提示更改即可。
+*** 缺乏头文件和库
+一般来讲，缺乏头文件和库是由于其依赖的软件包没有被构建导致的。
+
+需要设置 =DEPENDS= 变量以解决此问题。
+
+也有可能是头文件和库的访问路径设置错误，那么需要配置：
+- STAGING_BINDIR
+- STAGING_INCDIR
+- STAGING_DATADIR
+- STAGING_BASELIBDIR
+** 编译结果的安装
+当编译完成后， =base.bbclass= 提供的 =do_install= 任务将可执行文件、头文件、库、配置文件等，
+从 =S= , =B= , =WORKDIR= 从拷贝到 =D= 所指定的目录中。
+- 源码也会存在这个目录中
+#+BEGIN_EXAMPLE
+  TARGET_VENDOR = "-oe"
+  MULTIMACH_TARGET_SYS = "${PACKAGE_ARCH}${TARGET_VENDOR}-${TARGET_OS}"
+  TMPDIR ?= "${TOPDIR}/tmp"
+  BASE_WORKDIR ?= "${TMPDIR}/work"
+
+  # build/tmp/work/xxx-linux/<package_name>/
+  WORKDIR = "${BASE_WORKDIR}/${MULTIMACH_TARGET_SYS}/${PN}/${EXTENDPE}${PV}-${PR}"
+  T = "${WORKDIR}/temp"
+  D = "${WORKDIR}/image"
+  S = "${WORKDIR}/${BP}"
+  B = "${S}"
+#+END_EXAMPLE
+
+对于安装位置的配置：
+- autotools 和 cmake：这两个的类文件中已经提供了 =do_install= 任务。
+  + 如果要增加配置，用户需要新建 =do_install_append= 任务，然后使用 =install -d <source> <dest>= 语句
+- make：使用 make 方式，需要用户新建 =do_install= 任务，然后根据 Makefile 而设定对应变量（DESTDIR/PREFIX/INSTALLROOT）
+  + yocto 提供了 =oe_runmake= 函数可以直接调用 make
+#+BEGIN_EXAMPLE
+  do_install(){
+    oe_runmake install PREFIX=${D}
+  }
+#+END_EXAMPLE
+- 手动安装：如果连 Makefile 都没有提供 install 方法，那么就需要在 =do_install= 中使用 =install -d <src> <dest= 语句安装
+#+BEGIN_EXAMPLE
+  do_install(){
+    install -d ${B}/bin/hello ${D}${bindir}
+    install -d ${B}/lib/hello.lib ${D}${libdir}
+  }
+#+END_EXAMPLE
+yocto 默认定义了以下变量以指定安装位置：
+- bindir = "/usr/bin"
+- sbindir = "/usr/sbin"
+- libdir = "/usr/lib"
+- libexecdir = "/usr/lib"
+- sysconfdir = "/etc"
+- datadir = "/usr/share"
+- mandir = "/usr/share/man"
+- includedir = "/usr/include"
+** 系统服务设置
+当需要系统在启动时默认运行某些服务，在关机时停止某些服务，那么就需要设置系统服务。
+
+这种情况下，用户需要编写启动脚本。
+
+yocto 支持 sysvinit 和 systemd 两种服务管理器。
+
+*** SysVinit
+对于 sysvinit 需要将启动脚本放置于 =/etc/init.d= 以及在对应的 =/etc/rcx.d= 为该脚本创建符号链接。
+
+yocto 提供了 =update-rc.d= 类来完成这些工作，通过设置以下变量即可：
+- INITSCRIPT_PACKAGES：包含 =init= 脚本的软件包名称，一般这个值不用设置，因为默认为: =${PN}=
+- INITSCRIPT_NAME：启动脚本的名称
+- INITSCRIPT_PARAMS：传递给 =update-rc.d= 的参数
+  + 具体参数设置参看[[./www.tin.org/bin/man.cgi?section=8&topic=update-rc.d][此网页说明]]
+*** systemd
+systemd 可以并行启动任务，以提高开机速度。对应的配置脚本放置在 =/lib/systemd/system= 。
+
+yocto 提供了 =systemd= 类来完成脚本方式，通过设置以下变量：
+- SYSTEMD_PACKAGES：包含配置脚本包名称，默认不用设置。
+- SYSTEMD_SERVICE：配置文件名称
+** 输出结果打包
+目前构建已经完成，接下来就是 =do_package= 任务了，通过包管理系统将构建输出进行打包。
+*** 包的分离
+包分离（package splitting）就是将构建输出文件放置到不同的包中，可以配置输出文件是否包含相应的库、调试信息等等。
+
+主要由以下两个变量完成：
+- PACKAGES：用空格分离，代表输出文件可以输出哪些包。
+  + 在 =meta/conf/bitbake.conf= 中定义了其默认值 =PACKAGES = "${PN}-dbg ${PN}-staticdev ${PN}-dev ${PN}-doc ${PN}-locale ${PACKAGE_BEFORE_PN} ${PN}"=
+- FILES：用于规定哪些文件夹和文件会被包含进包，这个值通常含有条件：
+#+BEGIN_EXAMPLE
+  # 文件或文件夹名以空格分割
+  FILES_${PN}-dbg = "<files>"
+  # bitbake.conf 中的默认值
+  FILES_${PN} = "${bindir}/* ${sbindir}/* ${libexecdir}/* ${libdir}/lib*${SOLIBS} \
+              ${sysconfdir} ${sharedstatedir} ${localstatedir} \
+              ${base_bindir}/* ${base_sbindir}/* \
+              ${base_libdir}/*${SOLIBS} \
+              ${base_prefix}/lib/udev ${prefix}/lib/udev \
+              ${base_libdir}/udev ${libdir}/udev \
+              ${datadir}/${BPN} ${libdir}/${BPN}/* \
+              ${datadir}/pixmaps ${datadir}/applications \
+              ${datadir}/idl ${datadir}/omf ${datadir}/sounds \
+              ${libdir}/bonobo/servers"
+
+  FILES_${PN}-bin = "${bindir}/* ${sbindir}/*"
+
+  FILES_${PN}-doc = "${docdir} ${mandir} ${infodir} ${datadir}/gtk-doc \
+              ${datadir}/gnome/help"
+  SECTION_${PN}-doc = "doc"
+
+  FILES_SOLIBSDEV ?= "${base_libdir}/lib*${SOLIBSDEV} ${libdir}/lib*${SOLIBSDEV}"
+  FILES_${PN}-dev = "${includedir} ${FILES_SOLIBSDEV} ${libdir}/*.la \
+                  ${libdir}/*.o ${libdir}/pkgconfig ${datadir}/pkgconfig \
+                  ${datadir}/aclocal ${base_libdir}/*.o \
+                  ${libdir}/${BPN}/*.la ${base_libdir}/*.la"
+  SECTION_${PN}-dev = "devel"
+  ALLOW_EMPTY_${PN}-dev = "1"
+  RDEPENDS_${PN}-dev = "${PN} (= ${EXTENDPKGV})"
+
+  FILES_${PN}-staticdev = "${libdir}/*.a ${base_libdir}/*.a ${libdir}/${BPN}/*.a"
+  SECTION_${PN}-staticdev = "devel"
+  RDEPENDS_${PN}-staticdev = "${PN}-dev (= ${EXTENDPKGV})"
+
+  FILES_${PN}-dbg = "/usr/lib/debug /usr/src/debug"
+
+  SECTION_${PN}-dbg = "devel"
+  ALLOW_EMPTY_${PN}-dbg = "1"
+
+  FILES_${PN}-locale = "${datadir}/locale"
+#+END_EXAMPLE
+*** 新建包
+用户也可以新建包类型：
+#+BEGIN_EXAMPLE
+  SUMMARY	=	“Hello	Universe	Application”
+  DESCRPTION	=	“The	ultimate	hello	extending	beyond	‘world’.”
+  AUTHOR	=	“spacey@universetrotter.com”
+  HOMEPAGE	=	“http://universetrotter.com”
+  BUGTRACKER	=	“https://bugs.universetrotter.com”
+  PN	=	“hellouniverse”
+  #	Other	recipe	stuff
+  #	…
+  # 新增加一个 graphics 包
+  PACKAGES	=+	“graphics”
+  FILES_${PN}-graphics	=	“${datadir}/pixmaps/*”
+  # 向 doc 包中增加文件
+  FILES_${PN}-doc	=+	“${datadir}/blurbs/*”
+  PACKAGE_BEFORE_PN	=	“examples”
+  FILES_${PN}-examples	=	“${datadir}/examples”
+#+END_EXAMPLE
+
+*** 打包过程检查
+=insane= 类可以检查打包过程是否正常：
+- 文件或文件夹的权限
+- 目录结构
+  
+用户也可以增加 =WARN_QA= , =ERROR_QA= 这种输出中间过程。
+
+包存放于 =${WORKDIR}/packages-split= ，用户可以在此处检查。
+*** 包的架构
+一般来讲默认的包架构就可以了，但用户也可以做调整：
+- PACKAGE_ARCH = "${MACHINE_ARCH}" ：此包只在对应的 =MACHINE_ARCH= 时才构建
+- inherit allarch ：此包应用于所有架构
+
+** 定制安装脚本
+用户可以在包安装、升级、卸载前后插入定制化脚本，RPM、dpkg、ipkg 都支持这种方式。
+
+可以定义以下 4 种脚本任务：
+- pkg_preinst_<package_name>：在包被安装前运行该脚本
+- pkg_postinst_<package_name>：在包被安装后运行该脚本
+- pkg_prerm_<package_name>：在包被卸载前运行该脚本
+- pkg_postrm_<package_name>：在包被卸载后运行该脚本
+  
+脚本内容是 shell 脚本：
+#+BEGIN_EXAMPLE
+  # 在包被安装后执行，会执行两次
+  # 一次是构建系统在创建根文件系统时，属于构建时
+  # 一次是在目标板上被包管理器调用时，属于运行时
+  pkg_postinst_${PN}()
+  {
+    #!/bin/sh
+    # shell commands go here
+  }
+
+  # 下面这种方式便可以区分构建时和运行时
+  pkg_postinst_${PN}()
+  {
+    #!/bin/sh
+    if [ x"$D" = "x" ];then
+       # shell commands for target execution
+    else
+       # shell commands for build system execution
+    fi
+  }
+#+END_EXAMPLE
+** 变体
+可以指定此包是对应于哪个对象的，默认都会为目标板编译一份。
+
+#+BEGIN_EXAMPLE
+  # 为主机构建
+  BBCLASSEXTEND = "native"
+  # 为 SDK 构建
+  BBCLASSEXTEND = "native-sdk"
+#+END_EXAMPLE
+* recipe 范例
+前面说了一大堆，现在要实践一下。
+** 新建并包含 layer
+在编写 recipe 之前，需要新建一个 layer：
+#+BEGIN_EXAMPLE
+  bitbake-layers create-layer meta-mylayer
+#+END_EXAMPLE
+然后在 =bblayers.conf= 中加入新建的层：
+#+BEGIN_EXAMPLE
+  # POKY_BBLAYERS_CONF_VERSION is increased each time build/conf/bblayers.conf
+  # changes incompatibly
+  POKY_BBLAYERS_CONF_VERSION = "2"
+
+  BBPATH = "${TOPDIR}"
+  BBFILES ?= ""
+
+  BBLAYERS ?= " \
+    /home/cec/github/poky/meta \
+    /home/cec/github/poky/meta-poky \
+    /home/cec/github/poky/meta-yocto-bsp \
+    /home/cec/github/poky/meta-nano \
+    /home/cec/github/poky/meta-mylayer \
+    "
+#+END_EXAMPLE
+
+在 mylayer 中增加一个 app 对应 1.0 版本的 recipe ： hello_1.0.bb
+#+BEGIN_EXAMPLE
+  .
+  ├── conf
+  │   └── layer.conf
+  ├── COPYING.MIT
+  ├── README
+  └── recipes-apps
+      └── hello
+          └── hello_1.0.bb
+
+  3 directories, 4 files
+#+END_EXAMPLE
+并且需要在 =layer.conf= 中增加兼容性声明：
+#+BEGIN_EXAMPLE
+  LAYERSERIES_COMPAT_meta-mylayer = "sumo"
+#+END_EXAMPLE
+** 编写软件包
+新建源码文件如下：
+#+BEGIN_SRC c
+  //hello.c
+  #include "helloprint.h"
+
+  int main(void)
+  {
+      print_hello();
+
+      return 0;
+  }
+  //helloprint.c
+  #include <stdio.h>
+  #include "helloprint.h"
+
+  void print_hello(void)
+  {
+      printf("Hello world!My first Yocto project recipe.\n");
+  }
+  //helloprint.h
+  #ifndef __HELLOPRINT_H__
+  #define __HELLOPRINT_H__
+  extern void print_hello(void);
+  #endif
+#+END_SRC
+
+然后将这三个文件打包：
+#+BEGIN_EXAMPLE
+  tar cvfz hello-1.0.tgz .
+#+END_EXAMPLE
+
+然后将此文件拷贝至 recipe 同一目录中的 *files* 文件夹中。
+- bitbake 会来搜寻这个文件夹的
+** 编写 recipe
+下面就按照前面讲的编写 recipe 的范例来编写 recipe 。
+*** 文件名称
+前面讲过文件名称的格式，并且我们这个没有通过 scm 来获取而 =<revision>= 一般不用设置，那么名称就是：
+#+BEGIN_EXAMPLE
+  #<package name>_<version>.bb
+  hello_1.0.bb
+#+END_EXAMPLE
+*** 文件的基本描述
+先添加基本的对此 reciep 的描述：
+#+BEGIN_EXAMPLE
+  SUMMARY = "exercise for yocto"
+  DESCRIPTION = "Recipe created by bitbake-layers"
+  AUTHOR = "kcmetercec <kcmeter.cec@gmail.com>"
+#+END_EXAMPLE
+*** 源码的获取
+由于当前我们将源码包放在和 recipe 同一个目录那，那么就是相对路径下的当前目录。
+
+#+BEGIN_EXAMPLE
+  SRC_URI = "file://hello-1.0.tgz"
+#+END_EXAMPLE
+*** 解压缩
+在 =base.bbclass= 中已经具有了解压缩的方法，所以不需要再实现一次。
+*** 打补丁
+目前不需要打补丁
+
+*** 添加许可
+由于 LICENSE 是必须的，但由于我们并没有包含 LICENSE 文件，所以就使用 yocto 所默认提供的 LICENSE。
+#+BEGIN_EXAMPLE
+  LICENSE = "MIT"
+  LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
+#+END_EXAMPLE
+这个 md5 是我用 =md5sum= 在 =meta/files/common-licenses/MIT= 获取的。
+*** 源码配置
+由于我们当前并没有使用构建系统，所以这一步可以不做。
+*** 源码的编译
+源码的编译需要重写 =do_compile()= 任务：
+#+BEGIN_EXAMPLE
+  do_compile() {
+      ${CC} -c ${WORKDIR}/helloprint.c
+      ${CC} -c ${WORKDIR}/hello.c
+      ${CC} -o hello hello.o helloprint.o
+  }
+#+END_EXAMPLE
+*** 源码的安装
+由于没有使用构建系统，我们也需要重写 =do_install()= 任务：
+#+BEGIN_EXAMPLE
+  do_install() {
+      install -d ${D}${bindir}
+      install -m 0755 hello ${D}${bindir}
+  }
+#+END_EXAMPLE
+*** 其他配置
+    
+除此之外，还需要添加：
+#+BEGIN_EXAMPLE
+  TARGET_CC_ARCH += "${LDFLAGS}"
+#+END_EXAMPLE
+这个是 yocto 最新文档所标注的需要添加此变量。
+
+关于系统服务及打包对于我们现在练习并不相关，所以可以先不用管。
+*** 最终文件
+按照前面讲的文件格式进行整理，整个 reciep 如下：
+#+BEGIN_EXAMPLE
+  SUMMARY = "exercise for yocto"
+  DESCRIPTION = "Recipe created by bitbake-layers"
+  AUTHOR = "kcmetercec <kcmeter.cec@gmail.com>"
+
+  LICENSE = "MIT"
+  LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
+
+  SRC_URI = "file://hello-1.0.tgz"
+
+  TARGET_CC_ARCH += "${LDFLAGS}"
+
+  do_compile() {
+      ${CC} -c ${WORKDIR}/helloprint.c
+      ${CC} -c ${WORKDIR}/hello.c
+      ${CC} -o hello hello.o helloprint.o
+  }
+
+  do_install() {
+      install -d ${D}${bindir}
+      install -m 0755 hello ${D}${bindir}
+  }
+#+END_EXAMPLE
+*** 构建并验证
+#+BEGIN_EXAMPLE
+  #构建 apps/hello 文件夹下的 recipe，看是否有报错
+  bitbake hello
+#+END_EXAMPLE
+
+可以看到：
+- =/home/cec/github/poky/build/tmp/work/i586-poky-linux/hello/1.0-r0/= 有被解压缩的源码
+- =/home/cec/github/poky/build/tmp/work/i586-poky-linux/hello/1.0-r0/hello-1.0/= 有被编译后的输出
+- =/home/cec/github/poky/build/tmp/work/i586-poky-linux/hello/1.0-r0/packages-split/= 有被打包的目录结构
+- =/home/cec/github/poky/build/tmp/work/i586-poky-linux/hello/1.0-r0/deploy-rpms/= 有最终的打包输出
+- =/home/cec/github/poky/build/tmp/work/i586-poky-linux/hello/1.0-r0/image/= 有在文件系统的目录结构
+
+** 基于 Makefile 的构建
+*** 编写 Makefile 并压缩
+基于上面的源码编写 Makefile，来完成自动化构建：
+#+BEGIN_EXAMPLE
+  CC=gcc
+  RM=rm
+
+  CFLAGS=-c -Wall
+  LDFLAGS=
+
+  DESTDIR=
+  BINDIR=/usr/bin
+
+  SOURCES=hello.c helloprint.c
+  OBJECTS=$(SOURCES:.c=.o)
+
+  EXECUTABLE=hellomake
+
+  .cpp.o:
+    ${CC} ${CFLAGS} $< -o $@
+  all: ${SOURCES} ${EXECUTABLE}
+
+  ${EXECUTABLE}: ${OBJECTS}
+    ${CC} ${LDFLAGS} $^ -o $@
+  clean:
+    ${RM} ${EXECUTABLE} *.o
+  install:${EXECUTABLE}
+    mkdir -p ${DESTDIR}/${BINDIR}
+    install -m 0755 $< ${DESTDIR}/${BINDIR}
+#+END_EXAMPLE
+然后重新压缩：
+#+BEGIN_EXAMPLE
+  tar --transform "s/^./hellomake-1.0/" -cvzf hellomake-1.0.tgz .
+#+END_EXAMPLE
+之所以要像上面这样压缩，是因为 =oe_runmake= 构建工具默认构建目录是在 =${WORKDIR}/${PN}-${PV}/${RECIPE_NAME}= 文件夹下,
+而以上的打包命令会创建文件夹 =hellomake-1.0= ，也就是说会解压时会自动创建该文件。
+
+不然实际编译时 =oe_runmake= 就找不到被构建的文件。
+*** 新建 recipe
+新建 hellomake-1.0.bb 并将 =hellomake-1.0.tgz= 拷贝至 =files= 文件夹中，如下目录结构：
+#+BEGIN_EXAMPLE
+  cec@box:~/github/poky/meta-mylayer/recipes-apps$ tree
+  .
+  ├── hello
+  │   ├── files
+  │   │   └── hello-1.0.tgz
+  │   └── hello_1.0.bb
+  └── hello-make
+      ├── files
+      │   └── hellomake-1.0.tgz
+      └── hellomake_1.0.bb
+
+  4 directories, 4 files
+#+END_EXAMPLE
+新写的 recipe 如下：
+#+BEGIN_EXAMPLE
+  SUMMARY = "exercise for yocto"
+  DESCRIPTION = "Recipe created by bitbake-layers"
+  AUTHOR = "kcmetercec <kcmeter.cec@gmail.com>"
+
+  LICENSE = "MIT"
+  LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
+
+  SRC_URI = "file://hellomake-1.0.tgz"
+
+  TARGET_CC_ARCH += "${LDFLAGS}"
+
+  EXTRA_OEMAKE = "'CC=${CC}'"
+
+  do_install() {
+      oe_runmake install DESTDIR=${D} BINDIR=${bindir}
+  }
+#+END_EXAMPLE
+- 由于默认的 =Makefile= 中 =CC= 值为 =gcc= ，所以需要在 =EXTRA_OEMAKE= 中修改其值。
+- =base.bbclass= 中并没有 =do_install= 的实际执行代码，所以还需要调用 =oe_runmake= 来主动执行
+  + 同样的需要修改 =DESTDIR= 和 =BINDIR= 
+*** 验证
+当使用 =bitbake hellmake= 之后，可以看到：
+- /home/cec/github/poky/build/tmp/work/i586-poky-linux/hellomake/1.0-r0/hellomake-1.0 中包含源码及编译后的输出
+- /home/cec/github/poky/build/tmp/work/i586-poky-linux/hellomake/1.0-r0/deploy-rpms 中有 rpm 包
+  
+为了能够在目标 image 中运行该编译输出，需要在 =build/conf/local.conf= 中将此 package 加入：
+#+BEGIN_EXAMPLE
+CORE_IMAGE_EXTRA_INSTALL = "hellomake"
+#+END_EXAMPLE
+然后运行 =bitbake core-image-sato= ，启动 qemu 便可以运行了。
+** 基于 Cmake 的构建
+依然是基于上面的源码编写 CMakeLists.txt：
+#+BEGIN_EXAMPLE
+  #Specify the minimum version for CMake
+  #使用 cmake -version 查看版本
+  cmake_minimum_required(VERSION 2.8)
+
+  #Project's names
+  set(EXEC_NAME "hellocmake")
+  project(${EXEC_NAME})
+
+  #Set the output folder where you program will be created
+  # CMAKE_SOURCE_DIR : CMakeLists.txt 文件所在位置
+  # CMAKE_BINARY_DIR: 二进制文件的输出路径（此处理解可能有误）
+  set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
+
+  # EXECUTABLE_OUTPUT_PATH: 最终可执行文件的输出路径
+  set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
+
+  # LIBRARY_OUTPUT_PATH: 库输出路径
+  set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR})
+
+  set(CMAKE_BUILD_TYPE Debug)
+  # PROJECT_SOURCE_DIR: 工程的根目录路径
+  #The following folder will be included
+  include_directories("${PROJECT_SOURCE_DIR}")
+
+  file(GLOB SOURCES ${PROJECT_SOURCE_DIR}/*.c)
+
+  #add source file
+  add_executable(${EXEC_NAME} ${SOURCES})
+#+END_EXAMPLE
+同样的打包方式：
+#+BEGIN_EXAMPLE
+  tar --transform "s/^./hellocmake-1.0/" -cvzf hellocmake-1.0.tgz .
+#+END_EXAMPLE
+同样的目录结构：
+#+BEGIN_EXAMPLE
+  cec@box:~/github/poky/meta-mylayer/recipes-apps$ tree hello-cmake/
+  hello-cmake/
+  ├── files
+  │   └── hellocmake-1.0.tgz
+  └── hellocmake_1.0.bb
+
+  1 directory, 2 files
+#+END_EXAMPLE
+recipe 内容如下：
+#+BEGIN_EXAMPLE
+  SUMMARY = "exercise for yocto"
+  DESCRIPTION = "Recipe created by bitbake-layers"
+  AUTHOR = "kcmetercec <kcmeter.cec@gmail.com>"
+
+  LICENSE = "MIT"
+  LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
+
+  SRC_URI = "file://hellocmake-1.0.tgz"
+
+  inherit cmake
+
+  do_install() {
+      install -d ${D}${bindir}
+      install -m 0755 ${S}/bin/hellocmake ${D}${bindir}
+  }
+#+END_EXAMPLE
+最后就是验证结果了。
+** 基于 autotools 的构建
+之前我们编写的[[http://kcmetercec.top/2018/09/16/linux_make_yocto_bitbake_hello/][nano recipe]]并不完成，现在将其完整化：
+#+BEGIN_EXAMPLE
+  SUMMARY = "bitbake-layers recipe"
+  DESCRIPTION = "nano editor"
+  LICENSE = "GPLv3"
+  LIC_FILES_CHKSUM = "file://COPYING;md5=f27defe1e96c2e1ecd4e0c9be8967949"
+
+  SRC_URI = "https://nano-editor.org/dist/v4/nano-${PV}.tar.xz"
+  SRC_URI[md5sum] = "9650dd3eb0adbab6aaa748a6f1398ccb"
+
+  # nano依赖于 ncurses
+  DEPENDS = "ncurses"
+  RDEPENDS_${PN} = "ncurses"
+
+  inherit autotools gettext
+#+END_EXAMPLE
+文件目录结构如下：
+#+BEGIN_EXAMPLE
+  cec@box:~/github/poky/meta-mylayer/recipes-apps$ tree nano/
+  nano/
+  └── nano_4.4.bb
+#+END_EXAMPLE
+接下来按照前面的步骤构建安装即可。
+
+** 基于二进制文件的安装
+如果有些可执行文件是已经提前预编译好的，也可以通过继承 =bin_package= 类来将其转进系统。
+
+这个类将会跳过 =do_configure= 和 =do_compile= 任务，直接将可执行代码打包。
+#+BEGIN_EXAMPLE
+  SUMMARY	=	“Package	the	Proprietary	Software”
+  DESCRIPTION	=	“A	sample	recipe	utilizing	the	bin_package	class	\
+                                to	package	the	externally	build	Proprietary	software	\
+                                package.”
+  LICENSE	=	“CLOSED”
+  SRC_URI	=	“file://proprietary-${PV}.rpm”
+  inherit	bin_package
+#+END_EXAMPLE
+
+* devtool
+devtool 还可以将上述构建 layer，加入构建环境，部署等工作简化。
+
+devtool 创建和维护一个工作区层，在这个层中修改和编辑 recipe，config 并可以部署到当前的构建环境中。
+** 新建 workspace 层
+#+BEGIN_EXAMPLE
+  # 如果不填 [layerpath] 那么就会在当前路径下新建 workspace 层
+  devtool create-workspace [layerpath]
+#+END_EXAMPLE
+使用以上命令，devtool 会将新建的层加入 =build/conf/bblayers.conf= 中。
+- 如果不想层被加入，可以在命令后加入 =--create-only=
+** 新建 recipe
+#+BEGIN_EXAMPLE
+  # <source-path> 代表被构建软件的本地路径
+  devtool add <recipe-name> <source-path>
+
+  #如果从非本地抓取软件，可以使用
+  devtool add <recipe-name> <source-path> -f <source-uri>
+
+#+END_EXAMPLE
+此命令会在之前的新建层中新建 =recipes/<recipe-name>/<recipe-name>.bb= 和 =appends/<recipe-name>.bbappend= 
+- 对应软件的路径被写入 =<recipe-name>.bbappend= 中
+  
+比如要增加 nano4.5 的 recipe，则这么用：
+#+BEGIN_EXAMPLE
+  #从远程抓取代码并解压后存放在当前目录的 files/nano 中
+  devtool add nano files/nano -f https://www.nano-editor.org/dist/v4/nano-4.5.tar.gz
+#+END_EXAMPLE
+然后目录结构如下：
+#+BEGIN_EXAMPLE
+  ├── appends
+  │   ├── lrzsz_0.12.20.bbappend
+  │   └── nano_4.5.bbappend
+  ├── conf
+  │   └── layer.conf
+  ├── README
+  └── recipes
+      ├── lrzsz
+      │   ├── lrzsz
+      │   │   └── lrzsz.patch
+      │   └── lrzsz_0.12.20.bb
+      └── nano
+          └── nano_4.5.bb
+
+  6 directories, 7 files
+#+END_EXAMPLE
+可以查看其 recipe ，发现连 LICENSE 和构建规则都填好了，而 bbappend 中则是本地的路径。
+** 构建 recipe
+#+BEGIN_EXAMPLE
+  devtool build nano
+#+END_EXAMPLE
+** 部署到目标系统
+目标系统需要运行了 ssh 服务：
+#+BEGIN_EXAMPLE
+  devtool	deploy-target	<recipe-name>	[user@]target-host[:destdir]
+  #如果要卸载，则使用
+  devtool	undploy-target	<recipe-name>	[user@]target-host
+#+END_EXAMPLE
+** 添加进 image
+#+BEGIN_EXAMPLE
+  devtool	build-image	<image-name>
+#+END_EXAMPLE
+** 使用 devtool 为原 recipe 中的软件打补丁
+*** 建立源码副本
+#+BEGIN_EXAMPLE
+  #1. 将 <recipe-name> 中的源码解压至 <source-path>，并为其新建 git 仓库
+  #2. 为 <recipe-name> 建立 bbappend 文件，覆盖原 recipe 中的 SRC_URI
+  devtool	modify	-x	<recipe-name>	<source-path>
+#+END_EXAMPLE
+*** 更新 recipe
+当修改源码并用 git 提交后：
+#+BEGIN_EXAMPLE
+  # 根据当前的修改为原 recipe 打补丁
+  # 此命令会为初始源码增加补丁文件，并修改原始 recipe 文件
+  devtool	update-recipe	<recipe-name>
+
+  # 如果不希望修改原始的 recipe 文件，而是使用 append 文件，使用下面这个命令
+  # 在 <layer-dir> 中为 <recipe-name> 增加附加文件
+  devtool	update-recipe	<recipe-name>	-a	<layer-dir>
+#+END_EXAMPLE
+
+
+
+
+
+
+
+
