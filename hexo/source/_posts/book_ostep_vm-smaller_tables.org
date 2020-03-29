@@ -1,0 +1,148 @@
+#+TITLE: [What]Paging:Smaller Tables
+#+DATE: <2020-03-18 三> 
+#+TAGS: CS
+#+LAYOUT: post
+#+CATEGORIES: book,ostep
+#+NAME: <book_ostep_vm-smaller_tables.org>
+#+OPTIONS: ^:nil
+#+OPTIONS: ^:{}
+
+当只有一级页表时，页表本身所占用的空间就会很大，而多级页表可以解决这个问题。
+#+BEGIN_EXAMPLE
+  假设页块大小为 4KB，那么对于 32 位系统来说，一个进程需要映射到 1048576 个页块。
+
+  一个页表项为 4 字节，那么一个进程的页表就是 4*1048576 = 4MB。
+
+  假设一个系统中运行了 1000 个进程，那么页表总共就要占用 4000 MB，这显然是无法使用的。
+#+END_EXAMPLE
+
+#+BEGIN_EXPORT html
+<!--more-->
+#+END_EXPORT
+* 简易办法：使用大页
+如果我们简单粗暴的将页块大小规定为 16 KB，那么对应的页块数量就只有原来的四分之一，最终一个进程的页表就只有 1MB 大小。
+
+但是这样会造成内存的浪费，因为即使每次仅申请几个字节，操作系统也会分配一个页块。
+* 进阶方案：页和段
+一个进程的虚拟地址空间会映射到整个 32 位地址空间，然而实际上真正映射到物理地址的页表项很少。
+也就是说绝大多数的页表项都处于 invalid 的状态，那么这些页表项本身浪费了很多物理内存空间。
+
+所以我们可以先将虚拟地址分为多个段，然后再段内进行页表映射，而段外的部分就全部是 invalid 的状态，并且不会占用更多的物理内存空间。
+
+#+HTML:<img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/smalltb/seg_page.jpg?raw=true" alt="mempic/smalltb/seg_page.jpg">
+如上图所示，该进程总共只使用了 4 页，而其它页表项所占用的内存就全部浪费了。
+所以可以将 code,heap,stack 分为 3 个段，就可以节约其他页表项所占用的内存了。
+
+为了达到此目的，需要具备以下两个条件：
+1. 每个段都具有其对应的段基地址，其实也就是这个段中起始页的基地址
+2. 对应每个段需要有个限制寄存器，以表明该段的范围是多大，也就是这个段中终止页的地址
+
+为了表示 3 个段，就需要 2 位来存储，然后是该段内的页块偏移，最后是页内偏移。
+那么对于一个 32 位地址空间来说，其虚拟地址划分如下：
+#+HTML:<img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/smalltb/seg_page_vir_addr.jpg?raw=true" alt="mempic/smalltb/seg_page_vir_addr.jpg">
+通过虚拟地址得到页表项的逻辑如下：
+#+BEGIN_EXAMPLE
+  SN           = (VirtualAddress & SEG_MASK) >> SN_SHIFT
+  VPN          = (VirtualAddress & VPN_MASK) >> VPN_SHIFT
+  AddressOfPTE = Base[SN] + (VPN*sizeof(PTE))
+#+END_EXAMPLE
+
+这种方式虽然看上去节约了不少内存，但是依然具有下面这个问题：
+- 硬件复杂：原来仅需要 1 个页表基地址寄存器就能搞定的事，现在需要多个段基地址寄存器和范围限制寄存器
+- 依然会有内存浪费：当一个段中所申请的页是随机分布时，依然在该段中会有很多页表项用不上
+* 多级页表
+多级页表是将页表结构由原来的一层分多多层，从最开始的大页查找到小页。
+
+这里的关键点在于：如果一段内存没有被映射，那么大页里面就设置为 invalid，而后其下级的小页就不需要占据物理内存空间了。
+ 
+#+HTML:<img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/smalltb/pagetlb_overview.jpg?raw=true" alt="mempic/smalltb/pagetlb_overview.jpg">
+如上图所示：如果使用左边一级页表的形式，那么只有 5 个页表项是有效的，其他无效的页表项也要占用内存空间。
+当使用二级页表后，在第一级页表中就已经表示了中间两级是无效的，那么这两级对应的二级页表也就不需要存储空间了。
+- 一级页表也称为 PDE（page directory entries）
+  
+使用多级页表具有如下优先：
+- 多级页表只有在上级页表为 valid 时，本级页表才会占用物理内存空间
+- 在使用一级页表的情况下，页表项本身所占用的内存必须是连续的，比如在 32 位系统中的 4K 页大小，一个进程的页表就要占用 4MB。
+而在使用多级页表的情况下，下级页表可以分散的存储，这样避免了申请连续大内存的压力。
+
+但同时也具有这些缺点：
+- 当出现 TLB miss 时，多级页表的查询效率低于一级页表。
+  + 比如是二级页表时，第一次需要从物理内存取一级页表，第二次才是从物理内存取对应于内存块的页表
+- 多级页表在硬件和软件的复杂度会高于一级页表
+* 示例
+** 只有一级页表
+假设一个进程的 address space 是 16KB，页块大小是 64 字节。那么需要 14 位来表示虚拟地址，其中需要 8 位（256 个页表项）表示页表偏移，6 位表示页内偏移。
+
+#+HTML:<img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/smalltb/ex_linear_tlb.jpg?raw=true" alt="mempic/smalltb/ex_linear_tlb.jpg">
+假设当使用一级页表时，该进程的页表如上图所示：
+- 页 0～1 用于存放代码，4～5 用于存放堆，254～255 用于存放栈，其余的页都未映射。
+- 总共有 250 个页表项，总共 1000 字节的物理内存被浪费了
+  
+** 具有二级页表
+下面使用二级页表，由于页大小是 64 字节，那么 14 位占用的 1KB 页表项可以再分为 16 个页，那么二级页表的虚拟地址如下：
+#+HTML:<img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/smalltb/ex_2_tlb_address.jpg?raw=true" alt="mempic/smalltb/ex_2_tlb_address.jpg">
+假设 2 级页表项的内容如下：
+#+HTML:<img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/smalltb/ex_2_tlb_contents.jpg?raw=true" alt="mempic/smalltb/ex_2_tlb_contents.jpg">
+可以看出，使用 2级页表项所消耗的内存为：
+- 存放一级页表，消耗了 4 × 16 = 64 字节
+- 存放两个二级页表，消耗了 4 × 16 × 2 = 128 字节
+- 最终浪费了 (3 × 16 - 8) × 4 = 160 字节，相比一级页表节省了很多内存
+  
+其转换过程如下，假设访问虚拟地址 0x3F80 处的内存：
+- 首先取出前 4 字节，得到其在一级页表中偏移为 15,那么可以通过一级页表基地址和其偏移得到此时的二级页表有效且基地址为 101
+- 二级页表基地址 101 再加上偏移位 14（1110），对应第 55 个内存块
+- 最终的 6 位为全 0,代表其在物理内存块的偏移为 0,那么对应的物理地址刚好是物理内存块的起始 = 00 1101 1100 0000 = 0x0DC0
+  
+使用二级页表的流程如下：
+#+BEGIN_EXAMPLE
+  VPN = (VirtualAddress & VPN_MASK) >> SHIFT
+  (Success, TlbEntry) = TLB_Lookup(VPN)
+  if (Success == True) // TLB Hit
+      if (CanAccess(TlbEntry.ProtectBits) == True)
+          Offset = VirtualAddress & OFFSET_MASK
+          PhysAddr = (TlbEntry.PFN << SHIFT) | Offset
+          Register = AccessMemory(PhysAddr)
+      else
+          RaiseException(PROTECTION_FAULT)
+  else // TLB Miss
+      // first, get page directory entry
+      PDIndex = (VPN & PD_MASK) >> PD_SHIFT
+      PDEAddr = PDBR + (PDIndex * sizeof(PDE))
+      PDE = AccessMemory(PDEAddr)
+      if (PDE.Valid == False)
+          RaiseException(SEGMENTATION_FAULT)
+      else
+          // PDE is valid: now fetch PTE from page table
+          PTIndex = (VPN & PT_MASK) >> PT_SHIFT
+          PTEAddr = (PDE.PFN << SHIFT) + (PTIndex * sizeof(PTE))
+          PTE = AccessMemory(PTEAddr)
+          if (PTE.Valid == False)
+              RaiseException(SEGMENTATION_FAULT)
+          else if (CanAccess(PTE.ProtectBits) == False)
+              RaiseException(PROTECTION_FAULT)
+          else
+              TLB_Insert(VPN, PTE.PFN, PTE.ProtectBits)
+              RetryInstruction()
+#+END_EXAMPLE
+** 使用多级页表
+假设虚拟地址为 30 位，页大小为 512 字节，那么就需要 9 位来表示页内偏移，剩余的 21 位表示页偏移。
+
+假设仅使用二级页表，那么由于页大小是 512 字节，一个页表项为 4 字节，那么一页就可以表示 128 个页表项。
+也就是说 7 位表示第二级页表偏移，剩下的 14 位表示第一级页表偏移，一级页表依然很大，依然会浪费很多内存。
+
+假设使用 3 级页表，那么一级页表，二级页表，以及三级页表都占用 7 位。假设 1 级页表的某个页表项为 invalid，那么其下的二三级页表都不存在，也就不会占用物理内存了。
+
+
+
+
+
+* 页表转置
+一般一个进程会对应一个页表，而页表转置的方式是所有进程仅使用一个页表。
+
+这个页表映射了整个物理内存页，每个页被标记了该页是由哪些进程所共享，哪些进程所独占。
+
+当调度至一个进程时，使用哈希算法得出此进程对应的内存页，然后进行对应操作。
+
+这种方式可以很大限度的节约内存，但实际使用并不多，可能是硬件实现较为复杂吧。
+* 将页表交换至硬盘
+当内存吃紧时，也可以将页表置换到硬盘作为临时存储，这样也可以减小内存压力。
