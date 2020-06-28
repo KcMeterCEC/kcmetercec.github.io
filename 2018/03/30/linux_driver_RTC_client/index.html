@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="zLSyD2CN1AkyJqei3qKraT6372nBgMFKWe6kAj5JDeY">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="&amp;#x53C2;&amp;#x8003;&amp;#x4E66;&amp;#x7C4D;: Linux&amp;#x8BBE;&amp;#x5907;&amp;#x9A71;&amp;#x52A8;&amp;#x5F00;&amp;#x53D1;&amp;#x8BE6;&amp;#x89E3;    &amp;#x6574;&amp;#x7406;RTC&amp;#x5BA2;&amp;#x6237;&amp;#x7AEF;&amp;#x7684;&amp;#x4F7F;&amp;#x7528;&amp;#x3002;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="[What]linux -&gt; RTC client">
+<meta property="og:url" content="http://kcmetercec.top/2018/03/30/linux_driver_RTC_client/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="&amp;#x53C2;&amp;#x8003;&amp;#x4E66;&amp;#x7C4D;: Linux&amp;#x8BBE;&amp;#x5907;&amp;#x9A71;&amp;#x52A8;&amp;#x5F00;&amp;#x53D1;&amp;#x8BE6;&amp;#x89E3;    &amp;#x6574;&amp;#x7406;RTC&amp;#x5BA2;&amp;#x6237;&amp;#x7AEF;&amp;#x7684;&amp;#x4F7F;&amp;#x7528;&amp;#x3002;">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-03-29T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-06-28T03:58:45.951Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="driver">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://kcmetercec.top/2018/03/30/linux_driver_RTC_client/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>[What]linux -> RTC client | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=112423075-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '112423075-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2ab4cc06d0da36106a4426465d0cb00d";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2018/03/30/linux_driver_RTC_client/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="我的世界">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          [What]linux -> RTC client
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-03-30 00:00:00" itemprop="dateCreated datePublished" datetime="2018-03-30T00:00:00+08:00">2018-03-30</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-06-28 11:58:45" itemprop="dateModified" datetime="2020-06-28T11:58:45+08:00">2020-06-28</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/driver/" itemprop="url" rel="index"><span itemprop="name">driver</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/driver/RTC/" itemprop="url" rel="index"><span itemprop="name">RTC</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2018/03/30/linux_driver_RTC_client/" class="post-meta-item leancloud_visitors" data-flag-title="[What]linux -> RTC client" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2018/03/30/linux_driver_RTC_client/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2018/03/30/linux_driver_RTC_client/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <div id="content">
+<p>
+&#x53C2;&#x8003;&#x4E66;&#x7C4D;: <code>Linux&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#x5F00;&#x53D1;&#x8BE6;&#x89E3;</code>
+</p>
+
+<p>
+&#x6574;&#x7406;RTC&#x5BA2;&#x6237;&#x7AEF;&#x7684;&#x4F7F;&#x7528;&#x3002;
+</p>
+
+<a id="more"></a>
+
+<div id="outline-container-orgc5e156a" class="outline-2">
+<h2 id="orgc5e156a">RTC &#x9A71;&#x52A8;&#x6982;&#x89C8;</h2>
+<div class="outline-text-2" id="text-orgc5e156a">
+<p>
+&#x6839;&#x636E; <a href="https://kcmetercec.github.io/2018/03/05/linux_driver_overview_structure/" target="_blank" rel="noopener">Linux&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#x7684;&#x8F6F;&#x4EF6;&#x6784;&#x67B6;&#x601D;&#x60F3;</a> &#x53EF;&#x4EE5;&#x77E5;&#x9053;&#xFF0C;&#x5BF9;&#x4E8E;RTC&#x9A71;&#x52A8;&#x800C;&#x8A00;&#xFF0C;&#x6574;&#x4F53;&#x4E0A;&#x5206;&#x4E3A;&#x4EE5;&#x4E0B;&#x51E0;&#x90E8;&#x5206;&#xFF1A;
+</p>
+</div>
+<div id="outline-container-org9d4b557" class="outline-3">
+<h3 id="org9d4b557">&#x51E0;&#x79CD;&#x786C;&#x4EF6;&#x60C5;&#x51B5;</h3>
+<div class="outline-text-3" id="text-org9d4b557">
+</div>
+<div id="outline-container-orgef084d9" class="outline-4">
+<h4 id="orgef084d9">SOC &#x5185;&#x7F6E; RTC</h4>
+<div class="outline-text-4" id="text-orgef084d9">
+<ol class="org-ol">
+<li>RTC&#x63A7;&#x5236;&#x5668;&#x9A71;&#x52A8;(platform driver)&#xFF1A;SOC&#x5185;&#x7F6E;RTC&#x7684;&#x63A7;&#x5236;&#x5668;&#x9A71;&#x52A8;</li>
+<li>RTC&#x63A7;&#x5236;&#x5668;&#x9A71;&#x52A8;&#x5BF9;&#x5E94;&#x7684;&#x8BBE;&#x5907;&#x6811;(platform device)&#xFF1A;&#x5305;&#x542B;&#x63A7;&#x5236;&#x5668;&#x7684;&#x5730;&#x5740;&#xFF0C;&#x914D;&#x7F6E;&#x7B49;&#x4FE1;&#x606F;</li>
+</ol>
+</div>
+</div>
+<div id="outline-container-orgc88f8af" class="outline-4">
+<h4 id="orgc88f8af">SOC &#x5916;&#x7F6E; RTC</h4>
+<div class="outline-text-4" id="text-orgc88f8af">
+<p>
+&#x5982;&#x679C;SOC&#x6CA1;&#x6709;&#x5185;&#x7F6E;RTC&#xFF0C;&#x90A3;&#x4E48;&#x5C31;&#x662F;&#x7531;&#x534F;&#x8BAE;&#x6765;&#x9A71;&#x52A8;&#x5916;&#x90E8;&#x82AF;&#x7247;&#x6765;&#x83B7;&#x53D6;&#x65F6;&#x95F4;&#xFF0C;&#x90A3;&#x4E48;&#x5C31;&#x9700;&#x8981;&#x4EE5;&#x4E0B;&#x51E0;&#x4E2A;&#x90E8;&#x5206;&#xFF1A;
+</p>
+<ol class="org-ol">
+<li>RTC&#x82AF;&#x7247;&#x534F;&#x8BAE;&#x63A7;&#x5236;&#x5668;&#x9A71;&#x52A8;(platform driver): &#x7528;&#x4E8E;&#x4EA7;&#x751F;&#x534F;&#x8BAE;&#x6CE2;&#x5F62;</li>
+<li>RTC&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#xFF1A;&#x5BF9;&#x5E94;&#x7684;&#x662F;&#x9A71;&#x52A8;&#x5177;&#x4F53;&#x7684;RTC&#x8BBE;&#x5907;&#xFF0C;&#x6B64;&#x9A71;&#x52A8;&#x4EC5;&#x9700;&#x8981;&#x8C03;&#x7528;Linux&#x63D0;&#x4F9B;&#x534F;&#x8BAE;&#x63A5;&#x53E3;&#x4FBF;&#x53EF;&#x4EE5;&#x63A7;&#x5236;&#x534F;&#x8BAE;&#x603B;&#x7EBF;&#x53D1;&#x51FA;&#x6CE2;&#x5F62;</li>
+<li>&#x534F;&#x8BAE;&#x63A7;&#x5236;&#x5668;&#x7684;&#x8BBE;&#x5907;&#x6811;(platform device): &#x63A7;&#x5236;&#x5668;&#x5730;&#x5740;&#xFF0C;&#x914D;&#x7F6E;&#x7B49;&#x4FE1;&#x606F;</li>
+<li>RTC&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#x5BF9;&#x5E94;&#x7684;&#x8BBE;&#x5907;&#x6811;&#xFF1A;&#x5305;&#x542B;&#x5BF9;&#x5E94;&#x7684;&#x63A7;&#x5236;&#x5668;&#x3001;&#x8BBE;&#x5907;&#x7684;&#x5730;&#x5740;&#x3001;&#x914D;&#x7F6E;&#x7B49;&#x4FE1;&#x606F;&#x3002;</li>
+</ol>
+</div>
+</div>
+<div id="outline-container-org7a65719" class="outline-4">
+<h4 id="org7a65719">&#x5206;&#x5C42;</h4>
+<div class="outline-text-4" id="text-org7a65719">
+<p>
+&#x4EE5;&#x4E0A;&#x90E8;&#x5206;&#x4FBF;&#x4F53;&#x73B0;&#x4E86; <code>&#x603B;&#x7EBF;&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#x601D;&#x60F3;</code> &#x548C; <code>&#x63A7;&#x5236;&#x9A71;&#x52A8;&#x548C;&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#x5206;&#x79BB;&#x601D;&#x60F3;</code> &#x3002;
+</p>
+
+<p>
+&#x5728;&#x6B64;&#x57FA;&#x7840;&#x4E0A;&#xFF0C;&#x53EF;&#x4EE5;&#x60F3;&#x8C61;&#x51FA;Linux&#x5FC5;&#x7136;&#x4E3A;RTC&#x9A71;&#x52A8;&#x7C7B;&#x8FDB;&#x884C;&#x4E86;&#x5206;&#x5C42;&#xFF0C;&#x5C06;&#x8FD9;&#x7C7B;&#x8BBE;&#x5907;&#x7684;&#x5171;&#x6709;&#x64CD;&#x4F5C;&#x63D0;&#x53D6;&#x5230;&#x5C42;&#x4E2D;&#x3002;&#x6211;&#x4EEC;&#x4F5C;&#x4E3A;Linux&#x5185;&#x6838;&#x7528;&#x6237;&#x4FBF;&#x53EF;&#x4EE5;&#x5C3D;&#x91CF;&#x5C11;&#x7684;&#x4EE3;&#x7801;&#x5B9E;&#x73B0;&#x9700;&#x6C42;&#x3002;
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgbcfd271" class="outline-3">
+<h3 id="orgbcfd271">&#x5B9E;&#x9645;&#x67B6;&#x6784;</h3>
+<div class="outline-text-3" id="text-orgbcfd271">
+<p>
+&#x6587;&#x4EF6; <code>drivers/rtc/rtc-dev.c</code> &#x5DF2;&#x7ECF;&#x5B9E;&#x73B0;&#x4E86;RTC&#x7C7B;&#x5B57;&#x7B26;&#x8BBE;&#x5907;&#x7684;&#x4E00;&#x4E9B;&#x64CD;&#x4F5C;&#xFF0C;&#x6BD4;&#x5982; <code>open(),read(),ioctl()</code> &#x7B49;&#x3002;
+</p>
+
+<p>
+&#x5E76;&#x4E14;RTC&#x6838;&#x5FC3;&#x5C42;&#x4E3A;&#x4E0B;&#x5C42;&#x63D0;&#x4F9B;&#x4E86;&#x4E00;&#x4E9B;&#x4E86;&#x51FD;&#x6570;&#x4EE5;&#x5B9E;&#x73B0;&#x57FA;&#x672C;&#x7684;&#x64CD;&#x4F5C;:
+</p>
+<ul class="org-ul">
+<li><code>devm_rtc_device_register</code> &#x5411;&#x6838;&#x5FC3;&#x5C42;&#x6CE8;&#x518C;&#x8BBE;&#x5907;</li>
+<li><code>rtc_class_ops</code> &#x5411;&#x6838;&#x5FC3;&#x5C42;&#x63D0;&#x4EA4;&#x64CD;&#x4F5C;&#x65B9;&#x6CD5;</li>
+</ul>
+</div>
+</div>
+</div>
+<div id="outline-container-org092feb6" class="outline-2">
+<h2 id="org092feb6">RTC client&#x9A71;&#x52A8;&#x7684;&#x5B9E;&#x73B0;</h2>
+<div class="outline-text-2" id="text-org092feb6">
+</div>
+<div id="outline-container-org35fa27e" class="outline-3">
+<h3 id="org35fa27e">&#x6570;&#x636E;&#x7ED3;&#x6784;</h3>
+<div class="outline-text-3" id="text-org35fa27e">
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span><br><span class="line"> * @brief : RTC &#x5E95;&#x5C42;&#x64CD;&#x4F5C;&#x63A5;&#x53E3;</span><br><span class="line"> */</span></span><br><span class="line"><span class="keyword">struct</span> rtc_class_ops {</span><br><span class="line">	<span class="keyword">int</span> (*open)(<span class="keyword">struct</span> device *);</span><br><span class="line">	<span class="keyword">void</span> (*release)(<span class="keyword">struct</span> device *);</span><br><span class="line">	<span class="keyword">int</span> (*ioctl)(<span class="keyword">struct</span> device *, <span class="keyword">unsigned</span> <span class="keyword">int</span>, <span class="keyword">unsigned</span> <span class="keyword">long</span>);</span><br><span class="line">	<span class="keyword">int</span> (*read_time)(<span class="keyword">struct</span> device *, <span class="keyword">struct</span> rtc_time *);</span><br><span class="line">	<span class="keyword">int</span> (*set_time)(<span class="keyword">struct</span> device *, <span class="keyword">struct</span> rtc_time *);</span><br><span class="line">	<span class="keyword">int</span> (*read_alarm)(<span class="keyword">struct</span> device *, <span class="keyword">struct</span> rtc_wkalrm *);</span><br><span class="line">	<span class="keyword">int</span> (*set_alarm)(<span class="keyword">struct</span> device *, <span class="keyword">struct</span> rtc_wkalrm *);</span><br><span class="line">	<span class="keyword">int</span> (*proc)(<span class="keyword">struct</span> device *, <span class="keyword">struct</span> seq_file *);</span><br><span class="line">	<span class="keyword">int</span> (*set_mmss64)(<span class="keyword">struct</span> device *, <span class="keyword">time64_t</span> secs);</span><br><span class="line">	<span class="keyword">int</span> (*set_mmss)(<span class="keyword">struct</span> device *, <span class="keyword">unsigned</span> <span class="keyword">long</span> secs);</span><br><span class="line">	<span class="keyword">int</span> (*read_callback)(<span class="keyword">struct</span> device *, <span class="keyword">int</span> data);</span><br><span class="line">	<span class="keyword">int</span> (*alarm_irq_enable)(<span class="keyword">struct</span> device *, <span class="keyword">unsigned</span> <span class="keyword">int</span> enabled);</span><br><span class="line">};</span><br></pre></td></tr></table></figure>
+</div>
+</div>
+</div>
+<div id="outline-container-orgfc87dcd" class="outline-3">
+<h3 id="orgfc87dcd">&#x64CD;&#x4F5C;&#x51FD;&#x6570;</h3>
+<div class="outline-text-3" id="text-orgfc87dcd">
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">struct</span> rtc_device *<span class="title">rtc_device_register</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *name,</span><br><span class="line">					      <span class="keyword">struct</span> device *dev,</span><br><span class="line">					      <span class="keyword">const</span> <span class="keyword">struct</span> rtc_class_ops *ops,</span><br><span class="line">					      <span class="keyword">struct</span> module *owner)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">struct</span> rtc_device *<span class="title">devm_rtc_device_register</span><span class="params">(<span class="keyword">struct</span> device *dev,</span><br><span class="line">						   <span class="keyword">const</span> <span class="keyword">char</span> *name,</span><br><span class="line">						   <span class="keyword">const</span> <span class="keyword">struct</span> rtc_class_ops *ops,</span><br><span class="line">						   <span class="keyword">struct</span> module *owner)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">void</span> <span class="title">rtc_device_unregister</span><span class="params">(<span class="keyword">struct</span> rtc_device *rtc)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">void</span> <span class="title">devm_rtc_device_unregister</span><span class="params">(<span class="keyword">struct</span> device *dev,</span><br><span class="line">				       <span class="keyword">struct</span> rtc_device *rtc)</span></span>;</span><br></pre></td></tr></table></figure>
+</div>
+</div>
+</div>
+<div id="outline-container-orge6029d3" class="outline-3">
+<h3 id="orge6029d3">&#x5B9E;&#x73B0;</h3>
+<div class="outline-text-3" id="text-orge6029d3">
+<p>
+&#x5BF9;&#x4E8E;SOC&#x5185;&#x7F6E;&#x7684;RTC&#x6765;&#x8BF4;&#xFF0C;&#x76F4;&#x63A5;&#x5728;&#x9A71;&#x52A8;&#x4E2D;&#x5B9E;&#x73B0;&#x63A5;&#x53E3;&#x5373;&#x53EF;&#xFF08;&#x53C2;&#x8003; drivers/rtc/rtc-s3c.c)&#x3002;
+</p>
+
+<p>
+&#x5BF9;&#x4E8E;&#x534F;&#x8BAE;&#x9A71;&#x52A8;&#x5916;&#x8BBE;RTC&#x6765;&#x8BF4;&#xFF0C;&#x6211;&#x4EEC;&#x9700;&#x8981;&#x5B9E;&#x73B0;&#xFF1A;
+</p>
+<ol class="org-ol">
+<li>&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#x7A0B;&#x5E8F;&#xFF1A;&#x901A;&#x8FC7;&#x7EDF;&#x4E00;&#x7684;&#x534F;&#x8BAE;&#x63A5;&#x53E3;&#x63A7;&#x5236;&#x5916;&#x8BBE;</li>
+<li>&#x8BBE;&#x5907;&#x5BF9;&#x5E94;&#x7684;&#x8BBE;&#x5907;&#x6811;&#x8282;&#x70B9;&#xFF1A;&#x4EE5;&#x5B9E;&#x73B0;&#x9A71;&#x52A8;&#x7684;&#x6302;&#x8F7D;</li>
+</ol>
+
+<p>
+&#x9700;&#x8981;&#x6CE8;&#x610F;&#x7684;&#x662F;&#xFF1A;
+</p>
+<ol class="org-ol">
+<li>Linux&#x5728;&#x542F;&#x52A8;&#x65F6;&#x4F1A;&#x8BFB;&#x53D6;&#x786C;&#x4EF6;&#x65F6;&#x949F;(&#x8BBE;&#x5907;&#x65F6;&#x949F;)&#xFF0C;&#x800C;&#x540E;&#x4FBF;&#x7528;&#x8F6F;&#x4EF6;&#x6765;&#x8BA1;&#x7B97;&#x65F6;&#x95F4;&#x589E;&#x52A0;&#x3002;&#x5982;&#x679C;&#x9A71;&#x52A8;&#x5728;&#x8FD9;&#x4E4B;&#x540E;&#x624D;&#x52A0;&#x8F7D;&#xFF0C;&#x90A3;&#x4E48;&#x7CFB;&#x7EDF;&#x65F6;&#x95F4;&#x4FBF;&#x4E0D;&#x4F1A;&#x81EA;&#x52A8;&#x66F4;&#x65B0;&#x3002;
+<ul class="org-ul">
+<li>&#x6B64;&#x65F6;&#x4F7F;&#x7528;&#x547D;&#x4EE4; <code>hwclock -s</code> &#x6765;&#x66F4;&#x65B0;&#x7CFB;&#x7EDF;&#x65F6;&#x949F;</li>
+<li>&#x540C;&#x65F6;&#x5728;&#x8BBE;&#x7F6E;&#x4E86;&#x7CFB;&#x7EDF;&#x65F6;&#x949F;&#x540E;&#xFF0C;&#x4E5F;&#x9700;&#x8981;&#x4F7F;&#x7528; <code>hwclock -w</code> &#x6765;&#x66F4;&#x65B0;&#x786C;&#x4EF6;&#x65F6;&#x949F;</li>
+</ul></li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+Last Updated 2020-06-28 Sun 12:00.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+</div>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/driver/" rel="tag"># driver</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/03/30/linux_operations_remote_update/" rel="prev" title="[What]嵌入式Linux的远程升级">
+      <i class="fa fa-chevron-left"></i> [What]嵌入式Linux的远程升级
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/03/30/editer_vim_issue_highlight/" rel="next" title="[What] vim 问题: 无法语法高亮">
+      [What] vim 问题: 无法语法高亮 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#orgc5e156a"><span class="nav-number">1.</span> <span class="nav-text">RTC &amp;#x9A71;&amp;#x52A8;&amp;#x6982;&amp;#x89C8;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org9d4b557"><span class="nav-number">1.1.</span> <span class="nav-text">&amp;#x51E0;&amp;#x79CD;&amp;#x786C;&amp;#x4EF6;&amp;#x60C5;&amp;#x51B5;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgef084d9"><span class="nav-number">1.1.1.</span> <span class="nav-text">SOC &amp;#x5185;&amp;#x7F6E; RTC</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgc88f8af"><span class="nav-number">1.1.2.</span> <span class="nav-text">SOC &amp;#x5916;&amp;#x7F6E; RTC</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org7a65719"><span class="nav-number">1.1.3.</span> <span class="nav-text">&amp;#x5206;&amp;#x5C42;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgbcfd271"><span class="nav-number">1.2.</span> <span class="nav-text">&amp;#x5B9E;&amp;#x9645;&amp;#x67B6;&amp;#x6784;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org092feb6"><span class="nav-number">2.</span> <span class="nav-text">RTC client&amp;#x9A71;&amp;#x52A8;&amp;#x7684;&amp;#x5B9E;&amp;#x73B0;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org35fa27e"><span class="nav-number">2.1.</span> <span class="nav-text">&amp;#x6570;&amp;#x636E;&amp;#x7ED3;&amp;#x6784;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgfc87dcd"><span class="nav-number">2.2.</span> <span class="nav-text">&amp;#x64CD;&amp;#x4F5C;&amp;#x51FD;&amp;#x6570;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orge6029d3"><span class="nav-number">2.3.</span> <span class="nav-text">&amp;#x5B9E;&amp;#x73B0;</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">我的世界</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">210</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">104</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">38</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+  
+  <span class="post-meta-divider">|</span>
+  <span>Hosted by <a href="https://pages.coding.me" target="_blank" rel="noopener" style="font-weight: bold">Coding Pages</a></span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+<script>
+  (function() {
+    function leancloudSelector(url) {
+      url = encodeURI(url);
+      return document.getElementById(url).querySelector('.leancloud-visitors-count');
+    }
+
+    function addCount(Counter) {
+      var visitors = document.querySelector('.leancloud_visitors');
+      var url = decodeURI(visitors.id);
+      var title = visitors.dataset.flagTitle;
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          if (results.length > 0) {
+            var counter = results[0];
+            leancloudSelector(url).innerText = counter.time + 1;
+            Counter('put', '/classes/Counter/' + counter.objectId, { time: { '__op': 'Increment', 'amount': 1 } })
+              .catch(error => {
+                console.error('Failed to save visitor count', error);
+              });
+          } else {
+              leancloudSelector(url).innerText = 'Counter not initialized! More info at console err msg.';
+              console.error('ATTENTION! LeanCloud counter has security bug, see how to solve it here: https://github.com/theme-next/hexo-leancloud-counter-security. \n However, you can still use LeanCloud without security, by setting `security` option to `false`.');
+            
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    function showTime(Counter) {
+      var visitors = document.querySelectorAll('.leancloud_visitors');
+      var entries = [...visitors].map(element => {
+        return decodeURI(element.id);
+      });
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url: { '$in': entries } })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          for (let url of entries) {
+            let target = results.find(item => item.url === url);
+            leancloudSelector(url).innerText = target ? target.time : 0;
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    let { app_id, app_key, server_url } = {"enable":true,"app_id":"ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI","app_key":"yh4vrfnscme1utPMpk65wcxn","server_url":null,"security":true};
+    function fetchData(api_server) {
+      var Counter = (method, url, data) => {
+        return fetch(`${api_server}/1.1${url}`, {
+          method,
+          headers: {
+            'X-LC-Id'     : app_id,
+            'X-LC-Key'    : app_key,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+      };
+      if (CONFIG.page.isPost) {
+        if (CONFIG.hostname !== location.hostname) return;
+        addCount(Counter);
+      } else if (document.querySelectorAll('.post-title-link').length >= 1) {
+        showTime(Counter);
+      }
+    }
+
+    let api_server = app_id.slice(-9) !== '-MdYXbMMI' ? server_url : `https://${app_id.slice(0, 8).toLowerCase()}.api.lncldglobal.com`;
+
+    if (api_server) {
+      fetchData(api_server);
+    } else {
+      fetch('https://app-router.leancloud.cn/2/route?appId=' + app_id)
+        .then(response => response.json())
+        .then(({ api_server }) => {
+          fetchData('https://' + api_server);
+        });
+    }
+  })();
+</script>
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+  <script defer src="/lib/three/three.min.js"></script>
+    <script defer src="/lib/three/three-waves.min.js"></script>
+    <script defer src="/lib/three/canvas_lines.min.js"></script>
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI',
+      appKey     : 'yh4vrfnscme1utPMpk65wcxn',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

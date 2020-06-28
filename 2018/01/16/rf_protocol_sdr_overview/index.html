@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="zLSyD2CN1AkyJqei3qKraT6372nBgMFKWe6kAj5JDeY">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="&amp;#x6982;&amp;#x89C8;   &amp;#x5728; IEEE micro &amp;#x4E2D;&amp;#x5B9A;&amp;#x4E49;&amp;#x4E86; SDR&amp;#xFF08;&amp;#x8F6F;&amp;#x4EF6;&amp;#x65E0;&amp;#x7EBF;&amp;#x7535;&amp;#xFF09; &amp;#x901A;&amp;#x4FE1;&amp;#x534F;&amp;#x8BAE;&amp;#xFF0C;&amp;#x5176;&amp;#x57FA;&amp;#x672C;&amp;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="[What]SDR通信协议概览">
+<meta property="og:url" content="http://kcmetercec.top/2018/01/16/rf_protocol_sdr_overview/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="&amp;#x6982;&amp;#x89C8;   &amp;#x5728; IEEE micro &amp;#x4E2D;&amp;#x5B9A;&amp;#x4E49;&amp;#x4E86; SDR&amp;#xFF08;&amp;#x8F6F;&amp;#x4EF6;&amp;#x65E0;&amp;#x7EBF;&amp;#x7535;&amp;#xFF09; &amp;#x901A;&amp;#x4FE1;&amp;#x534F;&amp;#x8BAE;&amp;#xFF0C;&amp;#x5176;&amp;#x57FA;&amp;#x672C;&amp;">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[RF]/[protocol]/[What]protocol--SDR/interface.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[RF]/[protocol]/[What]protocol--SDR/concept.jpg?raw=true">
+<meta property="article:published_time" content="2018-01-15T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-06-28T03:58:45.071Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="protocol_rf">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://github.com/KcMeterCEC/explore/blob/master/[RF]/[protocol]/[What]protocol--SDR/interface.jpg?raw=true">
+
+<link rel="canonical" href="http://kcmetercec.top/2018/01/16/rf_protocol_sdr_overview/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>[What]SDR通信协议概览 | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=112423075-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '112423075-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2ab4cc06d0da36106a4426465d0cb00d";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2018/01/16/rf_protocol_sdr_overview/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="我的世界">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          [What]SDR通信协议概览
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-01-16 00:00:00" itemprop="dateCreated datePublished" datetime="2018-01-16T00:00:00+08:00">2018-01-16</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-06-28 11:58:45" itemprop="dateModified" datetime="2020-06-28T11:58:45+08:00">2020-06-28</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/RF/" itemprop="url" rel="index"><span itemprop="name">RF</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/RF/protocol/" itemprop="url" rel="index"><span itemprop="name">protocol</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/RF/protocol/UHD/" itemprop="url" rel="index"><span itemprop="name">UHD</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2018/01/16/rf_protocol_sdr_overview/" class="post-meta-item leancloud_visitors" data-flag-title="[What]SDR通信协议概览" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2018/01/16/rf_protocol_sdr_overview/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2018/01/16/rf_protocol_sdr_overview/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <div id="content">
+
+<div id="outline-container-org1914d5c" class="outline-2">
+<h2 id="org1914d5c">&#x6982;&#x89C8;</h2>
+<div class="outline-text-2" id="text-org1914d5c">
+<p>
+&#x5728; <code>IEEE micro</code> &#x4E2D;&#x5B9A;&#x4E49;&#x4E86; SDR&#xFF08;&#x8F6F;&#x4EF6;&#x65E0;&#x7EBF;&#x7535;&#xFF09; &#x901A;&#x4FE1;&#x534F;&#x8BAE;&#xFF0C;&#x5176;&#x57FA;&#x672C;&#x601D;&#x60F3;&#x662F;&#xFF1A;
+</p>
+
+<p>
+SDR&#x7684;&#x5E95;&#x5C42;&#x7531;&#x4E00;&#x4E2A;&#x8F6F;&#x4EF6;&#x5F15;&#x64CE;&#x603B;&#x7BA1;&#xFF0C;&#x5176;&#x4ED6;&#x5E94;&#x7528;&#x8F6F;&#x4EF6;&#xFF08;&#x672C;&#x673A;&#x8F6F;&#x4EF6;&#x6216;&#x8005;&#x4E0A;&#x4F4D;&#x673A;&#x8F6F;&#x4EF6;&#xFF09;&#x901A;&#x8FC7;&#x4E00;&#x4E2A;&#x7EDF;&#x4E00;&#x7684;&#x534F;&#x8BAE;&#x6765;&#x4E0E;&#x5F15;&#x64CE;&#x901A;&#x4FE1;&#x8FBE;&#x5230;&#x63A7;&#x5236;&#x5E95;&#x5C42;&#x786C;&#x4EF6;&#x7684;&#x76EE;&#x7684;&#x3002;
+</p>
+
+<p>
+&#x8FD9;&#x79CD;&#x6784;&#x67B6;&#x5177;&#x6709;&#x5982;&#x4E0B;&#x4F18;&#x70B9;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>&#x62BD;&#x8C61;&#x786C;&#x4EF6;&#x5E95;&#x5C42;&#xFF0C;&#x4F7F;&#x5F97;&#x5E94;&#x7528;&#x8F6F;&#x4EF6;&#x4E0D;&#x7528;&#x5173;&#x5FC3;&#x5177;&#x4F53;&#x7684;&#x786C;&#x4EF6;&#x800C;&#x72EC;&#x7ACB;&#x5F00;&#x53D1;&#x3002;</li>
+<li>&#x5F00;&#x53D1;&#x51FA;&#x7684;&#x8F6F;&#x4EF6;&#x7406;&#x8BBA;&#x4E0A;&#x662F;&#x53EF;&#x4EE5;&#x517C;&#x5BB9;&#x6240;&#x6709;&#x6EE1;&#x8DB3;&#x6B64;&#x534F;&#x8BAE;&#x7684;&#x5E95;&#x5C42;&#x786C;&#x4EF6;&#xFF0C;&#x8FBE;&#x5230;&#x8DE8;&#x5E73;&#x53F0;&#x7684;&#x76EE;&#x7684;&#x3002;</li>
+</ul>
+
+<img src="https://github.com/KcMeterCEC/explore/blob/master/[RF]/[protocol]/[What]protocol--SDR/interface.jpg?raw=true" alt="interface.jpg">&#x5982;&#x4E0A;&#x56FE;&#x6240;&#x793A;&#xFF0C;&#x6B64;&#x534F;&#x8BAE;&#x7684;&#x7279;&#x70B9;&#x4E3A;&#xFF1A;
+<ul class="org-ul">
+<li>&#x534F;&#x8BAE;&#x5305;&#x5206;&#x4E3A;&#x63A7;&#x5236;&#x5305;,&#x4FE1;&#x53F7;&#x5305;&#x548C;&#x73AF;&#x5883;&#x5305;&#xFF0C;</li>
+<li>&#x4FE1;&#x53F7;&#x5305;&#x7528;&#x4E8E;&#x4F20;&#x8F93;&#x9AD8;&#x901F;&#x4FE1;&#x53F7;&#xFF0C;&#x63A7;&#x5236;&#x5305;&#x7528;&#x4E8E;&#x63A7;&#x5236;&#x6240;&#x6709;&#x53EF;&#x63A7;&#x7684;&#x5668;&#x4EF6;&#xFF0C;&#x73AF;&#x5883;&#x5305;&#x7528;&#x4E8E;&#x8FD4;&#x56DE;&#x786C;&#x4EF6;&#x73AF;&#x5883;</li>
+</ul>
+
+<a id="more"></a>
+</div>
+</div>
+
+<div id="outline-container-org59634b8" class="outline-2">
+<h2 id="org59634b8">&#x534F;&#x8BAE;&#x7ED3;&#x6784;</h2>
+<div class="outline-text-2" id="text-org59634b8">
+</div>
+<div id="outline-container-org9cdf62f" class="outline-3">
+<h3 id="org9cdf62f">&#x5305;&#x7684;&#x7C7B;&#x578B;</h3>
+<div class="outline-text-3" id="text-org9cdf62f">
+<p>
+&#x5305;&#x7C7B;&#x578B;&#x4E00;&#x5171;&#x6709;6&#x79CD;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>&#x6570;&#x636E;&#x5305;(data packets)</li>
+<li>&#x73AF;&#x5883;&#x5305;(context packets)</li>
+<li>&#x63A7;&#x5236;&#x5305;(control packets)</li>
+<li>&#x6269;&#x5C55;&#x6570;&#x636E;&#x5305;(extension data packets)</li>
+<li>&#x6269;&#x5C55;&#x73AF;&#x5883;&#x5305;(extension context packets)</li>
+<li>&#x6269;&#x5C55;&#x63A7;&#x5236;&#x5305;(extension control packets)</li>
+</ul>
+
+<p>
+&#x5176;&#x4E2D;&#x6570;&#x636E;&#x5305;&#xFF0C;&#x73AF;&#x5883;&#x5305;&#x4EE5;&#x53CA;&#x63A7;&#x5236;&#x5305;&#x662F;&#x4E3B;&#x8981;&#x4F7F;&#x7528;&#x7684;&#x7C7B;&#x578B;&#xFF0C;&#x5176;&#x4ED6;3&#x4E2A;&#x662F;&#x53EF;&#x9009;&#x7C7B;&#x578B;(&#x6BD4;&#x5982;&#x5C06;&#x7535;&#x6E90;&#x7BA1;&#x7406;&#x653E;&#x5728;&#x6269;&#x5C55;&#x63A7;&#x5236;&#x5305;&#x4E2D;&#xFF0C;&#x5C06;&#x9891;&#x8C31;&#x4FE1;&#x606F;&#x653E;&#x5728;&#x6269;&#x5C55;&#x6570;&#x636E;&#x5305;&#x4E2D;&#xFF0C;&#x5C06;&#x7CFB;&#x7EDF;&#x591A;&#x4E8E;&#x53C2;&#x6570;&#x653E;&#x5728;&#x6269;&#x5C55;&#x73AF;&#x5883;&#x5305;&#x4E2D;)&#x3002;
+</p>
+
+<p>
+&#x5305;&#x5934;&#x8868;&#x660E;&#x4E86;&#x5305;&#x7684;&#x7C7B;&#x578B;&#x3002;
+</p>
+
+<p>
+&#x5982;&#x679C;&#x4E00;&#x4E2A;&#x89E3;&#x7801;&#x5F15;&#x64CE;&#x4E0D;&#x652F;&#x6301;&#x5BF9;&#x5E94;&#x7684;&#x6269;&#x5C55;&#x5305;&#xFF0C;&#x5B83;&#x5C31;&#x4F1A;&#x5FFD;&#x7565;&#x5305;&#x7684;&#x5185;&#x5BB9;&#x5E76;&#x4E14;&#x8FD4;&#x56DE;&#x8B66;&#x544A;&#x4FE1;&#x606F;&#x3002;
+</p>
+</div>
+
+<div id="outline-container-org2355f31" class="outline-4">
+<h4 id="org2355f31">&#x73AF;&#x5883;&#x5305;(context packets)</h4>
+<div class="outline-text-4" id="text-org2355f31">
+<p>
+&#x73AF;&#x5883;&#x5305;&#x6307;&#x5B9A;&#x4E86;&#x5F53;&#x524D;&#x53D1;&#x5C04;&#x673A;&#x548C;&#x63A5;&#x6536;&#x673A;&#x7684;&#x72B6;&#x6001;&#x53C2;&#x6570;&#xFF0C;&#x4E5F;&#x5C31;&#x662F;&#x5F53;&#x524D;&#x76EE;&#x6807;&#x786C;&#x4EF6;&#x7684;&#x8FD0;&#x884C;&#x73AF;&#x5883;&#xFF0C;&#x6BD4;&#x5982;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>&#x5C04;&#x9891;&#x9891;&#x7387;</li>
+<li>&#x4E2D;&#x9891;&#x9891;&#x7387;</li>
+<li>&#x5E26;&#x5BBD;</li>
+<li>ADC,DAC&#x7684;&#x91C7;&#x6837;&#x7387;&#x4EE5;&#x53CA;&#x4F4D;&#x6570;</li>
+<li>&#x589E;&#x76CA;</li>
+<li>&#x7535;&#x538B;</li>
+<li>&#x6EE4;&#x6CE2;&#x5668;&#x9636;&#x6570;</li>
+<li>&#x5E26;&#x5916;&#x8870;&#x51CF;</li>
+<li>&#x65F6;&#x95F4;&#x6233;&#xFF0C;&#x65F6;&#x95F4;&#x6233;&#x5EF6;&#x65F6;</li>
+</ul>
+
+<p>
+&#x4E00;&#x65E6;&#x8FD9;&#x4E9B;&#x53C2;&#x6570;&#x4E2D;&#x7684;&#x4EFB;&#x610F;&#x4E00;&#x4E2A;&#x53C2;&#x6570;&#x6539;&#x53D8;&#x4E86;&#xFF0C;&#x5F15;&#x64CE;&#x5C31;&#x4F1A;&#x53D1;&#x9001;&#x4E00;&#x4E2A;&#x73AF;&#x5883;&#x5305;&#xFF0C;&#x5305;&#x4E2D;&#x5305;&#x542B;&#x4E86;&#x88AB;&#x6539;&#x53D8;&#x7684;&#x53C2;&#x6570;&#x3002;
+</p>
+</div>
+</div>
+<div id="outline-container-org8e5fc3c" class="outline-4">
+<h4 id="org8e5fc3c">&#x63A7;&#x5236;&#x5305;(control packets)</h4>
+<div class="outline-text-4" id="text-org8e5fc3c">
+<p>
+&#x63A7;&#x5236;&#x5305;&#x7528;&#x4E8E;&#x63A7;&#x5236;&#x53D1;&#x5C04;&#x673A;&#x548C;&#x63A5;&#x6536;&#x673A;&#x7684;&#x4E00;&#x5207;&#x53EF;&#x63A7;&#x7684;&#x53C2;&#x6570;&#xFF0C;&#x5F15;&#x64CE;&#x5728;&#x63A5;&#x6536;&#x5230;&#x8FD9;&#x4E9B;&#x5305;&#x4EE5;&#x540E;&#x89E3;&#x6790;&#x5E76;&#x63A7;&#x5236;&#x5BF9;&#x5E94;&#x7684;&#x786C;&#x4EF6;&#x3002;
+</p>
+
+<p>
+&#x5F53;&#x5E94;&#x7528;&#x8F6F;&#x4EF6;&#x9700;&#x8981;&#x6539;&#x53D8;&#x67D0;&#x4E9B;&#x53C2;&#x6570;&#x7684;&#x65F6;&#x5019;&#x624D;&#x4F1A;&#x53D1;&#x9001;&#x63A7;&#x5236;&#x5305;&#x3002;
+</p>
+</div>
+</div>
+<div id="outline-container-org7c0d8ae" class="outline-4">
+<h4 id="org7c0d8ae">&#x6570;&#x636E;&#x5305;(data packets)</h4>
+<div class="outline-text-4" id="text-org7c0d8ae">
+<p>
+&#x6570;&#x636E;&#x5305;&#x7528;&#x4E8E;&#x4F20;&#x9001;&#x9AD8;&#x901F;&#x6570;&#x636E;&#xFF0C;&#x6B64;&#x5305;&#x4F1A;&#x88AB;&#x9891;&#x7E41;&#x7684;&#x53D1;&#x9001;&#x3002;
+</p>
+</div>
+</div>
+</div>
+<div id="outline-container-org9225537" class="outline-3">
+<h3 id="org9225537">&#x5305;&#x4E2D;&#x7684;&#x91CD;&#x8981;&#x6982;&#x5FF5;</h3>
+<div class="outline-text-3" id="text-org9225537">
+<img src="https://github.com/KcMeterCEC/explore/blob/master/[RF]/[protocol]/[What]protocol--SDR/concept.jpg?raw=true" alt="concept.jpg">
+</div>
+<div id="outline-container-org0c77d33" class="outline-4">
+<h4 id="org0c77d33">&#x53C2;&#x8003;&#x70B9;(reference points)</h4>
+<div class="outline-text-4" id="text-org0c77d33">
+<p>
+&#x7531;&#x4E8E;SDR&#x786C;&#x4EF6;&#x7CFB;&#x7EDF;&#x6784;&#x67B6;&#x5927;&#x540C;&#x5C0F;&#x5F02;&#xFF0C;&#x6240;&#x4EE5;&#x901A;&#x8FC7; <b>&#x53C2;&#x8003;&#x70B9;</b> &#x8FD9;&#x4E2A;&#x6982;&#x5FF5;&#x6765;&#x8868;&#x793A;SDR&#x7CFB;&#x7EDF;&#x4E2D;&#x6BCF;&#x4E2A;&#x53EF;&#x4EE5;&#x7A0B;&#x5E8F;&#x63A7;&#x5236;&#x7684;&#x53C2;&#x6570;&#x3002;
+</p>
+
+<p>
+&#x6BD4;&#x5982;&#x63A7;&#x5236;&#x672C;&#x632F;&#x4FE1;&#x53F7;&#x7684;&#x70B9;&#x6570;&#x5B57;&#x662F;7&#xFF0C;&#x63A7;&#x5236;DAC&#x91C7;&#x6837;&#x9891;&#x7387;&#x7684;&#x70B9;&#x662F;8&#xFF08;&#x5728;&#x5B9E;&#x73B0;&#x4E2D;&#x53EF;&#x4EE5;&#x901A;&#x8FC7;&#x679A;&#x4E3E;&#x7C7B;&#x578B;&#x6765;&#x5B9A;&#x4E49;&#x5404;&#x4E2A;&#x53C2;&#x8003;&#x70B9;&#xFF09;&#x3002;
+</p>
+</div>
+</div>
+<div id="outline-container-org0ae98ac" class="outline-4">
+<h4 id="org0ae98ac">&#x6D41;ID(stream IDs)</h4>
+<div class="outline-text-4" id="text-org0ae98ac">
+<p>
+&#x6570;&#x636E;&#x5305;&#x4E0E;&#x5176;&#x4ED6;&#x5305;&#x5177;&#x6709;&#x4E00;&#x5B9A;&#x7684;&#x5173;&#x8054;&#x6027;&#xFF0C;&#x6BD4;&#x5982;&#x5F53;&#x524D;&#x6570;&#x636E;&#x5305;&#x7684;&#x5185;&#x5BB9;&#x4EC5;&#x4EC5;&#x5BF9;&#x5E94;&#x4E8E;DAC&#x7684;&#x91C7;&#x6837;&#x7387;&#x4E3A;&#x67D0;&#x4E2A;&#x503C;&#x65F6;&#x624D;&#x6709;&#x6548;&#xFF0C;&#x90A3;&#x4E48;&#x8FD9;&#x4E2A;&#x6570;&#x636E;&#x5305;&#x4E0E;DAC&#x7684;&#x63A7;&#x5236;&#x5305;&#x5C31;&#x6709;&#x540C;&#x4E00;&#x4E2A;&#x6D41;ID&#x3002;
+</p>
+
+<p>
+&#x8FD9;&#x6837;&#x6D41;ID&#x5C31;&#x53EF;&#x4EE5;&#x7528;&#x6765;&#x533A;&#x5206;&#x4E0D;&#x540C;&#x60C5;&#x51B5;&#x4E0B;&#x7684;&#x6570;&#x636E;&#x5305;&#x7EC4;&#x3002;
+</p>
+</div>
+</div>
+<div id="outline-container-org6a79f4e" class="outline-4">
+<h4 id="org6a79f4e">&#x65F6;&#x95F4;&#x6233;(timestamps)</h4>
+<div class="outline-text-4" id="text-org6a79f4e">
+<p>
+&#x5BF9;&#x4E8E;&#x5355;&#x4E2A;SDR&#x8BBE;&#x5907;&#x6765;&#x8BF4;&#xFF0C; &#x65F6;&#x95F4;&#x6233;&#x53EF;&#x4EE5;&#x8868;&#x660E;&#x5F53;&#x524D;&#x63A5;&#x6536;&#x673A;&#x8FD4;&#x56DE;&#x4FE1;&#x53F7;&#x7684;&#x5177;&#x4F53;&#x65F6;&#x95F4;&#xFF0C;&#x5E76;&#x4E14;&#x8FD8;&#x53EF;&#x4EE5;&#x5728;&#x8FD9;&#x4E2A;&#x57FA;&#x7840;&#x4E0A;&#x52A0;&#x4E0A;&#x4E00;&#x4E2A;&#x65F6;&#x95F4;&#x4FEE;&#x6B63;&#x503C;&#xFF0C;&#x4EE5;&#x8868;&#x793A;&#x4FE1;&#x53F7;&#x5230;&#x8FBE;&#x5929;&#x7EBF;&#x90A3;&#x4E00;&#x70B9;&#x7684;&#x7CBE;&#x786E;&#x65F6;&#x95F4;&#x3002;
+</p>
+
+<p>
+&#x5BF9;&#x4E8E;&#x591A;&#x4E2A;&#x8BBE;&#x5907;&#x6765;&#x8BF4;&#xFF0C;&#x65F6;&#x95F4;&#x6233;&#x53EF;&#x4EE5;&#x540C;&#x6B65;&#x591A;&#x4E2A;&#x8BBE;&#x5907;&#x7684;&#x6570;&#x636E;&#x7136;&#x540E;&#x5BF9;&#x5E94;&#x7684;&#x62FC;&#x63A5;&#x5230;&#x9891;&#x8C31;&#x4E0A;&#x53BB;&#x3002;
+</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+Last Updated 2020-06-28 Sun 12:00.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+</div>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/protocol-rf/" rel="tag"># protocol_rf</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/01/16/rf_protocol_uhd_struct_analyze/" rel="prev" title="[What]USRP UHD 构架分析">
+      <i class="fa fa-chevron-left"></i> [What]USRP UHD 构架分析
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/01/18/linux_debug_gdb_overview/" rel="next" title="[What]GDB 基本使用总结">
+      [What]GDB 基本使用总结 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org1914d5c"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x6982;&amp;#x89C8;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org59634b8"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x534F;&amp;#x8BAE;&amp;#x7ED3;&amp;#x6784;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org9cdf62f"><span class="nav-number">2.1.</span> <span class="nav-text">&amp;#x5305;&amp;#x7684;&amp;#x7C7B;&amp;#x578B;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org2355f31"><span class="nav-number">2.1.1.</span> <span class="nav-text">&amp;#x73AF;&amp;#x5883;&amp;#x5305;(context packets)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org8e5fc3c"><span class="nav-number">2.1.2.</span> <span class="nav-text">&amp;#x63A7;&amp;#x5236;&amp;#x5305;(control packets)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org7c0d8ae"><span class="nav-number">2.1.3.</span> <span class="nav-text">&amp;#x6570;&amp;#x636E;&amp;#x5305;(data packets)</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org9225537"><span class="nav-number">2.2.</span> <span class="nav-text">&amp;#x5305;&amp;#x4E2D;&amp;#x7684;&amp;#x91CD;&amp;#x8981;&amp;#x6982;&amp;#x5FF5;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org0c77d33"><span class="nav-number">2.2.1.</span> <span class="nav-text">&amp;#x53C2;&amp;#x8003;&amp;#x70B9;(reference points)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org0ae98ac"><span class="nav-number">2.2.2.</span> <span class="nav-text">&amp;#x6D41;ID(stream IDs)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org6a79f4e"><span class="nav-number">2.2.3.</span> <span class="nav-text">&amp;#x65F6;&amp;#x95F4;&amp;#x6233;(timestamps)</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">我的世界</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">210</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">104</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">38</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+  
+  <span class="post-meta-divider">|</span>
+  <span>Hosted by <a href="https://pages.coding.me" target="_blank" rel="noopener" style="font-weight: bold">Coding Pages</a></span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+<script>
+  (function() {
+    function leancloudSelector(url) {
+      url = encodeURI(url);
+      return document.getElementById(url).querySelector('.leancloud-visitors-count');
+    }
+
+    function addCount(Counter) {
+      var visitors = document.querySelector('.leancloud_visitors');
+      var url = decodeURI(visitors.id);
+      var title = visitors.dataset.flagTitle;
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          if (results.length > 0) {
+            var counter = results[0];
+            leancloudSelector(url).innerText = counter.time + 1;
+            Counter('put', '/classes/Counter/' + counter.objectId, { time: { '__op': 'Increment', 'amount': 1 } })
+              .catch(error => {
+                console.error('Failed to save visitor count', error);
+              });
+          } else {
+              leancloudSelector(url).innerText = 'Counter not initialized! More info at console err msg.';
+              console.error('ATTENTION! LeanCloud counter has security bug, see how to solve it here: https://github.com/theme-next/hexo-leancloud-counter-security. \n However, you can still use LeanCloud without security, by setting `security` option to `false`.');
+            
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    function showTime(Counter) {
+      var visitors = document.querySelectorAll('.leancloud_visitors');
+      var entries = [...visitors].map(element => {
+        return decodeURI(element.id);
+      });
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url: { '$in': entries } })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          for (let url of entries) {
+            let target = results.find(item => item.url === url);
+            leancloudSelector(url).innerText = target ? target.time : 0;
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    let { app_id, app_key, server_url } = {"enable":true,"app_id":"ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI","app_key":"yh4vrfnscme1utPMpk65wcxn","server_url":null,"security":true};
+    function fetchData(api_server) {
+      var Counter = (method, url, data) => {
+        return fetch(`${api_server}/1.1${url}`, {
+          method,
+          headers: {
+            'X-LC-Id'     : app_id,
+            'X-LC-Key'    : app_key,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+      };
+      if (CONFIG.page.isPost) {
+        if (CONFIG.hostname !== location.hostname) return;
+        addCount(Counter);
+      } else if (document.querySelectorAll('.post-title-link').length >= 1) {
+        showTime(Counter);
+      }
+    }
+
+    let api_server = app_id.slice(-9) !== '-MdYXbMMI' ? server_url : `https://${app_id.slice(0, 8).toLowerCase()}.api.lncldglobal.com`;
+
+    if (api_server) {
+      fetchData(api_server);
+    } else {
+      fetch('https://app-router.leancloud.cn/2/route?appId=' + app_id)
+        .then(response => response.json())
+        .then(({ api_server }) => {
+          fetchData('https://' + api_server);
+        });
+    }
+  })();
+</script>
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+  <script defer src="/lib/three/three.min.js"></script>
+    <script defer src="/lib/three/three-waves.min.js"></script>
+    <script defer src="/lib/three/canvas_lines.min.js"></script>
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI',
+      appKey     : 'yh4vrfnscme1utPMpk65wcxn',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

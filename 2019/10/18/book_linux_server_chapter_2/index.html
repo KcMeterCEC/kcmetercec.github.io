@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="zLSyD2CN1AkyJqei3qKraT6372nBgMFKWe6kAj5JDeY">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="&amp;#x5728;&amp;#x9605;&amp;#x8BFB; &lt;&lt;&amp;#x56FE;&amp;#x89E3;TCPIP&gt;&gt; &amp;#x65F6;&amp;#xFF0C;&amp;#x53EA;&amp;#x7B80;&amp;#x5355;&amp;#x63D0;&amp;#x4E86;&amp;#x4E00;&amp;#x4E0B; ip&amp;#xFF0C;&amp;#x73B0;&amp;#x5728;&amp;#x5C06;&amp;#x5B83;&amp;#x4EEC;&amp;#x52A0;&amp;#x6">
+<meta property="og:type" content="article">
+<meta property="og:title" content="[What]ip 协议">
+<meta property="og:url" content="http://kcmetercec.top/2019/10/18/book_linux_server_chapter_2/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="&amp;#x5728;&amp;#x9605;&amp;#x8BFB; &lt;&lt;&amp;#x56FE;&amp;#x89E3;TCPIP&gt;&gt; &amp;#x65F6;&amp;#xFF0C;&amp;#x53EA;&amp;#x7B80;&amp;#x5355;&amp;#x63D0;&amp;#x4E86;&amp;#x4E00;&amp;#x4E0B; ip&amp;#xFF0C;&amp;#x73B0;&amp;#x5728;&amp;#x5C06;&amp;#x5B83;&amp;#x4EEC;&amp;#x52A0;&amp;#x6">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--Linux&#x9AD8;&#x6027;&#x80FD;&#x670D;&#x52A1;&#x5668;&#x7F16;&#x7A0B;/chapter2/ipv4_header.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--Linux&#x9AD8;&#x6027;&#x80FD;&#x670D;&#x52A1;&#x5668;&#x7F16;&#x7A0B;/chapter2/ip_module.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--Linux&#x9AD8;&#x6027;&#x80FD;&#x670D;&#x52A1;&#x5668;&#x7F16;&#x7A0B;/chapter2/icmp_redir.jpg?raw=true">
+<meta property="article:published_time" content="2019-10-17T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-06-28T03:58:45.441Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="CS">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--Linux&#x9AD8;&#x6027;&#x80FD;&#x670D;&#x52A1;&#x5668;&#x7F16;&#x7A0B;/chapter2/ipv4_header.jpg?raw=true">
+
+<link rel="canonical" href="http://kcmetercec.top/2019/10/18/book_linux_server_chapter_2/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>[What]ip 协议 | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=112423075-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '112423075-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2ab4cc06d0da36106a4426465d0cb00d";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2019/10/18/book_linux_server_chapter_2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="我的世界">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          [What]ip 协议
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-10-18 00:00:00" itemprop="dateCreated datePublished" datetime="2019-10-18T00:00:00+08:00">2019-10-18</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-06-28 11:58:45" itemprop="dateModified" datetime="2020-06-28T11:58:45+08:00">2020-06-28</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/book/" itemprop="url" rel="index"><span itemprop="name">book</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/book/Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/" itemprop="url" rel="index"><span itemprop="name">Linux高性能服务器编程</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2019/10/18/book_linux_server_chapter_2/" class="post-meta-item leancloud_visitors" data-flag-title="[What]ip 协议" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2019/10/18/book_linux_server_chapter_2/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2019/10/18/book_linux_server_chapter_2/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <div id="content">
+<p>
+&#x5728;&#x9605;&#x8BFB; <a href="http://kcmetercec.top/categories/book/%25E5%259B%25BE%25E8%25A7%25A3TCPIP-%25E5%2585%25A5%25E9%2597%25A8/">&lt;&lt;&#x56FE;&#x89E3;TCPIP&gt;&gt;</a> &#x65F6;&#xFF0C;&#x53EA;&#x7B80;&#x5355;&#x63D0;&#x4E86;&#x4E00;&#x4E0B; ip&#xFF0C;&#x73B0;&#x5728;&#x5C06;&#x5B83;&#x4EEC;&#x52A0;&#x6DF1;&#x4E00;&#x4E0B;&#x7406;&#x89E3;&#x3002;
+</p>
+<a id="more"></a>
+<div id="outline-container-orgc074bb5" class="outline-2">
+<h2 id="orgc074bb5">IP &#x670D;&#x52A1;&#x7684;&#x7279;&#x70B9;</h2>
+<div class="outline-text-2" id="text-orgc074bb5">
+<p>
+IP &#x534F;&#x8BAE;&#x7684;&#x7279;&#x70B9;&#x662F;&#xFF1A;
+</p>
+<ol class="org-ol">
+<li>&#x65E0;&#x72B6;&#x6001;&#xFF08;stateless&#xFF09;&#xFF1A;IP &#x6570;&#x636E;&#x62A5;&#x7684;&#x53D1;&#x9001;&#x3001;&#x4F20;&#x8F93;&#x548C;&#x63A5;&#x6536;&#x90FD;&#x662F;&#x76F8;&#x4E92;&#x72EC;&#x7ACB;&#x7684;&#xFF0C;&#x6CA1;&#x6709;&#x4E0A;&#x4E0B;&#x6587;&#x5173;&#x7CFB;&#x3002;
+<ul class="org-ul">
+<li>&#x4E5F;&#x5C31;&#x662F;&#x8BF4;&#x63A5;&#x6536;&#x7AEF;&#x65E0;&#x6CD5;&#x8BC6;&#x522B; IP &#x6570;&#x636E;&#x62A5;&#x7684;&#x5148;&#x540E;&#x987A;&#x5E8F;&#xFF0C;&#x4E5F;&#x65E0;&#x6CD5;&#x533A;&#x5206;&#x662F;&#x5426;&#x63A5;&#x6536;&#x5230;&#x4E86;&#x91CD;&#x590D;&#x7684;&#x6570;&#x636E;&#x62A5;&#xFF0C;&#x8FD9;&#x4E9B;&#x6570;&#x636E;&#x62A5;&#x4EA4;&#x7531;&#x4E0A;&#x5C42;&#x534F;&#x8BAE;&#x5904;&#x7406;
+<ul class="org-ul">
+<li>IP &#x62A5;&#x4E2D;&#x7684;&#x6807;&#x8BC6;&#x662F;&#x7528;&#x4E8E;&#x5206;&#x7247;&#x548C;&#x91CD;&#x7EC4;&#xFF0C;&#x65E0;&#x6CD5;&#x533A;&#x5206;&#x591A;&#x4E2A;&#x5B8C;&#x6574;&#x6570;&#x636E;&#x62A5;&#x7684;&#x5148;&#x540E;&#x987A;&#x5E8F;</li>
+</ul></li>
+</ul></li>
+<li>&#x65E0;&#x8FDE;&#x63A5;&#xFF08;connectionless&#xFF09;&#xFF1A;&#x6BCF;&#x6B21;&#x53D1;&#x9001;&#x6570;&#x636E;&#x62A5;&#x90FD;&#x5FC5;&#x987B;&#x660E;&#x786E;&#x6307;&#x5B9A;&#x5BF9;&#x65B9;&#x7684; IP &#x5730;&#x5740;</li>
+<li>&#x4E0D;&#x53EF;&#x9760;&#xFF1A;IP &#x534F;&#x8BAE;&#x4E0D;&#x80FD;&#x4FDD;&#x8BC1; IP &#x6570;&#x636E;&#x62A5;&#x51C6;&#x786E;&#x5730;&#x5230;&#x8FBE;&#x63A5;&#x6536;&#x7AEF;&#xFF0C;&#x8FD9;&#x9700;&#x8981;&#x4E0A;&#x5C42;&#x534F;&#x8BAE;&#x6765;&#x5904;&#x7406;</li>
+</ol>
+</div>
+</div>
+<div id="outline-container-orgca7f496" class="outline-2">
+<h2 id="orgca7f496">&#x56DE;&#x987E; IPv4 &#x5934;&#x90E8;</h2>
+<div class="outline-text-2" id="text-orgca7f496">
+<img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--Linux&#x9AD8;&#x6027;&#x80FD;&#x670D;&#x52A1;&#x5668;&#x7F16;&#x7A0B;/chapter2/ipv4_header.jpg?raw=true" alt="ipv4_header.jpg">
+<p>
+&#x9700;&#x8981;&#x7559;&#x610F;&#x7684;&#x662F;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>&#x5728; TOS &#x4E2D;&#x7684; 4 &#x4F4D;&#x670D;&#x52A1;&#x8D28;&#x91CF;&#x5B57;&#x6BB5;&#x4E2D;&#xFF0C;&#x6700;&#x591A;&#x6709; 1 &#x4F4D;&#x80FD;&#x7F6E; 1
+<ul class="org-ul">
+<li>&#x50CF; ssh,telnet &#x8FD9;&#x79CD;&#x670D;&#x52A1;&#x5C31;&#x9009;&#x6700;&#x5C0F;&#x5EF6;&#x65F6;&#xFF0C;&#x5BF9; ftp &#x8FD9;&#x6837;&#x7684;&#x670D;&#x52A1;&#x5C31;&#x9009;&#x6700;&#x5927;&#x541E;&#x5410;&#x91CF;</li>
+</ul></li>
+<li>&#x540C;&#x4E00;&#x4E2A;&#x6570;&#x636E;&#x62A5;&#x7684;&#x5206;&#x7247;&#x6807;&#x8BC6;&#x503C;&#x90FD;&#x4E00;&#x6837;&#xFF0C;&#x4E0D;&#x540C;&#x7684;&#x6570;&#x636E;&#x62A5;&#x6807;&#x8BC6;&#x503C;&#x4E0D;&#x540C;</li>
+<li>3 &#x4F4D;&#x6807;&#x5FD7;&#x5B57;&#x6BB5;&#x4E2D;&#xFF0C;&#x5982;&#x679C;&#x8BBE;&#x7F6E;&#x4E86;&#x201C;&#x7981;&#x6B62;&#x5206;&#x7247;&#x201D;&#x3002;&#x5982;&#x679C; IP &#x6570;&#x636E;&#x62A5;&#x8D85;&#x8FC7; MTU,&#x5219;&#x6B64;&#x5305;&#x5C06;&#x4F1A;&#x88AB;&#x4E22;&#x5F03;&#x5E76;&#x8FD4;&#x56DE;&#x4E00;&#x4E2A; ICMP &#x5DEE;&#x9519;&#x62A5;&#x6587;
+<ul class="org-ul">
+<li>&#x5BF9;&#x4E8E;&#x7B2C; 3 &#x4F4D;&#xFF0C;&#x9664;&#x4E86;&#x6570;&#x636E;&#x62A5;&#x6700;&#x540E;&#x4E00;&#x4E2A;&#x5206;&#x7247;&#x5916;&#xFF0C;&#x5176;&#x4ED6;&#x5206;&#x7247;&#x90FD;&#x8981;&#x628A;&#x5B83;&#x7F6E;&#x4E00;</li>
+</ul></li>
+<li>13 &#x4F4D;&#x5206;&#x7247;&#x504F;&#x79FB;&#x662F;&#x6570;&#x636E;&#x90E8;&#x5206;&#x7684;&#x504F;&#x79FB;&#xFF0C;&#x5E76;&#x4E14;&#x8BE5;&#x503C;&#x8868;&#x793A;&#x7684;&#x662F; 8 &#x7684;&#x6574;&#x6570;&#x500D;&#xFF0C;&#x4E5F;&#x5C31;&#x662F;&#x8BF4; <b>&#x9664;&#x4E86;&#x6700;&#x540E;&#x4E00;&#x4E2A; IP &#x5206;&#x7247;&#x5916;&#xFF0C;&#x5176;&#x4ED6;&#x5206;&#x7247;&#x6570;&#x636E;&#x957F;&#x5EA6;&#x5FC5;&#x987B;&#x662F; 8 &#x7684;&#x6574;&#x6570;&#x500D;</b></li>
+<li>&#x6700;&#x540E;&#x7684;&#x53EF;&#x9009;&#x5B57;&#x6BB5;&#x53EF;&#x4EE5;&#x4F5C;&#x4E3A;&#xFF1A;
+<ul class="org-ul">
+<li>&#x8BB0;&#x5F55;&#x8DEF;&#x7531;&#xFF08;record route&#xFF09;&#xFF1A;&#x5C06;&#x6570;&#x636E;&#x62A5;&#x9014;&#x5F84;&#x7684;&#x8DEF;&#x7531;&#x5668;&#x7684; IP &#x5730;&#x5740;&#x586B;&#x5165;&#x53EF;&#x9009;&#x5B57;&#x6BB5;&#xFF0C;&#x8DDF;&#x8E2A;&#x6570;&#x636E;&#x4F20;&#x9012;&#x8DEF;&#x5F84;</li>
+<li>&#x65F6;&#x95F4;&#x6233;&#xFF08;timestamp&#xFF09;&#xFF1A;&#x8DEF;&#x7531;&#x5668;&#x5C06;&#x6570;&#x636E;&#x62A5;&#x88AB;&#x8F6C;&#x53D1;&#x7684;&#x65F6;&#x95F4;&#x586B;&#x5165;&#x53EF;&#x9009;&#x5B57;&#x6BB5;&#xFF0C;&#x6D4B;&#x91CF;&#x6570;&#x636E;&#x4F20;&#x8F93;&#x65F6;&#x95F4;</li>
+<li>&#x677E;&#x6563;&#x6E90;&#x8DEF;&#x7531;&#x9009;&#x62E9;&#xFF08;loose source routing&#xFF09;&#xFF1A;&#x6307;&#x5B9A;&#x8DEF;&#x7531;&#x5668; IP &#x5730;&#x5740;&#x5217;&#x8868;&#xFF0C;&#x6570;&#x636E;&#x62A5;&#x53D1;&#x9001;&#x5FC5;&#x987B;&#x8B66;&#x544A;&#x6240;&#x6709;&#x8DEF;&#x7531;&#x5668;</li>
+<li>&#x4E25;&#x683C;&#x6E90;&#x8DEF;&#x7531;&#x9009;&#x62E9;&#xFF08;stric source routing&#xFF09;&#xFF1A;&#x6307;&#x5B9A;&#x8DEF;&#x7531;&#x5668; IP &#x5730;&#x5740;&#x5217;&#x8868;&#xFF0C;&#x6570;&#x636E;&#x62A5;&#x53D1;&#x9001; <b>&#x53EA;&#x80FD;</b> &#x7ECF;&#x8FC7;&#x6240;&#x9009;&#x8DEF;&#x7531;</li>
+</ul></li>
+</ul>
+</div>
+<div id="outline-container-org098f39e" class="outline-3">
+<h3 id="org098f39e">&#x89C2;&#x5BDF; IPv4 &#x5934;&#x90E8;</h3>
+<div class="outline-text-3" id="text-org098f39e">
+<p>
+&#x901A;&#x8FC7; <code>telnet</code> &#x6765;&#x8BBF;&#x95EE;&#x672C;&#x5730;&#x7684; <code>telnet</code> &#x670D;&#x52A1;&#x89C2;&#x5BDF; IP &#x5934;&#x90E8;&#xFF1A;
+</p>
+<pre class="example">
+# &#x6293;&#x53D6;&#x672C;&#x5730;&#x56DE;&#x8DEF;&#x4E0A;&#x7684;&#x6570;&#x636E;&#x5305;
+sudo tcpdump -ntx -i lo
+# &#x767B;&#x5F55;&#x672C;&#x673A;
+telnet 127.0.0.1</pre>
+<p>
+&#x7B2C;&#x4E00;&#x4E2A;&#x6570;&#x636E;&#x5305;&#x5982;&#x4E0B;&#xFF1A;
+</p>
+<pre class="example">
+IP 127.0.0.1.35918 &gt; 127.0.0.1.23: Flags [S], seq 867943451, win 65495, options [mss 65495,sackOK,TS val 4238191006 ecr 0,nop,wscale 7], length 0
+  0x0000:  4510 003c 6c90 4000 4006 d019 7f00 0001
+  0x0010:  7f00 0001 8c4e 0017 33bb c41b 0000 0000
+  0x0020:  a002 ffd7 fe30 0000 0204 ffd7 0402 080a
+  0x0030:  fc9d a99e 0000 0000 0103 0307</pre>
+<p>
+IP &#x6570;&#x636E;&#x5185;&#x5BB9;&#x7684;&#x524D; 20 &#x5B57;&#x8282;&#x5C31;&#x662F; IP &#x5934;&#x90E8;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>&#x7248;&#x672C;&#xFF1A; 4,&#x4EE3;&#x8868;&#x662F; IPv4</li>
+<li>&#x9996;&#x90E8;&#x957F;&#x5EA6;&#xFF1A;5,&#x4EE3;&#x8868; 5 &#xD7; 4 = 20 &#x5B57;&#x8282;</li>
+<li>&#x670D;&#x52A1;&#x7C7B;&#x578B;&#xFF1A;0x10, &#x4EE3;&#x8868;&#x6700;&#x4F4E;&#x5EF6;&#x8FDF;&#xFF08;&#x7531;&#x9AD8;&#x4F4D;&#x5230;&#x4F4E;&#x4F4D;&#x65B9;&#x5411;&#xFF09;</li>
+<li>&#x603B;&#x957F;&#x5EA6;&#xFF1A;0x003c&#xFF0C;60 &#x5B57;&#x8282;</li>
+<li>&#x6807;&#x8BC6;&#xFF1A;0x6c90</li>
+<li>&#x6807;&#x8BB0;&#xFF1A;0b010&#xFF0C;&#x7B2C;&#x4E8C;&#x4F4D;&#x7F6E;&#x4E00;&#xFF0C;&#x4EE3;&#x8868;&#x4E0D;&#x80FD;&#x5206;&#x7247;&#xFF08;&#x5F53;&#x524D;&#x6570;&#x636E;&#x5305;&#x5185;&#x5BB9;&#x5F88;&#x5C11;&#xFF0C;&#x5373;&#x4F7F;&#x52A0;&#x4E0A;&#x6570;&#x636E;&#x94FE;&#x8DEF;&#x5C42;&#x7684;&#x6570;&#x636E;&#x4E5F;&#x5B8C;&#x5168;&#x4E0D;&#x7528;&#x5206;&#x5305;&#xFF09;</li>
+<li>&#x5206;&#x7247;&#x504F;&#x79FB;&#xFF1A;0</li>
+<li>&#x751F;&#x5B58;&#x65F6;&#x95F4;&#xFF1A;0x40&#xFF0C;64</li>
+<li>&#x534F;&#x8BAE;&#xFF1A;0x06&#xFF0C;TCP</li>
+<li>&#x68C0;&#x9A8C;&#x548C;&#xFF1A;0xd019</li>
+<li>&#x6E90;&#x5730;&#x5740;&#xFF1A;0x7f000001, 127.0.0.1</li>
+<li>&#x76EE;&#x7684;&#x5730;&#x5740;&#xFF1A;0x7f000001,127.0.0.1</li>
+</ul>
+</div>
+</div>
+</div>
+<div id="outline-container-orgc0451e4" class="outline-2">
+<h2 id="orgc0451e4">IP &#x5206;&#x5305;</h2>
+<div class="outline-text-2" id="text-orgc0451e4">
+<p>
+&#x5F53; IP &#x6570;&#x636E;&#x5305;&#x8D85;&#x8FC7;&#x5E27; MTU &#x65F6;&#xFF0C;&#x53EF;&#x80FD;&#x4F1A;&#x88AB;&#x53D1;&#x9001;&#x7AEF;&#x6216;&#x4E2D;&#x8F6C;&#x8DEF;&#x7531;&#x5668;&#x5206;&#x7247;&#xFF0C;&#x6700;&#x7EC8;&#x88AB;&#x63A5;&#x6536;&#x7AEF;&#x5185;&#x6838;&#x7684; IP &#x6A21;&#x5757;&#x91CD;&#x7EC4;&#x3002;
+</p>
+
+<p>
+IP &#x7684;&#x5206;&#x7247;&#x548C;&#x91CD;&#x7EC4;&#x4E3B;&#x8981;&#x4F9D;&#x9760;&#xFF1A;&#x6807;&#x8BC6;&#x3001;&#x6807;&#x5FD7;&#x548C;&#x7247;&#x504F;&#x79FB;&#x5B8C;&#x6210;&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x540C;&#x4E00;&#x4E2A;&#x6570;&#x636E;&#x62A5;&#x7684; IP &#x5934;&#x90E8;&#x5177;&#x6709;&#x76F8;&#x540C;&#x7684;&#x6807;&#x8BC6;&#x503C;&#xFF0C;&#x4E0D;&#x540C;&#x7684;&#x7247;&#x504F;&#x79FB;&#x3002;&#x9664;&#x4E86;&#x6700;&#x540E;&#x4E00;&#x4E2A;&#x5206;&#x7247;&#x5916;&#xFF0C;&#x5176;&#x4ED6;&#x5206;&#x7247;&#x6807;&#x5FD7;&#x90FD;&#x662F;&#x53EF;&#x5206;&#x7247;&#x3002;</li>
+</ul>
+
+<p>
+&#x5BF9;&#x4E8E;&#x4EE5;&#x592A;&#x7F51;&#x800C;&#x8A00;&#xFF0C;MTU &#x662F; 1500 &#x5B57;&#x8282;&#xFF0C;&#x90A3;&#x4E48;&#x9664;&#x5F00; IP &#x5934;&#x90E8;&#x4EE5;&#x5916;&#xFF08;20 &#x5B57;&#x8282;&#xFF09;&#xFF0C;IP &#x6570;&#x636E;&#x5185;&#x5BB9;&#x6700;&#x591A;&#x662F; 1480 &#x5B57;&#x8282;&#x3002;
+&#x6240;&#x4EE5;&#x5F53;&#x6570;&#x636E;&#x5305;&#x8D85;&#x8FC7; 1480 &#x5B57;&#x8282;&#x65F6;&#xFF0C;IP &#x6570;&#x636E;&#x62A5;&#x5C31;&#x5E94;&#x8BE5;&#x5206;&#x7247;&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x5B9E;&#x9645;&#x4E0A;&#x5728; IP &#x4E2D;&#x7684;&#x6570;&#x636E;&#x5305;&#x8FD8;&#x5305;&#x62EC;&#x4E86; TCP &#x7684;&#x5934;&#x90E8;&#xFF0C;&#x6240;&#x4EE5;&#x5B9E;&#x9645;&#x4E0A;&#x771F;&#x6B63;&#x7684;&#x7528;&#x6237;&#x6570;&#x636E;&#x6BD4;&#x8FD9;&#x4E2A;&#x8FD8;&#x8981;&#x5C11;</li>
+</ul>
+</div>
+<div id="outline-container-orgf129a87" class="outline-3">
+<h3 id="orgf129a87">&#x6293;&#x53D6;&#x5206;&#x5305;</h3>
+<div class="outline-text-3" id="text-orgf129a87">
+<p>
+&#x4EE5;&#x4F7F;&#x7528; ping &#x4E00;&#x4E2A;&#x672C;&#x5730;&#x5730;&#x5740;&#x6765;&#x67E5;&#x770B; IP &#x5206;&#x5305;&#x7EC6;&#x8282;&#xFF1A;
+</p>
+<pre class="example">
+# &#x53EA;&#x6293;&#x53D6; icmp &#x62A5;&#x6587;&#xFF0C;&#x56E0;&#x4E3A; ping &#x8FD9;&#x4E2A;&#x547D;&#x4EE4;&#x5C31;&#x662F;&#x4F7F;&#x7528; icmp &#x5B8C;&#x6210;&#x7684;
+sudo tcpdump -ntv -i enp0s3 icmp
+# &#x6307;&#x5B9A;&#x53D1;&#x9001;&#x6570;&#x636E;&#x6570;&#x662F; 1473 &#x5B57;&#x8282;&#xFF0C;&#x800C; icmp &#x56DE;&#x663E;&#x548C;&#x5E94;&#x7B54;&#x5934;&#x957F;&#x5EA6;&#x662F; 8 &#x5B57;&#x8282;&#xFF0C;&#x6240;&#x4EE5;&#x521A;&#x597D;&#x662F; 1501 &#x5B57;&#x8282;
+ping www.baidu.com -s 1473</pre>
+<p>
+&#x53EF;&#x4EE5;&#x770B;&#x5230;&#x6293;&#x53D6;&#x7684;&#x5185;&#x5BB9;&#xFF1A;
+</p>
+<pre class="example">
+IP (tos 0x0, ttl 64, id 33961, offset 0, flags [+], proto ICMP (1), length 1500)
+    192.168.0.253 &gt; 14.215.177.39: ICMP echo request, id 25282, seq 1, length 1480
+IP (tos 0x0, ttl 64, id 33961, offset 1480, flags [none], proto ICMP (1), length 21)
+    192.168.0.253 &gt; 14.215.177.39: ip-proto-1</pre>
+<ul class="org-ul">
+<li>&#x4E24;&#x4E2A; IP &#x5206;&#x7247;&#x7684; ID &#x662F;&#x4E00;&#x6837;&#x7684;</li>
+<li>&#x7247;&#x5185;&#x504F;&#x79FB;&#x4E00;&#x4E2A;&#x662F;0,&#x4E00;&#x4E2A;&#x662F; 1480&#xFF0C;&#x56E0;&#x4E3A;&#x9664;&#x53BB; 20 &#x5B57;&#x8282;&#x7684;&#x5934;&#x90E8;&#xFF0C;&#x90A3;&#x4E48;&#x5269;&#x4E0B;&#x7684;&#x6570;&#x636E;&#x90E8;&#x5206;&#x5C31;&#x662F; 1480 &#x5B57;&#x8282;</li>
+<li>&#x7B2C;&#x4E00;&#x4E2A;&#x6807;&#x8BB0;&#x662F;&#x5206;&#x7247;&#xFF0C;&#x7B2C;&#x4E8C;&#x4E2A;&#x4EE3;&#x8868;&#x8FD9;&#x662F;&#x6700;&#x540E;&#x4E00;&#x4E2A;&#x5206;&#x7247;</li>
+<li>&#x7531;&#x4E8E;&#x6570;&#x636E;&#x957F;&#x5EA6;&#x603B;&#x5171;&#x662F; 1451,&#x7B2C;&#x4E00;&#x5206;&#x7247;&#x5185;&#x5BB9;&#x662F; 1480,&#x90A3;&#x4E48;&#x7B2C;&#x4E8C;&#x4E2A;&#x5C31;&#x662F;21&#x5B57;&#x8282;
+<ul class="org-ul">
+<li>&#x53EF;&#x89C1;&#x7B2C;&#x4E8C;&#x4E2A; IP &#x5305;&#x7684;&#x6570;&#x636E;&#x90E8;&#x5206;&#x5E76;&#x4E0D;&#x5305;&#x542B; ICMP &#x5934;&#x90E8;&#x4FE1;&#x606F;&#xFF0C;&#x56E0;&#x4E3A;&#x5728;&#x76EE;&#x6807;&#x673A;&#x4E0A;&#x5C06;&#x5B83;&#x4EEC;&#x62FC;&#x63A5;&#x5373;&#x53EF;&#x3002;</li>
+</ul></li>
+</ul>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgdfbe283" class="outline-2">
+<h2 id="orgdfbe283">IP &#x8DEF;&#x7531;</h2>
+<div class="outline-text-2" id="text-orgdfbe283">
+</div>
+<div id="outline-container-org208a391" class="outline-3">
+<h3 id="org208a391">IP &#x6A21;&#x5757;&#x7684;&#x5DE5;&#x4F5C;&#x6D41;&#x7A0B;</h3>
+<div class="outline-text-3" id="text-org208a391">
+<img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--Linux&#x9AD8;&#x6027;&#x80FD;&#x670D;&#x52A1;&#x5668;&#x7F16;&#x7A0B;/chapter2/ip_module.jpg?raw=true" alt="ip_module.jpg">
+<p>
+&#x6570;&#x636E;&#x94FE;&#x8DEF;&#x5C42;&#x5728; Linux &#x4E2D;&#x4F4D;&#x4E8E;&#x7F51;&#x7EDC;&#x9A71;&#x52A8;&#x90E8;&#x5206;&#xFF0C;&#x5F53;&#x63A5;&#x6536;&#x5230;&#x6570;&#x636E;&#x5305;&#x65F6;&#xFF0C;&#x6570;&#x636E;&#x94FE;&#x8DEF;&#x5C42;&#x4ECE;&#x4E2D;&#x63D0;&#x53D6;&#x51FA;&#x7F51;&#x7EDC;&#x5C42;&#x5E76;&#x53D1;&#x9001;&#x7ED9; IP &#x6A21;&#x5757;&#x3002;
+</p>
+
+<p>
+IP &#x5728;&#x5BF9;&#x7F51;&#x7EDC;&#x5C42;&#x6570;&#x636E;&#x6821;&#x9A8C;&#x65E0;&#x8BEF;&#x540E;&#xFF0C;&#x5C31;&#x5206;&#x6790;&#x5176;&#x5934;&#x90E8;&#x4FE1;&#x606F;&#x3002;
+</p>
+
+<p>
+&#x5982;&#x679C;&#x8BE5; IP &#x6570;&#x636E;&#x62A5;&#x5934;&#x90E8;&#x8BBE;&#x7F6E;&#x4E86;&#x6E90;&#x7AD9;&#x9009;&#x8DEF;&#x9009;&#x9879;&#xFF0C;IP &#x6A21;&#x5757;&#x4FBF;&#x8C03;&#x7528;&#x6570;&#x636E;&#x62A5;&#x8F6C;&#x53D1;&#x5B50;&#x6A21;&#x5757;&#x3002;
+</p>
+
+<p>
+&#x5982;&#x679C;&#x8BE5; IP &#x6570;&#x636E;&#x62A5;&#x7684;&#x5934;&#x90E8;&#x4E2D;&#x76EE;&#x6807; IP &#x5730;&#x5740;&#x662F;&#x672C;&#x673A; IP &#x5730;&#x5740;&#x6216;&#x5E7F;&#x64AD;&#x5730;&#x5740;&#xFF0C;IP &#x6A21;&#x5757;&#x5C31;&#x6839;&#x636E;&#x6570;&#x636E;&#x62A5;&#x5934;&#x90E8;&#x7684;&#x534F;&#x8BAE;&#x5B57;&#x6BB5;&#x6D3E;&#x53D1;&#x7ED9;&#x5BF9;&#x5E94;&#x7684;&#x4F20;&#x8F93;&#x5C42;&#x3002;
+&#x5982;&#x679C;&#x4E0E;&#x672C;&#x673A; IP &#x5730;&#x5740;&#x4E0D;&#x4E00;&#x6837;&#x4E5F;&#x4E0D;&#x662F;&#x5E7F;&#x64AD;&#x5730;&#x5740;&#xFF0C;&#x5219;&#x4E5F;&#x8C03;&#x7528;&#x6570;&#x636E;&#x62A5;&#x8F6C;&#x53D1;&#x5B50;&#x6A21;&#x5757;&#x3002;
+</p>
+
+<p>
+&#x6570;&#x636E;&#x62A5;&#x8F6C;&#x53D1;&#x5B50;&#x6A21;&#x5757;&#x5C06;&#x9996;&#x5148;&#x68C0;&#x6D4B;&#x7CFB;&#x7EDF;&#x662F;&#x5426;&#x5141;&#x8BB8;&#x8F6C;&#x53D1;&#xFF0C;&#x4E0D;&#x5141;&#x8BB8;&#x5C31;&#x4E22;&#x5F03;&#x6570;&#x636E;&#x62A5;&#xFF0C;&#x5141;&#x8BB8;&#x5C31;&#x5C06;&#x6570;&#x636E;&#x8F6C;&#x53D1;&#x7ED9; IP &#x6570;&#x636E;&#x62A5;&#x8F93;&#x51FA;&#x5B50;&#x6A21;&#x5757;&#x3002;
+</p>
+
+<p>
+IP &#x6A21;&#x5757;&#x5B9E;&#x73B0;&#x6570;&#x636E;&#x62A5;&#x8DEF;&#x7531;&#x7684;&#x6838;&#x5FC3;&#x6570;&#x636E;&#x7ED3;&#x6784;&#x662F;&#x8DEF;&#x7531;&#x8868;&#xFF0C;&#x540C;&#x4E00;&#x7C7B;&#x578B;&#x7684; IP &#x6570;&#x636E;&#x62A5;&#x5C06;&#x88AB;&#x53D1;&#x5F80;&#x76F8;&#x540C;&#x7684;&#x4E0B;&#x4E00;&#x8DF3;&#x8DEF;&#x7531;&#x5668;&#x3002;
+</p>
+
+<p>
+IP &#x8F93;&#x51FA;&#x961F;&#x5217;&#x4E2D;&#x5B58;&#x653E;&#x6240;&#x6709;&#x7B49;&#x5F85;&#x53D1;&#x9001;&#x7684; IP &#x6570;&#x636E;&#x62A5;&#xFF0C;&#x9664;&#x4E86;&#x8981;&#x8F6C;&#x53D1;&#x7684; IP &#x6570;&#x636E;&#x62A5;&#x5916;&#xFF0C;&#x8FD8;&#x6709;&#x4E0A;&#x5C42;&#x6570;&#x636E;&#x7684; IP &#x6570;&#x636E;&#x62A5;&#x3002;
+</p>
+
+<p>
+&#x8DEF;&#x7531;&#x534F;&#x8BAE;&#x548C; route &#x547D;&#x4EE4;&#x6765;&#x66F4;&#x65B0;&#x8DEF;&#x7531;&#x8868;&#x3002;
+</p>
+</div>
+</div>
+<div id="outline-container-org3e7ca0c" class="outline-3">
+<h3 id="org3e7ca0c">&#x8DEF;&#x7531;&#x673A;&#x5236;</h3>
+<div class="outline-text-3" id="text-org3e7ca0c">
+<p>
+&#x6267;&#x884C; <code>route</code> &#x547D;&#x4EE4;&#x5373;&#x53EF;&#x67E5;&#x770B;&#x672C;&#x673A;&#x7684;&#x8DEF;&#x7531;&#x8868;&#xFF1A;
+</p>
+<pre class="example">
+cec@box:~$ route
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+# &#x4E0B;&#x4E00;&#x8DF3;&#x7684;&#x76EE;&#x6807;&#x662F;&#x7F51;&#x5173;&#xFF0C;&#x4E5F;&#x5C31;&#x662F;&#x8DEF;&#x7531;&#x5668;
+default         _gateway        0.0.0.0         UG    100    0        0 enp0s3
+# &#x672C;&#x673A;
+link-local      0.0.0.0         255.255.0.0     U     1000   0        0 enp0s3
+# &#x672C;&#x5730;&#x5C40;&#x57DF;&#x7F51;&#xFF08;C &#x7C7B; IP &#x5730;&#x5740;&#xFF09;&#xFF0C;&#x6570;&#x636E;&#x62A5;&#x4E0D;&#x9700;&#x8981;&#x4E2D;&#x8F6C;
+192.168.0.0     0.0.0.0         255.255.255.0   U     100    0        0 enp0s3</pre>
+<ul class="org-ul">
+<li>Destination&#xFF1A;&#x76EE;&#x6807;&#x7F51;&#x7EDC;&#x6216;&#x4E3B;&#x673A;</li>
+<li>Gateway&#xFF1A;&#x7F51;&#x5173;&#x5730;&#x5740;</li>
+<li>Genmask&#xFF1A;&#x7F51;&#x7EDC;&#x63A9;&#x7801;</li>
+<li>Flags&#xFF1A;&#x8DEF;&#x7531;&#x6807;&#x5FD7;
+<ul class="org-ul">
+<li>U&#xFF1A;&#x8BE5;&#x8DEF;&#x7531;&#x9879;&#x662F;&#x6D3B;&#x52A8;&#x7684;</li>
+<li>H&#xFF1A;&#x8BE5;&#x8DEF;&#x7531;&#x9879;&#x7684;&#x76EE;&#x6807;&#x662F;&#x4E00;&#x53F0;&#x4E3B;&#x673A;</li>
+<li>G&#xFF1A;&#x8BE5;&#x8DEF;&#x7531;&#x9879;&#x7684;&#x76EE;&#x6807;&#x662F;&#x7F51;&#x5173;</li>
+<li>D&#xFF1A;&#x8BE5;&#x8DEF;&#x7531;&#x9879;&#x662F;&#x7531;&#x91CD;&#x5B9A;&#x5411;&#x751F;&#x6210;&#x7684;</li>
+<li>M&#xFF1A;&#x8BE5;&#x8DEF;&#x7531;&#x9879;&#x88AB;&#x91CD;&#x5B9A;&#x5411;&#x4FEE;&#x6539;&#x8FC7;</li>
+</ul></li>
+<li>Metric&#xFF1A;&#x8DEF;&#x7531;&#x8DDD;&#x79BB;&#xFF0C;&#x5230;&#x8FBE;&#x6307;&#x5B9A;&#x7F51;&#x7EDC;&#x6240;&#x9700;&#x7684;&#x4E2D;&#x8F6C;&#x6570;</li>
+<li>Ref&#xFF1A;&#x8DEF;&#x7531;&#x9879;&#x88AB;&#x5F15;&#x7528;&#x7684;&#x6B21;&#x6570;</li>
+<li>Use&#xFF1A;&#x8DEF;&#x7531;&#x9879;&#x88AB;&#x4F7F;&#x7528;&#x7684;&#x6B21;&#x6570;</li>
+<li>Iface&#xFF1A;&#x8BE5;&#x8DEF;&#x7531;&#x9879;&#x5BF9;&#x5E94;&#x7684;&#x8F93;&#x51FA;&#x7F51;&#x5361;&#x63A5;&#x53E3;</li>
+</ul>
+
+<p>
+IP &#x8DEF;&#x7531;&#x673A;&#x5236;&#x5206;&#x4E3A; 3 &#x4E2A;&#x6B65;&#x9AA4;&#xFF1A;
+</p>
+<ol class="org-ol">
+<li>&#x67E5;&#x627E;&#x8DEF;&#x7531;&#x8868;&#x4E2D;&#x548C;&#x6570;&#x636E;&#x62A5;&#x7684;&#x76EE;&#x6807; IP &#x5730;&#x5740;&#x5B8C;&#x5168;&#x5339;&#x914D;&#x7684;&#x4E3B;&#x673A; IP &#x5730;&#x5740;&#xFF0C;&#x5982;&#x679C;&#x627E;&#x5230;&#x5C31;&#x4F7F;&#x7528;&#x8BE5;&#x8DEF;&#x7531;&#x9879;</li>
+<li>&#x67E5;&#x627E;&#x8DEF;&#x7531;&#x8868;&#x4E2D;&#x548C;&#x6570;&#x636E;&#x62A5;&#x7684;&#x76EE;&#x6807; IP &#x5730;&#x5740;&#x5177;&#x6709;&#x76F8;&#x540C;&#x7F51;&#x7EDC; ID &#x7684;&#x7F51;&#x7EDC; IP &#x5730;&#x5740;&#xFF0C;&#x5982;&#x679C;&#x627E;&#x5230;&#x5C31;&#x4F7F;&#x7528;&#x8BE5;&#x8DEF;&#x7531;&#x9879;</li>
+<li>&#x9009;&#x62E9;&#x9ED8;&#x8BA4;&#x8DEF;&#x7531;&#x9879;&#xFF0C;&#x4E5F;&#x5C31;&#x662F;&#x8DF3;&#x8F6C;&#x5230;&#x7F51;&#x5173;</li>
+</ol>
+
+<p>
+&#x53EF;&#x4EE5;&#x770B;&#x51FA;&#xFF0C;&#x5176;&#x67E5;&#x627E;&#x8FC7;&#x7A0B;&#x662F;&#x7531;&#x4E25;&#x683C;&#x5230;&#x5BBD;&#x677E;&#x3002;
+</p>
+</div>
+</div>
+<div id="outline-container-org74b6184" class="outline-3">
+<h3 id="org74b6184">&#x8DEF;&#x7531;&#x8868;&#x66F4;&#x65B0;</h3>
+<div class="outline-text-3" id="text-org74b6184">
+<p>
+&#x53EF;&#x4EE5;&#x4F7F;&#x7528; <code>route add</code> , <code>route del</code> &#x6765;&#x624B;&#x52A8;&#x6DFB;&#x52A0;&#x548C;&#x5220;&#x9664;&#x8DEF;&#x7531;&#x8868;&#x9879;&#xFF0C;&#x4E5F;&#x53EF;&#x4EE5;&#x901A;&#x8FC7; BGP(Border Gateway Protocol&#xFF0C;&#x8FB9;&#x9645;&#x7F51;&#x5173;&#x534F;&#x8BAE;&#xFF09;&#x3001;RIP&#xFF08;Routing Information Protocol&#xFF0C;&#x8DEF;&#x7531;&#x534F;&#x8BAE;&#xFF09;&#x7B49;&#x81EA;&#x52A8;&#x66F4;&#x65B0;&#x8DEF;&#x7531;&#x8868;&#x3002;
+</p>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-orgb0f94df" class="outline-2">
+<h2 id="orgb0f94df">IP &#x8F6C;&#x53D1;</h2>
+<div class="outline-text-2" id="text-orgb0f94df">
+<p>
+&#x4E3B;&#x673A;&#x662F;&#x5426;&#x652F;&#x6301; IP &#x8F6C;&#x53D1;&#x4E0E; <code>/proc/sys/net/ipv4/ip_forward</code> &#x7684;&#x503C;&#x6709;&#x5173;&#xFF0C;&#x4E3A; 1 &#x5219;&#x4EE3;&#x8868;&#x5141;&#x8BB8;&#x8F6C;&#x53D1;&#x3002;
+</p>
+
+<p>
+&#x6267;&#x884C;&#x6570;&#x636E;&#x62A5;&#x8F6C;&#x53D1;&#x65F6;&#xFF0C;&#x6267;&#x884C;&#x5982;&#x4E0B;&#x6B65;&#x9AA4;&#xFF1A;
+</p>
+<ol class="org-ol">
+<li>&#x82E5; TTL &#x4E3A; 0,&#x5219;&#x4E22;&#x5F03;&#x8BE5;&#x6570;&#x636E;&#x62A5;</li>
+<li>&#x5982;&#x679C;&#x5934;&#x90E8;&#x8BBE;&#x7F6E;&#x4E86;&#x4E25;&#x683C;&#x6E90;&#x8DEF;&#x7531;&#x9009;&#x62E9;&#x9009;&#x9879;&#xFF0C;&#x5982;&#x679C;&#x76EE;&#x6807; IP &#x4E0E;&#x672C;&#x673A; IP &#x4E0D;&#x4E00;&#x81F4;&#xFF0C;&#x5219;&#x53D1;&#x9001; ICMP &#x6E90;&#x7AD9;&#x9009;&#x8DEF;&#x5931;&#x8D25;&#x62A5;&#x6587;&#x7ED9;&#x53D1;&#x9001;&#x7AEF;&#x3002;</li>
+<li>&#x5982;&#x679C;&#x6709;&#x5FC5;&#x8981;&#xFF0C;&#x7ED9;&#x6E90;&#x7AEF;&#x53D1;&#x9001;&#x4E00;&#x4E2A; ICMP &#x91CD;&#x5B9A;&#x5411;&#x62A5;&#x6587;&#xFF0C;&#x544A;&#x8BC9;&#x5B83;&#x4E00;&#x4E2A;&#x66F4;&#x5408;&#x7406;&#x7684;&#x4E0B;&#x4E00;&#x8DF3;&#x8DEF;&#x7531;&#x5668;</li>
+<li>&#x5C06; TTL &#x51CF; 1</li>
+<li>&#x5904;&#x7406; IP &#x5934;&#x90E8;&#x9009;&#x9879;</li>
+<li>&#x6839;&#x636E;&#x5F53;&#x524D; MTU &#x67E5;&#x770B;&#x662F;&#x5426;&#x9700;&#x8981;&#x5BF9; IP &#x6267;&#x884C;&#x5206;&#x7247;&#x64CD;&#x4F5C;&#x3002;</li>
+</ol>
+</div>
+</div>
+<div id="outline-container-orge98fd52" class="outline-2">
+<h2 id="orge98fd52">&#x91CD;&#x5B9A;&#x5411;</h2>
+<div class="outline-text-2" id="text-orge98fd52">
+<img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--Linux&#x9AD8;&#x6027;&#x80FD;&#x670D;&#x52A1;&#x5668;&#x7F16;&#x7A0B;/chapter2/icmp_redir.jpg?raw=true" alt="icmp_redir.jpg">
+<p>
+ICP &#x91CD;&#x5B9A;&#x5411;&#x62A5;&#x6587;&#x7684;&#x7C7B;&#x578B;&#x503C;&#x662F; 5,&#x4EE3;&#x7801;&#x5B57;&#x6BB5;&#x4E3A; 1 &#x65F6;&#x4EE3;&#x8868;&#x4E3B;&#x673A;&#x91CD;&#x5B9A;&#x5411;&#x3002;
+</p>
+
+<p>
+&#x6B64;&#x62A5;&#x6587;&#x5305;&#x542B;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>&#x5F15;&#x8D77;&#x91CD;&#x5B9A;&#x5411;&#x7684; IP &#x6570;&#x636E;&#x62A5;&#x7684;&#x6E90;&#x7AEF; IP &#x5730;&#x5740;</li>
+<li>&#x5E94;&#x8BE5;&#x4F7F;&#x7528;&#x7684;&#x8DEF;&#x7531;&#x5668;&#x7684; IP &#x5730;&#x5740;</li>
+</ul>
+
+<p>
+&#x4E3B;&#x673A;&#x6839;&#x636E;&#x4EE5;&#x4E0A;&#x4FE1;&#x606F;&#x65AD;&#x5B9A;&#x5F15;&#x8D77;&#x91CD;&#x5B9A;&#x5411;&#x7684; IP &#x6570;&#x636E;&#x62A5;&#x5E94;&#x8BE5;&#x4F7F;&#x7528;&#x54EA;&#x4E2A;&#x8DEF;&#x7531;&#x5668;&#x6765;&#x8F6C;&#x53D1;&#xFF0C;&#x5E76;&#x4E14;&#x66F4;&#x65B0;&#x8DEF;&#x7531;&#x8868;&#x3002;
+</p>
+<ul class="org-ul">
+<li><code>/proc/sys/net/ipv4/conf/all/send_redirects</code> &#x6307;&#x5B9A;&#x662F;&#x5426;&#x53EF;&#x4EE5;&#x53D1;&#x9001; ICMP &#x91CD;&#x5B9A;&#x5411;&#x62A5;&#x6587;</li>
+<li><code>/proc/sys/net/ipv4/conf/all/accept_redirects</code> &#x6307;&#x5B9A;&#x662F;&#x5426;&#x53EF;&#x4EE5;&#x63A5;&#x53D7; ICMP &#x91CD;&#x5B9A;&#x5411;&#x62A5;&#x6587;</li>
+</ul>
+
+<p>
+&#x4E00;&#x822C;&#x4E3B;&#x673A;&#x63A5;&#x6536; ICMP &#x91CD;&#x5B9A;&#x5411;&#x62A5;&#x6587;&#xFF0C;&#x800C;&#x8DEF;&#x7531;&#x5668;&#x53D1;&#x9001; ICMP &#x91CD;&#x5B9A;&#x5411;&#x62A5;&#x6587;&#x3002;
+</p>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+Last Updated 2020-06-28 Sun 11:59.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+</div>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/CS/" rel="tag"># CS</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/10/15/book_linux_server_chapter_1/" rel="prev" title="[What]tcp/ip 协议族 --> arp 与 dns">
+      <i class="fa fa-chevron-left"></i> [What]tcp/ip 协议族 --> arp 与 dns
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/10/23/processor_zynq_vivado_efuse/" rel="next" title="zynq vivado -> 自动化烧写 PL EFUSE">
+      zynq vivado -> 自动化烧写 PL EFUSE <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#orgc074bb5"><span class="nav-number">1.</span> <span class="nav-text">IP &amp;#x670D;&amp;#x52A1;&amp;#x7684;&amp;#x7279;&amp;#x70B9;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgca7f496"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x56DE;&amp;#x987E; IPv4 &amp;#x5934;&amp;#x90E8;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org098f39e"><span class="nav-number">2.1.</span> <span class="nav-text">&amp;#x89C2;&amp;#x5BDF; IPv4 &amp;#x5934;&amp;#x90E8;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgc0451e4"><span class="nav-number">3.</span> <span class="nav-text">IP &amp;#x5206;&amp;#x5305;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgf129a87"><span class="nav-number">3.1.</span> <span class="nav-text">&amp;#x6293;&amp;#x53D6;&amp;#x5206;&amp;#x5305;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgdfbe283"><span class="nav-number">4.</span> <span class="nav-text">IP &amp;#x8DEF;&amp;#x7531;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org208a391"><span class="nav-number">4.1.</span> <span class="nav-text">IP &amp;#x6A21;&amp;#x5757;&amp;#x7684;&amp;#x5DE5;&amp;#x4F5C;&amp;#x6D41;&amp;#x7A0B;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org3e7ca0c"><span class="nav-number">4.2.</span> <span class="nav-text">&amp;#x8DEF;&amp;#x7531;&amp;#x673A;&amp;#x5236;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org74b6184"><span class="nav-number">4.3.</span> <span class="nav-text">&amp;#x8DEF;&amp;#x7531;&amp;#x8868;&amp;#x66F4;&amp;#x65B0;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgb0f94df"><span class="nav-number">5.</span> <span class="nav-text">IP &amp;#x8F6C;&amp;#x53D1;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orge98fd52"><span class="nav-number">6.</span> <span class="nav-text">&amp;#x91CD;&amp;#x5B9A;&amp;#x5411;</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">我的世界</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">210</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">104</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">38</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+  
+  <span class="post-meta-divider">|</span>
+  <span>Hosted by <a href="https://pages.coding.me" target="_blank" rel="noopener" style="font-weight: bold">Coding Pages</a></span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+<script>
+  (function() {
+    function leancloudSelector(url) {
+      url = encodeURI(url);
+      return document.getElementById(url).querySelector('.leancloud-visitors-count');
+    }
+
+    function addCount(Counter) {
+      var visitors = document.querySelector('.leancloud_visitors');
+      var url = decodeURI(visitors.id);
+      var title = visitors.dataset.flagTitle;
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          if (results.length > 0) {
+            var counter = results[0];
+            leancloudSelector(url).innerText = counter.time + 1;
+            Counter('put', '/classes/Counter/' + counter.objectId, { time: { '__op': 'Increment', 'amount': 1 } })
+              .catch(error => {
+                console.error('Failed to save visitor count', error);
+              });
+          } else {
+              leancloudSelector(url).innerText = 'Counter not initialized! More info at console err msg.';
+              console.error('ATTENTION! LeanCloud counter has security bug, see how to solve it here: https://github.com/theme-next/hexo-leancloud-counter-security. \n However, you can still use LeanCloud without security, by setting `security` option to `false`.');
+            
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    function showTime(Counter) {
+      var visitors = document.querySelectorAll('.leancloud_visitors');
+      var entries = [...visitors].map(element => {
+        return decodeURI(element.id);
+      });
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url: { '$in': entries } })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          for (let url of entries) {
+            let target = results.find(item => item.url === url);
+            leancloudSelector(url).innerText = target ? target.time : 0;
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    let { app_id, app_key, server_url } = {"enable":true,"app_id":"ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI","app_key":"yh4vrfnscme1utPMpk65wcxn","server_url":null,"security":true};
+    function fetchData(api_server) {
+      var Counter = (method, url, data) => {
+        return fetch(`${api_server}/1.1${url}`, {
+          method,
+          headers: {
+            'X-LC-Id'     : app_id,
+            'X-LC-Key'    : app_key,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+      };
+      if (CONFIG.page.isPost) {
+        if (CONFIG.hostname !== location.hostname) return;
+        addCount(Counter);
+      } else if (document.querySelectorAll('.post-title-link').length >= 1) {
+        showTime(Counter);
+      }
+    }
+
+    let api_server = app_id.slice(-9) !== '-MdYXbMMI' ? server_url : `https://${app_id.slice(0, 8).toLowerCase()}.api.lncldglobal.com`;
+
+    if (api_server) {
+      fetchData(api_server);
+    } else {
+      fetch('https://app-router.leancloud.cn/2/route?appId=' + app_id)
+        .then(response => response.json())
+        .then(({ api_server }) => {
+          fetchData('https://' + api_server);
+        });
+    }
+  })();
+</script>
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+  <script defer src="/lib/three/three.min.js"></script>
+    <script defer src="/lib/three/three-waves.min.js"></script>
+    <script defer src="/lib/three/canvas_lines.min.js"></script>
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI',
+      appKey     : 'yh4vrfnscme1utPMpk65wcxn',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

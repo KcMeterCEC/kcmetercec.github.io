@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="zLSyD2CN1AkyJqei3qKraT6372nBgMFKWe6kAj5JDeY">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="&amp;#x524D;&amp;#x9762;&amp;#x8BF4;&amp;#x8FC7; MMU &amp;#x4E2D;&amp;#x53EA;&amp;#x5B58;&amp;#x653E;&amp;#x9875;&amp;#x8868;&amp;#x57FA;&amp;#x5730;&amp;#x5740;&amp;#xFF0C;&amp;#x800C;&amp;#x9875;&amp;#x8868;&amp;#x662F;&amp;#x5B58;&amp;#x653E;&amp;#x5728; SDRAM &amp;#x4E2D;&amp;#x7684;&amp;#">
+<meta property="og:type" content="article">
+<meta property="og:title" content="[What]Translation Lookaside Buffers">
+<meta property="og:url" content="http://kcmetercec.top/2020/02/28/book_ostep_vm-tlb/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="&amp;#x524D;&amp;#x9762;&amp;#x8BF4;&amp;#x8FC7; MMU &amp;#x4E2D;&amp;#x53EA;&amp;#x5B58;&amp;#x653E;&amp;#x9875;&amp;#x8868;&amp;#x57FA;&amp;#x5730;&amp;#x5740;&amp;#xFF0C;&amp;#x800C;&amp;#x9875;&amp;#x8868;&amp;#x662F;&amp;#x5B58;&amp;#x653E;&amp;#x5728; SDRAM &amp;#x4E2D;&amp;#x7684;&amp;#">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/tlb/tlb_ex.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/tlb/tlb_entry.jpg?raw=true">
+<meta property="article:published_time" content="2020-02-27T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-06-28T03:58:45.211Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="CS">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/tlb/tlb_ex.jpg?raw=true">
+
+<link rel="canonical" href="http://kcmetercec.top/2020/02/28/book_ostep_vm-tlb/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>[What]Translation Lookaside Buffers | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=112423075-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '112423075-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2ab4cc06d0da36106a4426465d0cb00d";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2020/02/28/book_ostep_vm-tlb/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="我的世界">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          [What]Translation Lookaside Buffers
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-02-28 00:00:00" itemprop="dateCreated datePublished" datetime="2020-02-28T00:00:00+08:00">2020-02-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-06-28 11:58:45" itemprop="dateModified" datetime="2020-06-28T11:58:45+08:00">2020-06-28</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/book/" itemprop="url" rel="index"><span itemprop="name">book</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/book/ostep/" itemprop="url" rel="index"><span itemprop="name">ostep</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2020/02/28/book_ostep_vm-tlb/" class="post-meta-item leancloud_visitors" data-flag-title="[What]Translation Lookaside Buffers" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2020/02/28/book_ostep_vm-tlb/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2020/02/28/book_ostep_vm-tlb/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <div id="content">
+<p>
+&#x524D;&#x9762;&#x8BF4;&#x8FC7; MMU &#x4E2D;&#x53EA;&#x5B58;&#x653E;&#x9875;&#x8868;&#x57FA;&#x5730;&#x5740;&#xFF0C;&#x800C;&#x9875;&#x8868;&#x662F;&#x5B58;&#x653E;&#x5728; SDRAM &#x4E2D;&#x7684;&#x3002;
+&#x6BCF;&#x6B21;&#x6267;&#x884C;&#x6307;&#x4EE4;&#x6216;&#x8BFB;&#x5199;&#x6570;&#x636E;&#x524D;&#xFF0C;&#x90FD;&#x9700;&#x8981;&#x5148;&#x5C06;&#x865A;&#x62DF;&#x5730;&#x5740;&#x8F6C;&#x6362;&#x4E3A;&#x7269;&#x7406;&#x5730;&#x5740;&#xFF0C;&#x8FD9;&#x5C31;&#x9700;&#x8981;&#x5148;&#x8BFB;&#x53D6;&#x9875;&#x8868;&#x7684;&#x5185;&#x5BB9;&#xFF0C;&#x8FD9;&#x65E0;&#x7591;&#x662F;&#x5F88;&#x6162;&#x7684;&#x3002;
+</p>
+
+<p>
+&#x6240;&#x4EE5;&#x9700;&#x8981;&#x5728; MMU &#x4E2D;&#x589E;&#x52A0;&#x4E00;&#x4E2A; cache&#xFF0C;&#x4E5F;&#x5C31;&#x662F;&#x5FEB;&#x8868;&#xFF08;translation-lookaside buffer, TLB&#xFF09;&#xFF0C;
+&#x5F53;&#x8981;&#x8FDB;&#x884C;&#x5730;&#x5740;&#x8F6C;&#x6362;&#x65F6;&#xFF0C;&#x5982;&#x679C; TLB &#x4E2D;&#x6709;&#x7F13;&#x5B58;&#x7684;&#x8F6C;&#x6362;&#x5173;&#x7CFB;&#xFF0C;&#x90A3;&#x4E48;&#x5C31;&#x53EF;&#x4EE5;&#x4E0D;&#x7528;&#x8BBF;&#x95EE;&#x9875;&#x8868;&#x4ECE;&#x800C;&#x5927;&#x5927;&#x63D0;&#x9AD8;&#x4E86;&#x8F6C;&#x6362;&#x901F;&#x5EA6;&#x3002;
+</p>
+<a id="more"></a>
+<div id="outline-container-org8c7fb2f" class="outline-2">
+<h2 id="org8c7fb2f">TLB &#x7684;&#x57FA;&#x7840;&#x7B97;&#x6CD5;</h2>
+<div class="outline-text-2" id="text-org8c7fb2f">
+<pre class="example">
+VPN = (VirtualAddress &amp; VPN_MASK) &gt;&gt; SHIFT
+(Success, TlbEntry) = TLB_Lookup(VPN)
+if (Success == True) // TLB Hit
+    if (CanAccess(TlbEntry.ProtectBits) == True)
+        Offset = VirtualAddress &amp; OFFSET_MASK
+        PhysAddr = (TlbEntry.PFN &lt;&lt; SHIFT) | Offset
+        Register = AccessMemory(PhysAddr)
+    else
+        RaiseException(PROTECTION_FAULT)
+else // TLB Miss
+    PTEAddr = PTBR + (VPN * sizeof(PTE))
+    PTE = AccessMemory(PTEAddr)
+    if (PTE.Valid == False)
+        RaiseException(SEGMENTATION_FAULT)
+    else if (CanAccess(PTE.ProtectBits) == False)
+        RaiseException(PROTECTION_FAULT)
+    else
+    TLB_Insert(VPN, PTE.PFN, PTE.ProtectBits)
+    RetryInstruction()</pre>
+<ul class="org-ul">
+<li>&#x9996;&#x5148;&#x6839;&#x636E;&#x865A;&#x62DF;&#x5730;&#x5740;&#x5F97;&#x51FA;&#x9875;&#x8868;&#x504F;&#x79FB;&#xFF0C;&#x6839;&#x636E;&#x6B64;&#x9875;&#x8868;&#x504F;&#x79FB;&#x67E5;&#x770B; TLB &#x4E2D;&#x662F;&#x5426;&#x6709;&#x5BF9;&#x5E94;&#x7684;&#x9875;&#x8868;&#x3002;</li>
+<li>&#x5982;&#x679C;&#x6709;&#x5BF9;&#x5E94;&#x9875;&#x8868;&#x9879;&#x5E76;&#x4E14;&#x5177;&#x6709;&#x8BBF;&#x95EE;&#x6743;&#x9650;&#xFF0C;&#x90A3;&#x4E48;&#x5C31;&#x53EF;&#x4EE5;&#x6839;&#x636E; TLB &#x4E2D;&#x6B64;&#x9875;&#x8868;&#x7684;&#x5185;&#x5BB9;&#x7684;&#x7269;&#x7406;&#x5757;&#x504F;&#x79FB;&#x548C;&#x865A;&#x62DF;&#x5730;&#x5740;&#x7684; offset &#x5F97;&#x51FA;&#x6700;&#x7EC8;&#x7684;&#x7269;&#x7406;&#x5730;&#x5740;&#xFF0C;&#x4ECE;&#x800C;&#x8BBF;&#x95EE;&#x5185;&#x5B58;&#x3002;
+<ul class="org-ul">
+<li>&#x8FD9;&#x79CD;&#x60C5;&#x51B5;&#x4E0B;&#x5C06;&#x539F;&#x6765;&#x9700;&#x8981;&#x8BBF;&#x95EE;&#x4E24;&#x6B21;&#x7269;&#x7406;&#x5185;&#x5B58;&#x7684;&#x64CD;&#x4F5C;&#x5C31;&#x51CF;&#x5C11;&#x5230;&#x4E86;&#x4E00;&#x6B21;&#xFF08;&#x5F53;&#x6709; CPU cache &#x5E76;&#x547D;&#x4E2D;&#x65F6;&#xFF0C;&#x8FDE;&#x8FD9;&#x4E00;&#x6B21;&#x7269;&#x7406;&#x5185;&#x5B58;&#x8BBF;&#x95EE;&#x90FD;&#x53EF;&#x4EE5;&#x7701;&#x6389;&#xFF09;</li>
+</ul></li>
+<li>&#x5982;&#x679C; TLB &#x4E2D;&#x6CA1;&#x6709;&#x5BF9;&#x5E94;&#x7684;&#x9875;&#x8868;&#x9879;&#xFF0C;&#x90A3;&#x4E48;&#x9700;&#x8981;&#x6839;&#x636E;&#x9875;&#x8868;&#x504F;&#x79FB;&#x548C;&#x9875;&#x8868;&#x57FA;&#x5730;&#x5740;&#x4ECE;&#x7269;&#x7406;&#x5185;&#x5B58;&#x4E2D;&#x53D6;&#x51FA;&#x9875;&#x8868;&#x9879;&#xFF0C;&#x5E76;&#x4E14;&#x5982;&#x679C;&#x6B64;&#x9875;&#x8868;&#x9879;&#x6709;&#x8BBF;&#x95EE;&#x6743;&#x9650;&#xFF0C;&#x90A3;&#x4E48;&#x5C06;&#x6B64;&#x9875;&#x8868;&#x9879;&#x7684;&#x5185;&#x5BB9;&#x5199;&#x56DE; TLB&#x3002;&#x518D;&#x6B21;&#x89E3;&#x6790;&#x5C31;&#x4F1A; TLB &#x547D;&#x4E2D;&#x5E76;&#x8BBF;&#x95EE;&#x5230;&#x5BF9;&#x5E94;&#x5185;&#x5B58;&#x4E86;&#x3002;
+<ul class="org-ul">
+<li>&#x8FD9;&#x79CD;&#x60C5;&#x51B5;&#x5C31;&#x4F1A;&#x6709;&#x4E24;&#x6B21;&#x7269;&#x7406;&#x5185;&#x5B58;&#x8BBF;&#x95EE;&#xFF0C;&#x6548;&#x7387;&#x4F4E;&#x5F88;&#x591A;&#x3002;</li>
+</ul></li>
+</ul>
+
+<p>
+&#x5F53;&#x9891;&#x7E41;&#x51FA;&#x73B0; TLB miss &#x65F6;&#xFF0C;&#x7CFB;&#x7EDF;&#x8FD0;&#x884C;&#x6548;&#x7387;&#x5C31;&#x4F1A;&#x5927;&#x5927;&#x964D;&#x4F4E;&#xFF0C;&#x6240;&#x4EE5;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>&#x8981;&#x51CF;&#x5C0F;&#x8FDB;&#x7A0B;&#x7684;&#x5207;&#x6362;&#x9891;&#x7387;&#xFF0C;&#x4E00;&#x65E6;&#x8FDB;&#x7A0B;&#x5207;&#x6362;&#x5176;&#x9875;&#x8868;&#x90FD;&#x4F1A; miss &#x6389;</li>
+<li>&#x4EE3;&#x7801;&#x5C3D;&#x91CF;&#x64CD;&#x4F5C;&#x8FDE;&#x7EED;&#x5185;&#x5B58;&#xFF0C;&#x5982;&#x679C;&#x5185;&#x5B58;&#x5730;&#x5740;&#x8DF3;&#x8DC3;&#x8FC7;&#x5927;&#xFF0C;&#x4E5F;&#x5F88;&#x53EF;&#x80FD;&#x4F1A;&#x5BFC;&#x81F4; miss&#x3002;</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-org51f9514" class="outline-2">
+<h2 id="org51f9514">&#x793A;&#x4F8B;</h2>
+<div class="outline-text-2" id="text-org51f9514">
+<p>
+&#x73B0;&#x5728;&#x5047;&#x8BBE;&#x865A;&#x62DF;&#x5730;&#x5740;&#x7A7A;&#x95F4;&#x662F; 256 &#x5B57;&#x8282;&#xFF0C;&#x5E76;&#x4E14;&#x9875;&#x5927;&#x5C0F;&#x662F; 16 &#x5B57;&#x8282;&#xFF0C;&#x90A3;&#x5C31;&#x4F1A;&#x6709; 16 &#x4E2A;&#x9875;&#x3002;
+</p>
+
+<p>
+&#x90A3;&#x5982;&#x679C;&#x73B0;&#x5728;&#x6709;&#x4E2A;&#x6570;&#x7EC4;&#xFF0C;&#x6570;&#x7EC4;&#x7684;&#x8D77;&#x59CB;&#x865A;&#x62DF;&#x5730;&#x5740;&#x662F; 100&#xFF08;10&#x8FDB;&#x5236;&#xFF09;&#xFF0C;&#x6570;&#x636E;&#x542B;&#x6709; 10 &#x4E2A;&#x5143;&#x7D20;&#xFF0C;&#x6BCF;&#x4E2A;&#x5143;&#x7D20;&#x5927;&#x5C0F;&#x662F; 4&#xFF0C;&#x90A3;&#x4E48;&#x8FD9;&#x4E2A;&#x6570;&#x7EC4;&#x5728;&#x5BF9;&#x5E94;&#x9875;&#x8868;&#x7684;&#x4F4D;&#x7F6E;&#x5982;&#x4E0B;&#xFF1A;
+</p>
+<img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/tlb/tlb_ex.jpg?raw=true" alt="mempic/tlb/tlb_ex.jpg">
+<p>
+&#x4E0B;&#x9762;&#x5047;&#x8BBE;&#x8BBF;&#x95EE;&#x8FD9;&#x4E2A;&#x6570;&#x7EC4;&#x7684;&#x4EE3;&#x7801;&#x5982;&#x4E0B;&#xFF1A;
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> sum = <span class="number">0</span>;</span><br><span class="line"><span class="keyword">for</span>(i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++)</span><br><span class="line">{</span><br><span class="line">  sum += a[i];</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+</div>
+<p>
+&#x5047;&#x8BBE;&#x6700;&#x5F00;&#x59CB; TLB &#x4E2D;&#x5E76;&#x6CA1;&#x6709;&#x7F13;&#x5B58; VPN06 &#x8FD9;&#x4E2A;&#x9875;&#x8868;&#x9879;&#xFF0C;&#x90A3;&#x4E48;&#x6700;&#x5F00;&#x59CB;&#x8BBF;&#x95EE; a[0] &#x65F6;&#xFF0C;&#x4F1A;&#x5BFC;&#x81F4; TLB miss&#xFF0C;&#x4ECE;&#x800C; MMU &#x4F1A;&#x4ECE;&#x7269;&#x7406;&#x5185;&#x5B58;&#x66F4;&#x65B0;&#x8BE5;&#x9875;&#x8868;&#x9879;&#x5230; TLB &#x4E2D;&#x3002;
+</p>
+
+<p>
+&#x4E0B;&#x6B21;&#x8BBF;&#x95EE; a[1] &#x65F6;&#xFF0C;&#x7531;&#x4E8E;&#x6B64;&#x5730;&#x5740;&#x4E5F;&#x662F;&#x5728; VPN06 &#x4E2D;&#xFF0C;&#x6240;&#x4EE5;&#x4E00;&#x5B9A;&#x662F; TLB hit&#x3002;&#x8BBF;&#x95EE; a[2] &#x65F6;&#x540C;&#x7406;&#x4E5F;&#x4F1A;&#x662F; TLB hit&#x3002;
+</p>
+
+<p>
+&#x540C;&#x6837;&#x7684;&#xFF0C;&#x5728;&#x9996;&#x6B21;&#x8BBF;&#x95EE; a[3],a[7] &#x65F6;&#x4E5F;&#x4F1A;&#x9020;&#x6210; TLB miss&#xFF0C;&#x800C;&#x5728;&#x540C;&#x4E00;&#x9875;&#x7684;&#x5176;&#x4ED6;&#x5143;&#x7D20;&#x8BBF;&#x95EE;&#x4E5F;&#x662F; TLB hit&#x3002;
+</p>
+</div>
+</div>
+<div id="outline-container-org2056669" class="outline-2">
+<h2 id="org2056669">&#x8C01;&#x5728;&#x5904;&#x7406; TLB miss</h2>
+<div class="outline-text-2" id="text-org2056669">
+<p>
+&#x5F53; TLB miss &#x51FA;&#x73B0;&#x65F6;&#xFF0C;&#x6709;&#x4EE5;&#x4E0B;&#x4E24;&#x79CD;&#x65B9;&#x5F0F;&#x5904;&#x7406;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>&#x7531;&#x786C;&#x4EF6;&#x6765;&#x5B8C;&#x6210;&#xFF1A;&#x5F53; TLB &#x4E2D;&#x6CA1;&#x6709;&#x5BF9;&#x5E94;&#x7684;&#x9875;&#x8868;&#x9879;&#x65F6;&#xFF0C;&#x7531;&#x786C;&#x4EF6;(hardware-managed TLBs)&#x6839;&#x636E;&#x9875;&#x8868;&#x7684;&#x57FA;&#x5730;&#x5740;&#xFF0C;&#x4ECE;&#x7269;&#x7406;&#x5185;&#x5B58;&#x4E2D;&#x53D6;&#x51FA;&#x8BE5;&#x9875;&#x8868;&#x9879;&#x5B58;&#x5165; TLB</li>
+<li>&#x7531;&#x8F6F;&#x4EF6;&#x5B8C;&#x6210;&#xFF1A;&#x5F53; TLB &#x4E2D;&#x6CA1;&#x6709;&#x5BF9;&#x5E94;&#x9875;&#x8868;&#x9879;&#x65F6;&#xFF0C;&#x786C;&#x4EF6;&#x4EA7;&#x751F;&#x5F02;&#x5E38;&#xFF0C;&#x7CFB;&#x7EDF;&#x8FDB;&#x5165;&#x5185;&#x6838;&#x6001;&#x7684;&#x5F02;&#x5E38;&#x5904;&#x7406;&#x4EE3;&#x7801;&#xFF0C;&#x8FD9;&#x6BB5;&#x4EE3;&#x7801;&#x5B8C;&#x6210;&#x66F4;&#x65B0; TLB &#x7684;&#x529F;&#x80FD;
+<ul class="org-ul">
+<li>&#x8FD9;&#x79CD;&#x60C5;&#x51B5;&#x4E0E;&#x4E2D;&#x65AD;&#x8FD4;&#x56DE;&#x6709;&#x4E9B;&#x4E0D;&#x4E00;&#x6837;&#xFF0C;&#x4E2D;&#x65AD;&#x8FD4;&#x56DE;&#x7684;&#x662F;&#x4E2D;&#x65AD;&#x524D;&#x7684;&#x4E0B;&#x4E00;&#x6761;&#x6307;&#x4EE4;&#x7EE7;&#x7EED;&#x6267;&#x884C;&#xFF0C;&#x800C; TLB miss &#x5F02;&#x5E38;&#x5904;&#x7406;&#x4EE3;&#x7801;&#x8FD4;&#x56DE;&#x70B9;&#x5219;&#x662F;&#x9020;&#x6210; TLB miss &#x7684;&#x6307;&#x4EE4;&#x5904;&#xFF0C;&#x8FD9;&#x6837;&#x518D;&#x6267;&#x884C;&#x4E00;&#x6B21;&#x8BE5;&#x6307;&#x4EE4;&#x4FBF;&#x662F; TLB hit &#x4E86;&#x3002;</li>
+<li>&#x8F6F;&#x4EF6;&#x5904;&#x7406;&#x7684;&#x65B9;&#x5F0F;&#x4E0B;&#xFF0C;&#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;&#x53EF;&#x4EE5;&#x4EE5;&#x7EDF;&#x4E00;&#x7684;&#x6570;&#x636E;&#x7ED3;&#x6784;&#x6765;&#x5C4F;&#x853D;&#x786C;&#x4EF6;&#x7684;&#x5DEE;&#x5F02;</li>
+</ul></li>
+</ul>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">VPN = (VirtualAddress &amp; VPN_MASK) &gt;&gt; SHIFT</span><br><span class="line">(Success, TlbEntry) = TLB_Lookup(VPN)</span><br><span class="line"><span class="keyword">if</span> (Success == True) <span class="comment">// TLB Hit</span></span><br><span class="line">  <span class="keyword">if</span> (CanAccess(TlbEntry.ProtectBits) == True)</span><br><span class="line">    Offset = VirtualAddress &amp; OFFSET_MASK</span><br><span class="line">    PhysAddr = (TlbEntry.PFN &lt;&lt; SHIFT) | Offset</span><br><span class="line">    Register = AccessMemory(PhysAddr)</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    RaiseException(PROTECTION_FAULT)</span><br><span class="line"><span class="keyword">else</span> <span class="comment">// TLB Miss</span></span><br><span class="line">   RaiseException(TLB_MISS)</span><br></pre></td></tr></table></figure>
+</div>
+</div>
+</div>
+<div id="outline-container-org08f3687" class="outline-2">
+<h2 id="org08f3687">TLB &#x7684;&#x5185;&#x5BB9;</h2>
+<div class="outline-text-2" id="text-org08f3687">
+<p>
+&#x7531;&#x4E8E; TLB &#x4FDD;&#x6301;&#x4E86;&#x865A;&#x62DF;&#x5185;&#x5B58;&#x5757;&#x5230;&#x7269;&#x7406;&#x5185;&#x5B58;&#x5757;&#x7684;&#x6620;&#x5C04;&#x5173;&#x7CFB;&#xFF0C;&#x6240;&#x4EE5;&#x5176;&#x5185;&#x5BB9;&#x5982;&#x540C;&#x4E0B;&#x9762;&#x8FD9;&#x822C;&#xFF1A;
+</p>
+<pre class="example">
+VPN | PFN | other bits</pre>
+<p>
+other bits &#x5177;&#x6709;&#x5982;&#x4E0B;&#x7C7B;&#x4F3C;&#x7684;&#x5185;&#x5BB9;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>valid bit : &#x8BF4;&#x660E;&#x8FD9;&#x6BB5;&#x7F13;&#x5B58;&#x662F;&#x5426;&#x6709;&#x6548;</li>
+<li>protection bits : &#x8BE5;&#x6BB5;&#x5185;&#x5B58;&#x7684;&#x6743;&#x9650;</li>
+<li>dirty bit &#xFF1A; &#x8BF4;&#x660E;&#x5185;&#x5B58;&#x662F;&#x5426;&#x88AB;&#x4FEE;&#x6539;&#x8FC7;</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-org541ae9b" class="outline-2">
+<h2 id="org541ae9b">TLB &#x4E0E;&#x4E0A;&#x4E0B;&#x6587;&#x5207;&#x6362;</h2>
+<div class="outline-text-2" id="text-org541ae9b">
+<p>
+&#x6211;&#x4EEC;&#x77E5;&#x9053;&#xFF0C;&#x6BCF;&#x4E2A;&#x8FDB;&#x7A0B;&#x90FD;&#x6709;&#x5176;&#x72EC;&#x7ACB;&#x7684;&#x9875;&#x8868;&#xFF0C;&#x6BCF;&#x6B21;&#x5207;&#x6362;&#x8FDB;&#x7A0B;&#x65F6;&#x90FD;&#x8981;&#x5207;&#x6362;&#x5BF9;&#x5E94;&#x8FDB;&#x7A0B;&#x7684;&#x9875;&#x8868;&#x3002;
+</p>
+
+<p>
+&#x90A3;&#x4E48;&#x6BEB;&#x65E0;&#x7591;&#x95EE;&#xFF1A;&#x5F53;&#x8FDB;&#x7A0B;&#x5207;&#x6362;&#x65F6;&#xFF0C;TLB &#x4E2D;&#x7684;&#x5185;&#x5BB9;&#x5BF9;&#x4E8E;&#x8BE5;&#x8FDB;&#x7A0B;&#x4E5F;&#x662F;&#x65E0;&#x610F;&#x4E49;&#x7684;&#xFF0C;&#x6240;&#x4EE5;&#x9700;&#x8981;&#x5904;&#x7406;&#x3002;
+</p>
+
+<p>
+&#x76EE;&#x524D;&#x5904;&#x7406;&#x6709;&#x4EE5;&#x4E0B;&#x4E24;&#x79CD;&#x65B9;&#x5F0F;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>&#x7B80;&#x5355;&#x7C97;&#x66B4;&#x7684;&#x65B9;&#x5F0F;&#x4F7F;&#x65E0;&#x6548;&#x6574;&#x4E2A; TLB&#xFF1A;&#x8FD9;&#x4F1A;&#x9020;&#x6210;&#x8FDB;&#x7A0B;&#x5207;&#x6362;&#x6548;&#x7387;&#x4F4E;&#x4E0B;
+<ul class="org-ul">
+<li>&#x5F53;&#x786C;&#x4EF6;&#x5177;&#x6709; hardware-managed TLB &#x65F6;&#xFF0C;&#x5F53;&#x9875;&#x8868;&#x57FA;&#x5730;&#x5740;&#x5BC4;&#x5B58;&#x5668;&#x88AB;&#x4FEE;&#x6539;&#x540E;&#xFF0C;&#x786C;&#x4EF6;&#x81EA;&#x52A8;&#x4F7F;&#x65E0;&#x6548;&#x6574;&#x4E2A; TLB</li>
+<li>&#x5F53;&#x786C;&#x4EF6;&#x4E0D;&#x5177;&#x6709; hardware-managed TLB &#x65F6;&#xFF0C;&#x7531;&#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;&#x4E3B;&#x52A8;&#x5C06; TLB &#x7684; valid &#x4F4D;&#x7F6E;0</li>
+</ul></li>
+<li>&#x786C;&#x4EF6;&#x5177;&#x6709; address space identifier(ASID) &#x65F6;&#xFF0C;&#x53EF;&#x4EE5;&#x4FDD;&#x5B58;&#x5F53;&#x524D; TLB &#x9879;&#x5BF9;&#x5E94;&#x7684;&#x8FDB;&#x7A0B;&#x3002;
+<ul class="org-ul">
+<li>&#x8FD9;&#x6837;&#x5207;&#x6362;&#x6548;&#x7387;&#x5C31;&#x6BD4;&#x8F83;&#x9AD8;&#x4E86;</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div id="outline-container-orgab45293" class="outline-2">
+<h2 id="orgab45293">TLB &#x7684;&#x7F6E;&#x6362;&#x7B56;&#x7565;</h2>
+<div class="outline-text-2" id="text-orgab45293">
+<p>
+&#x5F53; TLB &#x4E2D;&#x5B58;&#x653E;&#x7684;&#x90FD;&#x662F;&#x6709;&#x6548;&#x6570;&#x636E;&#x5E76;&#x4E14;&#x6B64;&#x65F6;&#x53C8;&#x9700;&#x8981;&#x7F6E;&#x6362;&#x4E00;&#x4E2A;&#x65B0;&#x7684; TLB &#x65F6;&#xFF0C;&#x6709;&#x4EE5;&#x4E0B;&#x4E24;&#x79CD;&#x5E38;&#x7528;&#x7684;&#x7F6E;&#x6362;&#x7B56;&#x7565;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>&#x6700;&#x8FD1;&#x6700;&#x5C11;&#x4F7F;&#x7528;&#x7B97;&#x6CD5;&#xFF08;least-recently-used,LRU&#xFF09;&#xFF1A;&#x6BCF;&#x6B21;&#x90FD;&#x7F6E;&#x6362;&#x6700;&#x8FD1;&#x6700;&#x5C11;&#x4F7F;&#x7528;&#x7684;&#x90A3;&#x4E2A; TLB
+<ul class="org-ul">
+<li>&#x8FD9;&#x79CD;&#x7B97;&#x6CD5;&#x5229;&#x7528;&#x4E86;&#x5C40;&#x90E8;&#x6027;&#x539F;&#x7406;&#xFF0C;&#x4F46;&#x5F53; TLB &#x6570;&#x91CF;&#x4E3A; N &#x800C;&#x4EE3;&#x7801;&#x5FAA;&#x73AF;&#x9700;&#x8981;&#x8BBF;&#x95EE; N + 1 &#x4E2A; TLB &#x65F6;&#xFF0C;&#x4F1A;&#x5BFC;&#x81F4; TLB &#x4E00;&#x76F4; miss</li>
+</ul></li>
+<li>&#x968F;&#x673A;&#x7B97;&#x6CD5;&#xFF1A;&#x968F;&#x673A;&#x7F6E;&#x6362;&#x51FA;&#x4E00;&#x4E2A; TLB
+<ul class="org-ul">
+<li>&#x8FD9;&#x79CD;&#x7B97;&#x6CD5;&#x867D;&#x7136;&#x770B;&#x4E0A;&#x53BB;&#x6548;&#x7387;&#x6CA1;&#x6709; LRU &#x9AD8;&#xFF0C;&#x4F46;&#x662F;&#x5B83;&#x53EF;&#x4EE5;&#x907F;&#x514D;&#x4E0A;&#x9762;&#x7684; N &#x4E2A; TLB &#x5BF9;&#x5E94; N + 1 &#x4E2A;&#x5FAA;&#x73AF;&#x7F6E;&#x6362;&#x7684;&#x95EE;&#x9898;&#x3002;</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div id="outline-container-orge5ef8bf" class="outline-2">
+<h2 id="orge5ef8bf">&#x771F;&#x5B9E;&#x7684; TLB &#x9879;</h2>
+<div class="outline-text-2" id="text-orge5ef8bf">
+<img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/tlb/tlb_entry.jpg?raw=true" alt="mempic/tlb/tlb_entry.jpg">
+<p>
+&#x4E0A;&#x56FE;&#x662F; MIPS &#x7684; TLB &#x9879;&#x5185;&#x5BB9;&#xFF0C;&#x603B;&#x5171;&#x6709; 64 &#x4F4D;&#x3002;
+</p>
+
+<p>
+MIPS &#x652F;&#x6301; 4KB &#x9875;&#x8868;&#xFF08;&#x8FD9;&#x4E5F;&#x662F;&#x5927;&#x90E8;&#x5206;&#x60C5;&#x51B5;&#x4E0B;&#x7684;&#x8BBE;&#x7F6E;&#xFF09;&#xFF0C;&#x90A3;&#x4E48;&#x4E3A;&#x4E86;&#x652F;&#x6301; 32 &#x4F4D;&#x865A;&#x62DF;&#x5730;&#x5740;&#x5BFB;&#x5740;&#x7A7A;&#x95F4;&#xFF0C;&#x5C31;&#x9700;&#x8981; VPN &#x6709; 20 &#x4F4D;&#x3002;
+</p>
+
+<p>
+&#x7531;&#x4E8E; MIPS &#x5C06;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x548C;&#x5185;&#x6838;&#x7A7A;&#x95F4;&#x5206;&#x522B;&#x8BBE;&#x4E3A; 2GB&#xFF0C;&#x6240;&#x4EE5; VPN &#x4EC5;&#x9700;&#x8981; 19 &#x4F4D;&#x5C31;&#x591F;&#x4E86;&#x3002;
+&#x5E76;&#x4E14; VPN &#x53EF;&#x4EE5;&#x6620;&#x5C04;&#x7684;&#x7269;&#x7406;&#x5730;&#x5740; PFN &#x6709; 24 &#x4F4D;&#xFF0C;&#x90A3;&#x4E5F;&#x5C31;&#x662F;&#x8BF4; MIPS &#x6700;&#x591A;&#x652F;&#x6301; 64GB &#x7684;&#x7269;&#x7406;&#x5730;&#x5740;&#x7A7A;&#x95F4;&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x4F46; VPN &#x53EA;&#x80FD;&#x5728;&#x7279;&#x5B9A;&#x60C5;&#x51B5;&#x4E0B;&#x5BFB;&#x5740; 2GB&#xFF0C;&#x90A3;&#x5176;&#x4F59;&#x672A;&#x6620;&#x5C04;&#x7684;&#x5982;&#x4F55;&#x5904;&#x7406;&#xFF1F;</li>
+</ul>
+
+<p>
+&#x9664;&#x6B64;&#x4E4B;&#x5916;&#xFF0C;&#x8FD8;&#x6709;&#x4E0B;&#x9762;&#x8FD9;&#x4E9B;&#x4F4D;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>G&#xFF08;Global&#xFF09;&#xFF1A;&#x8BF4;&#x660E;&#x8BE5;&#x9875;&#x662F;&#x5426;&#x662F;&#x6240;&#x6709;&#x8FDB;&#x7A0B;&#x6240;&#x5171;&#x4EAB;&#x7684;
+<ul class="org-ul">
+<li>&#x8FD9;&#x79CD;&#x60C5;&#x51B5;&#x4E0B; ASID &#x4F4D;&#x4FBF;&#x65E0;&#x6548;&#x4E86;</li>
+</ul></li>
+<li>ASID&#xFF08;address space identifier&#xFF09;&#xFF1A;&#x6307;&#x660E;&#x8BE5;&#x9875;&#x8868;&#x6620;&#x5C04;&#x7528;&#x4E8E;&#x54EA;&#x4E2A;&#x8FDB;&#x7A0B;
+<ul class="org-ul">
+<li>&#x4F46;&#x53EA;&#x6709; 8 &#x4F4D;&#xFF0C;&#x90A3;&#x4E48;&#x8FDB;&#x7A0B;&#x64CD;&#x4F5C; 256 &#x4E2A;&#x540E;&#xFF0C;&#x5C31;&#x65E0;&#x6CD5;&#x5168;&#x90E8;&#x4FDD;&#x5B58;&#x4E86;</li>
+</ul></li>
+<li>C&#xFF08;Coherence&#xFF09;&#xFF1A;cache &#x4E0E;&#x786C;&#x4EF6;&#x7684;&#x4E00;&#x81F4;&#x6027;</li>
+<li>D&#xFF08;Dirty&#xFF09;&#xFF1A;&#x9875;&#x662F;&#x5426;&#x88AB;&#x4FEE;&#x6539;&#x8FC7;</li>
+<li>V&#xFF08;Valid&#xFF09;&#xFF1A;&#x8BE5;&#x9875;&#x9879;&#x662F;&#x5426;&#x6709;&#x6548;</li>
+</ul>
+</div>
+</div>
+
+
+
+<div id="outline-container-org3b8f50f" class="outline-2">
+<h2 id="org3b8f50f">TLB &#x5B9E;&#x9A8C;</h2>
+<div class="outline-text-2" id="text-org3b8f50f">
+<p>
+&#x5F53;&#x8BBF;&#x95EE;&#x5185;&#x5B58;&#x5E76;&#x4E14; TLB hit &#x65F6;&#xFF0C;&#x6B64;&#x65F6;&#x7684;&#x64CD;&#x4F5C;&#x6548;&#x7387;&#x662F;&#x5F88;&#x9AD8;&#x7684;&#x3002;
+&#x4F46;&#x5F53;&#x51FA;&#x73B0; TLB miss &#x65F6;&#xFF0C;&#x7531;&#x4E8E;&#x786C;&#x4EF6;&#x6216;&#x8F6F;&#x4EF6;&#x9700;&#x8981;&#x66F4;&#x65B0; TLB&#xFF0C;&#x6240;&#x4EE5;&#x9700;&#x8981;&#x4ECE;&#x7269;&#x7406;&#x5185;&#x5B58;&#x8BFB;&#x53D6;&#x9875;&#x8868;&#x9879;&#xFF0C;&#x90A3;&#x4E48;&#x64CD;&#x4F5C;&#x6548;&#x7387;&#x5C31;&#x4F4E;&#x4E86;&#x4E0D;&#x5C11;&#x3002;
+</p>
+
+<p>
+&#x5982;&#x679C;&#x5199;&#x4E00;&#x6BB5;&#x6D4B;&#x8BD5;&#x4EE3;&#x7801;&#xFF0C;&#x6BCF;&#x6B21;&#x4EE5;&#x9875;&#x4E3A;&#x8DE8;&#x5EA6;&#x5355;&#x4F4D;&#x8FDB;&#x884C;&#x8BBF;&#x95EE;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>&#x5F53;&#x8BBF;&#x95EE;&#x9875;&#x7684;&#x6570;&#x76EE;&#x5C0F;&#x4E8E;&#x6216;&#x7B49;&#x4E8E; TLB &#x5927;&#x5C0F;&#x65F6;&#xFF0C;&#x6B64;&#x65F6;&#x64CD;&#x4F5C;&#x6548;&#x7387;&#x5F88;&#x9AD8;</li>
+<li>&#x4E00;&#x65E6;&#x6570;&#x76EE;&#x8D85;&#x8FC7;&#x6B64; TLB &#x5927;&#x5C0F;&#xFF0C;&#x4FBF;&#x4F1A;&#x51FA;&#x73B0; TLB miss</li>
+<li>&#x5982;&#x679C;&#x4E00;&#x4E2A;&#x5927;&#x5FAA;&#x73AF;&#x4E0D;&#x65AD;&#x7684;&#x8D85;&#x51FA; TLB &#x8303;&#x56F4;&#xFF0C;&#x4FBF;&#x4F1A;&#x4E00;&#x76F4;&#x51FA;&#x73B0; TLB miss</li>
+</ul>
+
+<p>
+&#x57FA;&#x4E8E;&#x4EE5;&#x4E0A;&#x903B;&#x8F91;&#xFF0C;&#x53EF;&#x4EE5;&#x901A;&#x8FC7;&#x6D4B;&#x91CF;&#x5FAA;&#x73AF;&#x4EE3;&#x7801;&#x7684;&#x6267;&#x884C;&#x65F6;&#x95F4;&#xFF0C;&#x63A8;&#x6D4B;&#x51FA;&#x5927;&#x81F4;&#x5F53;&#x524D;&#x5904;&#x7406;&#x5668; TLB &#x7684;&#x5927;&#x5C0F;&#xFF0C;&#x4EE5;&#x53CA;&#x5176;&#x662F;&#x5426;&#x6709;&#x591A;&#x7EA7; TLB cache&#x3002;
+</p>
+
+<p>
+&#x7B80;&#x6613;&#x7684;&#x6D4B;&#x8BD5;&#x4EE3;&#x7801;&#x5982;&#x4E0B;&#xFF1A;
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br></pre></td><td class="code"><pre><span class="line"><span class="preprocessor">#<span class="keyword">define</span> _GNU_SOURCE</span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;assert.h&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;sys/time.h&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;stdint.h&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;sched.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[])</span></span><br><span class="line"></span>{</span><br><span class="line">    <span class="keyword">if</span>(argc != <span class="number">3</span>)</span><br><span class="line">    {</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;usage: %s &lt;number of pages&gt; &lt;number of trials&gt;\n&quot;</span>, argv[<span class="number">0</span>]);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="keyword">cpu_set_t</span> <span class="built_in">set</span>;</span><br><span class="line"></span><br><span class="line">    CPU_ZERO(&amp;<span class="built_in">set</span>);</span><br><span class="line">    CPU_SET(<span class="number">1</span>, &amp;<span class="built_in">set</span>);</span><br><span class="line">    <span class="keyword">int</span> ret = sched_setaffinity(<span class="number">0</span>, <span class="keyword">sizeof</span>(<span class="keyword">cpu_set_t</span>), &amp;<span class="built_in">set</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(ret)</span><br><span class="line">    {</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;can&apos;t set affinity:&quot;</span>);</span><br><span class="line">	<span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> page_size = getpagesize();</span><br><span class="line">    <span class="keyword">int</span> pages = atoi(argv[<span class="number">1</span>]);</span><br><span class="line">    <span class="keyword">int</span> trials = atoi(argv[<span class="number">2</span>]);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;page size: %d, pages: %d, trials: %d\n&quot;</span>,</span><br><span class="line">	    page_size, pages, trials);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> *buf = (<span class="keyword">int</span> *)<span class="built_in">malloc</span>(pages * page_size);</span><br><span class="line">    assert(buf);</span><br><span class="line">    <span class="built_in">memset</span>(buf, <span class="number">0</span>, pages * page_size);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> jump = page_size / <span class="keyword">sizeof</span>(<span class="keyword">int</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">struct</span> timeval start;</span><br><span class="line">    <span class="keyword">struct</span> timeval stop;</span><br><span class="line"></span><br><span class="line">    ret = gettimeofday(&amp;start, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(ret)</span><br><span class="line">    {</span><br><span class="line">	perror(<span class="string">&quot;get time failed:&quot;</span>);</span><br><span class="line">	<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; trials; j++)</span><br><span class="line">    {</span><br><span class="line">	<span class="keyword">for</span>( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; pages * jump; i+= jump)</span><br><span class="line">	{</span><br><span class="line">	    buf[i] += <span class="number">1</span>;</span><br><span class="line">	}</span><br><span class="line">    }</span><br><span class="line">    ret = gettimeofday(&amp;stop, <span class="literal">NULL</span>);</span><br><span class="line">    <span class="keyword">if</span>(ret)</span><br><span class="line">    {</span><br><span class="line">	perror(<span class="string">&quot;get time failed:&quot;</span>);</span><br><span class="line">	<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="keyword">uint64_t</span> elapse = (stop.tv_sec - start.tv_sec) * <span class="number">1000000</span> +</span><br><span class="line">	(stop.tv_usec - start.tv_usec);</span><br><span class="line">    <span class="keyword">double</span> average = (<span class="keyword">double</span>)elapse * <span class="number">1000</span> / (trials * pages);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;elapse : %llu uS, average time : %f nS\n&quot;</span>,</span><br><span class="line">	    elapse, average);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+Last Updated 2020-06-28 Sun 11:59.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+</div>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/CS/" rel="tag"># CS</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/02/26/book_ostep_vm-paging/" rel="prev" title="[What]Introduction to Paging">
+      <i class="fa fa-chevron-left"></i> [What]Introduction to Paging
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/03/18/book_ostep_vm-smaller_tables/" rel="next" title="[What]Paging:Smaller Tables">
+      [What]Paging:Smaller Tables <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org8c7fb2f"><span class="nav-number">1.</span> <span class="nav-text">TLB &amp;#x7684;&amp;#x57FA;&amp;#x7840;&amp;#x7B97;&amp;#x6CD5;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org51f9514"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x793A;&amp;#x4F8B;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org2056669"><span class="nav-number">3.</span> <span class="nav-text">&amp;#x8C01;&amp;#x5728;&amp;#x5904;&amp;#x7406; TLB miss</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org08f3687"><span class="nav-number">4.</span> <span class="nav-text">TLB &amp;#x7684;&amp;#x5185;&amp;#x5BB9;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org541ae9b"><span class="nav-number">5.</span> <span class="nav-text">TLB &amp;#x4E0E;&amp;#x4E0A;&amp;#x4E0B;&amp;#x6587;&amp;#x5207;&amp;#x6362;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgab45293"><span class="nav-number">6.</span> <span class="nav-text">TLB &amp;#x7684;&amp;#x7F6E;&amp;#x6362;&amp;#x7B56;&amp;#x7565;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orge5ef8bf"><span class="nav-number">7.</span> <span class="nav-text">&amp;#x771F;&amp;#x5B9E;&amp;#x7684; TLB &amp;#x9879;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org3b8f50f"><span class="nav-number">8.</span> <span class="nav-text">TLB &amp;#x5B9E;&amp;#x9A8C;</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">我的世界</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">210</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">104</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">38</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+  
+  <span class="post-meta-divider">|</span>
+  <span>Hosted by <a href="https://pages.coding.me" target="_blank" rel="noopener" style="font-weight: bold">Coding Pages</a></span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+<script>
+  (function() {
+    function leancloudSelector(url) {
+      url = encodeURI(url);
+      return document.getElementById(url).querySelector('.leancloud-visitors-count');
+    }
+
+    function addCount(Counter) {
+      var visitors = document.querySelector('.leancloud_visitors');
+      var url = decodeURI(visitors.id);
+      var title = visitors.dataset.flagTitle;
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          if (results.length > 0) {
+            var counter = results[0];
+            leancloudSelector(url).innerText = counter.time + 1;
+            Counter('put', '/classes/Counter/' + counter.objectId, { time: { '__op': 'Increment', 'amount': 1 } })
+              .catch(error => {
+                console.error('Failed to save visitor count', error);
+              });
+          } else {
+              leancloudSelector(url).innerText = 'Counter not initialized! More info at console err msg.';
+              console.error('ATTENTION! LeanCloud counter has security bug, see how to solve it here: https://github.com/theme-next/hexo-leancloud-counter-security. \n However, you can still use LeanCloud without security, by setting `security` option to `false`.');
+            
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    function showTime(Counter) {
+      var visitors = document.querySelectorAll('.leancloud_visitors');
+      var entries = [...visitors].map(element => {
+        return decodeURI(element.id);
+      });
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url: { '$in': entries } })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          for (let url of entries) {
+            let target = results.find(item => item.url === url);
+            leancloudSelector(url).innerText = target ? target.time : 0;
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    let { app_id, app_key, server_url } = {"enable":true,"app_id":"ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI","app_key":"yh4vrfnscme1utPMpk65wcxn","server_url":null,"security":true};
+    function fetchData(api_server) {
+      var Counter = (method, url, data) => {
+        return fetch(`${api_server}/1.1${url}`, {
+          method,
+          headers: {
+            'X-LC-Id'     : app_id,
+            'X-LC-Key'    : app_key,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+      };
+      if (CONFIG.page.isPost) {
+        if (CONFIG.hostname !== location.hostname) return;
+        addCount(Counter);
+      } else if (document.querySelectorAll('.post-title-link').length >= 1) {
+        showTime(Counter);
+      }
+    }
+
+    let api_server = app_id.slice(-9) !== '-MdYXbMMI' ? server_url : `https://${app_id.slice(0, 8).toLowerCase()}.api.lncldglobal.com`;
+
+    if (api_server) {
+      fetchData(api_server);
+    } else {
+      fetch('https://app-router.leancloud.cn/2/route?appId=' + app_id)
+        .then(response => response.json())
+        .then(({ api_server }) => {
+          fetchData('https://' + api_server);
+        });
+    }
+  })();
+</script>
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+  <script defer src="/lib/three/three.min.js"></script>
+    <script defer src="/lib/three/three-waves.min.js"></script>
+    <script defer src="/lib/three/canvas_lines.min.js"></script>
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI',
+      appKey     : 'yh4vrfnscme1utPMpk65wcxn',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

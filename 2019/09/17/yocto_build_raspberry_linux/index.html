@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="zLSyD2CN1AkyJqei3qKraT6372nBgMFKWe6kAj5JDeY">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="&amp;#x53C2;&amp;#x8003;&amp;#x4E66;&amp;#x7C4D;:Embedded Linux System with the Yocto Project   &amp;#x4E66;&amp;#x7C4D;&amp;#x6BD4;&amp;#x5B9E;&amp;#x9645;&amp;#x7684;yocto&amp;#x7248;&amp;#x672C;&amp;#x8981;&amp;#x4F4E;&amp;#xFF0C;&amp;#x6240;&amp;#x4EE5;yocto&amp;#x7">
+<meta property="og:type" content="article">
+<meta property="og:title" content="[What]Yocto Project --&gt; 构建树莓派 3B 发行版">
+<meta property="og:url" content="http://kcmetercec.top/2019/09/17/yocto_build_raspberry_linux/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="&amp;#x53C2;&amp;#x8003;&amp;#x4E66;&amp;#x7C4D;:Embedded Linux System with the Yocto Project   &amp;#x4E66;&amp;#x7C4D;&amp;#x6BD4;&amp;#x5B9E;&amp;#x9645;&amp;#x7684;yocto&amp;#x7248;&amp;#x672C;&amp;#x8981;&amp;#x4F4E;&amp;#xFF0C;&amp;#x6240;&amp;#x4EE5;yocto&amp;#x7">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-09-16T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-06-28T03:58:45.771Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="yocto">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://kcmetercec.top/2019/09/17/yocto_build_raspberry_linux/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>[What]Yocto Project --> 构建树莓派 3B 发行版 | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=112423075-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '112423075-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2ab4cc06d0da36106a4426465d0cb00d";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2019/09/17/yocto_build_raspberry_linux/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="我的世界">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          [What]Yocto Project --> 构建树莓派 3B 发行版
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-09-17 00:00:00" itemprop="dateCreated datePublished" datetime="2019-09-17T00:00:00+08:00">2019-09-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-06-28 11:58:45" itemprop="dateModified" datetime="2020-06-28T11:58:45+08:00">2020-06-28</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/make/" itemprop="url" rel="index"><span itemprop="name">make</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/make/yocto/" itemprop="url" rel="index"><span itemprop="name">yocto</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2019/09/17/yocto_build_raspberry_linux/" class="post-meta-item leancloud_visitors" data-flag-title="[What]Yocto Project --> 构建树莓派 3B 发行版" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2019/09/17/yocto_build_raspberry_linux/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2019/09/17/yocto_build_raspberry_linux/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <div id="content">
+<p>
+&#x53C2;&#x8003;&#x4E66;&#x7C4D;:Embedded Linux System with the Yocto Project
+</p>
+<ul class="org-ul">
+<li>&#x4E66;&#x7C4D;&#x6BD4;&#x5B9E;&#x9645;&#x7684;yocto&#x7248;&#x672C;&#x8981;&#x4F4E;&#xFF0C;&#x6240;&#x4EE5;yocto&#x7684;&#x8BE6;&#x7EC6;&#x547D;&#x4EE4;&#x9700;&#x8981;&#x53C2;&#x8003;&#x5176;<a href="https://www.yoctoproject.org/docs/" target="_blank" rel="noopener">&#x5BF9;&#x5E94;&#x7248;&#x672C;&#x624B;&#x518C;</a></li>
+</ul>
+
+<p>
+&#x53C2;&#x8003;&#x94FE;&#x63A5;&#xFF1A;<a href="https://jumpnowtek.com/rpi/Raspberry-Pi-Systems-with-Yocto.html" target="_blank" rel="noopener">Building Respberry Pi Systems with Yocto</a>
+</p>
+
+<p>
+&#x8FD0;&#x884C;&#x73AF;&#x5883;:
+</p>
+<ul class="org-ul">
+<li>ubuntu18.04 amd64</li>
+<li>yocto 2.5.1</li>
+</ul>
+
+<p>
+&#x5B66;&#x4E86;&#x8FD9;&#x4E48;&#x591A;&#xFF0C;&#x4E0D;&#x5B9E;&#x8DF5;&#x4E00;&#x4E0B;&#x662F;&#x4E0D;&#x884C;&#x7684;&#x3002;
+</p>
+
+<p>
+&#x73B0;&#x5728;&#x5C1D;&#x8BD5;&#x5728;&#x5BF9;&#x6811;&#x8393;&#x6D3E; 3B &#x7684;&#x5E95;&#x5C42;&#x786C;&#x4EF6;&#x4E0D;&#x719F;&#x6089;&#x7684;&#x60C5;&#x51B5;&#x4E0B;&#xFF0C;&#x901A;&#x8FC7;&#x524D;&#x9762; yocto &#x7684;&#x57FA;&#x7840;&#x77E5;&#x8BC6;&#x6784;&#x5EFA;&#x4E00;&#x4E2A;&#x53D1;&#x884C;&#x7248;&#x3002;
+</p>
+
+<p>
+&#x6839;&#x636E;&#x524D;&#x9762;&#x7684;&#x5B66;&#x4E60;&#xFF0C;&#x53EF;&#x4EE5;&#x5148;&#x731C;&#x6D4B;&#x4E00;&#x4E0B;&#x8981;&#x5728;&#x57FA;&#x4E8E; poky &#x7684;&#x57FA;&#x7840;&#x4E0A;&#x6784;&#x5EFA;&#x6811;&#x8393;&#x6D3E;&#x7684;&#x53D1;&#x884C;&#x7248;&#x9700;&#x8981;&#x81F3;&#x5C11;&#x8FD9;&#x4E9B;&#x6B65;&#x9AA4;&#xFF1A;
+</p>
+<ol class="org-ol">
+<li>&#x83B7;&#x53D6;&#x6811;&#x8393;&#x6D3E;&#x7684; layer</li>
+<li>&#x57FA;&#x4E8E;&#x5F53;&#x524D; layer &#x8BF4;&#x660E;&#x914D;&#x7F6E; layer &#x4E2D;&#x7684;&#x53D8;&#x91CF;</li>
+<li>&#x5728; <code>bblayers.conf</code> &#x4E2D;&#x52A0;&#x5165;&#x6B64; layer</li>
+<li>&#x6839;&#x636E;&#x53D1;&#x884C;&#x7248;&#x7684;&#x9700;&#x6C42;&#xFF0C;&#x4FEE;&#x6539; image &#x548C; distro &#x7684;&#x914D;&#x7F6E;</li>
+<li>&#x6784;&#x5EFA;&#x5E76;&#x6D4B;&#x8BD5;</li>
+</ol>
+
+<a id="more"></a>
+
+<div id="outline-container-orgaa67d25" class="outline-2">
+<h2 id="orgaa67d25">layer &#x7684;&#x83B7;&#x53D6;</h2>
+<div class="outline-text-2" id="text-orgaa67d25">
+<p>
+<a href="https://github.com/jumpnow/meta-rpi" target="_blank" rel="noopener">meta-rpi</a>&#x4FBF;&#x63D0;&#x4F9B;&#x4E86;&#x6811;&#x8393;&#x6D3E;&#x7684; layer&#xFF0C;&#x8FD9;&#x4E2A;&#x662F;&#x57FA;&#x4E8E;&#x5B98;&#x65B9; meta-raspberrypi &#x505A;&#x7684;&#x4FEE;&#x6539;&#x3002;
+</p>
+</div>
+
+<div id="outline-container-org1c91db9" class="outline-3">
+<h3 id="org1c91db9">&#x5207;&#x6362;&#x5230;&#x5408;&#x9002;&#x5206;&#x652F;</h3>
+<div class="outline-text-3" id="text-org1c91db9">
+<p>
+&#x901A;&#x8FC7;&#x67E5;&#x770B;&#x5176; README &#x53EF;&#x4EE5;&#x53D1;&#x73B0;&#xFF0C;&#x76EE;&#x524D;&#x5176;&#x6700;&#x65B0;&#x7EF4;&#x62A4;&#x7684;&#x7248;&#x672C;&#x652F;&#x6301;&#x7684; yocto &#x5206;&#x652F;&#x662F; <code>warrior</code> &#xFF0C;
+&#x6240;&#x4EE5;&#x6211;&#x4E5F;&#x9700;&#x8981;&#x5C06;&#x5F53;&#x524D;&#x5206;&#x652F; <code>sumo</code> &#x5207;&#x6362;&#x5230; <code>warrior</code> &#x3002;
+</p>
+</div>
+</div>
+<div id="outline-container-orga2a3f23" class="outline-3">
+<h3 id="orga2a3f23">&#x4F9D;&#x8D56; layer &#x7684;&#x83B7;&#x53D6;</h3>
+<div class="outline-text-3" id="text-orga2a3f23">
+<p>
+README &#x4E2D;&#x4E5F;&#x8BF4;&#x660E;&#x4E86;&#x5176;&#x4F9D;&#x8D56;&#x4E86;&#x5176;&#x4ED6;&#x5728; <code>warrior</code> &#x4E0B;&#x7684; layer&#xFF1A;
+</p>
+<pre class="example">
+git clone -b warrior git://git.openembedded.org/meta-openembedded
+git clone -b warrior https://github.com/meta-qt5/meta-qt5
+git clone -b warrior git://git.yoctoproject.org/meta-raspberrypi</pre>
+
+<p>
+&#x597D;&#x4E86;&#xFF0C;&#x73B0;&#x5728;&#x83B7;&#x53D6; <code>meta-rpi</code> :
+</p>
+<pre class="example">
+mkdir ./rpi
+cd ./rpi
+git clone -b warrior git://github.com/jumpnow/meta-rpi</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-orgaf93385" class="outline-2">
+<h2 id="orgaf93385">&#x521B;&#x5EFA;&#x6784;&#x5EFA;&#x76EE;&#x5F55;</h2>
+<div class="outline-text-2" id="text-orgaf93385">
+<p>
+&#x5BF9;&#x5E94;&#x65B0;&#x7684; target&#xFF0C;&#x9700;&#x8981;&#x4E3A;&#x5176;&#x521B;&#x5EFA;&#x65B0;&#x7684; build dir&#xFF1A;
+</p>
+<pre class="example">
+source ./oe-init-build-env ./rpi/build</pre>
+</div>
+</div>
+<div id="outline-container-org260df58" class="outline-2">
+<h2 id="org260df58">&#x914D;&#x7F6E;</h2>
+<div class="outline-text-2" id="text-org260df58">
+<p>
+&#x5728; <code>meta-rpi/conf</code> &#x4E2D;&#x5C31;&#x5177;&#x6709;&#x793A;&#x4F8B;&#x914D;&#x7F6E;&#xFF0C;&#x53EF;&#x4EE5;&#x76F4;&#x63A5;&#x66FF;&#x6362;&#x6784;&#x5EFA;&#x76EE;&#x5F55;&#x4E2D;&#x7684; <code>conf</code> &#xFF0C;&#x7136;&#x540E;&#x5728;&#x6B64;&#x57FA;&#x7840;&#x4E0A;&#x4FEE;&#x6539;&#xFF1A;
+</p>
+<pre class="example">
+cp ../meta-rpi/conf/local.conf.sample conf/local.conf
+cp ../meta-rpi/conf/bblayers.conf.sample conf/bblayers.conf</pre>
+</div>
+<div id="outline-container-org7897b6b" class="outline-3">
+<h3 id="org7897b6b">&#x4FEE;&#x6539; bblayers.conf</h3>
+<div class="outline-text-3" id="text-org7897b6b">
+<p>
+&#x6839;&#x636E;&#x5F53;&#x524D;&#x76EE;&#x5F55;&#x67B6;&#x6784;&#xFF0C;&#x4FEE;&#x6539; layer &#x7684;&#x8DEF;&#x5F84;&#xFF1A;
+</p>
+<pre class="example">
+# POKY_BBLAYERS_CONF_VERSION is increased each time build/conf/bblayers.conf
+# changes incompatibly
+POKY_BBLAYERS_CONF_VERSION = &quot;2&quot;
+
+BBPATH = &quot;${TOPDIR}&quot;
+BBFILES ?= &quot;&quot;
+
+BBLAYERS ?= &quot; \
+    /home/cec/github/poky/meta \
+    /home/cec/github/poky/meta-poky \
+    /home/cec/github/poky/meta-openembedded/meta-oe \
+    /home/cec/github/poky/meta-openembedded/meta-multimedia \
+    /home/cec/github/poky/meta-openembedded/meta-networking \
+    /home/cec/github/poky/meta-openembedded/meta-perl \
+    /home/cec/github/poky/meta-openembedded/meta-python \
+    /home/cec/github/poky/meta-qt5 \
+    /home/cec/github/poky/meta-raspberrypi \
+    /home/cec/github/poky/rpi/meta-rpi \
+&quot;</pre>
+</div>
+</div>
+<div id="outline-container-orgf93c7fb" class="outline-3">
+<h3 id="orgf93c7fb">&#x4FEE;&#x6539; local.conf</h3>
+<div class="outline-text-3" id="text-orgf93c7fb">
+</div>
+<div id="outline-container-org249dabc" class="outline-4">
+<h4 id="org249dabc">&#x68C0;&#x67E5; MACHINE</h4>
+<div class="outline-text-4" id="text-org249dabc">
+<p>
+&#x53D8;&#x91CF; <code>MACHINE</code> &#x4EE3;&#x8868;&#x76EE;&#x6807;&#x677F;&#xFF0C;&#x6B64;&#x503C;&#x5FC5;&#x987B;&#x5F97;&#x8BBE;&#x5B9A;&#x5BF9;&#xFF0C;&#x4E0D;&#x7136;&#x7F16;&#x8BD1;&#x7ED3;&#x679C;&#x5C06;&#x65E0;&#x6CD5;&#x8FD0;&#x884C;&#x3002;
+</p>
+
+<p>
+&#x76EE;&#x524D;&#x6211;&#x7528;&#x7684;&#x662F;&#x6811;&#x8393;&#x6D3E; 3B&#xFF0C;&#x5728; <code>meta-raspberrypi/conf/machine</code> &#x53EF;&#x4EE5;&#x770B;&#x5230;&#x8FD9;&#x4E9B;&#x540D;&#x79F0;&#xFF1A;
+</p>
+<pre class="example">
+include                 raspberrypi2.conf     raspberrypi4-64.conf  raspberrypi-cm.conf
+raspberrypi0.conf       raspberrypi3-64.conf  raspberrypi4.conf     raspberrypi.conf
+raspberrypi0-wifi.conf  raspberrypi3.conf     raspberrypi-cm3.conf</pre>
+<p>
+&#x901A;&#x8FC7;&#x67E5;&#x770B; raspberrypi &#x5B98;&#x7F51;&#x53EF;&#x4EE5;&#x77E5;&#x9053; 3B &#x7684; SOC &#x578B;&#x53F7;&#x662F; BCM2837 64bit CPU&#xFF0C;&#x90A3;&#x4E48;&#x5F53;&#x524D; <code>MACHINE</code> &#x5C31;&#x5E94;&#x8BE5;&#x8D4B;&#x503C; <code>raspberrypi3</code> &#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x4E4B;&#x524D;&#x5C1D;&#x8BD5;&#x8FC7; <code>raspberrypi3-64.conf</code> &#x4F46;&#x5728;&#x7F16;&#x8BD1;&#x65F6;&#x751F;&#x6210; zimage &#x62A5;&#x9519;</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-orgc1722be" class="outline-4">
+<h4 id="orgc1722be">&#x4FEE;&#x6539; DL_DIR &#x548C; SSTATE_DIR</h4>
+<div class="outline-text-4" id="text-orgc1722be">
+<p>
+&#x540C;&#x6837;&#xFF0C;&#x5728;&#x524D;&#x671F;&#x5B66;&#x4E60;&#x4E2D;&#x6211;&#x5DF2;&#x7ECF;&#x5C06;&#x8FD9;&#x4E24;&#x4E2A;&#x6587;&#x4EF6;&#x5939;&#x5B9A;&#x5411;&#x5230;&#x4E86;&#x6784;&#x5EFA;&#x76EE;&#x5F55;&#x4E4B;&#x5916;&#xFF0C;&#x6240;&#x4EE5;&#x8FD9;&#x91CC;&#x4E5F;&#x9700;&#x8981;&#x6307;&#x5411;&#x4E4B;&#x524D;&#x7684;&#x6587;&#x4EF6;&#x5939;&#xFF0C;&#x4EE5;&#x51CF;&#x5C11;&#x6784;&#x5EFA;&#x65F6;&#x95F4;&#x3002;
+</p>
+<pre class="example">
+DL_DIR ?= &quot;/home/cec/github/poky/downloads&quot;
+SSTATE_DIR ?= &quot;/home/cec/github/poky/sstate-cache&quot;</pre>
+</div>
+</div>
+<div id="outline-container-org014c1b3" class="outline-4">
+<h4 id="org014c1b3">&#x8BBE;&#x7F6E;&#x5BC6;&#x7801;</h4>
+<div class="outline-text-4" id="text-org014c1b3">
+<p>
+&#x9ED8;&#x8BA4;&#x7528;&#x6237; <code>root</code> &#x7684;&#x5BC6;&#x7801;&#x901A;&#x8FC7;&#x53D8;&#x91CF; <code>EXTRA_USERS_PARAMS</code> &#x6307;&#x5B9A;&#xFF0C;&#x8FD9;&#x91CC;&#x9ED8;&#x8BA4;&#x4E3A; <code>jumpnowtek</code> &#x3002;
+</p>
+<pre class="example">
+INHERIT += &quot;chageusers&quot;
+CHAGE_USERS_PARAMS = &quot;chage -d0 root; &quot;</pre>
+<p>
+&#x4E0A;&#x9762;&#x8FD9;&#x4E24;&#x884C;&#x7528;&#x4E8E;&#x7B2C;&#x4E00;&#x6B21;&#x542F;&#x52A8;&#x65F6;&#xFF0C;&#x5F3A;&#x5236;&#x8BA9;&#x7528;&#x6237;&#x4FEE;&#x6539;&#x5BC6;&#x7801;&#x3002;
+</p>
+
+<p>
+&#x5982;&#x679C;&#x60F3;&#x8981;&#x65E0;&#x5BC6;&#x7801;&#x767B;&#x5F55;&#xFF0C;&#x90A3;&#x4E48;&#x53EF;&#x4EE5;&#x5728; image feature &#x4E2D;&#x52A0;&#x5165; <code>debug-tweaks</code> &#xFF0C;&#x8FD9;&#x6837;&#x7684;&#x8BDD;&#x539F;&#x6765;&#x8BBE;&#x7F6E;&#x5BC6;&#x7801;&#x7684;&#x90A3;&#x51E0;&#x884C;&#x90FD;&#x8981;&#x5C4F;&#x853D;&#x6389;&#x3002;
+</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org8f0a56f" class="outline-2">
+<h2 id="org8f0a56f">&#x6784;&#x5EFA;</h2>
+<div class="outline-text-2" id="text-org8f0a56f">
+<p>
+&#x73B0;&#x5728;&#x914D;&#x7F6E;&#x5DF2;&#x7ECF;&#x5B8C;&#x6210;&#xFF0C;&#x63A5;&#x4E0B;&#x6765;&#x4FBF;&#x53EF;&#x4EE5;&#x5F00;&#x59CB;&#x6784;&#x5EFA;&#x3002;
+</p>
+
+<p>
+&#x800C;&#x4E14;&#x5728; <code>local.conf</code> &#x4E2D;&#x53EF;&#x4EE5;&#x770B;&#x5230;&#x9ED8;&#x8BA4;&#x7684;&#x4E32;&#x53E3; 1 &#x6CE2;&#x7279;&#x7387;&#x662F; 115200&#x3002;
+</p>
+
+<p>
+&#x7531;&#x4E8E;&#x76EE;&#x524D;&#x6211;&#x8FD9;&#x4E2A;&#x677F;&#x4E0D;&#x5E26;&#x6DB2;&#x6676;&#xFF0C;&#x90A3;&#x4E48;&#x5B9E;&#x9645;&#x8FD0;&#x884C;&#x5C31;&#x8981;&#x901A;&#x8FC7;&#x4E32;&#x53E3;&#x6765;&#x89C2;&#x5BDF;&#x4E86;&#x3002;
+</p>
+</div>
+<div id="outline-container-org8ebe500" class="outline-3">
+<h3 id="org8ebe500">&#x7F16;&#x8BD1;</h3>
+<div class="outline-text-3" id="text-org8ebe500">
+<p>
+&#x5728;&#x524D;&#x9762;&#x7684;&#x5B66;&#x4E60;&#x4E2D;&#x53EF;&#x4EE5;&#x77E5;&#x9053;&#xFF1A;yocto &#x9ED8;&#x8BA4;&#x5E26;&#x4E86;&#x5F88;&#x591A; image &#x4F9B;&#x57FA;&#x7840;&#x7F16;&#x8BD1;&#xFF0C;&#x4F46;&#x6839;&#x636E;&#x5176;&#x8BF4;&#x660E;&#x6211;&#x4EEC;&#x9700;&#x8981;&#xFF1A;
+</p>
+<pre class="example">
+bitbake concole-image</pre>
+<p>
+&#x4E4B;&#x524D;&#x7F13;&#x5B58;&#x90A3;&#x4E48;&#x591A;&#x7684;&#x4E0B;&#x8F7D;&#x6587;&#x4EF6;&#x90FD;&#x7528;&#x4E0D;&#x4E0A;&#xFF0C;&#x53C8;&#x662F;&#x4E00;&#x4E2A;&#x6F2B;&#x957F;&#x7684;&#x7B49;&#x5F85;&#x2026;&#x2026;
+</p>
+
+<p>
+&#x5176;&#x4E2D;&#xFF0C;&#x6587;&#x4EF6; <code>bcm2837-bootfiles</code> &#x8BD5;&#x4E86;&#x5F88;&#x591A;&#x6B21;&#x90FD;&#x5931;&#x8D25;&#xFF0C;&#x6700;&#x540E;&#x8FD8;&#x662F;&#x4F7F;&#x7528; <code>axel</code> &#x6765;&#x4E0B;&#x8F7D;&#xFF0C;&#x7136;&#x540E;&#x4FEE;&#x6539;&#x5176; <code>bbappend</code> &#xFF1A;
+</p>
+<pre class="example">
+RPIFW_DATE = &quot;20190823&quot;
+SRCREV = &quot;7163480fff007dc98978899b556dcf06f8a462c8&quot;
+
+SRC_URI[md5sum] = &quot;e2bf5bd0d7e584239eb94e3c139e6a61&quot;
+SRC_URI[sha256sum] = &quot;6aa835679207557234ded04cad6f9d0b4405943e8c98c01eed47234fb006f87d&quot;
+
+RPIFW_SRC_URI = &quot;file://${DL_DIR}/firmware-${SRCREV}.tar.gz&quot;
+RPIFW_S = &quot;${WORKDIR}/firmware-${SRCREV}&quot;
+
+do_unpack() {
+    tar -C ${WORKDIR} -xzf ${DL_DIR}/firmware-${SRCREV}.tar.gz
+}</pre>
+
+<p>
+&#x6700;&#x7EC8;&#x7684;&#x7F16;&#x8BD1;&#x8F93;&#x51FA;&#x4F4D;&#x4E8E;&#xFF1A; <code>/home/cec/github/poky/rpi/build/tmp/deploy/images/raspberrypi3</code>
+</p>
+</div>
+</div>
+<div id="outline-container-orgfc7d504" class="outline-3">
+<h3 id="orgfc7d504">&#x5236;&#x4F5C; SD &#x5361;</h3>
+<div class="outline-text-3" id="text-orgfc7d504">
+</div>
+<div id="outline-container-orgae6f313" class="outline-4">
+<h4 id="orgae6f313">&#x5206;&#x533A;</h4>
+<div class="outline-text-4" id="text-orgae6f313">
+<p>
+&#x5F53;&#x524D;&#x4F7F;&#x7528;&#x7684; layer &#x63D0;&#x4F9B;&#x4E86; <code>meta-rpi/scripts/mk2parts.sh</code> &#x811A;&#x672C;&#x6765;&#x5B8C;&#x6210; SD &#x5361;&#x7684;&#x5206;&#x533A;&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x5C06; SD &#x5361;&#x5206;&#x4E3A; boot &#x5206;&#x533A;&#x548C; rootfs &#x5206;&#x533A;
+<ul class="org-ul">
+<li>boot &#x5206;&#x533A;&#x5B58;&#x653E; bootloader,kernel,devicetree,config file</li>
+<li>rootfs &#x5206;&#x533A;&#x5B58;&#x653E;&#x6839;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;</li>
+</ul></li>
+</ul>
+
+<p>
+&#x4F7F;&#x7528; <code>lsblk</code> &#x67E5;&#x770B;&#x5F53;&#x524D; SD &#x5361;&#x7684;&#x540D;&#x79F0;&#x540E;&#x4F7F;&#x7528; <code>mk2parts.sh</code> &#xFF1A;
+</p>
+<pre class="example">
+cd ./rpi/meta-rpi/scripts
+sudo ./mk2parts.sh sdb</pre>
+<p>
+&#x7136;&#x540E;&#x521B;&#x5EFA;&#x6302;&#x8F7D;&#x70B9;&#xFF0C;&#x4FBF;&#x4E8E;&#x540E;&#x671F;&#x811A;&#x672C;&#x6302;&#x8F7D;&#xFF1A;
+</p>
+<pre class="example">
+sudo mkdir /media/card</pre>
+</div>
+</div>
+<div id="outline-container-orgc47b48b" class="outline-4">
+<h4 id="orgc47b48b">&#x914D;&#x7F6E;&#x73AF;&#x5883;&#x53D8;&#x91CF;</h4>
+<div class="outline-text-4" id="text-orgc47b48b">
+<p>
+&#x5F53;&#x524D;&#x4F7F;&#x7528;&#x7684; layer &#x63D0;&#x4F9B;&#x4E86; <code>copy_boot.sh</code> &#x811A;&#x672C;&#x548C; <code>copy_rootfs.sh</code> &#x811A;&#x672C;&#x6765;&#x5B8C;&#x6210; SD &#x5361;&#x7684;&#x5236;&#x4F5C;&#x3002;
+</p>
+
+<p>
+&#x5728;&#x4F7F;&#x7528;&#x8FD9;&#x4E24;&#x4E2A;&#x811A;&#x672C;&#x524D;&#xFF0C;&#x9700;&#x8981;&#x8BBE;&#x7F6E;&#x53D8;&#x91CF; <code>OETMP</code> &#x548C; <code>MACHINE</code> &#xFF0C;
+&#x5BF9;&#x5E94; yocto &#x7684; <code>TMPDIR</code> &#x548C; <code>MACHINE</code> &#x3002;
+</p>
+
+<p>
+&#x6839;&#x636E;&#x4E0A;&#x9762;&#x7684;&#x914D;&#x7F6E;&#xFF0C;&#x53EF;&#x4EE5;&#x77E5;&#x9053;&#x6211;&#x4EEC;&#x7684; <code>TMPDIR</code> &#x7684;&#x8DEF;&#x5F84;&#x662F;&#xFF1A; <code>/home/cec/github/poky/rpi/build/tmp</code> &#xFF0C;=MACHINE= &#x5C31;&#x662F; <code>raspberrypi3</code> &#x3002;
+</p>
+<pre class="example">
+export OETMP=/home/cec/github/poky/rpi/build/tmp
+export MACHINE=raspberrypi3</pre>
+</div>
+</div>
+<div id="outline-container-orgfd6b058" class="outline-4">
+<h4 id="orgfd6b058">&#x5199;&#x5165;&#x5206;&#x533A;</h4>
+<div class="outline-text-4" id="text-orgfd6b058">
+<p>
+&#x5148;&#x5199;&#x5165; boot &#x5206;&#x533A;&#xFF1A;
+</p>
+<pre class="example">
+./copy_boot.sh sdb</pre>
+<p>
+&#x53EF;&#x4EE5;&#x770B;&#x5230; boot &#x5206;&#x533A;&#x6709;&#x8FD9;&#x4E9B;&#x5185;&#x5BB9;&#xFF1A;
+</p>
+<pre class="example">
+bcm2709-rpi-2-b.dtb               bootcode.bin  fixup4db.dat  fixup_x.dat   start4x.elf   zImage
+bcm2710-rpi-3-b.dtb               cmdline.txt   fixup4x.dat   overlays      start_cd.elf
+bcm2710-rpi-3-b-plus.dtb          config.txt    fixup_cd.dat  start4cd.elf  start_db.elf
+bcm2710-rpi-cm3.dtb               fixup4cd.dat  fixup.dat     start4db.elf  start.elf
+bcm2835-bootfiles-20190823.stamp  fixup4.dat    fixup_db.dat  start4.elf    start_x.elf</pre>
+
+<p>
+&#x518D;&#x5199;&#x5165; rootfs &#x5206;&#x533A;&#xFF1A;
+</p>
+<pre class="example">
+./copy_rootfs.sh sdc console</pre>
+<p>
+&#x53EF;&#x4EE5;&#x770B;&#x5230; rootfs &#x5206;&#x533A;&#x5C31;&#x5DF2;&#x7ECF;&#x662F;&#x4E00;&#x4E2A;&#x5B8C;&#x6574;&#x7684;&#x6839;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x4E86;&#x3002;
+</p>
+</div>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orga852495" class="outline-2">
+<h2 id="orga852495">&#x542F;&#x52A8;</h2>
+<div class="outline-text-2" id="text-orga852495">
+<p>
+&#x63D2;&#x5165; SD &#x5361;&#xFF0C;&#x63A5;&#x4E0A;&#x4E32;&#x53E3;&#x5373;&#x53EF;&#x542F;&#x52A8;&#xFF0C;&#x8F93;&#x5165;&#x7528;&#x6237;&#x540D; <code>root</code> &#x5373;&#x53EF;&#x767B;&#x5F55;&#x7CFB;&#x7EDF;&#x3002;
+</p>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+Last Updated 2020-06-28 Sun 12:00.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+</div>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/yocto/" rel="tag"># yocto</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/09/12/yocto_build_linux/" rel="prev" title="[What]Yocto Project --> 构建定制化的 linux">
+      <i class="fa fa-chevron-left"></i> [What]Yocto Project --> 构建定制化的 linux
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/09/19/yocto_write_recipe/" rel="next" title="[What]Yocto Project --> 编写 recipe">
+      [What]Yocto Project --> 编写 recipe <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#orgaa67d25"><span class="nav-number">1.</span> <span class="nav-text">layer &amp;#x7684;&amp;#x83B7;&amp;#x53D6;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org1c91db9"><span class="nav-number">1.1.</span> <span class="nav-text">&amp;#x5207;&amp;#x6362;&amp;#x5230;&amp;#x5408;&amp;#x9002;&amp;#x5206;&amp;#x652F;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orga2a3f23"><span class="nav-number">1.2.</span> <span class="nav-text">&amp;#x4F9D;&amp;#x8D56; layer &amp;#x7684;&amp;#x83B7;&amp;#x53D6;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgaf93385"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x521B;&amp;#x5EFA;&amp;#x6784;&amp;#x5EFA;&amp;#x76EE;&amp;#x5F55;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org260df58"><span class="nav-number">3.</span> <span class="nav-text">&amp;#x914D;&amp;#x7F6E;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org7897b6b"><span class="nav-number">3.1.</span> <span class="nav-text">&amp;#x4FEE;&amp;#x6539; bblayers.conf</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgf93c7fb"><span class="nav-number">3.2.</span> <span class="nav-text">&amp;#x4FEE;&amp;#x6539; local.conf</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org249dabc"><span class="nav-number">3.2.1.</span> <span class="nav-text">&amp;#x68C0;&amp;#x67E5; MACHINE</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgc1722be"><span class="nav-number">3.2.2.</span> <span class="nav-text">&amp;#x4FEE;&amp;#x6539; DL_DIR &amp;#x548C; SSTATE_DIR</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org014c1b3"><span class="nav-number">3.2.3.</span> <span class="nav-text">&amp;#x8BBE;&amp;#x7F6E;&amp;#x5BC6;&amp;#x7801;</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org8f0a56f"><span class="nav-number">4.</span> <span class="nav-text">&amp;#x6784;&amp;#x5EFA;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org8ebe500"><span class="nav-number">4.1.</span> <span class="nav-text">&amp;#x7F16;&amp;#x8BD1;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgfc7d504"><span class="nav-number">4.2.</span> <span class="nav-text">&amp;#x5236;&amp;#x4F5C; SD &amp;#x5361;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgae6f313"><span class="nav-number">4.2.1.</span> <span class="nav-text">&amp;#x5206;&amp;#x533A;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgc47b48b"><span class="nav-number">4.2.2.</span> <span class="nav-text">&amp;#x914D;&amp;#x7F6E;&amp;#x73AF;&amp;#x5883;&amp;#x53D8;&amp;#x91CF;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgfd6b058"><span class="nav-number">4.2.3.</span> <span class="nav-text">&amp;#x5199;&amp;#x5165;&amp;#x5206;&amp;#x533A;</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orga852495"><span class="nav-number">5.</span> <span class="nav-text">&amp;#x542F;&amp;#x52A8;</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">我的世界</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">210</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">104</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">38</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+  
+  <span class="post-meta-divider">|</span>
+  <span>Hosted by <a href="https://pages.coding.me" target="_blank" rel="noopener" style="font-weight: bold">Coding Pages</a></span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+<script>
+  (function() {
+    function leancloudSelector(url) {
+      url = encodeURI(url);
+      return document.getElementById(url).querySelector('.leancloud-visitors-count');
+    }
+
+    function addCount(Counter) {
+      var visitors = document.querySelector('.leancloud_visitors');
+      var url = decodeURI(visitors.id);
+      var title = visitors.dataset.flagTitle;
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          if (results.length > 0) {
+            var counter = results[0];
+            leancloudSelector(url).innerText = counter.time + 1;
+            Counter('put', '/classes/Counter/' + counter.objectId, { time: { '__op': 'Increment', 'amount': 1 } })
+              .catch(error => {
+                console.error('Failed to save visitor count', error);
+              });
+          } else {
+              leancloudSelector(url).innerText = 'Counter not initialized! More info at console err msg.';
+              console.error('ATTENTION! LeanCloud counter has security bug, see how to solve it here: https://github.com/theme-next/hexo-leancloud-counter-security. \n However, you can still use LeanCloud without security, by setting `security` option to `false`.');
+            
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    function showTime(Counter) {
+      var visitors = document.querySelectorAll('.leancloud_visitors');
+      var entries = [...visitors].map(element => {
+        return decodeURI(element.id);
+      });
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url: { '$in': entries } })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          for (let url of entries) {
+            let target = results.find(item => item.url === url);
+            leancloudSelector(url).innerText = target ? target.time : 0;
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    let { app_id, app_key, server_url } = {"enable":true,"app_id":"ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI","app_key":"yh4vrfnscme1utPMpk65wcxn","server_url":null,"security":true};
+    function fetchData(api_server) {
+      var Counter = (method, url, data) => {
+        return fetch(`${api_server}/1.1${url}`, {
+          method,
+          headers: {
+            'X-LC-Id'     : app_id,
+            'X-LC-Key'    : app_key,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+      };
+      if (CONFIG.page.isPost) {
+        if (CONFIG.hostname !== location.hostname) return;
+        addCount(Counter);
+      } else if (document.querySelectorAll('.post-title-link').length >= 1) {
+        showTime(Counter);
+      }
+    }
+
+    let api_server = app_id.slice(-9) !== '-MdYXbMMI' ? server_url : `https://${app_id.slice(0, 8).toLowerCase()}.api.lncldglobal.com`;
+
+    if (api_server) {
+      fetchData(api_server);
+    } else {
+      fetch('https://app-router.leancloud.cn/2/route?appId=' + app_id)
+        .then(response => response.json())
+        .then(({ api_server }) => {
+          fetchData('https://' + api_server);
+        });
+    }
+  })();
+</script>
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+  <script defer src="/lib/three/three.min.js"></script>
+    <script defer src="/lib/three/three-waves.min.js"></script>
+    <script defer src="/lib/three/canvas_lines.min.js"></script>
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI',
+      appKey     : 'yh4vrfnscme1utPMpk65wcxn',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

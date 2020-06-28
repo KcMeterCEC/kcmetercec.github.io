@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="zLSyD2CN1AkyJqei3qKraT6372nBgMFKWe6kAj5JDeY">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="&amp;#x5B66;&amp;#x4E60;&amp;#x6BD4;&amp;#x4F8B;&amp;#x5206;&amp;#x914D;&amp;#x8C03;&amp;#x5EA6;&amp;#x5668;&amp;#xFF0C;&amp;#x5176;&amp;#x6838;&amp;#x5FC3;&amp;#x601D;&amp;#x60F3;&amp;#x662F;&amp;#xFF1A;&amp;#x4FDD;&amp;#x8BC1;&amp;#x6BCF;&amp;#x4E00;&amp;#x4E2A;&amp;#x4EFB;&amp;#x52A1;&amp;#x83B">
+<meta property="og:type" content="article">
+<meta property="og:title" content="[What]Scheduling: Proportional Share">
+<meta property="og:url" content="http://kcmetercec.top/2019/08/20/book_ostep_cpu-sched-lottery/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="&amp;#x5B66;&amp;#x4E60;&amp;#x6BD4;&amp;#x4F8B;&amp;#x5206;&amp;#x914D;&amp;#x8C03;&amp;#x5EA6;&amp;#x5668;&amp;#xFF0C;&amp;#x5176;&amp;#x6838;&amp;#x5FC3;&amp;#x601D;&amp;#x60F3;&amp;#x662F;&amp;#xFF1A;&amp;#x4FDD;&amp;#x8BC1;&amp;#x6BCF;&amp;#x4E00;&amp;#x4E2A;&amp;#x4EFB;&amp;#x52A1;&amp;#x83B">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/cfs_time_slice.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/cfs_vruntime.jpg?raw=true">
+<meta property="article:published_time" content="2019-08-19T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-06-28T03:58:45.241Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="CS">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/cfs_time_slice.jpg?raw=true">
+
+<link rel="canonical" href="http://kcmetercec.top/2019/08/20/book_ostep_cpu-sched-lottery/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>[What]Scheduling: Proportional Share | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=112423075-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '112423075-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2ab4cc06d0da36106a4426465d0cb00d";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2019/08/20/book_ostep_cpu-sched-lottery/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="我的世界">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          [What]Scheduling: Proportional Share
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-08-20 00:00:00" itemprop="dateCreated datePublished" datetime="2019-08-20T00:00:00+08:00">2019-08-20</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-06-28 11:58:45" itemprop="dateModified" datetime="2020-06-28T11:58:45+08:00">2020-06-28</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/book/" itemprop="url" rel="index"><span itemprop="name">book</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/book/ostep/" itemprop="url" rel="index"><span itemprop="name">ostep</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2019/08/20/book_ostep_cpu-sched-lottery/" class="post-meta-item leancloud_visitors" data-flag-title="[What]Scheduling: Proportional Share" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2019/08/20/book_ostep_cpu-sched-lottery/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2019/08/20/book_ostep_cpu-sched-lottery/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <div id="content">
+<p>
+&#x5B66;&#x4E60;&#x6BD4;&#x4F8B;&#x5206;&#x914D;&#x8C03;&#x5EA6;&#x5668;&#xFF0C;&#x5176;&#x6838;&#x5FC3;&#x601D;&#x60F3;&#x662F;&#xFF1A;&#x4FDD;&#x8BC1;&#x6BCF;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x83B7;&#x5F97; <b>&#x786E;&#x5B9A;&#x6BD4;&#x4F8B;</b> &#x7684; CPU &#x4F7F;&#x7528;&#x65F6;&#x95F4;&#x3002;
+</p>
+<a id="more"></a>
+<div id="outline-container-orgeb56d94" class="outline-2">
+<h2 id="orgeb56d94">tickets &#x8868;&#x793A;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x6240;&#x5360;&#x7528;&#x7684; CPU &#x767E;&#x5206;&#x6BD4;</h2>
+<div class="outline-text-2" id="text-orgeb56d94">
+<p>
+&#x6BD4;&#x4F8B;&#x5206;&#x914D;&#x8C03;&#x5EA6;&#x5668;&#x968F;&#x673A;&#x7684;&#x5207;&#x6362;&#x591A;&#x4E2A;&#x4EFB;&#x52A1;&#xFF0C;&#x5728;&#x5168;&#x5C40;&#x4E0A;&#x6765;&#x770B;&#x8BA9;&#x5176;&#x7B26;&#x5408;&#x5176;&#x6240;&#x8981;&#x6C42;&#x7684;&#x767E;&#x5206;&#x6BD4;&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x8FD9;&#x79CD;&#x65B9;&#x5F0F;&#x4F7F;&#x5F97;&#x8C03;&#x5EA6;&#x5668;&#x7684;&#x5B9E;&#x73B0;&#x76F8;&#x5BF9;&#x8F7B;&#x91CF;&#x7EA7;</li>
+</ul>
+
+<p>
+&#x6BD4;&#x4F8B;&#x5206;&#x914D;&#x8C03;&#x5EA6;&#x5668;&#x5177;&#x6709;&#x5982;&#x4E0B;&#x7279;&#x70B9;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>&#x6BD4;&#x4F8B;&#x5206;&#x914D;&#x8C03;&#x5EA6;&#x5668;&#x53EF;&#x4EE5;&#x7AD9;&#x5728;&#x66F4;&#x4E3A;&#x5B8F;&#x89C2;&#x7684;&#x89D2;&#x5EA6;&#x6765;&#x5206;&#x914D;&#x5404;&#x4E2A;&#x4EFB;&#x52A1;&#x5360;&#x7528; CPU &#x7684;&#x767E;&#x5206;&#x6BD4;&#xFF0C;&#x770B;&#x5230;&#x8FD9;&#x91CC;&#x611F;&#x89C9;&#x548C; Linux &#x4E0B;&#x7684; cgroup &#x5F88;&#x50CF;&#x3002;</li>
+</ul>
+<pre class="example">
+&#x6BD4;&#x5982;&#x6709;&#x7528;&#x6237; A &#x548C; B&#xFF0C;&#x6BD4;&#x4F8B;&#x5206;&#x914D;&#x8C03;&#x5EA6;&#x5668;&#x4E3A;&#x4ED6;&#x4EEC;&#x5404;&#x5206;&#x914D;&#x4E86; 100 &#x4E2A; ticket&#x3002;
+
+&#x5728;&#x7528;&#x6237; A &#x5185;&#x90E8;&#x4F7F;&#x7528;&#x4E86; 1000 &#x4E2A; ticket&#xFF0C;&#x5B83;&#x4E3A;&#x5176;&#x4EFB;&#x52A1; A1 &#x548C; A2 &#x5404;&#x5206;&#x914D; 500 &#x4E2A; ticket&#x3002;
+&#x5728;&#x7528;&#x6237; B &#x5185;&#x90E8;&#x4F7F;&#x7528;&#x4E86; 10 &#x4E2A; ticket&#xFF0C;&#x4E14;&#x53EA;&#x6709;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x3002;
+
+&#x6700;&#x7EC8;&#xFF0C;&#x6BD4;&#x4F8B;&#x5206;&#x914D;&#x8C03;&#x5EA6;&#x5668;&#x4F1A;&#x7ED9;&#x4EFB;&#x52A1; A1 &#x548C; A2 &#x5404; 50 &#x4E2A; ticket&#xFF0C;&#x7ED9;&#x4EFB;&#x52A1; B 100 &#x4E2A; ticket&#xFF0C;
+&#x6240;&#x4EE5; B &#x4EFB;&#x52A1;&#x5360;&#x7528;&#x7684; CPU &#x8D44;&#x6E90;&#x66F4;&#x591A;&#x3002;</pre>
+<ul class="org-ul">
+<li>&#x6BD4;&#x4F8B;&#x5206;&#x914D;&#x8C03;&#x5EA6;&#x5668;&#x53EF;&#x4EE5;&#x5C06;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x7684; tickets &#x4F20;&#x9001;&#x7ED9;&#x53E6;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#xFF0C;&#x8FD9;&#x5728; C/S &#x67B6;&#x6784;&#x4E0B;&#x5F88;&#x6709;&#x4F5C;&#x7528;&#x3002;</li>
+</ul>
+<pre class="example">
+&#x6BD4;&#x5982;&#x5BA2;&#x6237;&#x7AEF;&#x5411;&#x670D;&#x52A1;&#x7AEF;&#x53D1;&#x9001;&#x4E86;&#x4E00;&#x4E2A;&#x8BF7;&#x6C42;&#xFF0C;&#x5BA2;&#x6237;&#x7AEF;&#x5E0C;&#x671B;&#x670D;&#x52A1;&#x7AEF;&#x53EF;&#x4EE5;&#x5C3D;&#x5FEB;&#x7684;&#x5904;&#x7406;&#x5B8C;&#x6B64;&#x8BF7;&#x6C42;&#x3002;
+
+&#x90A3;&#x4E48;&#x5BA2;&#x6237;&#x7AEF;&#x53EF;&#x4EE5;&#x5C06;&#x5B83;&#x6240;&#x62E5;&#x6709;&#x7684; tickets &#x53D1;&#x9001;&#x7ED9;&#x670D;&#x52A1;&#x7AEF;&#xFF0C;&#x670D;&#x52A1;&#x7AEF;&#x4FBF;&#x53EF;&#x4EE5;&#x83B7;&#x5F97;&#x66F4;&#x591A;&#x7684; CPU &#x8D44;&#x6E90;&#x800C;&#x5B8C;&#x6210;&#x5F97;&#x66F4;&#x5FEB;&#x3002;
+
+&#x5F53;&#x670D;&#x52A1;&#x7AEF;&#x5B8C;&#x6210;&#x6B64;&#x8BF7;&#x6C42;&#x4EE5;&#x540E;&#xFF0C;&#x518D;&#x5C06;&#x5BA2;&#x6237;&#x7AEF;&#x7684; tickets &#x5F52;&#x8FD8;&#x3002;</pre>
+<ul class="org-ul">
+<li>&#x6BCF;&#x4E2A;&#x4EFB;&#x52A1;&#x90FD;&#x53EF;&#x4EE5;&#x52A8;&#x6001;&#x7684;&#x8C03;&#x6574;&#x5176; tickets</li>
+</ul>
+<pre class="example">
+&#x5F53;&#x4E00;&#x4E2A; group &#x7684;&#x591A;&#x4E2A;&#x4EFB;&#x52A1;&#x534F;&#x8C03;&#x5DE5;&#x4F5C;&#x65F6;&#xFF0C;&#x5176;&#x4E2D;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x9700;&#x8981;&#x77ED;&#x6682;&#x7684;&#x5360;&#x7528;&#x66F4;&#x591A;&#x7684; CPU &#x8D44;&#x6E90;&#xFF0C;
+&#x90A3;&#x4E48;&#x5B83;&#x53EF;&#x4EE5;&#x4E3B;&#x52A8;&#x63D0;&#x5347;&#x5176; tickets&#x3002;</pre>
+</div>
+</div>
+<div id="outline-container-org668d6d0" class="outline-2">
+<h2 id="org668d6d0">&#x6267;&#x884C;&#x8FC7;&#x7A0B;</h2>
+<div class="outline-text-2" id="text-org668d6d0">
+<p>
+&#x6BD4;&#x4F8B;&#x5206;&#x914D;&#x8C03;&#x5EA6;&#x5668;&#x7684;&#x8C03;&#x5EA6;&#x7B97;&#x6CD5;&#x6781;&#x4E3A;&#x7B80;&#x5355;&#xFF1A;
+</p>
+<ol class="org-ol">
+<li>&#x5C06;&#x4EFB;&#x52A1;&#x90FD;&#x6302;&#x5728;&#x4E00;&#x4E2A;&#x94FE;&#x8868;&#x4E2D;&#xFF0C;&#x6BCF;&#x4E2A;&#x4EFB;&#x52A1;&#x90FD;&#x6709;&#x5176;&#x5BF9;&#x5E94;&#x7684; ticket&#xFF0C;&#x8FD9;&#x4E9B;&#x4EFB;&#x52A1;&#x7684; ticket &#x6C42;&#x548C;&#x5F97; A</li>
+<li>&#x4F7F;&#x7528;&#x968F;&#x673A;&#x6570;&#x53D1;&#x751F;&#x5668;&#x4F7F;&#x5F97;&#x5176;&#x4EA7;&#x751F;&#x4E00;&#x4E2A;&#x5728; A &#x5185;&#x7684;&#x503C;</li>
+<li>&#x4F7F;&#x7528;&#x8BA1;&#x6570;&#x5668;&#x4ECE; 0 &#x5F00;&#x59CB;&#x4F9D;&#x6B21;&#x4E0E;&#x6BCF;&#x4E2A;&#x4EFB;&#x52A1;&#x7684; ticket &#x76F8;&#x52A0;&#xFF0C;&#x5F53;&#x8BA1;&#x6570;&#x5668;&#x7684;&#x503C;&#x5927;&#x4E8E;&#x968F;&#x673A;&#x6570;&#x65F6;&#xFF0C;&#x4FBF;&#x8C03;&#x7528;&#x5F53;&#x524D;&#x4EFB;&#x52A1;</li>
+</ol>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// counter: used to track if we&#x2019;ve found the winner yet</span></span><br><span class="line"><span class="keyword">int</span> counter = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// winner: use some call to a random number generator to</span></span><br><span class="line"><span class="comment">// get a value, between 0 and the total # of tickets</span></span><br><span class="line"><span class="keyword">int</span> winner = getrandom(<span class="number">0</span>, totaltickets);</span><br><span class="line"></span><br><span class="line"><span class="comment">// current: use this to walk through the list of jobs</span></span><br><span class="line"><span class="keyword">node_t</span> *current = head;</span><br><span class="line"><span class="keyword">while</span> (current) {</span><br><span class="line">  counter = counter + current-&gt;tickets;</span><br><span class="line">  <span class="keyword">if</span> (counter &gt; winner)</span><br><span class="line">    <span class="keyword">break</span>; <span class="comment">// found the winner</span></span><br><span class="line">  current = current-&gt;next;</span><br><span class="line"> }</span><br><span class="line"><span class="comment">// &#x2019;current&#x2019; is the winner: schedule it...</span></span><br></pre></td></tr></table></figure>
+</div>
+
+<p>
+&#x4E3A;&#x4E86;&#x63D0;&#x9AD8;&#x8C03;&#x5EA6;&#x5668;&#x7684;&#x6548;&#x7387;&#xFF0C;&#x53EF;&#x4EE5;&#x6839;&#x636E;&#x4EFB;&#x52A1;&#x7684; ticket &#x8FDB;&#x884C;&#x6392;&#x5E8F;&#xFF0C;ticket &#x503C;&#x5927;&#x7684;&#x5728;&#x524D;&#x9762;&#xFF0C;&#x8FD9;&#x662F;&#x4E3A;&#x4E86;&#x4F7F;&#x8BA1;&#x6570;&#x5668;&#x5FAA;&#x73AF;&#x5C3D;&#x91CF;&#x5C11;&#x7684;&#x6B21;&#x6570;&#x3002;
+</p>
+</div>
+</div>
+
+<div id="outline-container-orga9be9da" class="outline-2">
+<h2 id="orga9be9da">&#x53E6;&#x4E00;&#x79CD;&#x601D;&#x8DEF;</h2>
+<div class="outline-text-2" id="text-orga9be9da">
+<p>
+&#x6309;&#x7167;&#x524D;&#x9762;&#x7684;&#x8C03;&#x5EA6;&#x7B56;&#x7565;&#xFF0C;&#x5728;&#x77ED;&#x65F6;&#x95F4;&#x5185;&#x5B9E;&#x9645;&#x4E0A;&#x662F;&#x65E0;&#x6CD5;&#x8FBE;&#x5230;&#x6BCF;&#x4E2A;&#x4EFB;&#x52A1;&#x6240;&#x8981;&#x6C42;&#x7684;&#x6BD4;&#x4F8B;&#x7684;&#xFF0C;
+&#x4E3A;&#x6B64;&#x5148;&#x9A71;&#x4EEC;&#x4F7F;&#x7528; stride &#x548C; pass &#x6765;&#x5171;&#x540C;&#x51B3;&#x5B9A;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x4EC0;&#x4E48;&#x65F6;&#x5019;&#x8BE5;&#x88AB;&#x8FD0;&#x884C;&#xFF0C;&#x4EE5;&#x6C42;&#x8FBE;&#x5230;&#x516C;&#x5E73;&#x3002;
+</p>
+<ul class="org-ul">
+<li>stride : &#x6BCF;&#x4E2A;&#x4EFB;&#x52A1;&#x6267;&#x884C;&#x7684;&#x8BA1;&#x6570;&#x6B65;&#x8FDB;</li>
+<li>pass : &#x6BCF;&#x4E2A;&#x4EFB;&#x52A1;&#x72EC;&#x6709;&#x7684;&#x603B;&#x7684;&#x8FD0;&#x884C;&#x8BA1;&#x6570;</li>
+</ul>
+
+<p>
+&#x5176;&#x8C03;&#x5EA6;&#x539F;&#x5219;&#x662F;&#xFF1A;&#x8C03;&#x5EA6; pass &#x503C;&#x6700;&#x5C0F;&#x7684;&#x90A3;&#x4E2A;&#x4EFB;&#x52A1;
+</p>
+<ul class="org-ul">
+<li>&#x56E0;&#x4E3A;&#x8FD9;&#x610F;&#x5473;&#x7740;&#x90A3;&#x4E2A;&#x4EFB;&#x52A1;&#x88AB;&#x5206;&#x914D;&#x7684;&#x65F6;&#x95F4;&#x592A;&#x5C11;&#x4E86;</li>
+</ul>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">curr = remove_min(<span class="built_in">queue</span>); <span class="comment">// pick client with min pass</span></span><br><span class="line">schedule(curr); <span class="comment">// run for quantum</span></span><br><span class="line">curr-&gt;pass += curr-&gt;stride; <span class="comment">// update pass using stride</span></span><br><span class="line">insert(<span class="built_in">queue</span>, curr); <span class="comment">// return curr to queue</span></span><br></pre></td></tr></table></figure>
+</div>
+
+<p>
+&#x5047;&#x8BBE;&#x4EFB;&#x52A1; A&#x3001;B&#x3001;C &#x7684; ticket &#x4F9D;&#x6B21;&#x4E3A; 100,50,250&#xFF0C;&#x4EE5; 10000 &#x9664;&#x4EE5;&#x8FD9;&#x4E9B;&#x503C;&#x5F97;&#x51FA;&#x5B83;&#x4EEC;&#x7684; stride &#x4F9D;&#x6B21;&#x4E3A;&#xFF1A;
+100&#x3001;200&#x3001;40&#x3002;
+</p>
+
+<p>
+&#x8FD9;&#x6837;&#x53EF;&#x4EE5;&#x753B;&#x51FA;&#x4E00;&#x4E2A;&#x8C03;&#x5EA6;&#x8868;&#xFF1A;
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-right">Pass(A) (stride = 100)</th>
+<th scope="col" class="org-right">Pass(B)(stride = 200)</th>
+<th scope="col" class="org-right">Pass(C)(stide = 40)</th>
+<th scope="col" class="org-left">&#x5F53;&#x524D;&#x8FD0;&#x884C;</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-right">0</td>
+<td class="org-right">0</td>
+<td class="org-right">0</td>
+<td class="org-left">A</td>
+</tr>
+
+<tr>
+<td class="org-right">100</td>
+<td class="org-right">0</td>
+<td class="org-right">0</td>
+<td class="org-left">B</td>
+</tr>
+
+<tr>
+<td class="org-right">100</td>
+<td class="org-right">200</td>
+<td class="org-right">0</td>
+<td class="org-left">C</td>
+</tr>
+
+<tr>
+<td class="org-right">100</td>
+<td class="org-right">200</td>
+<td class="org-right">40</td>
+<td class="org-left">C</td>
+</tr>
+
+<tr>
+<td class="org-right">100</td>
+<td class="org-right">200</td>
+<td class="org-right">80</td>
+<td class="org-left">C</td>
+</tr>
+
+<tr>
+<td class="org-right">100</td>
+<td class="org-right">200</td>
+<td class="org-right">120</td>
+<td class="org-left">A</td>
+</tr>
+
+<tr>
+<td class="org-right">200</td>
+<td class="org-right">200</td>
+<td class="org-right">120</td>
+<td class="org-left">C</td>
+</tr>
+
+<tr>
+<td class="org-right">200</td>
+<td class="org-right">200</td>
+<td class="org-right">160</td>
+<td class="org-left">C</td>
+</tr>
+
+<tr>
+<td class="org-right">200</td>
+<td class="org-right">200</td>
+<td class="org-right">200</td>
+<td class="org-left">&#x2026;</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+&#x53EF;&#x4EE5;&#x770B;&#x5230; A&#x3001;B&#x3001;C &#x7684;&#x8FD0;&#x884C;&#x6B21;&#x6570;&#x4F9D;&#x6B21;&#x4E3A; 2&#x3001;1&#x3001;5,&#x8FD9;&#x5DF2;&#x7ECF;&#x5F88;&#x63A5;&#x8FD1;&#x4E4B;&#x524D;&#x5206;&#x914D;&#x7684; ticket &#x503C;&#x4E86;&#x3002;
+</p>
+
+<p>
+<b>&#x9700;&#x8981;&#x6CE8;&#x610F;&#x7684;&#x662F;&#xFF1A;</b> &#x867D;&#x7136;&#x8FD9;&#x79CD;&#x8C03;&#x5EA6;&#x7B56;&#x7565;&#x770B;&#x4E0A;&#x53BB;&#x5F88;&#x516C;&#x5E73;&#xFF0C;&#x4F46;&#x5982;&#x679C;&#x4E2D;&#x9014;&#x63D2;&#x8FDB;&#x6765;&#x4E00;&#x4E2A;&#x65B0;&#x4EFB;&#x52A1;&#xFF0C;&#x90A3;&#x4E48;&#x5B83;&#x7684; pass &#x503C;&#x4E3A; 0,
+&#x5B83;&#x4F1A;&#x5360;&#x7528; CPU &#x5F88;&#x957F;&#x65F6;&#x95F4;&#x3002;
+</p>
+
+<p>
+&#x6240;&#x4EE5;&#x7EFC;&#x5408;&#x6765;&#x770B;&#xFF0C;&#x8FD8;&#x662F;&#x968F;&#x673A;&#x6570;&#x7684;&#x8C03;&#x5EA6;&#x7B56;&#x7565;&#x66F4;&#x4E3A;&#x5408;&#x7406;&#xFF0C;&#x56E0;&#x4E3A;&#x5B83;&#x6BD4;&#x8F83;&#x7684;&#x662F;&#x589E;&#x91CF;&#x800C;&#x4E0D;&#x662F;&#x7EDD;&#x5BF9;&#x91CF;&#x3002;
+</p>
+</div>
+</div>
+<div id="outline-container-orgc8ce123" class="outline-2">
+<h2 id="orgc8ce123">Linux &#x4E2D;&#x7684; CFS &#x8C03;&#x5EA6;&#x5668;</h2>
+<div class="outline-text-2" id="text-orgc8ce123">
+<p>
+Linux &#x4E0B;&#x7684; CFS&#xFF08;Completely Fair Scheduler&#xFF0C;&#x5B8C;&#x5168;&#x516C;&#x5E73;&#x8C03;&#x5EA6;&#x5668;&#xFF09;&#x5728;<a href="http://kcmetercec.top/2018/05/26/linux_ps_schedule/#org384066f">&#x8FDB;&#x7A0B;&#x8BFE;&#x7A0B;</a>&#x4E2D;&#x6709;&#x6240;&#x4E86;&#x89E3;&#xFF0C;&#x5177;&#x6709;&#x6781;&#x9AD8;&#x7684;&#x5207;&#x6362;&#x6548;&#x7387;&#x4E14;&#x6EE1;&#x8DB3; IO &#x5BC6;&#x96C6;&#x548C; CPU &#x5BC6;&#x96C6;&#x578B;&#x7684;&#x534F;&#x8C03;&#x3002;
+</p>
+
+<p>
+Linux &#x4F7F;&#x7528;&#x865A;&#x62DF;&#x65F6;&#x95F4;&#xFF08;virtual runtime&#xFF0C;vruntime&#xFF09;&#x6765;&#x8868;&#x793A;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x6240;&#x5360;&#x6709;&#x7684; CPU &#x8D44;&#x6E90;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>&#x5F53;&#x4EFB;&#x52A1;&#x5728;&#x8FD0;&#x884C;&#x65F6;&#xFF0C;&#x5B83;&#x7684; vruntime &#x5C31;&#x4F1A;&#x7D2F;&#x52A0;</li>
+<li>&#x8C03;&#x5EA6;&#x5668;&#x8C03;&#x5EA6; vruntime &#x6700;&#x5C0F;&#x7684;&#x90A3;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;</li>
+</ul>
+
+<p>
+CFS &#x4E0D;&#x80FD;&#x8C03;&#x5EA6;&#x5F97;&#x592A;&#x9891;&#x7E41;&#xFF0C;&#x4E0D;&#x7136;&#x4E0A;&#x4E0B;&#x6587;&#x7684;&#x5207;&#x6362;&#x65F6;&#x95F4;&#x5C06;&#x4F1A;&#x5360;&#x7528;&#x592A;&#x591A;&#x8D44;&#x6E90;&#x3002;&#x4F46;&#x4E5F;&#x4E0D;&#x80FD;&#x592A;&#x957F;&#xFF0C;&#x8FD9;&#x6837;&#x5C31;&#x65E0;&#x6CD5;&#x8FBE;&#x5230;&#x6240;&#x8C13;&#x7684;&#x516C;&#x5E73;&#x8C03;&#x5EA6;&#x3002;
+</p>
+
+<p>
+&#x4E3A;&#x6B64; CFS &#x8C03;&#x6574;&#x4E86;&#x4EE5;&#x4E0B;&#x53C2;&#x6570;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>sched_latency : &#x52A8;&#x6001;&#x7684;&#x8C03;&#x6574;&#x65F6;&#x95F4;&#x7247;&#xFF08;&#x6BCF;&#x9694;&#x591A;&#x4E45;&#x8C03;&#x5EA6;&#x5668;&#x5224;&#x65AD;&#x662F;&#x5426;&#x8BE5;&#x5207;&#x6362;&#xFF09;
+<ul class="org-ul">
+<li>&#x4E00;&#x822C;&#x6B64;&#x503C;&#x53D6; 48ms&#xFF0C;&#x7136;&#x540E;&#x7528;&#x6B64;&#x503C;&#x9664;&#x4EE5;&#x8FD0;&#x884C;&#x7684;&#x4EFB;&#x52A1;&#x6570;&#x91CF;&#xFF0C;&#x4FBF;&#x53EF;&#x4EE5;&#x5F97;&#x51FA;&#x6BCF;&#x4E2A;&#x4EFB;&#x52A1;&#x8C03;&#x5EA6;&#x7684;&#x65F6;&#x95F4;&#x7247;</li>
+</ul></li>
+</ul>
+<pre class="example">
+&#x5F53;&#x6709; 4 &#x4E2A;&#x4EFB;&#x52A1;&#x65F6;&#xFF0C;&#x90A3;&#x4E48;&#x6BCF;&#x4E2A;&#x4EFB;&#x52A1;&#x7684;&#x65F6;&#x95F4;&#x7247;&#x5C31;&#x662F; 12ms&#x3002;
+&#x5E76;&#x4E14;&#x5728;&#x8FD0;&#x884C;&#x8FC7;&#x7A0B;&#x4E2D;&#xFF0C;&#x6BCF;&#x4E2A;&#x4EFB;&#x52A1;&#x8FD0;&#x884C;&#x65F6;&#x7684; vruntime &#x90FD;&#x4F1A;&#x589E;&#x52A0;&#x3002;
+&#x90A3;&#x4E48;&#x5F53;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x7684;&#x65F6;&#x95F4;&#x7247;&#x5230;&#x4E86;&#x540E;&#xFF0C;&#x5FC5;&#x7136;&#x4F1A;&#x8C03;&#x5EA6;&#x53E6;&#x5916;&#x4E00;&#x4E2A; vruntime &#x66F4;&#x5C0F;&#x7684;&#x4EFB;&#x52A1;&#x3002;
+
+&#x6700;&#x7EC8;&#x770B;&#x5230;&#x7684;&#x6548;&#x679C;&#x5C31;&#x662F; RR &#x7B56;&#x7565;&#x7684;&#x8F6E;&#x8BE2;&#x8C03;&#x5EA6;&#x65B9;&#x5F0F;&#x3002;</pre>
+<ul class="org-ul">
+<li>min_granularity : &#x6700;&#x5C0F;&#x7684;&#x8C03;&#x5EA6;&#x65F6;&#x95F4;&#x7247;&#xFF0C;&#x8FD9;&#x662F;&#x4E3A;&#x4E86;&#x907F;&#x514D;&#x4EFB;&#x52A1;&#x8FC7;&#x591A;&#x800C;&#x901A;&#x8FC7; <code>sched_latency</code> &#x8BA1;&#x7B97;&#x7684;&#x65F6;&#x95F4;&#x7247;&#x8FC7;&#x5C0F;
+<ul class="org-ul">
+<li>&#x4E00;&#x822C;&#x6B64;&#x503C;&#x53D6; 6ms&#xFF0C;&#x4E5F;&#x5C31;&#x662F;&#x8C03;&#x5EA6;&#x5668;&#x6700;&#x77ED;&#x4E5F;&#x662F;&#x6BCF;&#x9694; 6ms &#x5224;&#x65AD;&#x4E00;&#x6B21;&#x4EFB;&#x52A1;&#x662F;&#x5426;&#x9700;&#x8981;&#x88AB;&#x5207;&#x6362;&#x3002;</li>
+</ul></li>
+</ul>
+</div>
+
+<div id="outline-container-org5e15ce2" class="outline-3">
+<h3 id="org5e15ce2">&#x4F18;&#x5148;&#x7EA7;</h3>
+<div class="outline-text-3" id="text-org5e15ce2">
+<p>
+Linux &#x901A;&#x8FC7; nice &#x503C;&#xFF08;-20 &#xFF5E; +19&#xFF09;&#x6765;&#x786E;&#x8BA4;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x7684;&#x4F18;&#x5148;&#x7EA7;&#xFF0C;nice &#x503C;&#x8D8A;&#x5927;&#x4F18;&#x5148;&#x7EA7;&#x8D8A;&#x4F4E;&#xFF08;&#x9ED8;&#x8BA4;&#x4E3A; 0&#xFF09;&#x3002;
+</p>
+
+<p>
+nice &#x503C;&#x5BF9;&#x5E94;&#x5185;&#x6838;&#x4E2D;&#x7684; <code>weight</code> :
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">const</span> <span class="keyword">int</span> prio_to_weight[<span class="number">40</span>] = {</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* -20 */</span> <span class="number">88761</span>, <span class="number">71755</span>, <span class="number">56483</span>, <span class="number">46273</span>, <span class="number">36291</span>,</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* -15 */</span> <span class="number">29154</span>, <span class="number">23254</span>, <span class="number">18705</span>, <span class="number">14949</span>, <span class="number">11916</span>,</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* -10 */</span> <span class="number">9548</span>, <span class="number">7620</span>, <span class="number">6100</span>, <span class="number">4904</span>, <span class="number">3906</span>,</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* -5  */</span> <span class="number">3121</span>, <span class="number">2501</span>, <span class="number">1991</span>, <span class="number">1586</span>, <span class="number">1277</span>,</span><br><span class="line"></span><br><span class="line">  <span class="comment">/*  0  */</span> <span class="number">1024</span>, <span class="number">820</span>, <span class="number">655</span>, <span class="number">526</span>, <span class="number">423</span>,</span><br><span class="line"></span><br><span class="line">  <span class="comment">/*  5  */</span> <span class="number">335</span>, <span class="number">272</span>, <span class="number">215</span>, <span class="number">172</span>, <span class="number">137</span>,</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* 10  */</span> <span class="number">110</span>, <span class="number">87</span>, <span class="number">70</span>, <span class="number">56</span>, <span class="number">45</span>,</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* 15  */</span> <span class="number">36</span>, <span class="number">29</span>, <span class="number">23</span>, <span class="number">18</span>, <span class="number">15</span>,</span><br><span class="line">};</span><br></pre></td></tr></table></figure>
+</div>
+
+<p>
+&#x52A0;&#x4E0A;&#x4F18;&#x5148;&#x7EA7;&#x673A;&#x5236;&#x540E;&#xFF0C;&#x6BCF;&#x4E2A;&#x4EFB;&#x52A1;&#x7684;&#x65F6;&#x95F4;&#x7247;&#x7531;&#x4E0B;&#x9762;&#x516C;&#x5F0F;&#x51B3;&#x5B9A;:
+</p>
+<img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/cfs_time_slice.jpg?raw=true" alt="cfs_time_slice.jpg">
+<ul class="org-ul">
+<li>&#x5F53;&#x524D;&#x4EFB;&#x52A1;&#x7684; <code>weight</code> &#x9664;&#x4EE5;&#x603B;&#x8FD0;&#x884C;&#x4EFB;&#x52A1;&#x7684; <code>weight</code> &#x7684;&#x548C;&#xFF0C;&#x518D;&#x4E58;&#x4EE5; <code>sched_latency</code></li>
+</ul>
+<pre class="example">
+&#x6BD4;&#x5982;&#x5F53;&#x524D;&#x7CFB;&#x7EDF;&#x6709;&#x4EFB;&#x52A1; A &#x548C; B&#xFF1A;
+&#x4EFB;&#x52A1; A &#x9AD8;&#x4F18;&#x5148;&#x7EA7;&#xFF0C;&#x5176; nice &#x503C;&#x4E3A; -5&#xFF0C;&#x5BF9;&#x5E94;&#x7684; weight &#x4E3A; 3121
+&#x4EFB;&#x52A1; B &#x666E;&#x901A;&#x4F18;&#x5148;&#x7EA7;&#xFF0C;&#x5176; nice &#x503C;&#x4E3A; 0&#xFF0C;&#x5BF9;&#x5E94;&#x7684; weight &#x4E3A; 1024
+
+&#x90A3;&#x4E48;&#xFF1A;
+&#x4EFB;&#x52A1; A &#x7684;&#x65F6;&#x95F4;&#x7247;&#x4E3A; : 3121 / (3121 + 1024) * sched_latency
+&#x4EFB;&#x52A1; B &#x7684;&#x65F6;&#x95F4;&#x7247;&#x4E3A; : 1024 / (3121 + 1024) * sched_latency</pre>
+
+<p>
+&#x6BCF;&#x4E2A;&#x4EFB;&#x52A1;&#x7684; <code>vruntime</code> &#x7531;&#x4E0B;&#x9762;&#x516C;&#x5F0F;&#x51B3;&#x5B9A;&#xFF1A;
+</p>
+<img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/cfs_vruntime.jpg?raw=true" alt="cfs_vruntime.jpg">
+<ul class="org-ul">
+<li>&#x53EF;&#x4EE5;&#x770B;&#x5230;&#xFF1A;&#x5F53; nice &#x503C;&#x8D8A;&#x5C0F;&#xFF0C; weight &#x8D8A;&#x5927;&#xFF0C;&#x5176; <code>vruntime</code> &#x589E;&#x52A0;&#x5F97;&#x5C31;&#x8D8A;&#x6162;&#xFF0C;&#x90A3;&#x4E48;&#x5B83;&#x5360;&#x7528; CPU &#x7684;&#x8D44;&#x6E90;&#x5C31;&#x8D8A;&#x591A;&#x3002;</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-orgcb9e4c5" class="outline-3">
+<h3 id="orgcb9e4c5">&#x4F7F;&#x7528;&#x7EA2;&#x9ED1;&#x6811;&#x5B8C;&#x6210;&#x8C03;&#x5EA6;&#x7B56;&#x7565;</h3>
+<div class="outline-text-3" id="text-orgcb9e4c5">
+<p>
+&#x7EA2;&#x9ED1;&#x6811;&#x7684;&#x6392;&#x5E8F;&#x7B97;&#x6CD5;&#x4F7F;&#x5F97;&#x5C0F; vruntime &#x7684;&#x4EFB;&#x52A1;&#x59CB;&#x7EC8;&#x90FD;&#x5728;&#x5DE6;&#x5B50;&#x6811;&#xFF0C;&#x4FBF;&#x53EF;&#x4EE5;&#x76F4;&#x63A5;&#x5F97;&#x51FA;&#x4E0B;&#x4E00;&#x6B21;&#x8BE5;&#x8C03;&#x5EA6;&#x7684;&#x4EFB;&#x52A1;&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x7EA2;&#x9ED1;&#x6811;&#x4E0A;&#x6302;&#x7684;&#x90FD;&#x662F;&#x5F53;&#x524D;&#x6B63;&#x5728;&#x8FD0;&#x884C;&#x7684;&#x4EFB;&#x52A1;</li>
+<li>&#x5F53;&#x4EFB;&#x52A1;&#x4ECE;&#x7761;&#x7720;&#x8F6C;&#x53D8;&#x5230;&#x5C31;&#x7EEA;&#x6001;&#x65F6;&#xFF0C;&#x5185;&#x6838;&#x4F1A;&#x5C06;&#x5176; vruntime &#x8BBE;&#x7F6E;&#x4E3A;&#x6811;&#x4E2D;&#x7684;&#x6700;&#x5C0F;&#x503C;
+<ul class="org-ul">
+<li>&#x907F;&#x514D;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x7761;&#x7720;&#x8FC7;&#x4E45;&#x800C; vruntime &#x592A;&#x5C0F;&#xFF0C;&#x5BFC;&#x81F4;&#x5176;&#x4ED6;&#x4EFB;&#x52A1;&#x957F;&#x65F6;&#x95F4;&#x6CA1;&#x6709;&#x673A;&#x4F1A;&#x8FD0;&#x884C;</li>
+<li>&#x4F46;&#x5F53;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x7761;&#x7720;&#x65F6;&#x95F4;&#x592A;&#x77ED;&#x4E14;&#x9891;&#x7E41;&#x7761;&#x7720;&#x65F6;&#xFF0C;&#x5B83;&#x603B;&#x662F;&#x4F1A;&#x5360;&#x7528;&#x66F4;&#x591A;&#x7684; CPU &#x8D44;&#x6E90;&#x3002;</li>
+</ul></li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+Last Updated 2020-06-28 Sun 11:59.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+</div>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/CS/" rel="tag"># CS</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/08/12/book_ostep_cpu-sched-mlfq/" rel="prev" title="[What]Scheduling:The Multi-Level Feedback Queue">
+      <i class="fa fa-chevron-left"></i> [What]Scheduling:The Multi-Level Feedback Queue
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/08/27/book_ostep_cpu-sched-multi/" rel="next" title="[What]Scheduling: Multiprocessor">
+      [What]Scheduling: Multiprocessor <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#orgeb56d94"><span class="nav-number">1.</span> <span class="nav-text">tickets &amp;#x8868;&amp;#x793A;&amp;#x4E00;&amp;#x4E2A;&amp;#x4EFB;&amp;#x52A1;&amp;#x6240;&amp;#x5360;&amp;#x7528;&amp;#x7684; CPU &amp;#x767E;&amp;#x5206;&amp;#x6BD4;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org668d6d0"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x6267;&amp;#x884C;&amp;#x8FC7;&amp;#x7A0B;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orga9be9da"><span class="nav-number">3.</span> <span class="nav-text">&amp;#x53E6;&amp;#x4E00;&amp;#x79CD;&amp;#x601D;&amp;#x8DEF;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgc8ce123"><span class="nav-number">4.</span> <span class="nav-text">Linux &amp;#x4E2D;&amp;#x7684; CFS &amp;#x8C03;&amp;#x5EA6;&amp;#x5668;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org5e15ce2"><span class="nav-number">4.1.</span> <span class="nav-text">&amp;#x4F18;&amp;#x5148;&amp;#x7EA7;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgcb9e4c5"><span class="nav-number">4.2.</span> <span class="nav-text">&amp;#x4F7F;&amp;#x7528;&amp;#x7EA2;&amp;#x9ED1;&amp;#x6811;&amp;#x5B8C;&amp;#x6210;&amp;#x8C03;&amp;#x5EA6;&amp;#x7B56;&amp;#x7565;</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">我的世界</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">210</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">104</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">38</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+  
+  <span class="post-meta-divider">|</span>
+  <span>Hosted by <a href="https://pages.coding.me" target="_blank" rel="noopener" style="font-weight: bold">Coding Pages</a></span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+<script>
+  (function() {
+    function leancloudSelector(url) {
+      url = encodeURI(url);
+      return document.getElementById(url).querySelector('.leancloud-visitors-count');
+    }
+
+    function addCount(Counter) {
+      var visitors = document.querySelector('.leancloud_visitors');
+      var url = decodeURI(visitors.id);
+      var title = visitors.dataset.flagTitle;
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          if (results.length > 0) {
+            var counter = results[0];
+            leancloudSelector(url).innerText = counter.time + 1;
+            Counter('put', '/classes/Counter/' + counter.objectId, { time: { '__op': 'Increment', 'amount': 1 } })
+              .catch(error => {
+                console.error('Failed to save visitor count', error);
+              });
+          } else {
+              leancloudSelector(url).innerText = 'Counter not initialized! More info at console err msg.';
+              console.error('ATTENTION! LeanCloud counter has security bug, see how to solve it here: https://github.com/theme-next/hexo-leancloud-counter-security. \n However, you can still use LeanCloud without security, by setting `security` option to `false`.');
+            
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    function showTime(Counter) {
+      var visitors = document.querySelectorAll('.leancloud_visitors');
+      var entries = [...visitors].map(element => {
+        return decodeURI(element.id);
+      });
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url: { '$in': entries } })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          for (let url of entries) {
+            let target = results.find(item => item.url === url);
+            leancloudSelector(url).innerText = target ? target.time : 0;
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    let { app_id, app_key, server_url } = {"enable":true,"app_id":"ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI","app_key":"yh4vrfnscme1utPMpk65wcxn","server_url":null,"security":true};
+    function fetchData(api_server) {
+      var Counter = (method, url, data) => {
+        return fetch(`${api_server}/1.1${url}`, {
+          method,
+          headers: {
+            'X-LC-Id'     : app_id,
+            'X-LC-Key'    : app_key,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+      };
+      if (CONFIG.page.isPost) {
+        if (CONFIG.hostname !== location.hostname) return;
+        addCount(Counter);
+      } else if (document.querySelectorAll('.post-title-link').length >= 1) {
+        showTime(Counter);
+      }
+    }
+
+    let api_server = app_id.slice(-9) !== '-MdYXbMMI' ? server_url : `https://${app_id.slice(0, 8).toLowerCase()}.api.lncldglobal.com`;
+
+    if (api_server) {
+      fetchData(api_server);
+    } else {
+      fetch('https://app-router.leancloud.cn/2/route?appId=' + app_id)
+        .then(response => response.json())
+        .then(({ api_server }) => {
+          fetchData('https://' + api_server);
+        });
+    }
+  })();
+</script>
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+  <script defer src="/lib/three/three.min.js"></script>
+    <script defer src="/lib/three/three-waves.min.js"></script>
+    <script defer src="/lib/three/canvas_lines.min.js"></script>
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI',
+      appKey     : 'yh4vrfnscme1utPMpk65wcxn',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="zLSyD2CN1AkyJqei3qKraT6372nBgMFKWe6kAj5JDeY">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="&amp;#x68B3;&amp;#x7406;&amp;#x5176;&amp;#x5E95;&amp;#x5C42;&amp;#x6D41;&amp;#x7A0B;&amp;#xFF0C;&amp;#x7406;&amp;#x89E3;&amp;#x6700;&amp;#x540E;&amp;#x662F;&amp;#x5982;&amp;#x4F55;&amp;#x8BBF;&amp;#x95EE;&amp;#x5230;&amp;#x786C;&amp;#x76D8;&amp;#x7684;&amp;#x3002;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="[What]Linux文件系统底层流程">
+<meta property="og:url" content="http://kcmetercec.top/2018/06/04/linux_fs_struct_skeleton/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="&amp;#x68B3;&amp;#x7406;&amp;#x5176;&amp;#x5E95;&amp;#x5C42;&amp;#x6D41;&amp;#x7A0B;&amp;#xFF0C;&amp;#x7406;&amp;#x89E3;&amp;#x6700;&amp;#x540E;&amp;#x662F;&amp;#x5982;&amp;#x4F55;&amp;#x8BBF;&amp;#x95EE;&amp;#x5230;&amp;#x786C;&amp;#x76D8;&amp;#x7684;&amp;#x3002;">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[fs]/[What]Linux--skeleton/vfs_fileoperations.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[fs]/[What]Linux--skeleton/vfs_harddisk.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[fs]/[What]Linux--skeleton/direct_sync.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[fs]/[What]Linux--skeleton/io_hd.jpg?raw=true">
+<meta property="article:published_time" content="2018-06-03T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-06-28T03:58:45.881Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="filesystem">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[fs]/[What]Linux--skeleton/vfs_fileoperations.jpg?raw=true">
+
+<link rel="canonical" href="http://kcmetercec.top/2018/06/04/linux_fs_struct_skeleton/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>[What]Linux文件系统底层流程 | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=112423075-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '112423075-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2ab4cc06d0da36106a4426465d0cb00d";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2018/06/04/linux_fs_struct_skeleton/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="我的世界">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          [What]Linux文件系统底层流程
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-06-04 00:00:00" itemprop="dateCreated datePublished" datetime="2018-06-04T00:00:00+08:00">2018-06-04</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-06-28 11:58:45" itemprop="dateModified" datetime="2020-06-28T11:58:45+08:00">2020-06-28</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/fs/" itemprop="url" rel="index"><span itemprop="name">fs</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/fs/struct/" itemprop="url" rel="index"><span itemprop="name">struct</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2018/06/04/linux_fs_struct_skeleton/" class="post-meta-item leancloud_visitors" data-flag-title="[What]Linux文件系统底层流程" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2018/06/04/linux_fs_struct_skeleton/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2018/06/04/linux_fs_struct_skeleton/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <div id="content">
+<p>
+&#x68B3;&#x7406;&#x5176;&#x5E95;&#x5C42;&#x6D41;&#x7A0B;&#xFF0C;&#x7406;&#x89E3;&#x6700;&#x540E;&#x662F;&#x5982;&#x4F55;&#x8BBF;&#x95EE;&#x5230;&#x786C;&#x76D8;&#x7684;&#x3002;
+</p>
+<a id="more"></a>
+<img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[fs]/[What]Linux--skeleton/vfs_fileoperations.jpg?raw=true" alt="vfs_fileoperations.jpg">
+<div id="outline-container-orgc036d7c" class="outline-2">
+<h2 id="orgc036d7c">&#x8BBF;&#x95EE;&#x786C;&#x76D8;&#x6574;&#x4F53;&#x89C6;&#x91CE;</h2>
+<div class="outline-text-2" id="text-orgc036d7c">
+<p>
+&#x7531;&#x4E0A;&#x56FE;&#x53EF;&#x4EE5;&#x770B;&#x51FA;&#xFF0C;&#x865A;&#x62DF;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x62BD;&#x8C61;&#x4E86;&#x5404;&#x79CD;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x7684;&#x64CD;&#x4F5C;&#x4E3A;&#x4E00;&#x4E2A; <code>struct file_operations</code> &#x7ED3;&#x6784;&#x4F53;&#x4E2D;&#xFF0C;&#x81F3;&#x4E8E;&#x8FD9;&#x4E2A; <code>file_operations</code> &#x5982;&#x4F55;&#x8BBF;&#x95EE;&#x5230;&#x786C;&#x76D8;&#x5462;&#xFF1F;
+</p>
+<img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[fs]/[What]Linux--skeleton/vfs_harddisk.jpg?raw=true" alt="vfs_harddisk.jpg">
+<p>
+&#x5177;&#x4F53;&#x6D41;&#x7A0B;&#x5982;&#x4E0A;&#x56FE;&#x6240;&#x793A;&#xFF1A;
+</p>
+</div>
+<div id="outline-container-org0875207" class="outline-3">
+<h3 id="org0875207">&#x7531;&#x8FDB;&#x7A0B;&#x5230;inode</h3>
+<div class="outline-text-3" id="text-org0875207">
+<ul class="org-ul">
+<li>&#x8FDB;&#x7A0B;&#x5728;&#x5185;&#x5BB9;&#x4E2D;&#x662F;&#x4EE5; <code>task_struct</code> &#x6765;&#x4F53;&#x73B0;&#x7684;&#xFF0C;&#x5F53;&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x6253;&#x5F00;&#x4E00;&#x4E2A;&#x6587;&#x4EF6;&#x65F6;&#xFF0C;&#x5176;&#x4F1A;&#x83B7;&#x53D6;&#x6B64;&#x6587;&#x4EF6;&#x7684;&#x8D44;&#x6E90;&#xFF0C;&#x5E76;&#x4E14;&#x8FD4;&#x56DE;&#x6587;&#x4EF6;&#x5BF9;&#x5E94;&#x7684;&#x7D22;&#x5F15;&#x3002;</li>
+<li>&#x901A;&#x8FC7;&#x6B64;&#x7D22;&#x5F15;&#xFF0C;&#x5C31;&#x53EF;&#x4EE5;&#x5728; <code>fd_arrary</code> &#x4E2D;&#x83B7;&#x53D6;&#x4E00;&#x4E2A;&#x6587;&#x4EF6;&#x7684; <code>struct file</code> &#x6574;&#x4F53;&#x63CF;&#x8FF0;&#xFF0C;&#x6B64;&#x7ED3;&#x6784;&#x4F53;&#x4E2D;&#x5C31;&#x5F97;&#x5230;&#x4E86;&#x4E0E;&#x6B64;&#x6587;&#x4EF6;&#x6240;&#x5BF9;&#x5E94;&#x7684; <code>inode</code> &#x3002;</li>
+<li>inode&#x4E2D;&#x5C31;&#x6709;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x6240;&#x586B;&#x5145;&#x597D;&#x7684; <code>file_operations</code> &#xFF0C;&#x6B64;&#x65F6;&#x5C31;&#x53EF;&#x4EE5;&#x6620;&#x5C04;&#x5230;VFS&#x7684;file_operations &#x64CD;&#x4F5C;</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-orgfb6b2c2" class="outline-3">
+<h3 id="orgfb6b2c2">&#x7531;inode&#x5230;&#x786C;&#x76D8;</h3>
+<div class="outline-text-3" id="text-orgfb6b2c2">
+<ul class="org-ul">
+<li>&#x5F53;&#x5E94;&#x7528;&#x5C42;&#x8C03;&#x7528;&#x6587;&#x4EF6;&#x64CD;&#x4F5C;&#x63A5;&#x53E3;&#x65F6;&#xFF0C;&#x9996;&#x5148;&#x4ECE; <code>inode</code> &#x7684; <code>page cache</code> &#x4E2D;&#x5BFB;&#x627E;&#x5176;&#x8981;&#x8BFB;&#x7684;&#x90E8;&#x5206;&#x662F;&#x5426;&#x5DF2;&#x7ECF;&#x88AB;&#x7F13;&#x5B58;&#xFF0C;&#x5982;&#x679C;&#x7F13;&#x5B58;&#x547D;&#x4E2D;&#xFF0C;&#x5219;&#x8BFB;&#x53D6;&#x7F13;&#x5B58;&#x5E76;&#x8FD4;&#x56DE;&#x3002;</li>
+</ul>
+<p>
+&#x5728;&#x5199;&#x8FC7;&#x7A0B;&#x4E2D;&#xFF0C;&#x5982;&#x679C;&#x5199;&#x662F;&#x4EE5;&#x5F02;&#x6B65;&#x65B9;&#x5F0F;&#x6267;&#x884C;&#x7684;&#x8BDD;&#xFF0C;&#x4E5F;&#x662F;&#x5148;&#x5199;&#x5165; <code>page cache</code> &#xFF0C;&#x7136;&#x540E;&#x5185;&#x6838;&#x518D;&#x5728;&#x5408;&#x9002;&#x7684;&#x65F6;&#x673A;&#x540C;&#x6B65;&#x5230;&#x786C;&#x76D8;&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x6B64;&#x90E8;&#x5982;&#x679C;&#x6B63;&#x786E;&#x6267;&#x884C;&#xFF0C;&#x90A3;&#x5C31;&#x4E0D;&#x4F1A;&#x8BBF;&#x95EE;&#x786C;&#x76D8;</li>
+</ul>
+<ul class="org-ul">
+<li>&#x5F53;&#x7F13;&#x5B58;&#x4E0D;&#x547D;&#x4E2D;&#xFF0C;&#x518D;&#x8C03;&#x7528; <code>address_space_operations</code> &#x6765;&#x5BF9;&#x786C;&#x76D8;&#x8FDB;&#x884C;&#x771F;&#x6B63;&#x7684;&#x8BFB;&#x5199;&#x64CD;&#x4F5C;&#x3002;&#x5E76;&#x5C06;&#x5176;&#x5BF9;&#x5E94;&#x7684; <code>page</code> &#x5199;&#x5165; <code>page cache</code> &#x4E2D;
+<ul class="org-ul">
+<li>&#x8FD9;&#x4E2A;&#x8FC7;&#x7A0B;&#x548C;CPU&#x7684;&#x6570;&#x636E;&#x7F13;&#x5B58;&#x548C;&#x6307;&#x4EE4;&#x7F13;&#x5B58;&#x7C7B;&#x4F3C;</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div id="outline-container-orgce6cc03" class="outline-3">
+<h3 id="orgce6cc03">&#x5173;&#x4E8E;page cache &#x4E0E; block &#x4E0E; sector</h3>
+<div class="outline-text-3" id="text-orgce6cc03">
+<ul class="org-ul">
+<li>page cache &#x662F;&#x5185;&#x5B58;&#x7BA1;&#x7406;&#x7684;&#x57FA;&#x672C;&#x5355;&#x5143;&#xFF0C;&#x800C;block&#x662F;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x5B58;&#x50A8;&#x7684;&#x57FA;&#x672C;&#x5355;&#x5143;&#xFF0C;&#x8FD9;&#x4E24;&#x4E2A;&#x90FD;&#x662F;&#x903B;&#x8F91;&#x5355;&#x5143; &#xFF0C;&#x786C;&#x76D8;&#x4E0A;&#x7684;sector &#x662F;&#x7531;&#x5176;&#x786C;&#x4EF6;&#x800C;&#x51B3;&#x5B9A;&#x7684;&#x7269;&#x7406;&#x5B58;&#x50A8;&#x5355;&#x5143;</li>
+<li>&#x6240;&#x4EE5;&#x6839;&#x636E;&#x5927;&#x5C0F;&#x4E0D;&#x540C;&#xFF0C;&#x4E00;&#x4E2A; page cache &#x53EF;&#x80FD;&#x5BF9;&#x5E94;&#x591A;&#x4E2A; block&#xFF0C;&#x800C;&#x4E00;&#x4E2A;block&#x4E00;&#x822C;&#x5BF9;&#x5E94;&#x786C;&#x76D8;&#x4E0A;&#x7684;&#x591A;&#x4E2A; sector</li>
+</ul>
+
+<p>
+&#x4F7F;&#x7528;&#x547D;&#x4EE4; <code>free -w</code> &#x53EF;&#x4EE5;&#x770B;&#x5230;&#x5176;&#x4E2D;&#x6709; <code>buffers,cached</code> &#x4E24;&#x9879;&#xFF0C;&#x5176;&#x503C;&#x5BF9;&#x5E94;&#x4E8E;&#x5185;&#x6838;&#x51FD;&#x6570; <code>void si_meminfo(struct sysinfo *val)</code> &#x3002;
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">si_meminfo</span><span class="params">(<span class="keyword">struct</span> sysinfo *val)</span></span><br><span class="line"></span>{</span><br><span class="line">  val-&gt;totalram = totalram_pages;</span><br><span class="line">  val-&gt;sharedram = global_page_state(NR_SHMEM);</span><br><span class="line">  val-&gt;freeram = global_page_state(NR_FREE_PAGES);</span><br><span class="line">  val-&gt;bufferram = nr_blockdev_pages();</span><br><span class="line">  val-&gt;totalhigh = totalhigh_pages;</span><br><span class="line">  val-&gt;freehigh = nr_free_highpages();</span><br><span class="line">  val-&gt;mem_unit = PAGE_SIZE;</span><br><span class="line">}</span><br><span class="line"><span class="function"><span class="keyword">long</span> <span class="title">nr_blockdev_pages</span><span class="params">(<span class="keyword">void</span>)</span></span><br><span class="line"></span>{</span><br><span class="line">  <span class="keyword">struct</span> block_device *bdev;</span><br><span class="line">  <span class="keyword">long</span> ret = <span class="number">0</span>;</span><br><span class="line">  spin_lock(&amp;bdev_lock);</span><br><span class="line">  <span class="comment">//&#x4ECE;&#x6240;&#x6709;&#x7684;&#x5757;&#x8BBE;&#x5907;&#x4E2D;&#xFF0C;&#x83B7;&#x53D6;&#x5DF2;&#x7ECF;&#x8FDB;&#x5165;page cache&#x7684;&#x6570;&#x91CF;</span></span><br><span class="line">  list_for_each_entry(bdev, &amp;all_bdevs, bd_list) {</span><br><span class="line">    ret += bdev-&gt;bd_inode-&gt;i_mapping-&gt;nrpages;</span><br><span class="line">  }</span><br><span class="line">  spin_unlock(&amp;bdev_lock);</span><br><span class="line">  <span class="keyword">return</span> ret;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+</div>
+<ul class="org-ul">
+<li>buffers &#x662F;&#x7AD9;&#x5728;&#x786C;&#x76D8;&#x7684;&#x89D2;&#x5EA6;&#x6765;&#x770B;cache&#x7684;&#x4E2A;&#x6570;&#xFF0C;&#x4E0E;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x65E0;&#x5173;</li>
+<li>cached &#x662F;&#x7AD9;&#x5728;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x7684;&#x89D2;&#x5EA6;&#x6765;&#x770B; page cache &#x7684;&#x4E2A;&#x6570;</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-orgb875289" class="outline-3">
+<h3 id="orgb875289">O_DIRECT &#x4E0E; O_SYNC &#x7684;&#x533A;&#x522B;</h3>
+<div class="outline-text-3" id="text-orgb875289">
+<img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[fs]/[What]Linux--skeleton/direct_sync.jpg?raw=true" alt="direct_sync.jpg">- &#x666E;&#x901A;&#x65B9;&#x5F0F;&#x4E0B;&#xFF0C;&#x6570;&#x636E;&#x8BFB;&#x5199;&#x90FD;&#x662F;&#x6682;&#x5B58;&#x5728;cache&#x4E2D;&#x7684;
+<ul class="org-ul">
+<li>&#x5F53;&#x8BBE;&#x7F6E;&#x4E3A; <code>O_SYNC</code> &#x65B9;&#x5F0F;&#x65F6;&#xFF0C;&#x6570;&#x636E;&#x4F1A;&#x540C;&#x65F6;&#x5199;&#x5230; cache &#x4E0E;&#x786C;&#x76D8;&#x4E2D;</li>
+<li>&#x5F53;&#x8BBE;&#x7F6E;&#x4E3A; <code>O_DIRECT</code> &#x65B9;&#x5F0F;&#x65F6;&#xFF0C;&#x53D6;&#x6D88;&#x4E86;&#x786C;&#x76D8;&#x7684;cache&#x76F4;&#x63A5;&#x5BF9;&#x786C;&#x76D8;&#x5199;&#x5165;
+<ul class="org-ul">
+<li>&#x8FD9;&#x79CD;&#x65B9;&#x5F0F;&#x4E0D;&#x63A8;&#x8350;</li>
+</ul></li>
+</ul>
+
+<p>
+&#x4EE5;&#x4E0A;&#x8FD9;&#x4E9B;&#x6982;&#x5FF5;&#x548C;&#x5728;&#x786C;&#x4EF6;&#x5C42;&#x6B21;&#x7684; CPU cache &#x7C7B;&#x4F3C;&#xFF0C;&#x53EA;&#x662F;&#x4E00;&#x4E2A;&#x662F;&#x7AD9;&#x5728;&#x786C;&#x4EF6;&#x89D2;&#x5EA6;&#xFF0C;&#x4E00;&#x4E2A;&#x662F;&#x5728;&#x8F6F;&#x4EF6;&#x62BD;&#x8C61;&#x89D2;&#x5EA6;&#x3002;
+</p>
+</div>
+</div>
+</div>
+<div id="outline-container-org5f67d56" class="outline-2">
+<h2 id="org5f67d56">&#x8BBF;&#x95EE;&#x786C;&#x76D8;&#x7684;&#x7EC6;&#x8282;</h2>
+<div class="outline-text-2" id="text-org5f67d56">
+<p>
+&#x524D;&#x9762;&#x7684;&#x56FE;&#x53EF;&#x4EE5;&#x770B;&#x51FA;&#xFF0C;&#x6700;&#x7EC8;&#x8BBF;&#x95EE;&#x786C;&#x76D8;&#x7684;&#x63A5;&#x53E3;&#x90FD;&#x662F;&#x901A;&#x8FC7;&#x64CD;&#x4F5C; <code>address_space_operations</code> &#x91CC;&#x7684;&#x65B9;&#x6CD5;&#x6765;&#x5B9E;&#x73B0;&#x7684;&#x3002;
+</p>
+
+<p>
+&#x5728;&#x4ECE;&#x64CD;&#x4F5C;&#x51FD;&#x6570;&#x5230;&#x6700;&#x7EC8;&#x8BBF;&#x95EE;&#x5230;&#x786C;&#x76D8;&#x8FD9;&#x4E2D;&#x95F4;&#x7ECF;&#x8FC7;&#x4E86;&#x591A;&#x6B21;&#x6392;&#x5E8F;&#x6253;&#x5305;(&#x90FD;&#x662F;&#x4E3A;&#x4E86;&#x5C3D;&#x91CF;&#x6279;&#x91CF;&#x5316;&#x3001;&#x6574;&#x5757;&#x7684;&#x64CD;&#x4F5C;I/O,&#x4EE5;&#x63D0;&#x9AD8;&#x541E;&#x5410;&#x91CF;)&#xFF1A;
+</p>
+<ol class="org-ol">
+<li>&#x5355;&#x6B21;&#x8BFB;&#x5199;&#x6587;&#x4EF6;&#x65F6;&#xFF0C;&#x5C06;&#x8981;&#x8BBF;&#x95EE;&#x7684;&#x6570;&#x636E;&#x8F6C;&#x6362;&#x4E3A;&#x5BF9;&#x5E94;&#x7684;block&#x5E76;&#x7F13;&#x5B58;&#x5230; plug &#x961F;&#x5217;
+<ul class="org-ul">
+<li>&#x5185;&#x5B58;&#x4E2D;&#x7684; page cache &#x4E0E; block &#x7684;&#x5BF9;&#x5E94;&#x5173;&#x7CFB;&#x901A;&#x8FC7; bio(block io) &#x6765;&#x5B9E;&#x73B0;&#xFF0C;&#x5B83;&#x94FE;&#x63A5;&#x4E86;&#x786C;&#x76D8;&#x7684;block&#x548C;&#x5185;&#x5B58;&#x7684;page cache
+<ul class="org-ul">
+<li>&#x5982;&#x679C;&#x5BF9;&#x5E94;&#x7684;block&#x4E0D;&#x8FDE;&#x7EED;&#xFF0C;&#x90A3;&#x4E48;&#x4F1A;&#x751F;&#x6210;&#x591A;&#x4E2A;bio&#x6765;&#x5B9E;&#x73B0;&#x591A;&#x4E2A;&#x5C0F;&#x5757;</li>
+</ul></li>
+</ul></li>
+<li>&#x5C06;&#x6B64;&#x8FDB;&#x7A0B;&#x7684;&#x8BFB;&#x5199;&#x6570;&#x636E;&#x7684;plug&#x961F;&#x5217;&#x4E2D;&#x7684;bio&#x5C3D;&#x91CF;&#x62FC;&#x63A5;&#x4E3A;&#x591A;&#x4E2A;&#x8FDE;&#x7EED;&#x7684;&#x5757;
+<ul class="org-ul">
+<li>&#x6B64;&#x65F6;&#x4F1A;&#x591A;&#x4E2A;&#x5C06;bio&#x5408;&#x5E76;&#x4E3A;&#x591A;&#x4E2A; request</li>
+</ul></li>
+<li>&#x5C06;&#x591A;&#x4E2A;&#x8FDB;&#x7A0B;&#x591A;&#x4E2A;&#x8FDE;&#x7EED;&#x7684;&#x5757;&#x518D;&#x6B21;&#x62FC;&#x63A5;&#x4E3A;&#x591A;&#x4E2A;&#x5927;&#x5757;
+<ul class="org-ul">
+<li>&#x5C06;&#x591A;&#x4E2A;request&#x518D;&#x6B21;&#x6392;&#x5E8F;&#x662F;&#x7531;&#x7535;&#x68AF;&#x8C03;&#x5EA6;&#x7B97;&#x6CD5;&#x6765;&#x5B8C;&#x6210;&#x7684;</li>
+</ul></li>
+<li>&#x6700;&#x540E;&#x5C06;&#x6392;&#x5E8F;&#x540E;&#x7684;request&#x653E;&#x5165; dispatch&#x961F;&#x5217;&#x751F;&#x6210;&#x6570;&#x636E;&#x5305;</li>
+<li>&#x5757;&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#x53D6;&#x51FA;&#x6570;&#x636E;&#x5305;&#x5199;&#x5165;&#x786C;&#x76D8;</li>
+</ol>
+
+<p>
+&#x5982;&#x4E0B;&#x56FE;&#x6240;&#x793A;&#xFF1A;
+</p>
+<img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[fs]/[What]Linux--skeleton/io_hd.jpg?raw=true" alt="io_hd.jpg">
+</div>
+<div id="outline-container-org8f7b04b" class="outline-3">
+<h3 id="org8f7b04b">&#x4F7F;&#x7528; ftrace &#x6355;&#x6349;&#x8BBF;&#x95EE;&#x786C;&#x76D8;&#x7684;&#x51FD;&#x6570;&#x6D41;&#x7A0B;</h3>
+<div class="outline-text-3" id="text-org8f7b04b">
+</div>
+<div id="outline-container-org08d8e49" class="outline-4">
+<h4 id="org08d8e49">&#x51C6;&#x5907;&#x5DE5;&#x4F5C;</h4>
+<div class="outline-text-4" id="text-org08d8e49">
+<ul class="org-ul">
+<li>&#x51C6;&#x5907;&#x5E26;&#x6709;&#x5185;&#x5BB9;&#x7684;&#x6587;&#x4EF6; <code>file</code></li>
+<li>&#x7F16;&#x5199;&#x8BFB;&#x4EE3;&#x7801;&#xFF0C;&#x5E76;&#x5C06;&#x5176;&#x7F16;&#x8BD1;&#x4E3A;&#x540D;&#x79F0;&#x662F; <code>read</code> &#x7684;&#x53EF;&#x6267;&#x884C;&#x6587;&#x4EF6;</li>
+</ul>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> READ_SIZE <span class="number">4096</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span><br><span class="line"></span>{</span><br><span class="line">  <span class="keyword">int</span> fd = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">char</span> buf[READ_SIZE];</span><br><span class="line"></span><br><span class="line">  sleep(<span class="number">30</span>); <span class="comment">//waiting for run ftrace shell</span></span><br><span class="line">  <span class="keyword">if</span>((fd = open(<span class="string">&quot;./file&quot;</span>, O_RDONLY)) == -<span class="number">1</span>)</span><br><span class="line">    {</span><br><span class="line">      perror(<span class="string">&quot;can not open file:&quot;</span>);</span><br><span class="line">    }</span><br><span class="line">  read(fd, buf, READ_SIZE);</span><br><span class="line">  read(fd, buf, READ_SIZE);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+</div>
+<ul class="org-ul">
+<li>&#x7F16;&#x5199; ftrace &#x811A;&#x672C;&#xFF1A;</li>
+</ul>
+<div class="org-src-container">
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="shebang">#! /bin/bash</span><br><span class="line"></span></span><br><span class="line">debugfs=/sys/kernel/debug</span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> nop &gt; <span class="variable">${debugfs}</span>/tracing/current_tracer</span><br><span class="line"><span class="built_in">echo</span> <span class="number">0</span> &gt; <span class="variable">${debugfs}</span>/tracing/tracing_on</span><br><span class="line"><span class="built_in">echo</span> `pidof <span class="built_in">read</span>` &gt; <span class="variable">${debugfs}</span>/tracing/<span class="built_in">set</span>_ftrace_pid</span><br><span class="line"><span class="built_in">echo</span> <span class="keyword">function</span>_graph &gt; <span class="variable">${debugfs}</span>/tracing/current_tracer</span><br><span class="line"><span class="built_in">echo</span> vfs_<span class="built_in">read</span> &gt; <span class="variable">${debugfs}</span>/tracing/<span class="built_in">set</span>_graph_<span class="keyword">function</span></span><br><span class="line"><span class="built_in">echo</span> <span class="number">1</span> &gt; <span class="variable">${debugfs}</span>/tracing/tracing_on</span><br></pre></td></tr></table></figure>
+</div>
+</div>
+</div>
+<div id="outline-container-org2f5c222" class="outline-4">
+<h4 id="org2f5c222">&#x8FD0;&#x884C;</h4>
+<div class="outline-text-4" id="text-org2f5c222">
+<ul class="org-ul">
+<li>&#x9996;&#x5148;&#x8FD0;&#x884C; read , <code>./read</code></li>
+<li>&#x7136;&#x540E;&#x4F7F;&#x7528;root&#x8EAB;&#x4EFD;&#x542F;&#x52A8;&#x811A;&#x672C; <code>./ftrace.sh</code></li>
+<li>&#x5F85; read &#x9000;&#x51FA;&#x540E;&#xFF0C;&#x5C06;&#x6355;&#x6349;&#x5230;&#x7684;&#x7ED3;&#x679C;&#x5B58;&#x5165;&#x6587;&#x4EF6;&#xFF1A; <code>cat /sys/kernel/debug/tracing/trace &gt; result</code></li>
+</ul>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-orgd66a286" class="outline-4">
+<h4 id="orgd66a286">&#x6700;&#x7EC8;&#x5982;&#x4E0B;&#x6240;&#x793A;</h4>
+<div class="outline-text-4" id="text-orgd66a286">
+<pre class="example">
+# tracer: function_graph
+#
+# CPU  DURATION                  FUNCTION CALLS
+# |     |   |                     |   |   |   |
+ 2)               |  vfs_read() {
+ 2)               |    rw_verify_area() {
+ 2)               |      security_file_permission() {
+ 2)               |        apparmor_file_permission() {
+ 2)               |          common_file_perm() {
+ 2)   0.270 us    |            aa_file_perm();
+ 2)   1.821 us    |          }
+ 2)   2.813 us    |        }
+ 2)               |        __fsnotify_parent() {
+ 2)   0.221 us    |          dget_parent();
+ 2)               |          dput() {
+ 2)   0.124 us    |            _cond_resched();
+ 2)   1.166 us    |          }
+ 2)   3.238 us    |        }
+ 2)   0.190 us    |        fsnotify();
+ 2)   9.296 us    |      }
+ 2) + 10.466 us   |    }
+ 2)               |    __vfs_read() {
+ 2)               |      new_sync_read() {
+ 2)               |        ext4_file_read_iter() {
+ 2)               |          generic_file_read_iter() {
+ 2)   0.125 us    |            _cond_resched();
+ 2)               |            pagecache_get_page() {
+ 2)   0.966 us    |              find_get_entry();
+ 2)   2.109 us    |            }
+ 2)               |            mark_page_accessed() {
+ 2)   0.368 us    |              activate_page();
+ 2)   0.699 us    |              workingset_activation();
+ 2)   3.181 us    |            }
+ 2)   0.120 us    |            _cond_resched();
+ 2)   0.130 us    |            _cond_resched();
+ 2)               |            pagecache_get_page() {
+ 2)   0.180 us    |              find_get_entry();
+ 2)   1.072 us    |            }
+ 2)               |            touch_atime() {
+ 2)               |              __atime_needs_update() {
+ 2)               |                current_time() {
+ 2)   0.203 us    |                  current_kernel_time64();
+ 2)   0.120 us    |                  timespec_trunc();
+ 2)   2.380 us    |                }
+ 2)   3.742 us    |              }
+ 2)   0.307 us    |              __sb_start_write();
+ 2)               |              __mnt_want_write() {
+ 2)   0.106 us    |                __mnt_is_readonly.part.10();
+ 2)   1.453 us    |              }
+ 2)               |              current_time() {
+ 2)   0.117 us    |                current_kernel_time64();
+ 2)   0.120 us    |                timespec_trunc();
+ 2)   2.082 us    |              }
+ 2)               |              generic_update_time() {
+ 2)               |                __mark_inode_dirty() {
+ 2)               |                  ext4_dirty_inode() {
+ 2)               |                    __ext4_journal_start_sb() {
+ 2)               |                      ext4_journal_check_start() {
+ 2)   0.108 us    |                        _cond_resched();
+ 2)   1.427 us    |                      }
+ 2)               |                      jbd2__journal_start() {
+ 2)               |                        kmem_cache_alloc() {
+ 2)   0.114 us    |                          _cond_resched();
+ 2)   0.188 us    |                          memcg_kmem_put_cache();
+ 2)   2.576 us    |                        }
+ 2)               |                        start_this_handle() {
+ 2)               |                          kmem_cache_alloc() {
+ 2)   0.117 us    |                            _cond_resched();
+ 2)               |                            __slab_alloc() {
+ 2)   1.082 us    |                              ___slab_alloc();
+ 2)   2.228 us    |                            }
+ 2)   0.186 us    |                            memcg_kmem_put_cache();
+ 2)   5.606 us    |                          }
+ 2)   0.154 us    |                          _raw_read_lock();
+ 2)   0.144 us    |                          _raw_write_lock();
+ 2)   0.227 us    |                          ktime_get();
+ 2)   0.107 us    |                          round_jiffies_up();
+ 2)               |                          add_timer() {
+ 2)               |                            lock_timer_base() {
+ 2)   0.120 us    |                              _raw_spin_lock_irqsave();
+ 2)   1.260 us    |                            }
+ 2)   0.127 us    |                            detach_if_pending();
+ 2)   0.217 us    |                            get_nohz_timer_target();
+ 2)   0.118 us    |                            _raw_spin_lock();
+ 2)               |                            __internal_add_timer() {
+ 2)   0.164 us    |                              calc_wheel_index();
+ 2)   1.387 us    |                            }
+ 2)   0.168 us    |                            trigger_dyntick_cpu.isra.34();
+ 2)   0.168 us    |                            _raw_spin_unlock_irqrestore();
+ 2) + 10.763 us   |                          }
+ 2)   0.116 us    |                          _raw_read_lock();
+ 2)   0.321 us    |                          add_transaction_credits();
+ 2) + 25.502 us   |                        }
+ 2) + 30.493 us   |                      }
+ 2) + 33.955 us   |                    }
+ 2)               |                    ext4_mark_inode_dirty() {
+ 2)   0.114 us    |                      _cond_resched();
+ 2)               |                      ext4_reserve_inode_write() {
+ 2)               |                        __ext4_get_inode_loc() {
+ 2)   0.578 us    |                          ext4_get_group_desc();
+ 2)   0.194 us    |                          ext4_inode_table();
+ 2)               |                          __getblk_gfp() {
+ 2)               |                            __find_get_block() {
+ 2)               |                              pagecache_get_page() {
+ 2)   1.988 us    |                                find_get_entry();
+ 2)   0.148 us    |                                mark_page_accessed();
+ 2)   4.000 us    |                              }
+ 2)   0.221 us    |                              _raw_spin_lock();
+ 2)   0.241 us    |                              __brelse();
+ 2)   8.981 us    |                            }
+ 2)   0.111 us    |                            _cond_resched();
+ 2) + 10.986 us   |                          }
+ 2) + 15.584 us   |                        }
+ 2)               |                        __ext4_journal_get_write_access() {
+ 2)   0.110 us    |                          _cond_resched();
+ 2)               |                          jbd2_journal_get_write_access() {
+ 2)   0.555 us    |                            jbd2_write_access_granted.part.9();
+ 2)   0.367 us    |                            jbd2_journal_add_journal_head();
+ 2)               |                            do_get_write_access() {
+ 2)   0.114 us    |                              _cond_resched();
+ 2)               |                              unlock_buffer() {
+ 2)               |                                wake_up_bit() {
+ 2)   0.287 us    |                                  __wake_up_bit();
+ 2)   1.353 us    |                                }
+ 2)   2.439 us    |                              }
+ 2)   0.121 us    |                              _raw_spin_lock();
+ 2)               |                              __jbd2_journal_file_buffer() {
+ 2)   0.178 us    |                                jbd2_journal_grab_journal_head();
+ 2)   1.533 us    |                              }
+ 2)   0.250 us    |                              jbd2_journal_cancel_revoke();
+ 2)   9.387 us    |                            }
+ 2)   0.177 us    |                            jbd2_journal_put_journal_head();
+ 2) + 14.261 us   |                          }
+ 2) + 16.562 us   |                        }
+ 2) + 34.309 us   |                      }
+ 2)               |                      ext4_mark_iloc_dirty() {
+ 2)               |                        ext4_do_update_inode() {
+ 2)   0.110 us    |                          _raw_spin_lock();
+ 2)   0.307 us    |                          from_kuid();
+ 2)   0.287 us    |                          from_kgid();
+ 2)   0.287 us    |                          from_kprojid();
+ 2)   0.124 us    |                          ext4_inode_csum_set();
+ 2)               |                          __ext4_handle_dirty_metadata() {
+ 2)   0.117 us    |                            _cond_resched();
+ 2)               |                            jbd2_journal_dirty_metadata() {
+ 2)   0.117 us    |                              _raw_spin_lock();
+ 2)               |                              __jbd2_journal_file_buffer() {
+ 2)   0.334 us    |                                __jbd2_journal_temp_unlink_buffer();
+ 2)   1.564 us    |                              }
+ 2)   3.876 us    |                            }
+ 2)   5.908 us    |                          }
+ 2)   0.110 us    |                          __brelse();
+ 2) + 14.648 us   |                        }
+ 2) + 15.784 us   |                      }
+ 2) + 53.235 us   |                    }
+ 2)               |                    __ext4_journal_stop() {
+ 2)               |                      jbd2_journal_stop() {
+ 2)               |                        __wake_up() {
+ 2)   0.227 us    |                          _raw_spin_lock_irqsave();
+ 2)   0.138 us    |                          __wake_up_common();
+ 2)   0.164 us    |                          _raw_spin_unlock_irqrestore();
+ 2)   3.204 us    |                        }
+ 2)   0.254 us    |                        kmem_cache_free();
+ 2)   5.818 us    |                      }
+ 2)   6.960 us    |                    }
+ 2) + 97.127 us   |                  }
+ 2)   0.113 us    |                  _raw_spin_lock();
+ 2)               |                  locked_inode_to_wb_and_lock_list() {
+ 2)   0.224 us    |                    _raw_spin_lock();
+ 2)   1.363 us    |                  }
+ 2)               |                  inode_io_list_move_locked() {
+ 2)   0.237 us    |                    wb_io_lists_populated.part.53();
+ 2)   1.461 us    |                  }
+ 2)               |                  wb_wakeup_delayed() {
+ 2)   0.127 us    |                    __msecs_to_jiffies();
+ 2)   0.197 us    |                    _raw_spin_lock_bh();
+ 2)               |                    queue_delayed_work_on() {
+ 2)               |                      __queue_delayed_work() {
+ 2)               |                        add_timer() {
+ 2)               |                          lock_timer_base() {
+ 2)   0.121 us    |                            _raw_spin_lock_irqsave();
+ 2)   1.096 us    |                          }
+ 2)   0.114 us    |                          detach_if_pending();
+ 2)   0.113 us    |                          get_nohz_timer_target();
+ 2)   0.117 us    |                          _raw_spin_lock();
+ 2)               |                          __internal_add_timer() {
+ 2)   0.113 us    |                            calc_wheel_index();
+ 2)   0.988 us    |                          }
+ 2)   0.138 us    |                          trigger_dyntick_cpu.isra.34();
+ 2)   0.160 us    |                          _raw_spin_unlock_irqrestore();
+ 2)   8.363 us    |                        }
+ 2)   9.550 us    |                      }
+ 2) + 10.489 us   |                    }
+ 2)               |                    _raw_spin_unlock_bh() {
+ 2)   0.188 us    |                      __local_bh_enable_ip();
+ 2)   1.213 us    |                    }
+ 2) + 15.785 us   |                  }
+ 2) ! 122.297 us  |                }
+ 2) ! 123.500 us  |              }
+ 2)   0.127 us    |              __mnt_drop_write();
+ 2)   0.160 us    |              __sb_end_write();
+ 2) ! 138.075 us  |            }
+ 2) ! 153.201 us  |          }
+ 2) ! 154.442 us  |        }
+ 2) ! 155.671 us  |      }
+ 2) ! 156.784 us  |    }
+ 2)               |    __fsnotify_parent() {
+ 2)   0.170 us    |      dget_parent();
+ 2)               |      dput() {
+ 2)   0.111 us    |        _cond_resched();
+ 2)   1.090 us    |      }
+ 2)   3.040 us    |    }
+ 2)   0.184 us    |    fsnotify();
+ 2) ! 174.753 us  |  }
+ 2)               |  vfs_read() {
+ 2)               |    rw_verify_area() {
+ 2)               |      security_file_permission() {
+ 2)               |        apparmor_file_permission() {
+ 2)               |          common_file_perm() {
+ 2)   0.221 us    |            aa_file_perm();
+ 2)   1.180 us    |          }
+ 2)   2.028 us    |        }
+ 2)               |        __fsnotify_parent() {
+ 2)   0.196 us    |          dget_parent();
+ 2)               |          dput() {
+ 2)   0.170 us    |            _cond_resched();
+ 2)   1.159 us    |          }
+ 2)   3.187 us    |        }
+ 2)   0.198 us    |        fsnotify();
+ 2)   8.079 us    |      }
+ 2)   9.001 us    |    }
+ 2)               |    __vfs_read() {
+ 2)               |      new_sync_read() {
+ 2)               |        ext4_file_read_iter() {
+ 2)               |          generic_file_read_iter() {
+ 2)   0.123 us    |            _cond_resched();
+ 2)               |            pagecache_get_page() {
+ 2)   0.298 us    |              find_get_entry();
+ 2)   1.280 us    |            }
+ 2)               |            touch_atime() {
+ 2)               |              __atime_needs_update() {
+ 2)               |                current_time() {
+ 2)   0.123 us    |                  current_kernel_time64();
+ 2)   0.114 us    |                  timespec_trunc();
+ 2)   1.988 us    |                }
+ 2)   3.053 us    |              }
+ 2)   4.029 us    |            }
+ 2)   8.182 us    |          }
+ 2)   9.162 us    |        }
+ 2) + 10.298 us   |      }
+ 2) + 11.295 us   |    }
+ 2) + 22.191 us   |  }</pre>
+<p>
+&#x53EF;&#x4EE5;&#x53D1;&#x73B0;&#xFF1A;&#x7B2C;&#x4E00;&#x6B21;&#x8BFB;&#x6240;&#x82B1;&#x7684;&#x65F6;&#x95F4;&#x6BD4;&#x7B2C;&#x4E8C;&#x6B21;&#x591A;&#x5F97;&#x591A;&#xFF0C;&#x56E0;&#x4E3A;&#x7B2C;&#x4E00;&#x6B21;&#x5185;&#x5B58;&#x5E76;&#x6CA1;&#x6709;&#x6B64;&#x6587;&#x4EF6;&#x7684;cache&#xFF0C;&#x6240;&#x4EE5;&#x9700;&#x8981;&#x5230;&#x786C;&#x76D8;&#x8BFB;&#x53D6;&#xFF0C;&#x800C;&#x7B2C;&#x4E8C;&#x6B21;&#x76F4;&#x63A5;&#x4ECE;&#x5185;&#x5B58;&#x8BFB;&#x53D6;&#x4E86;&#x3002;
+</p>
+</div>
+</div>
+</div>
+<div id="outline-container-org4f2ad7a" class="outline-3">
+<h3 id="org4f2ad7a">&#x4F7F;&#x7528;blktrace(&#x6355;&#x6349;),blkparse(&#x5206;&#x6790;) blk io&#x64CD;&#x4F5C;&#x6D41;&#x7A0B;</h3>
+<div class="outline-text-3" id="text-org4f2ad7a">
+<ul class="org-ul">
+<li>&#x4F7F;&#x7528; <code>blktrace -d /dev/sda1 -o - |blkparse -i - &gt; 1.trace</code> &#x6765;&#x76D1;&#x89C6; <code>/dev/sda1</code></li>
+<li>&#x5728;&#x8FD9;&#x4E2A;&#x5206;&#x533A;&#x4E2D;&#x7684;&#x8DEF;&#x5F84;&#x4E2D;&#x4F7F;&#x7528;&#x547D;&#x4EE4; :</li>
+</ul>
+<pre class="example">
+#&#x4F7F;&#x7528;sync&#x65B9;&#x5F0F;&#x5199;&#x5165; barry &#x6587;&#x4EF6;&#xFF0C;&#x8FD9;&#x6837;&#x4FDD;&#x8BC1;&#x786C;&#x76D8;&#x786E;&#x5B9E;&#x88AB;&#x8BBF;&#x95EE;&#x5230;&#x4E86;
+dd if=read.c of=barry oflag=sync</pre>
+<ul class="org-ul">
+<li>&#x505C;&#x6B62; <code>blktrace</code> &#x540E;&#x67E5;&#x770B;&#x6587;&#x4EF6; <code>1.trace</code></li>
+<li>&#x53D1;&#x73B0;&#x4E0E; <code>dd</code> &#x547D;&#x4EE4;&#x76F8;&#x5173;&#x7684;&#x6709;&#x8FD9;&#x4E48;&#x4E00;&#x884C;:</li>
+</ul>
+<pre class="example">
+//dd &#x547D;&#x4EE4;&#x5C06;&#x6570;&#x636E;&#x5199;&#x5165;&#x5230;&#x4E86; 181857104&#x6247;&#x533A;&#xFF0C;&#x524D;&#x9762;&#x77E5;&#x9053;&#x5668;&#x6247;&#x533A;&#x662F;512&#x5B57;&#x8282;&#xFF0C;&#x90A3;&#x4E48;block&#x4E5F;&#x5C31;&#x662F; 22732138
+  8,0    2        9    42.366779547  7055  A  WS 181859152 + 8 &lt;- (8,1) 181857104
+  8,1    2       10    42.366782026  7055  Q  WS 181859152 + 8 [dd]</pre>
+<p>
+&#x4F7F;&#x7528;<a href="https://kcmetercec.github.io/2018/05/29/linux_fs_struct_detail/" target="_blank" rel="noopener">&#x5DE5;&#x5177;</a> &#x5C31;&#x53EF;&#x4EE5;&#x67E5;&#x51FA;&#x5176;&#x6587;&#x4EF6;&#x5185;&#x5BB9;&#x3002;
+</p>
+</div>
+</div>
+
+<div id="outline-container-org75f51fc" class="outline-3">
+<h3 id="org75f51fc">&#x7535;&#x68AF;&#x8C03;&#x5EA6;&#x7B97;&#x6CD5;</h3>
+<div class="outline-text-3" id="text-org75f51fc">
+<p>
+&#x5E38;&#x7528;&#x7684;&#x7535;&#x68AF;&#x8C03;&#x5EA6;&#x7B97;&#x6CD5;&#x5305;&#x62EC;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>Noop : &#x6700;&#x7B80;&#x5355;&#x7684;&#x8C03;&#x5EA6;&#x5668;&#xFF0C;&#x628A;&#x90BB;&#x8FD1;&#x7684;bio&#x8FDB;&#x884C;&#x4E86;&#x5408;&#x5E76;&#x5904;&#x7406;</li>
+<li>Deadline: &#x4FDD;&#x8BC1;&#x8BFB;&#x4F18;&#x5148;&#x7684;&#x524D;&#x63D0;&#x4E0B;&#xFF0C;&#x5199;&#x4E0D;&#x4F1A;&#x997F;&#x6B7B;</li>
+<li>CFQ: &#x8003;&#x8651;&#x8FDB;&#x7A0B;&#x88AB;&#x516C;&#x5E73;&#x8C03;&#x5EA6;
+<ul class="org-ul">
+<li>&#x901A;&#x8FC7;&#x6307;&#x5B9A;NICE&#x503C;&#x786E;&#x5B9A;&#x4F18;&#x5148;&#x7EA7;&#xFF0C;&#x4E0E;&#x8FDB;&#x7A0B;&#x8C03;&#x5EA6;&#x7B56;&#x7565;&#x4E00;&#x81F4;</li>
+</ul></li>
+</ul>
+</div>
+<div id="outline-container-org38634fe" class="outline-4">
+<h4 id="org38634fe">&#x4F53;&#x9A8C;</h4>
+<div class="outline-text-4" id="text-org38634fe">
+<ul class="org-ul">
+<li>&#x67E5;&#x770B;&#x5F53;&#x524D;&#x7B97;&#x6CD5;,&#x5E76;&#x5C06;&#x5176;&#x4FEE;&#x6539;&#x4E3A;cfq</li>
+</ul>
+<pre class="example">
+cat /sys/block/sda/queue/scheduler
+#&#x4F7F;&#x7528; echo noop/deadline/cfg &gt; scheduler &#x6765;&#x6539;&#x53D8;&#x5176;&#x8C03;&#x5EA6;&#x7B97;&#x6CD5;</pre>
+<ul class="org-ul">
+<li>&#x4F7F;&#x7528; ionice &#x547D;&#x4EE4;&#x6765;&#x542F;&#x52A8;&#x4E24;&#x4E2A;&#x4F18;&#x5148;&#x7EA7;&#x4E0D;&#x540C;&#x7684;&#x8FDB;&#x7A0B;</li>
+</ul>
+<pre class="example">
+ionice -c 2 -n 0 cat /dev/sda &gt; /dev/null &amp;
+ionice -c 2 -n 7 cat /dev/sda &gt; /dev/null &amp;</pre>
+<ul class="org-ul">
+<li>&#x4F7F;&#x7528; iotop &#x6765;&#x67E5;&#x770B;io&#x5360;&#x7528;,&#x53EF;&#x4EE5;&#x770B;&#x5230;&#x9AD8;&#x4F18;&#x5148;&#x7EA7;&#x7684;&#x5360;&#x7528;&#x78C1;&#x76D8;&#x91CF;&#x4F1A;&#x5927;&#x4E00;&#x70B9;
+<ul class="org-ul">
+<li>&#x5982;&#x679C;&#x5C06;io&#x8BBE;&#x4E3A; rt &#x6A21;&#x5F0F;&#xFF0C;&#x90A3;&#x4E48;rt&#x5360;&#x7528;&#x4F1A;&#x66F4;&#x5927;&#x3002;</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div id="outline-container-org540ae18" class="outline-4">
+<h4 id="org540ae18">cgroup -&gt; &#x7528;&#x4E8E;CFQ&#x8C03;&#x5EA6;&#x7B97;&#x6CD5;</h4>
+<div class="outline-text-4" id="text-org540ae18">
+<p>
+&#x4E0E;&#x8FDB;&#x7A0B;&#x8C03;&#x5EA6;&#x4E2D;&#x7684;&#x6982;&#x5FF5;&#x7C7B;&#x4F3C;&#xFF0C;&#x4F7F;&#x7528;cgroup&#x6765;&#x5C06;&#x591A;&#x4E2A;&#x8FDB;&#x7A0B;&#x52A0;&#x5165;&#x4E00;&#x4E2A;&#x7FA4;&#x7EC4;&#x4EE5;&#x4ECE;&#x6574;&#x4F53;&#x4E0A;&#x9650;&#x5236;&#x7FA4;&#x7EC4;&#x4F7F;&#x7528;&#x7387;&#x3002;
+</p>
+
+<p>
+&#x4E0E;IO&#x76F8;&#x5173;&#x7684;group&#x4F4D;&#x4E8E;&#x8DEF;&#x5F84; <code>/sys/fs/cgroup/blkio</code> ,&#x5728;&#x6B64;&#x76EE;&#x5F55;&#x4E0B;&#x6BCF;&#x65B0;&#x5EFA;&#x4E00;&#x4E2A;&#x6587;&#x4EF6;&#x5939;&#x5C31;&#x4EE3;&#x8868;&#x65B0;&#x5EFA;&#x4E86;&#x4E00;&#x4E2A;&#x7EC4;&#x3002;
+</p>
+
+<ul class="org-ul">
+<li>&#x4FEE;&#x6539;&#x6743;&#x91CD;&#x4F7F;&#x7528; <code>echo &lt;num&gt; &gt; blkio.weight</code></li>
+<li>&#x4E3A;&#x8FDB;&#x7A0B;&#x5206;&#x914D;IO&#x7EC4;&#x4F7F;&#x7528; <code>cgexec -g blkio:&lt;group_name&gt; &lt;process&gt;</code></li>
+</ul>
+<pre class="example">
+#&#x5728; /sys/fs/cgroup/blkio &#x4E2D;&#x65B0;&#x5EFA;&#x7EC4; A &#x548C; B
+mkdir A
+mkdir B
+#&#x4FEE;&#x6539;A&#x7684;&#x6743;&#x91CD;&#x4E3A;100&#xFF0C;B&#x7684;&#x6743;&#x91CD;&#x4E3A;10
+echo 100 &gt; A/blkio.weight
+echo 10 &gt; B/blkio.weight
+#&#x542F;&#x52A8;&#x4E24;&#x4E2A;&#x8FDB;&#x7A0B;
+cgexec -g blkio:A dd if=/dev/sda of=/dev/null &amp;
+cgexec -g blkio:B dd if=/dev/sda of=/dev/null &amp;
+#&#x901A;&#x8FC7;iotop&#x53EF;&#x4EE5;&#x89C2;&#x5BDF;&#x5230;&#x6743;&#x91CD;&#x9AD8;&#x7684;io&#x8FDB;&#x7A0B;&#x786C;&#x76D8;&#x5360;&#x6709;&#x7387;&#x66F4;&#x9AD8;</pre>
+<ul class="org-ul">
+<li>&#x9650;&#x5236;&#x8BFB;&#x786C;&#x76D8;&#x7684;&#x901F;&#x5EA6;&#x4F7F;&#x7528; <code>echo &quot;&lt;device_num&gt; &lt;speed&gt;&quot; blkio.throttle.read_bps_device</code></li>
+<li>&#x9650;&#x5236;&#x5199;&#x786C;&#x76D8;&#x7684;&#x901F;&#x5EA6;&#x4F7F;&#x7528; <code>echo &quot;&lt;device_num&gt; &lt;speed&gt;&quot; blkio.throttle.write_bps_device</code></li>
+</ul>
+<pre class="example">
+#&#x9650;&#x5236;A group &#x5BF9;&#x786C;&#x76D8; /dev/sda &#x7684;&#x8BFB;&#x5199;&#x901F;&#x5EA6;&#x4E3A;1M&#x5B57;&#x8282;&#x6BCF;&#x79D2;
+#8:0 &#x4EE3;&#x8868;&#x8BBE;&#x5907;&#x53F7;
+echo &quot;8:0 1048576&quot; &gt;  blkio.throttle.read_bps_device 
+#cgroup v1 &#x5199;&#x9650;&#x5236;&#x53EA;&#x80FD;&#x9650;&#x5236;direct&#x6A21;&#x5F0F;&#xFF0C;cgroup v2 &#x5199;&#x9650;&#x5236;&#x901A;&#x8FC7;&#x89C2;&#x5BDF;dirty pages&#x4EE5;&#x5F97;&#x5230;write back&#x901F;&#x5EA6;&#x6765;&#x9650;&#x5236;
+echo &quot;8:0 1048576&quot; &gt;  blkio.throttle.write_bps_device </pre>
+</div>
+</div>
+</div>
+<div id="outline-container-orga4633fc" class="outline-3">
+<h3 id="orga4633fc">&#x89C2;&#x5BDF;&#x786C;&#x76D8;&#x72B6;&#x6001;</h3>
+<div class="outline-text-3" id="text-orga4633fc">
+<p>
+&#x4F7F;&#x7528; <code>iostat</code> &#x89C2;&#x5BDF;&#x786C;&#x76D8;&#x7684;&#x5168;&#x5C40;&#x72B6;&#x6001;&#x3002;
+</p>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+Last Updated 2020-06-28 Sun 12:00.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+</div>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/filesystem/" rel="tag"># filesystem</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/06/01/linux_Makefile_overview/" rel="prev" title="[What]Makefile 基本使用">
+      <i class="fa fa-chevron-left"></i> [What]Makefile 基本使用
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/06/07/linux_fs_framebuffer_overview/" rel="next" title="[What]Linux framebuffer 基础操作">
+      [What]Linux framebuffer 基础操作 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#orgc036d7c"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x8BBF;&amp;#x95EE;&amp;#x786C;&amp;#x76D8;&amp;#x6574;&amp;#x4F53;&amp;#x89C6;&amp;#x91CE;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org0875207"><span class="nav-number">1.1.</span> <span class="nav-text">&amp;#x7531;&amp;#x8FDB;&amp;#x7A0B;&amp;#x5230;inode</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgfb6b2c2"><span class="nav-number">1.2.</span> <span class="nav-text">&amp;#x7531;inode&amp;#x5230;&amp;#x786C;&amp;#x76D8;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgce6cc03"><span class="nav-number">1.3.</span> <span class="nav-text">&amp;#x5173;&amp;#x4E8E;page cache &amp;#x4E0E; block &amp;#x4E0E; sector</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgb875289"><span class="nav-number">1.4.</span> <span class="nav-text">O_DIRECT &amp;#x4E0E; O_SYNC &amp;#x7684;&amp;#x533A;&amp;#x522B;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org5f67d56"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x8BBF;&amp;#x95EE;&amp;#x786C;&amp;#x76D8;&amp;#x7684;&amp;#x7EC6;&amp;#x8282;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org8f7b04b"><span class="nav-number">2.1.</span> <span class="nav-text">&amp;#x4F7F;&amp;#x7528; ftrace &amp;#x6355;&amp;#x6349;&amp;#x8BBF;&amp;#x95EE;&amp;#x786C;&amp;#x76D8;&amp;#x7684;&amp;#x51FD;&amp;#x6570;&amp;#x6D41;&amp;#x7A0B;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org08d8e49"><span class="nav-number">2.1.1.</span> <span class="nav-text">&amp;#x51C6;&amp;#x5907;&amp;#x5DE5;&amp;#x4F5C;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org2f5c222"><span class="nav-number">2.1.2.</span> <span class="nav-text">&amp;#x8FD0;&amp;#x884C;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgd66a286"><span class="nav-number">2.1.3.</span> <span class="nav-text">&amp;#x6700;&amp;#x7EC8;&amp;#x5982;&amp;#x4E0B;&amp;#x6240;&amp;#x793A;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org4f2ad7a"><span class="nav-number">2.2.</span> <span class="nav-text">&amp;#x4F7F;&amp;#x7528;blktrace(&amp;#x6355;&amp;#x6349;),blkparse(&amp;#x5206;&amp;#x6790;) blk io&amp;#x64CD;&amp;#x4F5C;&amp;#x6D41;&amp;#x7A0B;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org75f51fc"><span class="nav-number">2.3.</span> <span class="nav-text">&amp;#x7535;&amp;#x68AF;&amp;#x8C03;&amp;#x5EA6;&amp;#x7B97;&amp;#x6CD5;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org38634fe"><span class="nav-number">2.3.1.</span> <span class="nav-text">&amp;#x4F53;&amp;#x9A8C;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org540ae18"><span class="nav-number">2.3.2.</span> <span class="nav-text">cgroup -&gt; &amp;#x7528;&amp;#x4E8E;CFQ&amp;#x8C03;&amp;#x5EA6;&amp;#x7B97;&amp;#x6CD5;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orga4633fc"><span class="nav-number">2.4.</span> <span class="nav-text">&amp;#x89C2;&amp;#x5BDF;&amp;#x786C;&amp;#x76D8;&amp;#x72B6;&amp;#x6001;</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">我的世界</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">210</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">104</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">38</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+  
+  <span class="post-meta-divider">|</span>
+  <span>Hosted by <a href="https://pages.coding.me" target="_blank" rel="noopener" style="font-weight: bold">Coding Pages</a></span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+<script>
+  (function() {
+    function leancloudSelector(url) {
+      url = encodeURI(url);
+      return document.getElementById(url).querySelector('.leancloud-visitors-count');
+    }
+
+    function addCount(Counter) {
+      var visitors = document.querySelector('.leancloud_visitors');
+      var url = decodeURI(visitors.id);
+      var title = visitors.dataset.flagTitle;
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          if (results.length > 0) {
+            var counter = results[0];
+            leancloudSelector(url).innerText = counter.time + 1;
+            Counter('put', '/classes/Counter/' + counter.objectId, { time: { '__op': 'Increment', 'amount': 1 } })
+              .catch(error => {
+                console.error('Failed to save visitor count', error);
+              });
+          } else {
+              leancloudSelector(url).innerText = 'Counter not initialized! More info at console err msg.';
+              console.error('ATTENTION! LeanCloud counter has security bug, see how to solve it here: https://github.com/theme-next/hexo-leancloud-counter-security. \n However, you can still use LeanCloud without security, by setting `security` option to `false`.');
+            
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    function showTime(Counter) {
+      var visitors = document.querySelectorAll('.leancloud_visitors');
+      var entries = [...visitors].map(element => {
+        return decodeURI(element.id);
+      });
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url: { '$in': entries } })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          for (let url of entries) {
+            let target = results.find(item => item.url === url);
+            leancloudSelector(url).innerText = target ? target.time : 0;
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    let { app_id, app_key, server_url } = {"enable":true,"app_id":"ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI","app_key":"yh4vrfnscme1utPMpk65wcxn","server_url":null,"security":true};
+    function fetchData(api_server) {
+      var Counter = (method, url, data) => {
+        return fetch(`${api_server}/1.1${url}`, {
+          method,
+          headers: {
+            'X-LC-Id'     : app_id,
+            'X-LC-Key'    : app_key,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+      };
+      if (CONFIG.page.isPost) {
+        if (CONFIG.hostname !== location.hostname) return;
+        addCount(Counter);
+      } else if (document.querySelectorAll('.post-title-link').length >= 1) {
+        showTime(Counter);
+      }
+    }
+
+    let api_server = app_id.slice(-9) !== '-MdYXbMMI' ? server_url : `https://${app_id.slice(0, 8).toLowerCase()}.api.lncldglobal.com`;
+
+    if (api_server) {
+      fetchData(api_server);
+    } else {
+      fetch('https://app-router.leancloud.cn/2/route?appId=' + app_id)
+        .then(response => response.json())
+        .then(({ api_server }) => {
+          fetchData('https://' + api_server);
+        });
+    }
+  })();
+</script>
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+  <script defer src="/lib/three/three.min.js"></script>
+    <script defer src="/lib/three/three-waves.min.js"></script>
+    <script defer src="/lib/three/canvas_lines.min.js"></script>
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI',
+      appKey     : 'yh4vrfnscme1utPMpk65wcxn',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

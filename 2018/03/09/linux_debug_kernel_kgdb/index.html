@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="zLSyD2CN1AkyJqei3qKraT6372nBgMFKWe6kAj5JDeY">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="&amp;#x603B;&amp;#x7ED3;&amp;#x5728;Linux&amp;#x5185;&amp;#x6838;&amp;#x4E0B;&amp;#x4F7F;&amp;#x7528; kgdb &amp;#x8C03;&amp;#x8BD5;&amp;#x5185;&amp;#x6838;&amp;#x3002;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="[What]Linux内核调试之Kgdb">
+<meta property="og:url" content="http://kcmetercec.top/2018/03/09/linux_debug_kernel_kgdb/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="&amp;#x603B;&amp;#x7ED3;&amp;#x5728;Linux&amp;#x5185;&amp;#x6838;&amp;#x4E0B;&amp;#x4F7F;&amp;#x7528; kgdb &amp;#x8C03;&amp;#x8BD5;&amp;#x5185;&amp;#x6838;&amp;#x3002;">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-03-08T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-06-28T03:58:45.691Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="debug">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://kcmetercec.top/2018/03/09/linux_debug_kernel_kgdb/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>[What]Linux内核调试之Kgdb | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=112423075-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '112423075-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2ab4cc06d0da36106a4426465d0cb00d";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2018/03/09/linux_debug_kernel_kgdb/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="我的世界">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          [What]Linux内核调试之Kgdb
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-03-09 00:00:00" itemprop="dateCreated datePublished" datetime="2018-03-09T00:00:00+08:00">2018-03-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-06-28 11:58:45" itemprop="dateModified" datetime="2020-06-28T11:58:45+08:00">2020-06-28</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/debug/" itemprop="url" rel="index"><span itemprop="name">debug</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/debug/kernel/" itemprop="url" rel="index"><span itemprop="name">kernel</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2018/03/09/linux_debug_kernel_kgdb/" class="post-meta-item leancloud_visitors" data-flag-title="[What]Linux内核调试之Kgdb" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2018/03/09/linux_debug_kernel_kgdb/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2018/03/09/linux_debug_kernel_kgdb/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <div id="content">
+<p>
+&#x603B;&#x7ED3;&#x5728;Linux&#x5185;&#x6838;&#x4E0B;&#x4F7F;&#x7528; kgdb &#x8C03;&#x8BD5;&#x5185;&#x6838;&#x3002;
+</p>
+
+<a id="more"></a>
+
+<p>
+&#x53C2;&#x8003;&#x94FE;&#x63A5; : <a href="https://www.kernel.org/doc/html/latest/dev-tools/kgdb.html" target="_blank" rel="noopener">&#x5185;&#x6838;&#x8BF4;&#x660E;&#x6587;&#x6863;</a>
+</p>
+
+<p>
+kernel &#x5177;&#x6709; <code>kdb,kgdb</code> &#x4E24;&#x4E2A;&#x8C03;&#x8BD5;&#x524D;&#x7AEF;, &#x5E76;&#x4E14;&#x8FD9;&#x4E24;&#x4E2A;&#x8FD8;&#x53EF;&#x4EE5;&#x52A8;&#x6001;&#x7684;&#x5207;&#x6362;.
+</p>
+
+<p>
+kdb &#x662F;&#x4E00;&#x4E2A;&#x5177;&#x6709; shell &#x98CE;&#x683C;&#x7684;&#x7B80;&#x6613;&#x8C03;&#x8BD5;&#x5DE5;&#x5177;, &#x5177;&#x6709;&#x67E5;&#x770B;&#x5185;&#x5B58;,&#x5BC4;&#x5B58;&#x5668;,&#x8BBE;&#x7F6E;&#x65AD;&#x70B9;&#x7B49;&#x7B49;&#x529F;&#x80FD;. <b>&#x5728;&#x4F7F;&#x7528; kdb &#x4E4B;&#x524D;,&#x5FC5;&#x987B;&#x5148;&#x4F7F;&#x80FD; kgdb</b>.
+</p>
+
+<p>
+kgdb &#x662F;&#x6E90;&#x7801;&#x7EA7;&#x522B;&#x7684;&#x8C03;&#x8BD5;&#x5DE5;&#x5177;, &#x4E0E;&#x4E3B;&#x673A;&#x7684; gdb &#x8054;&#x5408;&#x8C03;&#x8BD5;.
+</p>
+
+<div id="outline-container-org5287366" class="outline-2">
+<h2 id="org5287366">&#x51C6;&#x5907;&#x5DE5;&#x4F5C;</h2>
+<div class="outline-text-2" id="text-org5287366">
+</div>
+<div id="outline-container-org9a8c545" class="outline-3">
+<h3 id="org9a8c545">kgdb&#x5185;&#x6838;&#x914D;&#x7F6E;</h3>
+<div class="outline-text-3" id="text-org9a8c545">
+<ol class="org-ol">
+<li>&#x5728; menuconfig &#x4E2D;&#x9009;&#x4E2D; <code>Kernel hacking -&gt; kernel debugging -&gt; KGDB: kernel debugger</code>,&#x4F7F;&#x80FD; kgdb</li>
+<li>&#x5728; menuconfig &#x4E2D;&#x9009;&#x4E2D; <code>Kernel hacking -&gt; Compile-time checks and compiler options -&gt; Compile the kernel with debug info</code>, &#x751F;&#x6210;&#x8C03;&#x8BD5;&#x4FE1;&#x606F;.</li>
+<li>&#x68C0;&#x67E5;&#x6700;&#x540E;&#x7684; config ,&#x5173;&#x95ED;&#x9009;&#x9879; <code>CONFIG_STRICT_KERNEL_RWX</code>. &#x8FD9;&#x4E2A;&#x9009;&#x9879;&#x4F1A;&#x4F7F;&#x5F97;&#x8FD0;&#x884C;&#x5468;&#x8FB9;&#x5185;&#x5B58;&#x4E3A;&#x53EA;&#x8BFB;&#x72B6;&#x6001;.</li>
+<li>&#x4F7F;&#x80FD;&#x4E32;&#x53E3;&#x6216;&#x8005;&#x7F51;&#x53E3;&#x9A71;&#x52A8;,&#x4F7F;&#x5F97;&#x4E3B;&#x673A;&#x53EF;&#x4EE5;&#x8FDE;&#x63A5;&#x5D4C;&#x5165;&#x5F0F;&#x677F;.</li>
+</ol>
+
+<p>
+&#x4F7F;&#x7528;&#x4E32;&#x53E3;&#x8FDE;&#x63A5;&#x7684;&#x914D;&#x7F6E;&#x5982;&#x4E0B;:
+</p>
+<pre class="example">
+# CONFIG_STRICT_KERNEL_RWX is not set
+CONFIG_FRAME_POINTER=y
+CONFIG_KGDB=y
+CONFIG_KGDB_SERIAL_CONSOLE=y
+CONFIG_DEBUG_INFO=y</pre>
+</div>
+</div>
+<div id="outline-container-org2bd5b2d" class="outline-3">
+<h3 id="org2bd5b2d">kdb &#x5185;&#x6838;&#x914D;&#x7F6E;</h3>
+<div class="outline-text-3" id="text-org2bd5b2d">
+<p>
+kdb &#x914D;&#x7F6E;&#x8981;&#x5728; <code>kgdb&#x5185;&#x6838;&#x914D;&#x7F6E;</code> &#x7684;&#x57FA;&#x7840;&#x4E0A;&#x7EE7;&#x7EED;&#x8FDB;&#x884C;&#x5982;&#x4E0B;&#x914D;&#x7F6E;:
+</p>
+<ol class="org-ol">
+<li>&#x5728; menuconfig &#x4E2D;&#x9009;&#x4E2D; <code>Kernel hacking -&gt; kernel debugging -&gt; KGDB: kernel debugger -&gt; KGDB_KDB: include kdb frontend for kgdb</code> &#x4F7F;&#x80FD; kdb</li>
+<li>&#x5F53;&#x9700;&#x8981;&#x4F7F;&#x7528;&#x952E;&#x76D8;&#x4E0E; kdb &#x4EA4;&#x4E92;&#x65F6;, &#x9700;&#x8981;&#x5728; menuconfig &#x4E2D;&#x9009;&#x4E2D; <code>Kernel hacking -&gt; kernel debugging -&gt; KGDB: kernel debugger -&gt; KGDB_KDB: keyboard as input device</code> &#x4F7F;&#x80FD;&#x952E;&#x76D8;</li>
+</ol>
+<p>
+&#x6700;&#x7EC8;&#x5728; config &#x6587;&#x4EF6;&#x4E2D;&#x7684;&#x914D;&#x7F6E;&#x5982;&#x4E0B;:
+</p>
+<pre class="example">
+#CONFIG_STRICT_KERNEL_RWX is not set
+CONFIG_FRAME_POINTER=y
+CONFIG_KGDB=y
+CONFIG_SERIAL_CONSOLE=y
+CONFIG_DEBUG_INFO=y
+CONFIG_KGDB_KDB=y
+CONFIG_KDB_KEYBOARD=y</pre>
+</div>
+</div>
+<div id="outline-container-org037a452" class="outline-3">
+<h3 id="org037a452">&#x542F;&#x52A8;&#x53C2;&#x6570;&#x8BBE;&#x7F6E;</h3>
+<div class="outline-text-3" id="text-org037a452">
+<p>
+&#x9700;&#x8981;&#x5728;&#x8BBE;&#x5907;&#x6811;&#x6216;&#x8005;u-boot&#x4F20;&#x9012;&#x53C2;&#x6570;&#x4E2D;&#x52A0;&#x5165;&#x4E00;&#x4E9B;&#x542F;&#x52A8;&#x53C2;&#x6570;, &#x8BA9;&#x76EE;&#x6807;&#x677F;&#x4E0E;&#x4E3B;&#x673A;&#x7684;GDB&#x540C;&#x6B65;.
+</p>
+</div>
+<div id="outline-container-org4b8f8f5" class="outline-4">
+<h4 id="org4b8f8f5">kgdboc(kgdb over console)</h4>
+<div class="outline-text-4" id="text-org4b8f8f5">
+<p>
+&#x6B64;&#x53C2;&#x6570;&#x914D;&#x7F6E;&#x4E86;&#x4E3B;&#x673A;&#x4E0E;&#x76EE;&#x6807;&#x677F;&#x7684;&#x4EA4;&#x4E92;&#x65B9;&#x5F0F;.
+</p>
+<pre class="example">
+kgdboc=[kms][[,]kdb][[,]serial_device][,baud]</pre>
+<ul class="org-ul">
+<li>kms : Kernel Mode Setting , &#x5F53;&#x5177;&#x6709;&#x89C6;&#x9891;&#x9A71;&#x52A8;&#x65F6;, &#x53EF;&#x4EE5;&#x8FDB;&#x5165;&#x5230;&#x56FE;&#x5F62;&#x7EC8;&#x7AEF;&#x8C03;&#x8BD5;.</li>
+<li>kbd : Keyboard</li>
+</ul>
+<pre class="example">
+#&#x901A;&#x8FC7;&#x4E32;&#x53E3;&#x8FDE;&#x63A5;
+kgdboc=&lt;tty-device&gt;,[baud]  ; kgdboc=ttyS0,115200
+#&#x901A;&#x8FC7;&#x4E32;&#x53E3;&#x548C;&#x952E;&#x76D8;&#x8FDE;&#x63A5;
+kgdboc=kbd,&lt;serial_device&gt;,[baud] ; kgdboc=kbd,ttyS0,115200
+#&#x901A;&#x8FC7;&#x4E32;&#x53E3;&#x548C;&#x952E;&#x76D8;&#x8FDE;&#x63A5;&#x5E76;&#x4E14;&#x6253;&#x5F00;KMS&#x529F;&#x80FD;
+kgdboc=kms,kbd,ttyS0,115200
+#&#x5982;&#x679C;&#x9700;&#x8981;&#x5728;&#x542F;&#x52A8;&#x9636;&#x6BB5;&#x7684;&#x65F6;&#x5019;&#x4E5F;&#x8FDB;&#x5165;&#x8C03;&#x8BD5;&#x6A21;&#x5F0F;,&#x90A3;&#x4E48;&#x9700;&#x8981;&#x52A0;&#x4E0A; kgdbwait
+kgdboc=ttyS0,115200 kgdbwait
+
+
+#&#x5728;&#x8FD0;&#x884C;&#x671F;&#x95F4;&#x53EF;&#x4EE5;&#x4F7F;&#x80FD;&#x6216;&#x5173;&#x95ED; kgdboc
+#enable 
+echo ttyS0 &gt; /sys/module/kgdboc/parameters/kgdboc
+#disable
+echo &quot;&quot; &gt; /sys/module/kgdboc/paramters/kgdboc </pre>
+
+<p>
+&#x4F7F;&#x7528;&#x987A;&#x5E8F;:
+</p>
+<ol class="org-ol">
+<li>&#x5148;&#x4F7F;&#x7528;&#x4E32;&#x53E3;&#x7EC8;&#x7AEF;&#x4E0E;&#x76EE;&#x6807;&#x677F;&#x8FDE;&#x63A5;,&#x7136;&#x540E;&#x5185;&#x6838;&#x542F;&#x52A8;&#x65F6;&#x4F1A;&#x8F93;&#x51FA;&#x4FE1;&#x606F;,&#x4EE3;&#x8868;&#x5B83;&#x6B63;&#x5728;&#x7B49;&#x5F85;&#x4E3B;&#x673A;&#x7684; gdb.</li>
+<li>&#x5173;&#x95ED;&#x7EC8;&#x7AEF;, &#x7136;&#x540E;&#x542F;&#x52A8; gdb &#x8FDE;&#x63A5;&#x76EE;&#x6807;&#x673A;.</li>
+<li>&#x5982;&#x679C;&#x60F3;&#x8981;&#x4E2D;&#x65AD;&#x76EE;&#x6807;&#x673A;&#x7CFB;&#x7EDF;&#x5E76;&#x4E14;&#x5F3A;&#x5236;&#x8FDB;&#x5165;&#x8C03;&#x8BD5;&#x6A21;&#x5F0F;, &#x9700;&#x8981;&#x5148;&#x540E;&#x53D1;&#x9001; <code>Sysrq</code> , <code>g</code> &#x4FE1;&#x606F;,&#x7136;&#x540E;&#x518D;&#x65AD;&#x5F00;&#x7EC8;&#x7AEF;&#x542F;&#x52A8; gdb.</li>
+<li>&#x505C;&#x6B62;&#x8C03;&#x8BD5;&#x6A21;&#x5F0F;, &#x9700;&#x8981;&#x5728;&#x7EC8;&#x7AEF;&#x4E2D;&#x53D1;&#x9001; <code>SysRq-G</code> &#x547D;&#x4EE4;.</li>
+</ol>
+</div>
+</div>
+<div id="outline-container-org30f1ade" class="outline-4">
+<h4 id="org30f1ade">kgdbwait</h4>
+<div class="outline-text-4" id="text-org30f1ade">
+<p>
+&#x5982;&#x679C;&#x4F7F;&#x7528;&#x4E86;&#x6B64;&#x53C2;&#x6570;, &#x5728;&#x542F;&#x52A8;&#x5185;&#x6838;&#x65F6;, &#x5185;&#x6838;&#x4F1A;&#x7B49;&#x5F85; gdb &#x7684;&#x8FDE;&#x63A5;
+</p>
+</div>
+</div>
+<div id="outline-container-org81cee70" class="outline-4">
+<h4 id="org81cee70">kgdbcon</h4>
+<div class="outline-text-4" id="text-org81cee70">
+<p>
+kgdbcon &#x4F7F;&#x5F97; gdb &#x53EF;&#x4EE5;&#x67E5;&#x770B; <code>printk()</code> &#x5185;&#x90E8;&#x53C2;&#x6570;.
+</p>
+
+<p>
+&#x6CE8;&#x610F;: <b>&#x6B64;&#x529F;&#x80FD;&#x4E0D;&#x80FD;&#x5728;&#x542F;&#x52A8;&#x53C2;&#x6570;&#x4E2D;&#x4F7F;&#x7528;!</b>
+</p>
+<pre class="example">
+#&#x5728;&#x5185;&#x6838;&#x547D;&#x4EE4;&#x884C;&#x4E2D;&#x4F7F;&#x80FD; kgdbcon
+kgdbcon
+#&#x5728;sysfs &#x4E2D;&#x4F7F;&#x80FD;
+echo 1 &gt; /sys/module/kgdb/parameters/kgdb_use_con</pre>
+</div>
+</div>
+<div id="outline-container-orgc890330" class="outline-4">
+<h4 id="orgc890330">kgdbreboot</h4>
+<div class="outline-text-4" id="text-orgc890330">
+<p>
+&#x6307;&#x5B9A;&#x8C03;&#x8BD5;&#x5668;&#x5982;&#x4F55;&#x5904;&#x7406;&#x91CD;&#x542F;&#x4FE1;&#x606F;, &#x5728;sysfs&#x4E2D;&#x8BBE;&#x7F6E;&#x6B64;&#x9879;&#x53C2;&#x6570;, &#x9ED8;&#x8BA4;&#x7684;&#x503C;&#x4E3A;0, &#x53EF;&#x4EE5;&#x4E3A; -1,1
+</p>
+<pre class="example">
+#&#x5FFD;&#x7565;&#x91CD;&#x542F;&#x4FE1;&#x606F;
+echo -1 &gt; /sys/module/debug_core/parameters/kgdbreboot
+#&#x53D1;&#x9001;&#x91CD;&#x542F;&#x4FE1;&#x606F;&#x5230;&#x5176;&#x4ED6;&#x8C03;&#x8BD5;&#x5668;&#x7EC8;&#x7AEF;
+echo 0 &gt; /sys/module/debug_core/parameters/kgdbreboot
+#&#x8FDB;&#x5165;&#x91CD;&#x542F;&#x4FE1;&#x606F;
+echo 1 &gt; /sys/module/debug_core/parameters/kgdbreboot</pre>
+</div>
+</div>
+<div id="outline-container-org1d59d98" class="outline-4">
+<h4 id="org1d59d98">nokaslr</h4>
+<div class="outline-text-4" id="text-org1d59d98">
+<p>
+&#x5F53;&#x5185;&#x6838;&#x4F7F;&#x7528;&#x4E86; KASLR &#x6280;&#x672F;&#x65F6;, &#x9700;&#x8981;&#x5728;&#x53C2;&#x6570;&#x4E2D;&#x52A0;&#x5165;&#x6B64;&#x9009;&#x9879;, &#x5426;&#x5219; GDB &#x4F1A;&#x5DE5;&#x4F5C;&#x5F02;&#x5E38;
+</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org9ebc87f" class="outline-2">
+<h2 id="org9ebc87f">&#x4F7F;&#x7528; kgdb/ gdb</h2>
+<div class="outline-text-2" id="text-org9ebc87f">
+<ol class="org-ol">
+<li>&#x542F;&#x52A8;&#x53C2;&#x6570;&#x4E2D;&#x5305;&#x542B;&#x5982;&#x4E0B;&#x4FE1;&#x606F;</li>
+</ol>
+<pre class="example">
+console=ttyS0,115200 kgdboc=ttyS0,115200 kgdbwait nokaslr</pre>
+<ol class="org-ol">
+<li>&#x5F53;&#x53C2;&#x6570;&#x4E2D;&#x5305;&#x542B; kgdbwait &#x65F6;,&#x5185;&#x6838;&#x4F1A;&#x4E3B;&#x52A8;&#x7B49;&#x5F85;&#x8C03;&#x8BD5;&#x5668;. &#x5982;&#x679C;&#x6CA1;&#x6709;&#x6B64;&#x53C2;&#x6570;, &#x90A3;&#x4E48;&#x9700;&#x8981;&#x5982;&#x4E0B;&#x64CD;&#x4F5C;&#x4EE5;&#x8FDB;&#x5165;&#x8C03;&#x8BD5;&#x6A21;&#x5F0F;</li>
+</ol>
+<pre class="example">
+#&#x6709;&#x7684;&#x65F6;&#x5019;&#x8BBE;&#x7F6E;&#x4E86; kgdbwait &#x4E5F;&#x4E0D;&#x4F1A;&#x7B49;&#x5F85;,&#x6240;&#x4EE5;&#x8FD8;&#x9700;&#x8981;&#x4F7F;&#x7528;&#x4E0B;&#x9762;&#x7684;&#x547D;&#x4EE4;&#x5F3A;&#x5236;&#x8FDB;&#x5165;
+#&#x5728;&#x8F93;&#x51FA;&#x7B49;&#x5F85;&#x4E3B;&#x673A;&#x4FE1;&#x606F;&#x540E;, &#x9700;&#x8981;&#x9000;&#x51FA;&#x5F53;&#x524D;&#x7684;&#x7EC8;&#x7AEF;!
+#&#x65B9;&#x6CD5;1(&#x63A8;&#x8350;)
+echo ttyS0 &gt; /sys/module/kgdboc/parameters/kgdboc
+#&#x65B9;&#x6CD5;2, &#x5728;&#x7EC8;&#x7AEF;&#x4E2D;&#x8F93;&#x5165;&#x547D;&#x4EE4;
+echo g &gt; /proc/sysrq-trigger
+#&#x65B9;&#x6CD5;3, &#x5728;&#x7EC8;&#x7AEF;&#x4E2D;&#x53D1;&#x9001;&#x547D;&#x4EE4;,&#x6BD4;&#x5982;&#x5728; minicom &#x4E2D;&#x4F7F;&#x7528;
+CTRL-A f g
+#&#x65B9;&#x6CD5;4, &#x5728;&#x8FDC;&#x7A0B;&#x7EC8;&#x7AEF;&#x767B;&#x5F55;&#x65F6;
+CTRL-] &#x7136;&#x540E; &#x6309;&#x4E0B; ENTER g</pre>
+<ol class="org-ol">
+<li>&#x9000;&#x51FA;&#x7EC8;&#x7AEF;</li>
+<li>&#x5728;&#x4E3B;&#x673A;&#x4F7F;&#x7528; gdb &#x8FDE;&#x63A5;,&#x9700;&#x8981;&#x4F7F;&#x7528;&#x5230; <code>vmlinux</code> &#x6587;&#x4EF6;</li>
+</ol>
+<pre class="example">
+#&#x4F7F;&#x7528;&#x4E32;&#x53E3;&#x8FDE;&#x63A5;
+% sudo gdb ./vmlinux
+(gdb) set serial baud 115200
+(gdb) target remote /dev/ttyUSB0
+
+#&#x4F7F;&#x7528;&#x7F51;&#x53E3;&#x8FDE;&#x63A5;
+% gdb ./vmlinux
+(gdb) target remote 192.168.2.2:2012</pre>
+<ol class="org-ol">
+<li>&#x91CD;&#x5B9A;&#x5411;&#x8F93;&#x5165;&#x8F93;&#x51FA;
+<ul class="org-ul">
+<li>&#x6253;&#x5F00;&#x4E00;&#x4E2A;&#x65B0;&#x7684;&#x63A7;&#x5236;&#x53F0;,&#x4F7F;&#x7528;&#x547D;&#x4EE4; <code>tty</code>,&#x8BB0;&#x4F4F;&#x5F53;&#x524D;&#x6587;&#x4EF6;&#x8DEF;&#x5F84;,&#x6BD4;&#x5982; <code>/dev/pts/19</code></li>
+<li>&#x5728;GDB&#x4E2D;&#x4F7F;&#x7528;&#x547D;&#x4EE4; <code>tty /dev/pts/19</code>, &#x8FD9;&#x6837;&#x5C31;&#x628A;&#x8F93;&#x5165;&#x8F93;&#x51FA;&#x5B9A;&#x5411;&#x5230;&#x4E86;&#x65B0;&#x63A7;&#x5236;&#x53F0;</li>
+</ul></li>
+<li>&#x8FD0;&#x884C;GDB
+<ul class="org-ul">
+<li>&#x4F7F;&#x7528;&#x547D;&#x4EE4; <code>c</code> &#x5373;&#x53EF;</li>
+</ul></li>
+</ol>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+Last Updated 2020-06-28 Sun 12:00.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+</div>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/debug/" rel="tag"># debug</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/03/09/linux_debug_kernel_oops/" rel="prev" title="[What]Linux内核调试之Oops">
+      <i class="fa fa-chevron-left"></i> [What]Linux内核调试之Oops
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/03/09/linux_debug_gdb_ddd/" rel="next" title="[What]GDB 使用 DDD">
+      [What]GDB 使用 DDD <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org5287366"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x51C6;&amp;#x5907;&amp;#x5DE5;&amp;#x4F5C;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org9a8c545"><span class="nav-number">1.1.</span> <span class="nav-text">kgdb&amp;#x5185;&amp;#x6838;&amp;#x914D;&amp;#x7F6E;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org2bd5b2d"><span class="nav-number">1.2.</span> <span class="nav-text">kdb &amp;#x5185;&amp;#x6838;&amp;#x914D;&amp;#x7F6E;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org037a452"><span class="nav-number">1.3.</span> <span class="nav-text">&amp;#x542F;&amp;#x52A8;&amp;#x53C2;&amp;#x6570;&amp;#x8BBE;&amp;#x7F6E;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org4b8f8f5"><span class="nav-number">1.3.1.</span> <span class="nav-text">kgdboc(kgdb over console)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org30f1ade"><span class="nav-number">1.3.2.</span> <span class="nav-text">kgdbwait</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org81cee70"><span class="nav-number">1.3.3.</span> <span class="nav-text">kgdbcon</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgc890330"><span class="nav-number">1.3.4.</span> <span class="nav-text">kgdbreboot</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org1d59d98"><span class="nav-number">1.3.5.</span> <span class="nav-text">nokaslr</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org9ebc87f"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x4F7F;&amp;#x7528; kgdb&#x2F; gdb</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">我的世界</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">210</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">104</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">38</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+  
+  <span class="post-meta-divider">|</span>
+  <span>Hosted by <a href="https://pages.coding.me" target="_blank" rel="noopener" style="font-weight: bold">Coding Pages</a></span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+<script>
+  (function() {
+    function leancloudSelector(url) {
+      url = encodeURI(url);
+      return document.getElementById(url).querySelector('.leancloud-visitors-count');
+    }
+
+    function addCount(Counter) {
+      var visitors = document.querySelector('.leancloud_visitors');
+      var url = decodeURI(visitors.id);
+      var title = visitors.dataset.flagTitle;
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          if (results.length > 0) {
+            var counter = results[0];
+            leancloudSelector(url).innerText = counter.time + 1;
+            Counter('put', '/classes/Counter/' + counter.objectId, { time: { '__op': 'Increment', 'amount': 1 } })
+              .catch(error => {
+                console.error('Failed to save visitor count', error);
+              });
+          } else {
+              leancloudSelector(url).innerText = 'Counter not initialized! More info at console err msg.';
+              console.error('ATTENTION! LeanCloud counter has security bug, see how to solve it here: https://github.com/theme-next/hexo-leancloud-counter-security. \n However, you can still use LeanCloud without security, by setting `security` option to `false`.');
+            
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    function showTime(Counter) {
+      var visitors = document.querySelectorAll('.leancloud_visitors');
+      var entries = [...visitors].map(element => {
+        return decodeURI(element.id);
+      });
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url: { '$in': entries } })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          for (let url of entries) {
+            let target = results.find(item => item.url === url);
+            leancloudSelector(url).innerText = target ? target.time : 0;
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    let { app_id, app_key, server_url } = {"enable":true,"app_id":"ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI","app_key":"yh4vrfnscme1utPMpk65wcxn","server_url":null,"security":true};
+    function fetchData(api_server) {
+      var Counter = (method, url, data) => {
+        return fetch(`${api_server}/1.1${url}`, {
+          method,
+          headers: {
+            'X-LC-Id'     : app_id,
+            'X-LC-Key'    : app_key,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+      };
+      if (CONFIG.page.isPost) {
+        if (CONFIG.hostname !== location.hostname) return;
+        addCount(Counter);
+      } else if (document.querySelectorAll('.post-title-link').length >= 1) {
+        showTime(Counter);
+      }
+    }
+
+    let api_server = app_id.slice(-9) !== '-MdYXbMMI' ? server_url : `https://${app_id.slice(0, 8).toLowerCase()}.api.lncldglobal.com`;
+
+    if (api_server) {
+      fetchData(api_server);
+    } else {
+      fetch('https://app-router.leancloud.cn/2/route?appId=' + app_id)
+        .then(response => response.json())
+        .then(({ api_server }) => {
+          fetchData('https://' + api_server);
+        });
+    }
+  })();
+</script>
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+  <script defer src="/lib/three/three.min.js"></script>
+    <script defer src="/lib/three/three-waves.min.js"></script>
+    <script defer src="/lib/three/canvas_lines.min.js"></script>
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI',
+      appKey     : 'yh4vrfnscme1utPMpk65wcxn',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

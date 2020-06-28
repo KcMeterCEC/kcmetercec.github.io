@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="zLSyD2CN1AkyJqei3qKraT6372nBgMFKWe6kAj5JDeY">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="&amp;#x7406;&amp;#x89E3;&amp;#x8C03;&amp;#x5EA6;&amp;#x7B56;&amp;#x7565;&amp;#x4E2D;&amp;#x7684; &amp;#x591A;&amp;#x7EA7;&amp;#x53CD;&amp;#x9988;&amp;#x961F;&amp;#x5217;&amp;#xFF08;Multi-level Feedback Queue, MLFQ&amp;#xFF09; &amp;#x3002;    MLFQ &amp;#x7684;&amp;#x76EE;&amp;#x">
+<meta property="og:type" content="article">
+<meta property="og:title" content="[What]Scheduling:The Multi-Level Feedback Queue">
+<meta property="og:url" content="http://kcmetercec.top/2019/08/12/book_ostep_cpu-sched-mlfq/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="&amp;#x7406;&amp;#x89E3;&amp;#x8C03;&amp;#x5EA6;&amp;#x7B56;&amp;#x7565;&amp;#x4E2D;&amp;#x7684; &amp;#x591A;&amp;#x7EA7;&amp;#x53CD;&amp;#x9988;&amp;#x961F;&amp;#x5217;&amp;#xFF08;Multi-level Feedback Queue, MLFQ&amp;#xFF09; &amp;#x3002;    MLFQ &amp;#x7684;&amp;#x76EE;&amp;#x">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-08-11T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-06-28T03:58:45.181Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="CS">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://kcmetercec.top/2019/08/12/book_ostep_cpu-sched-mlfq/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>[What]Scheduling:The Multi-Level Feedback Queue | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=112423075-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '112423075-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2ab4cc06d0da36106a4426465d0cb00d";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2019/08/12/book_ostep_cpu-sched-mlfq/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="我的世界">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          [What]Scheduling:The Multi-Level Feedback Queue
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-08-12 00:00:00" itemprop="dateCreated datePublished" datetime="2019-08-12T00:00:00+08:00">2019-08-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-06-28 11:58:45" itemprop="dateModified" datetime="2020-06-28T11:58:45+08:00">2020-06-28</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/book/" itemprop="url" rel="index"><span itemprop="name">book</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/book/ostep/" itemprop="url" rel="index"><span itemprop="name">ostep</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2019/08/12/book_ostep_cpu-sched-mlfq/" class="post-meta-item leancloud_visitors" data-flag-title="[What]Scheduling:The Multi-Level Feedback Queue" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2019/08/12/book_ostep_cpu-sched-mlfq/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2019/08/12/book_ostep_cpu-sched-mlfq/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <div id="content">
+<p>
+&#x7406;&#x89E3;&#x8C03;&#x5EA6;&#x7B56;&#x7565;&#x4E2D;&#x7684; <b>&#x591A;&#x7EA7;&#x53CD;&#x9988;&#x961F;&#x5217;&#xFF08;Multi-level Feedback Queue, MLFQ&#xFF09;</b> &#x3002;
+</p>
+
+<p>
+MLFQ &#x7684;&#x76EE;&#x7684;&#x5C31;&#x662F;&#x8981;&#x5C3D;&#x91CF;&#x5B9E;&#x73B0;&#x5F88;&#x77ED;&#x7684;&#x8F6E;&#x8F6C;&#x65F6;&#x95F4;&#x548C;&#x54CD;&#x5E94;&#x65F6;&#x95F4;&#x3002;
+</p>
+<a id="more"></a>
+<p>
+MLFQ &#x5177;&#x6709;&#x591A;&#x4E2A;&#x72EC;&#x7ACB;&#x7684;&#x961F;&#x5217;&#xFF0C;&#x6BCF;&#x4E2A;&#x961F;&#x5217;&#x4EE3;&#x8868;&#x7740;&#x4E0D;&#x540C;&#x7684;&#x4F18;&#x5148;&#x7EA7;&#x3002;
+</p>
+
+<p>
+&#x4EFB;&#x52A1;&#x6839;&#x636E;&#x4E0D;&#x540C;&#x7684;&#x4F18;&#x5148;&#x7EA7;&#x800C;&#x88AB;&#x653E;&#x5165;&#x4E0D;&#x540C;&#x7684;&#x961F;&#x5217;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>&#x9AD8;&#x4F18;&#x5148;&#x7EA7;&#x961F;&#x5217;&#x4E2D;&#x7684;&#x4EFB;&#x52A1;&#x5148;&#x8FD0;&#x884C;</li>
+<li>&#x76F8;&#x540C;&#x4F18;&#x5148;&#x7EA7;&#x7684;&#x4EFB;&#x52A1;&#x91C7;&#x7528; round-robin &#x7B56;&#x7565;&#x5206;&#x65F6;&#x8F6E;&#x8BE2;&#x8C03;&#x5EA6;</li>
+</ul>
+
+<p>
+MLFQ &#x81EA;&#x52A8;&#x7684;&#x4E3A;&#x4EFB;&#x52A1;&#x5206;&#x914D;&#x4F18;&#x5148;&#x7EA7;&#xFF08;&#x6839;&#x636E;&#x4EFB;&#x52A1;&#x7684;&#x884C;&#x4E3A;&#x800C;&#x9884;&#x6D4B;&#xFF09;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>&#x5F53;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x662F; IO &#x5BC6;&#x96C6;&#x578B;&#xFF08;&#x5360;&#x7528;&#x7684; CPU &#x65F6;&#x95F4;&#x5C11;&#xFF09;&#x65F6;&#xFF0C; &#x4F1A;&#x63D0;&#x9AD8;&#x5176;&#x4F18;&#x5148;&#x7EA7;
+<ul class="org-ul">
+<li>&#x56E0;&#x4E3A;&#x8FD9;&#x6837;&#x53EF;&#x4EE5;&#x63D0;&#x9AD8;&#x4EFB;&#x52A1;&#x7684;&#x54CD;&#x5E94;&#x901F;&#x5EA6;&#xFF0C;&#x7528;&#x6237;&#x4F53;&#x9A8C;&#x597D;</li>
+</ul></li>
+<li>&#x5F53;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x662F; CPU &#x5BC6;&#x96C6;&#x578B;&#xFF08;&#x5360;&#x7528;&#x7684; CPU &#x65F6;&#x95F4;&#x591A;&#xFF09;&#x65F6;&#xFF0C; &#x4F1A;&#x964D;&#x4F4E;&#x5176;&#x4F18;&#x5148;&#x7EA7;
+<ul class="org-ul">
+<li>&#x56E0;&#x4E3A; IO &#x5BC6;&#x96C6;&#x578B;&#x5360;&#x7528; CPU &#x65F6;&#x95F4;&#x5C11;&#xFF0C;&#x6240;&#x4EE5;&#x8981;&#x8BA9;&#x5B83;&#x5148;&#x6267;&#x884C;&#xFF0C;&#x66F4;&#x591A;&#x7684;&#x65F6;&#x95F4;&#x4F1A;&#x7559;&#x7ED9; CPU &#x5BC6;&#x96C6;&#x578B;&#x3002;</li>
+</ul></li>
+</ul>
+<div id="outline-container-orgab9a80a" class="outline-2">
+<h2 id="orgab9a80a">&#x666E;&#x901A;&#x7B56;&#x7565;</h2>
+<div class="outline-text-2" id="text-orgab9a80a">
+<ul class="org-ul">
+<li>&#x5F53;&#x4EFB;&#x52A1;&#x88AB;&#x521B;&#x5EFA;&#x65F6;&#xFF0C;&#x5B83;&#x88AB;&#x9ED8;&#x8BA4;&#x653E;&#x7F6E;&#x5728;&#x6700;&#x9AD8;&#x4F18;&#x5148;&#x7EA7;&#x961F;&#x5217;&#xFF0C;&#x6B64;&#x65F6;&#x6700;&#x9AD8;&#x4F18;&#x5148;&#x7EA7;&#x961F;&#x5217;&#x4F7F;&#x7528; RR &#x7B56;&#x7565;&#x8F6E;&#x8BE2;&#x8C03;&#x5EA6;</li>
+<li>&#x5F53;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x5B8C;&#x6574;&#x7684;&#x4F7F;&#x7528;&#x4E86;&#x8C03;&#x5EA6;&#x7684;&#x65F6;&#x95F4;&#x7247;&#xFF0C;&#x90A3;&#x4E48;&#x964D;&#x4F4E;&#x5176;&#x4F18;&#x5148;&#x7EA7;
+<ul class="org-ul">
+<li>&#x8FD9;&#x610F;&#x5473;&#x7740;&#x88AB;&#x8C03;&#x5EA6;&#x8FC7;&#x7A0B;&#x4E2D;&#x6CA1;&#x6709;&#x8FDB;&#x884C; IO &#x64CD;&#x4F5C;&#xFF0C;&#x5C5E;&#x4E8E; CPU &#x5BC6;&#x96C6;&#x578B;&#x4E14;&#x6267;&#x884C;&#x65F6;&#x95F4;&#x8F83;&#x957F;</li>
+</ul></li>
+<li>&#x5F53;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x5728;&#x65F6;&#x95F4;&#x7247;&#x8017;&#x5C3D;&#x4E4B;&#x524D;&#x5C31;&#x4E3B;&#x52A8;&#x653E;&#x5F03;&#x4E86; CPU&#xFF0C;&#x90A3;&#x4E48;&#x4FDD;&#x6301;&#x5176;&#x4F18;&#x5148;&#x7EA7;
+<ul class="org-ul">
+<li>&#x5C5E;&#x4E8E; IO &#x5BC6;&#x96C6;&#x578B;&#x6216;&#x4EFB;&#x52A1;&#x672C;&#x8EAB;&#x6267;&#x884C;&#x65F6;&#x95F4;&#x5C31;&#x77ED;</li>
+</ul></li>
+</ul>
+
+<p>
+&#x6B64;&#x8C03;&#x5EA6;&#x7B56;&#x7565;&#x5177;&#x6709;&#x4EE5;&#x4E0B;&#x4E0D;&#x8DB3;&#xFF1A;
+</p>
+<ol class="org-ol">
+<li>&#x5982;&#x679C;&#x5F53;&#x524D;&#x6709;&#x5F88;&#x591A;&#x7684; IO &#x5BC6;&#x96C6;&#x578B;&#x4EFB;&#x52A1;&#xFF0C;&#x90A3;&#x4E48;&#x5C31;&#x9700;&#x8981;&#x8F6E;&#x8BE2;&#x8C03;&#x5EA6;&#x5B83;&#x4EEC;&#xFF0C;&#x8FD9;&#x6837;&#x4F4E;&#x4F18;&#x5148;&#x7EA7;&#x7684; CPU &#x5BC6;&#x96C6;&#x578B;&#x4EFB;&#x52A1;&#x4FBF;&#x4F1A;&#x88AB;&#x997F;&#x6B7B;&#xFF08;starve&#xFF09;</li>
+<li>&#x5982;&#x679C;&#x67D0;&#x4E2A; IO &#x5BC6;&#x96C6;&#x578B;&#x4EFB;&#x52A1;&#x505A;&#x7684; IO &#x65F6;&#x95F4;&#x5F88;&#x77ED;&#xFF0C;&#x800C;&#x5360;&#x7528;&#x4E86; 99% &#x7684;&#x65F6;&#x95F4;&#x7247;&#x65F6;&#x95F4;&#x3002;&#x6309;&#x7167;&#x5F53;&#x524D;&#x7B56;&#x7565;&#x4E5F;&#x4E0D;&#x4F1A;&#x964D;&#x4F4E;&#x5176;&#x4F18;&#x5148;&#x7EA7;&#xFF0C;</li>
+</ol>
+<p>
+&#x6700;&#x7EC8;&#x7684;&#x7ED3;&#x679C;&#x5C31;&#x662F;&#x6B64;&#x4EFB;&#x52A1;&#x5360;&#x7528;&#x4E86;&#x7EDD;&#x5927;&#x90E8;&#x5206; CPU &#x65F6;&#x95F4;&#xFF0C;&#x4F4E;&#x4F18;&#x5148;&#x7EA7;&#x4EFB;&#x52A1;&#x6BCF;&#x6B21;&#x8FD0;&#x884C;&#x65F6;&#x95F4;&#x6781;&#x77ED;&#x3002;
+</p>
+<ol class="org-ol">
+<li>&#x67D0;&#x4E9B;&#x4EFB;&#x52A1;&#x5F88;&#x53EF;&#x80FD;&#x4F1A;&#x6839;&#x636E;&#x5F53;&#x524D;&#x8FD0;&#x884C;&#x72B6;&#x6001;&#x7684;&#x4E0D;&#x540C;&#xFF0C;&#x65F6;&#x800C;&#x662F; CPU &#x5BC6;&#x96C6;&#x578B;&#xFF0C;&#x65F6;&#x800C;&#x662F; IO &#x5BC6;&#x96C6;&#x578B;&#x3002;&#x90A3;&#x4E48;&#x5F53;&#x5B83;&#x662F; IO &#x5BC6;&#x96C6;&#x578B;&#x65F6;&#xFF0C;&#x8FD9;&#x90E8;&#x5206;&#x7684;&#x54CD;&#x5E94;&#x65F6;&#x95F4;&#x5C31;&#x6781;&#x957F;&#xFF08;&#x56E0;&#x4E3A;&#x5F53;&#x5B83;&#x4E3A; CPU &#x5BC6;&#x96C6;&#x578B;&#x65F6;&#x5176;&#x4F18;&#x5148;&#x7EA7;&#x5DF2;&#x7ECF;&#x88AB;&#x964D;&#x4F4E;&#x4E86;&#xFF09;</li>
+</ol>
+</div>
+</div>
+<div id="outline-container-org86d537d" class="outline-2">
+<h2 id="org86d537d">&#x4F18;&#x5148;&#x7EA7;&#x63D0;&#x5347;</h2>
+<div class="outline-text-2" id="text-org86d537d">
+<p>
+&#x4E3A;&#x4E86;&#x89E3;&#x51B3;&#x4F4E;&#x4F18;&#x5148;&#x7EA7;&#x4EFB;&#x52A1;&#x88AB;&#x997F;&#x6B7B;&#x7684;&#x60C5;&#x51B5;&#xFF0C;&#x91C7;&#x7528;&#x4F18;&#x5148;&#x7EA7;&#x63D0;&#x5347;&#x7684;&#x7B56;&#x7565;&#xFF1A;&#x6BCF;&#x9694;&#x4E00;&#x5B9A;&#x8C03;&#x5EA6;&#x5468;&#x671F; S&#xFF0C;&#x5C06;&#x6240;&#x6709;&#x4EFB;&#x52A1;&#x7684;&#x4F18;&#x5148;&#x7EA7;&#x63D0;&#x5347;&#x5230;&#x6700;&#x9AD8;&#x4F18;&#x5148;&#x7EA7;&#x961F;&#x5217;&#x4E2D;&#x3002;
+</p>
+
+<p>
+&#x8FD9;&#x6837;&#x6240;&#x6709;&#x7684;&#x4EFB;&#x52A1;&#x5C31;&#x4F1A;&#x4F7F;&#x7528; RR &#x7B56;&#x7565;&#x8F6E;&#x8BE2;&#x8C03;&#x5EA6;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>CPU &#x5BC6;&#x96C6;&#x578B;&#x4EFB;&#x52A1;&#x5C31;&#x4F1A;&#x88AB;&#x8C03;&#x5EA6;</li>
+<li>&#x5F53;&#x4EFB;&#x52A1;&#x5207;&#x6362;&#x4E3A; IO &#x5BC6;&#x96C6;&#x578B;&#x4EFB;&#x52A1;&#x65F6;&#xFF0C;&#x5B83;&#x7684;&#x4F18;&#x5148;&#x7EA7;&#x4FBF;&#x4F1A;&#x88AB;&#x4FDD;&#x6301;</li>
+</ul>
+
+<p>
+&#x8FD9;&#x91CC;&#x7684;&#x95EE;&#x9898;&#x5C31;&#x5728;&#x4E8E; S &#x7684;&#x503C;&#x8BE5;&#x5982;&#x4F55;&#x8BBE;&#x7F6E;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>&#x5982;&#x679C;&#x8BBE;&#x7F6E;&#x5F97;&#x592A;&#x5C0F;&#xFF0C;&#x90A3;&#x76F8;&#x5F53;&#x4E8E;&#x6240;&#x6709;&#x7684;&#x4EFB;&#x52A1;&#x90FD;&#x5728;&#x6700;&#x9AD8;&#x4F18;&#x5148;&#x7EA7;&#x4E86;&#xFF0C;IO &#x5BC6;&#x96C6;&#x578B;&#x4EFB;&#x52A1;&#x7684;&#x54CD;&#x5E94;&#x65F6;&#x95F4;&#x4FBF;&#x4F1A;&#x88AB;&#x62C9;&#x957F;</li>
+<li>&#x5982;&#x679C;&#x8BBE;&#x7F6E;&#x5F97;&#x592A;&#x5927;&#xFF0C;&#x4F4E;&#x4F18;&#x5148;&#x7EA7;&#x7684; CPU &#x5BC6;&#x96C6;&#x578B;&#x4EFB;&#x52A1;&#x7684;&#x8C03;&#x5EA6;&#x65F6;&#x95F4;&#x4F9D;&#x7136;&#x592A;&#x77ED;</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-org3a63274" class="outline-2">
+<h2 id="org3a63274">&#x8C03;&#x5EA6;&#x8BA1;&#x6570;</h2>
+<div class="outline-text-2" id="text-org3a63274">
+<p>
+&#x524D;&#x9762;&#x901A;&#x8FC7;&#x67E5;&#x770B;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x662F;&#x5426;&#x5360;&#x6EE1;&#x8C03;&#x5EA6;&#x65F6;&#x95F4;&#x7247;&#x6765;&#x786E;&#x5B9A;&#x662F;&#x5426;&#x964D;&#x4F4E;&#x4F18;&#x5148;&#x7EA7;&#x7684;&#x65B9;&#x5F0F;&#x5E76;&#x4E0D;&#x79D1;&#x5B66;&#xFF0C;
+&#x56E0;&#x4E3A;&#x8FD9;&#x4E2A;&#x5C42;&#x9762;&#x592A;&#x5FAE;&#x89C2;&#x4E86;&#xFF0C;&#x4EC5;&#x51ED;&#x4E00;&#x6B21;&#x7684;&#x8C03;&#x5EA6;&#x65F6;&#x95F4;&#x5C31;&#x6539;&#x53D8;&#x4F18;&#x5148;&#x7EA7;&#xFF0C;&#x5BF9;&#x4E8E;&#x90A3;&#x79CD;&#x4F1A;&#x8F6C;&#x53D8;&#x72B6;&#x6001;&#x7684;&#x4EFB;&#x52A1;&#x5E76;&#x4E0D;&#x516C;&#x5E73;&#x3002;
+&#x5E94;&#x8BE5;&#x7AD9;&#x5728;&#x66F4;&#x4E3A;&#x5B8F;&#x89C2;&#x7684;&#x5C42;&#x9762;&#x6765;&#x7EDF;&#x8BA1;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x88AB;&#x8C03;&#x5EA6;&#x7684;&#x603B;&#x65F6;&#x95F4;&#x4E0E;&#x9608;&#x503C;&#x6BD4;&#x8F83;&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x4E00;&#x65E6;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x8C03;&#x5EA6;&#x7684;&#x65F6;&#x95F4;&#x8D85;&#x8FC7;&#x5176;&#x9608;&#x503C;&#xFF0C;&#x4FBF;&#x964D;&#x4F4E;&#x5176;&#x4F18;&#x5148;&#x7EA7;</li>
+</ul>
+
+<p>
+&#x57FA;&#x4E8E;&#x8FD9;&#x79CD;&#x7B56;&#x7565;&#xFF0C;&#x4FBF;&#x53EF;&#x4EE5;&#x907F;&#x514D;&#x4E00;&#x4E9B;&#x4EFB;&#x52A1;&#x7531;&#x4E8E;&#x662F; IO &#x5BC6;&#x96C6;&#x578B;&#x4E14;&#x6BCF;&#x6B21;&#x8C03;&#x5EA6;&#x4F4E;&#x4E8E;&#x65F6;&#x95F4;&#x7247;&#x800C;&#x4E00;&#x76F4;&#x5360;&#x6709; CPU &#x7684;&#x60C5;&#x51B5;&#xFF0C;
+&#x5B83;&#x4F1A;&#x88AB;&#x964D;&#x7EA7;&#x4EE5;&#x4F7F;&#x5F97; CPU &#x5BC6;&#x96C6;&#x578B;&#x4EFB;&#x52A1;&#x53EF;&#x4EE5;&#x88AB;&#x8C03;&#x5EA6;&#x3002;
+</p>
+</div>
+</div>
+<div id="outline-container-org3dff801" class="outline-2">
+<h2 id="org3dff801">&#x91CF;&#x5316;&#x53C2;&#x6570;</h2>
+<div class="outline-text-2" id="text-org3dff801">
+<p>
+&#x6839;&#x636E;&#x4EE5;&#x4E0A;&#x6539;&#x8FDB;&#xFF0C;&#x6700;&#x7EC8;&#x5F97;&#x51FA; MLFQ &#x7B56;&#x7565;&#x89C4;&#x5219;&#x5982;&#x4E0B;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>&#x5F53;&#x4EFB;&#x52A1;&#x88AB;&#x521B;&#x5EFA;&#x65F6;&#xFF0C;&#x5B83;&#x88AB;&#x9ED8;&#x8BA4;&#x653E;&#x7F6E;&#x5728;&#x6700;&#x9AD8;&#x4F18;&#x5148;&#x7EA7;&#x961F;&#x5217;&#xFF0C;&#x6B64;&#x65F6;&#x6700;&#x9AD8;&#x4F18;&#x5148;&#x7EA7;&#x961F;&#x5217;&#x4F7F;&#x7528; RR &#x7B56;&#x7565;&#x8F6E;&#x8BE2;&#x8C03;&#x5EA6;</li>
+<li>&#x4E00;&#x65E6;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x8C03;&#x5EA6;&#x7684;&#x65F6;&#x95F4;&#x8D85;&#x8FC7;&#x5176;&#x9608;&#x503C;&#xFF0C;&#x4FBF;&#x964D;&#x4F4E;&#x5176;&#x4F18;&#x5148;&#x7EA7;</li>
+<li>&#x6BCF;&#x9694;&#x4E00;&#x5B9A;&#x8C03;&#x5EA6;&#x5468;&#x671F; S&#xFF0C;&#x5C06;&#x6240;&#x6709;&#x4EFB;&#x52A1;&#x7684;&#x4F18;&#x5148;&#x7EA7;&#x63D0;&#x5347;&#x5230;&#x6700;&#x9AD8;&#x4F18;&#x5148;&#x7EA7;&#x961F;&#x5217;&#x4E2D;&#x3002;</li>
+</ul>
+
+<p>
+&#x4E0E; MLFQ &#x7684;&#x76F8;&#x5173;&#x53C2;&#x6570;&#x6709;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>&#x4F18;&#x5148;&#x7EA7;&#x961F;&#x5217;&#x7684;&#x4E2A;&#x6570;</li>
+<li>&#x6BCF;&#x4E2A;&#x4F18;&#x5148;&#x7EA7;&#x961F;&#x5217;&#x6BCF;&#x6B21;&#x8C03;&#x5EA6;&#x7684;&#x65F6;&#x95F4;&#x7247;&#x957F;&#x5EA6;</li>
+<li>&#x6BCF;&#x9694;&#x591A;&#x4E45;&#x63D0;&#x5347;&#x4F18;&#x5148;&#x7EA7;</li>
+<li>&#x8BA1;&#x6570;&#x9608;&#x503C;&#x7684;&#x8BBE;&#x7F6E;</li>
+</ul>
+
+<p>
+&#x8FD9;&#x4E9B;&#x53C2;&#x6570;&#x90FD;&#x9700;&#x8981;&#x6839;&#x636E;&#x5B9E;&#x9645;&#x60C5;&#x51B5;&#x800C;&#x505A;&#x8C03;&#x6574;&#xFF0C;&#x4EE5;&#x4E0B;&#x662F;&#x5E38;&#x7528;&#x7684;&#x7ECF;&#x9A8C;&#x8BBE;&#x5B9A;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>&#x9AD8;&#x4F18;&#x5148;&#x7EA7;&#x961F;&#x5217;&#x7684;&#x65F6;&#x95F4;&#x7247;&#x8981;&#x4F4E;&#x4E8E;&#x4F4E;&#x4F18;&#x5148;&#x7EA7;&#x961F;&#x5217;&#x7684;&#x65F6;&#x95F4;&#x7247;
+<ul class="org-ul">
+<li>&#x8FD9;&#x6837;&#x4FDD;&#x8BC1;&#x9AD8;&#x4F18;&#x5148;&#x7EA7;&#x7684;&#x9AD8;&#x54CD;&#x5E94;&#x901F;&#x5EA6;&#x548C;&#x4F4E;&#x4F18;&#x5148;&#x7EA7;&#x7684;&#x541E;&#x5410;&#x91CF;</li>
+</ul></li>
+</ul>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+Last Updated 2020-06-28 Sun 11:59.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+</div>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/CS/" rel="tag"># CS</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/08/02/book_ostep_cpu-sched/" rel="prev" title="[What]Scheduling:Introduction">
+      <i class="fa fa-chevron-left"></i> [What]Scheduling:Introduction
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/08/20/book_ostep_cpu-sched-lottery/" rel="next" title="[What]Scheduling: Proportional Share">
+      [What]Scheduling: Proportional Share <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#orgab9a80a"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x666E;&amp;#x901A;&amp;#x7B56;&amp;#x7565;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org86d537d"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x4F18;&amp;#x5148;&amp;#x7EA7;&amp;#x63D0;&amp;#x5347;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org3a63274"><span class="nav-number">3.</span> <span class="nav-text">&amp;#x8C03;&amp;#x5EA6;&amp;#x8BA1;&amp;#x6570;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org3dff801"><span class="nav-number">4.</span> <span class="nav-text">&amp;#x91CF;&amp;#x5316;&amp;#x53C2;&amp;#x6570;</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">我的世界</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">210</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">104</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">38</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+  
+  <span class="post-meta-divider">|</span>
+  <span>Hosted by <a href="https://pages.coding.me" target="_blank" rel="noopener" style="font-weight: bold">Coding Pages</a></span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+<script>
+  (function() {
+    function leancloudSelector(url) {
+      url = encodeURI(url);
+      return document.getElementById(url).querySelector('.leancloud-visitors-count');
+    }
+
+    function addCount(Counter) {
+      var visitors = document.querySelector('.leancloud_visitors');
+      var url = decodeURI(visitors.id);
+      var title = visitors.dataset.flagTitle;
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          if (results.length > 0) {
+            var counter = results[0];
+            leancloudSelector(url).innerText = counter.time + 1;
+            Counter('put', '/classes/Counter/' + counter.objectId, { time: { '__op': 'Increment', 'amount': 1 } })
+              .catch(error => {
+                console.error('Failed to save visitor count', error);
+              });
+          } else {
+              leancloudSelector(url).innerText = 'Counter not initialized! More info at console err msg.';
+              console.error('ATTENTION! LeanCloud counter has security bug, see how to solve it here: https://github.com/theme-next/hexo-leancloud-counter-security. \n However, you can still use LeanCloud without security, by setting `security` option to `false`.');
+            
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    function showTime(Counter) {
+      var visitors = document.querySelectorAll('.leancloud_visitors');
+      var entries = [...visitors].map(element => {
+        return decodeURI(element.id);
+      });
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url: { '$in': entries } })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          for (let url of entries) {
+            let target = results.find(item => item.url === url);
+            leancloudSelector(url).innerText = target ? target.time : 0;
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    let { app_id, app_key, server_url } = {"enable":true,"app_id":"ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI","app_key":"yh4vrfnscme1utPMpk65wcxn","server_url":null,"security":true};
+    function fetchData(api_server) {
+      var Counter = (method, url, data) => {
+        return fetch(`${api_server}/1.1${url}`, {
+          method,
+          headers: {
+            'X-LC-Id'     : app_id,
+            'X-LC-Key'    : app_key,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+      };
+      if (CONFIG.page.isPost) {
+        if (CONFIG.hostname !== location.hostname) return;
+        addCount(Counter);
+      } else if (document.querySelectorAll('.post-title-link').length >= 1) {
+        showTime(Counter);
+      }
+    }
+
+    let api_server = app_id.slice(-9) !== '-MdYXbMMI' ? server_url : `https://${app_id.slice(0, 8).toLowerCase()}.api.lncldglobal.com`;
+
+    if (api_server) {
+      fetchData(api_server);
+    } else {
+      fetch('https://app-router.leancloud.cn/2/route?appId=' + app_id)
+        .then(response => response.json())
+        .then(({ api_server }) => {
+          fetchData('https://' + api_server);
+        });
+    }
+  })();
+</script>
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+  <script defer src="/lib/three/three.min.js"></script>
+    <script defer src="/lib/three/three-waves.min.js"></script>
+    <script defer src="/lib/three/canvas_lines.min.js"></script>
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI',
+      appKey     : 'yh4vrfnscme1utPMpk65wcxn',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

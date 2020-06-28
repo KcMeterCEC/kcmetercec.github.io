@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="zLSyD2CN1AkyJqei3qKraT6372nBgMFKWe6kAj5JDeY">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="&amp;#x53C2;&amp;#x8003;&amp;#x4E66;&amp;#x7C4D;: Linux&amp;#x8BBE;&amp;#x5907;&amp;#x9A71;&amp;#x52A8;&amp;#x5F00;&amp;#x53D1;&amp;#x8BE6;&amp;#x89E3; &amp;#x53C2;&amp;#x8003;&amp;#x6587;&amp;#x6863;: &#x2F;Documentation&#x2F;devicetree&#x2F;booting-without-of.txt    &amp;#x8BBE;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="[What]linux -&gt; 设备树基本操作">
+<meta property="og:url" content="http://kcmetercec.top/2018/04/14/linux_driver_devicetree_basic/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="&amp;#x53C2;&amp;#x8003;&amp;#x4E66;&amp;#x7C4D;: Linux&amp;#x8BBE;&amp;#x5907;&amp;#x9A71;&amp;#x52A8;&amp;#x5F00;&amp;#x53D1;&amp;#x8BE6;&amp;#x89E3; &amp;#x53C2;&amp;#x8003;&amp;#x6587;&amp;#x6863;: &#x2F;Documentation&#x2F;devicetree&#x2F;booting-without-of.txt    &amp;#x8BBE;">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-04-13T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-06-28T03:58:45.961Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="driver">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://kcmetercec.top/2018/04/14/linux_driver_devicetree_basic/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>[What]linux -> 设备树基本操作 | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=112423075-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '112423075-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2ab4cc06d0da36106a4426465d0cb00d";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2018/04/14/linux_driver_devicetree_basic/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="我的世界">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          [What]linux -> 设备树基本操作
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-04-14 00:00:00" itemprop="dateCreated datePublished" datetime="2018-04-14T00:00:00+08:00">2018-04-14</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-06-28 11:58:45" itemprop="dateModified" datetime="2020-06-28T11:58:45+08:00">2020-06-28</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/driver/" itemprop="url" rel="index"><span itemprop="name">driver</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/driver/devicetree/" itemprop="url" rel="index"><span itemprop="name">devicetree</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2018/04/14/linux_driver_devicetree_basic/" class="post-meta-item leancloud_visitors" data-flag-title="[What]linux -> 设备树基本操作" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2018/04/14/linux_driver_devicetree_basic/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2018/04/14/linux_driver_devicetree_basic/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <div id="content">
+<p>
+&#x53C2;&#x8003;&#x4E66;&#x7C4D;: <code>Linux&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#x5F00;&#x53D1;&#x8BE6;&#x89E3;</code>
+&#x53C2;&#x8003;&#x6587;&#x6863;: <code>/Documentation/devicetree/booting-without-of.txt</code>
+</p>
+
+<p>
+&#x8BBE;&#x5907;&#x6811;&#x7684;&#x57FA;&#x672C;&#x64CD;&#x4F5C;
+</p>
+
+<a id="more"></a>
+
+<p>
+&#x8BBE;&#x5907;&#x6811;&#x5C06;&#x677F;&#x7EA7;&#x4FE1;&#x606F;&#x901A;&#x8FC7;&#x6587;&#x672C;&#x6587;&#x4EF6;&#x7684;&#x5F62;&#x5F0F;&#x4E0E;&#x5185;&#x6838;&#x5206;&#x79BB;&#x5F00;&#x6765;,&#x8FBE;&#x5230;&#x7075;&#x6D3B;&#x914D;&#x7F6E;&#x7684;&#x76EE;&#x7684;,&#x800C;&#x4E0D;&#x7528;&#x4FEE;&#x6539;&#x76F8;&#x5E94;&#x7684;&#x9A71;&#x52A8;&#x4EE3;&#x7801;.
+</p>
+
+<p>
+&#x8BBE;&#x5907;&#x6811;&#x7531;&#x4E00;&#x7CFB;&#x5217;&#x88AB;&#x547D;&#x540D;&#x7684;&#x8282;&#x70B9;(Node)&#x548C;&#x5C5E;&#x6027;(Property)&#x7EC4;&#x6210;,&#x800C;&#x8282;&#x70B9;&#x672C;&#x8EAB;&#x53EF;&#x4EE5;&#x5305;&#x542B;&#x5B50;&#x8282;&#x70B9;.&#x6240;&#x8C13;&#x7684;&#x5C5E;&#x6027;,&#x5176;&#x5B9E;&#x5C31;&#x662F;&#x6210;&#x5BF9;&#x51FA;&#x73B0;&#x7684;&#x540D;&#x79F0;&#x548C;&#x503C;.
+&#x5728;&#x8BBE;&#x5907;&#x6811;&#x4E2D;,&#x53EF;&#x4EE5;&#x63CF;&#x8FF0;&#x7684;&#x4FE1;&#x606F;&#x5305;&#x62EC;(&#x539F;&#x5148;&#x8FD9;&#x4E9B;&#x4FE1;&#x606F;&#x5927;&#x591A;&#x88AB;&#x786C;&#x7F16;&#x7801;&#x5728;&#x5185;&#x6838;&#x4E2D;):
+</p>
+<ul class="org-ul">
+<li>CPU &#x7684;&#x6570;&#x91CF;&#x548C;&#x7C7B;&#x522B;</li>
+<li>&#x5185;&#x5B58;&#x57FA;&#x5730;&#x5740;&#x548C;&#x5927;&#x5C0F;</li>
+<li>&#x603B;&#x7EBF;&#x548C;&#x6865;</li>
+<li>&#x5916;&#x8BBE;&#x8FDE;&#x63A5;</li>
+<li>&#x4E2D;&#x65AD;&#x63A7;&#x5236;&#x5668;&#x548C;&#x4E2D;&#x65AD;&#x4F7F;&#x7528;&#x60C5;&#x51B5;</li>
+<li>GPIO&#x63A7;&#x5236;&#x5668;&#x548C;GPIO&#x4F7F;&#x7528;&#x60C5;&#x51B5;</li>
+<li>&#x65F6;&#x949F;&#x63A7;&#x5236;&#x5668;&#x548C;&#x65F6;&#x949F;&#x4F7F;&#x7528;&#x60C5;&#x51B5;</li>
+</ul>
+<p>
+&#x5B83;&#x57FA;&#x672C;&#x4E0A;&#x5C31;&#x662F;&#x753B;&#x4E00;&#x68F5;&#x7535;&#x8DEF;&#x677F;&#x4E0A;CPU,&#x603B;&#x7EBF;,&#x8BBE;&#x5907;&#x7EC4;&#x6210;&#x7684;&#x6811;, <b>Bootloader&#x4F1A;&#x5C06;&#x8FD9;&#x68F5;&#x6811;&#x4F20;&#x9012;&#x7ED9;&#x5185;&#x6838;</b>,&#x7136;&#x540E;&#x5185;&#x6838;&#x53EF;&#x4EE5;&#x8BC6;&#x522B;&#x8FD9;&#x68F5;&#x6811;,&#x5E76;&#x6839;&#x636E;&#x5B83;&#x5C55;&#x5F00;&#x51FA;linux&#x5185;&#x6838;&#x4E2D;
+&#x7684; platform_device, i2c_client, spi_device&#x7B49;&#x8BBE;&#x5907;,&#x800C;&#x8FD9;&#x4E9B;&#x8BBE;&#x5907;&#x7528;&#x5230;&#x7684;&#x5185;&#x5B58;,IRQ&#x7B49;&#x8D44;&#x6E90;,&#x4E5F;&#x88AB;&#x4F20;&#x9012;&#x7ED9;&#x4E86;&#x5185;&#x6838;,&#x5185;&#x6838;&#x4F1A;&#x5C06;&#x8FD9;&#x4E9B;&#x8D44;&#x6E90;&#x7ED1;&#x5B9A;&#x7ED9;&#x5C55;&#x5F00;&#x7684;&#x76F8;&#x5E94;&#x8BBE;&#x5907;.
+</p>
+
+<p>
+&#x65E2;&#x7136;&#x8BBE;&#x5907;&#x6811;&#x5305;&#x542B;&#x4E86;&#x8FD9;&#x4E9B;&#x677F;&#x7EA7;&#x4FE1;&#x606F;&#xFF0C;&#x53EF;&#x4EE5;&#x77E5;&#x9053;&#xFF1A;&#x5BF9;&#x4E8E;&#x540C;&#x4E00;&#x4E2A;&#x5185;&#x6838;&#x4EE3;&#x7801;&#xFF0C;&#x6211;&#x4EEC;&#x53EA;&#x9700;&#x8981;&#x4FEE;&#x6539;&#x8BBE;&#x5907;&#x6811;&#x4FBF;&#x53EF;&#x4EE5;&#x652F;&#x6301;&#x4E0D;&#x540C;&#x7684;&#x5F00;&#x53D1;&#x677F;&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x5F53;&#x7136;&#xFF0C;&#x5185;&#x6838;&#x4E2D;&#x5305;&#x542B;&#x4E86;&#x8FD9;&#x4E9B;&#x5F00;&#x53D1;&#x677F;&#x7684;&#x9A71;&#x52A8;&#x4EE3;&#x7801;&#x3002;</li>
+</ul>
+<div id="outline-container-org3565d27" class="outline-2">
+<h2 id="org3565d27">&#x8BBE;&#x5907;&#x6811;&#x7684;&#x7EC4;&#x6210;&#x548C;&#x7ED3;&#x6784;</h2>
+<div class="outline-text-2" id="text-org3565d27">
+</div>
+<div id="outline-container-orgfb4d6f8" class="outline-3">
+<h3 id="orgfb4d6f8">DTS,DTC&#x548C;DTB</h3>
+<div class="outline-text-3" id="text-orgfb4d6f8">
+</div>
+<div id="outline-container-org4d2c1c3" class="outline-4">
+<h4 id="org4d2c1c3">DTS(Device Tree Source)</h4>
+<div class="outline-text-4" id="text-org4d2c1c3">
+<p>
+<code>.dts</code> &#x662F;&#x4E00;&#x79CD;ASCII&#x6587;&#x672C;&#x683C;&#x5F0F;&#x7684;&#x8BBE;&#x5907;&#x6811;&#x63CF;&#x8FF0;,&#x6613;&#x4E8E;&#x9605;&#x8BFB;.&#x5BF9;&#x4E8E;ARM&#x800C;&#x8A00;,&#x4E00;&#x822C;&#x653E;&#x5728; <code>arch/arm/boot/dts/</code> &#x4E2D;.
+</p>
+
+<p>
+&#x7531;&#x4E8E;&#x540C;&#x4E00;&#x4E2A;SOC&#x53EF;&#x4EE5;&#x5E94;&#x7528;&#x4E8E;&#x8BB8;&#x591A;&#x4E0D;&#x540C;&#x7684;&#x8BBE;&#x5907;,&#x6240;&#x4EE5;&#x9700;&#x8981;&#x63D0;&#x70BC;&#x51FA;SOC&#x516C;&#x7528;&#x7684;&#x90E8;&#x5206;,&#x4F7F;&#x7528; <code>.dtsi</code> &#x6587;&#x4EF6;,&#x7C7B;&#x4F3C;&#x4E8E;C&#x8BED;&#x8A00;&#x7684;&#x5934;&#x6587;&#x4EF6;.&#x5E76;&#x4E14;&#x6B64;&#x6587;&#x4EF6;&#x4E5F;&#x53EF;&#x4EE5;&#x5305;&#x542B;&#x5176;&#x4ED6;&#x7684; .dtsi &#x6587;&#x4EF6;.
+&#x6BD4;&#x5982;&#x51E0;&#x4E4E;&#x6240;&#x6709;&#x7684; ARM SOC &#x7684; .dtsi &#x6587;&#x4EF6;&#x90FD;&#x5F15;&#x7528;&#x4E86; <code>skeleton.dtsi</code> &#x6587;&#x4EF6;.
+&#x5305;&#x542B;&#x683C;&#x5F0F;:
+</p>
+<pre class="example">
+/include/ &quot;system-conf.dtsi&quot;</pre>
+
+<p>
+&#x8BBE;&#x5907;&#x6811;&#x7ED3;&#x6784;&#x7684;&#x6A21;&#x677F;:
+</p>
+<pre class="example">
+/{
+    /**
+     * @brief device tree example
+     */
+    node1{
+      //&lt;property&gt; = &lt;value&gt;
+      a-string-property = &quot;A string&quot;;
+      a-string-list-property = &quot;first string&quot;, &quot;second string&quot;;
+      a-byte-data-property = [0x01 0x23 0x34 0x56];
+      child-node1{
+       first-child-property;
+       second-child-property = &lt;1&gt;;
+       a-string-property = &quot;Hello, world&quot;;
+      };
+      child-node2{
+
+      };
+    };
+    node2{
+    an-empty-property;
+    a-cell-property = &lt;1 2 3 4&gt;;
+    child-node1{
+    };
+    };
+};</pre>
+<ol class="org-ol">
+<li>&#x6BCF;&#x4E2A;&#x6587;&#x4EF6;&#x4E2D;&#x7684;&#x8BBE;&#x5907;&#x6811;&#x90FD;&#x662F;&#x4EE5;&#x6839;&#x8282;&#x70B9;&quot;/&quot;&#x4E3A;&#x8D77;&#x59CB;(&#x6216;&#x5F15;&#x7528;&#x5176;&#x4ED6;&#x7684;label),&#x6839;&#x8282;&#x70B9;&#x53EF;&#x4EE5;&#x5305;&#x542B;&#x591A;&#x4E2A;&#x5B50;&#x8282;&#x70B9;,&#x5B50;&#x8282;&#x70B9;&#x4E5F;&#x53EF;&#x4EE5;&#x5305;&#x542B;&#x5B50;&#x8282;&#x70B9;.&#x8282;&#x70B9;&#x7684;&#x57FA;&#x672C;&#x5143;&#x7D20;&#x5C31;&#x662F;&#x5C5E;&#x6027;.
+<ul class="org-ul">
+<li>&#x4E00;&#x4E2A;&#x8282;&#x70B9;&#x7684;&#x5B8C;&#x6574;&#x540D;&#x5B57;&#x5C31;&#x662F;&#x5176;&#x8282;&#x70B9;&#x8DEF;&#x5F84;</li>
+</ul></li>
+<li>&#x5C5E;&#x6027;&#x7684;&#x5B9A;&#x4E49;&#x975E;&#x5E38;&#x7075;&#x6D3B;
+<ul class="org-ul">
+<li>&#x53EF;&#x4EE5;&#x53EA;&#x6709;&#x5C5E;&#x6027;&#x540D;&#xFF0C;&#x6CA1;&#x6709;&#x5BF9;&#x5E94;&#x7684;&#x503C;</li>
+<li>&#x503C;&#x53EF;&#x4EE5;&#x662F;&#x5B57;&#x7B26;&#x4E32;&#x3001;&#x5B57;&#x7B26;&#x4E32;&#x6570;&#x7EC4;&#x3001;&#x6574;&#x6570;&#x3001;&#x6574;&#x6570;&#x6570;&#x7EC4;&#x3001;16&#x8FDB;&#x5236;&#x3001;16&#x8FDB;&#x5236;&#x6570;&#x7EC4;</li>
+</ul></li>
+<li>&#x6CE8;&#x91CA;&#x548C;c&#x89C4;&#x5219;&#x4E00;&#x81F4;</li>
+</ol>
+<pre class="example">
+/ {
+  property1 = &quot;string_value&quot;;	/* define a property containing a 0
+                              * terminated string
+                              */
+
+  property2 = &lt;0x1234abcd&gt;;	/* define a property containing a
+                            * numerical 32-bit value (hexadecimal)
+                            */
+
+  property3 = &lt;0x12345678 0x12345678 0xdeadbeef&gt;;
+                                /* define a property containing 3
+                                 * numerical 32-bit values (cells) in
+                                 * hexadecimal
+                                 */
+  property4 = [0x0a 0x0b 0x0c 0x0d 0xde 0xea 0xad 0xbe 0xef];
+                                /* define a property whose content is
+                                 * an arbitrary array of bytes
+                                 */
+
+  childnode@address {	/* define a child node named &quot;childnode&quot;
+                                 * whose unit name is &quot;childnode at
+                                 * address&quot;
+                                 */
+
+    childprop = &quot;hello\n&quot;;      /* define a property &quot;childprop&quot; of
+                                 * childnode (in this case, a string)
+                                 */
+  };
+};</pre>
+
+<p>
+&#x5047;&#x8BBE;&#x786C;&#x4EF6;&#x62D3;&#x6251;&#x5982;&#x4E0B;:
+</p>
+
+<p>
+1&#x4E2A;&#x53CC;&#x6838;ARM Cortex-A9 32&#x4F4D;&#x5904;&#x7406;&#x5668;;ARM&#x672C;&#x5730;&#x603B;&#x7EBF;&#x4E0A;&#x7684;&#x5185;&#x5B58;&#x6620;&#x5C04;&#x533A;&#x57DF;&#x5206;&#x5E03;&#x6709;&#x4E24;&#x4E2A;&#x4E32;&#x53E3;(&#x5206;&#x522B;&#x4F4D;&#x4E8E;0x101f1000 &#x548C; 0x101f2000),GPIO&#x63A7;&#x5236;&#x5668;(&#x4F4D;&#x4E8E;0x101f3000),
+SPI&#x63A7;&#x5236;&#x5668;(&#x4F4D;&#x4E8E;0x10170000),&#x4E2D;&#x65AD;&#x63A7;&#x5236;&#x5668;(&#x4F4D;&#x4E8E;0x10140000)&#x548C;&#x4E00;&#x4E2A;&#x5916;&#x90E8;&#x603B;&#x7EBF;&#x6865;;&#x5916;&#x90E8;&#x603B;&#x7EBF;&#x6865;&#x4E0A;&#x53C8;&#x8FDE;&#x63A5;&#x4E86; SMC SMC91111 &#x4EE5;&#x592A;&#x7F51;(&#x4F4D;&#x4E8E; 0x10100000), I2C&#x63A7;&#x5236;&#x5668;(&#x4F4D;&#x4E8E;0x10160000),
+64MB NOR Flash(&#x4F4D;&#x4E8E;0x30000000);&#x5916;&#x90E8;&#x603B;&#x7EBF;&#x6865;&#x4E0A;&#x8FDE;&#x63A5;&#x7684;I2C&#x63A7;&#x5236;&#x5668;&#x6240;&#x5BF9;&#x5E94;&#x7684;I2C&#x603B;&#x7EBF;&#x4E0A;&#x53C8;&#x8FDE;&#x63A5;&#x4E86;Maxim DS1338 &#x5B9E;&#x65F6;&#x949F;(I2C&#x5730;&#x5740;&#x4E3A;0x58).
+</p>
+<pre class="example">
+/{
+  //&#x6307;&#x5B9A;&#x751F;&#x4EA7;&#x5382;&#x5546;&#x548C;&#x5BF9;&#x5E94;&#x7684;&#x4EA7;&#x54C1;
+  compatible = &quot;acme,coyotes-revenge&quot;;
+  #address-cells = &lt;1&gt;;
+  #size-cells = &lt;1&gt;;
+  interrupt-parent = &lt;&amp;intc&gt;;
+  //&#x4E00;&#x822C;&#x6307;&#x5B9A;CPU&#x53EA;&#x9700;&#x8981;&#x901A;&#x8FC7;compatible&#x5339;&#x914D;&#x5373;&#x53EF;&#xFF0C;&#x5176;&#x6784;&#x67B6;&#x7684;&#x5177;&#x4F53;&#x4FE1;&#x606F;&#x4E00;&#x822C;&#x5728;&#x82AF;&#x7247;&#x76F8;&#x5173;&#x4EE3;&#x7801;&#x4E2D;&#x914D;&#x7F6E;&#x4E86;
+  cpus{
+    #address-cells = &lt;1&gt;;
+    #size-cells = &lt;0&gt;;
+    cpu@0{
+      compatible = &quot;arm,cortex-a9&quot;;
+      reg = &lt;0&gt;;
+    };
+    cpu@1{
+      compatible = &quot;arm,cortex-a9&quot;;
+      reg = &lt;1&gt;;
+    };
+  };
+  serial@0x101f1000{
+    compatible = &quot;arm,pl0111&quot;;
+    reg = &lt;0x101f1000 0x1000&gt;;
+    interrupts = &lt;1 0&gt;;
+  };
+  serial@0x101f2000{
+    compatible = &quot;arm,pl0111&quot;;
+    reg = &lt;0x101f2000 0x1000&gt;;
+    interrupts = &lt;2 0&gt;;
+  };
+  gpio@101f3000{
+    compatible = &quot;arm,pl1061&quot;;
+    reg = &lt;0x101f3000 0x1000
+           0x101f4000 0x0010&gt;;
+    interrupts = &lt;3 0&gt;;
+  };
+  intc:interrupt-controller@10140000{
+    compatible = &quot;arm,pll90&quot;;
+    reg = &lt;0x10140000 0x1000&gt;;
+    interrupt-controller;
+    interrupt-cells = &lt;2&gt;;
+  };
+  spi@10170000{
+    compatible = &quot;arm,pl022&quot;;
+    reg = &lt;0x10170000 0x1000&gt;;
+    interrupts = &lt;4 0&gt;;
+  };
+  external-bus{
+    #address-cells = &lt;2&gt;;
+    #size-cells = &lt;1&gt;;
+    ranges = &lt; 0 0 0x10100000 0x10000 //Chipselect 1, Ethernet
+               1 0 0x10160000 0x10000 //Chipselect 2, i2c controller
+               2 0 0x30000000 0x1000000&gt;; //Chipselect 3, NOR Flash
+
+    ethernet@0,0{
+      compatible = &quot;smc, smc91c111&quot;;
+      reg = &lt;0 0 0x1000&gt;;
+      interrupts = &lt;5 2&gt;;
+    };
+    i2c@1,0{
+      compatible = &quot;acme,a1234-i2c-bus&quot;;
+      #address-cells = &lt;1&gt;;
+      #size-cells = &lt;0&gt;;
+      reg = &lt;1 0 0x1000&gt;;
+      interrupts = &lt;6 2&gt;;
+      rtc@58{
+        compatible = &quot;maxim,ds1338&quot;;
+        reg = &lt;58&gt;;
+        interrupts = &lt;7 3&gt;;
+      };
+    };
+    flash@2,0{
+    compatible = &quot;samsung,k8f1315ebm&quot;,&quot;cfi-flash&quot;;
+    reg = &lt;2 0 0x40000000&gt;;
+    };
+  };
+};</pre>
+</div>
+</div>
+<div id="outline-container-orgf665c91" class="outline-4">
+<h4 id="orgf665c91">DTC(Device Tree Compiler)</h4>
+<div class="outline-text-4" id="text-orgf665c91">
+<p>
+DTC&#x662F;&#x5C06; .dts &#x6587;&#x4EF6;&#x7F16;&#x8BD1;&#x4E3A; .dtb &#x7684;&#x5DE5;&#x5177;.&#x5176;&#x6E90;&#x4EE3;&#x7801;&#x4F4D;&#x4E8E; <code>scripts/dtc</code>,&#x5728;&#x5185;&#x6838;&#x4F7F;&#x80FD;&#x4E86;&#x8BBE;&#x5907;&#x6811;&#x7684;&#x60C5;&#x51B5;&#x4E0B;, &#x6B64;&#x5DE5;&#x5177;&#x4F1A;&#x88AB;&#x7F16;&#x8BD1;&#x51FA;&#x6765;.
+</p>
+<ul class="org-ul">
+<li>DTC &#x4E5F;&#x53EF;&#x4EE5;&#x5728;ubuntu&#x4E2D;&#x5B89;&#x88C5; <code>sudo apt install device-tree-compiler</code>.</li>
+</ul>
+
+<p>
+&#x5BF9;&#x4E8E;arm&#x800C;&#x8A00;&#xFF0C;&#x8DEF;&#x5F84; <code>arch/arm/boot/dts/Makefile</code> &#x4E2D;&#x6307;&#x51FA;&#x4E86;&#x5BF9;&#x5E94;&#x4E0D;&#x540C;SOC&#x6240;&#x9700;&#x8981;&#x54EA;&#x4E9B; .dtb &#x6587;&#x4EF6;&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x5DE5;&#x5177;&#x5728;&#x7F16;&#x8BD1; dts &#x65F6;&#x4F1A;&#x68C0;&#x67E5;dts&#x7684;&#x683C;&#x5F0F;</li>
+</ul>
+
+<p>
+&#x4E5F;&#x53EF;&#x4EE5;&#x5355;&#x72EC;&#x7F16;&#x8BD1;&#x8BBE;&#x5907;&#x6811;: <code>make dtbs</code> (&#x9700;&#x8981;&#x5148;&#x8BBE;&#x7F6E; <code>ARCH</code> &#x4EE5;&#x8BA9;&#x5176;&#x5206;&#x6790;Makefile&#x627E;&#x5230;&#x5BF9;&#x5E94;&#x9700;&#x8981;&#x7684;dtb),&#x6216;&#x8005;&#x53CD;&#x7F16;&#x8BD1;: 
+</p>
+<pre class="example">
+#  Input formats:
+#  -------------
+#
+#     - &quot;dtb&quot;: &quot;blob&quot; format, that is a flattened device-tree block
+#       with header all in a binary blob.
+#     - &quot;dts&quot;: &quot;source&quot; format. This is a text file containing a
+#       &quot;source&quot; for a device-tree. The format is defined later in this
+#        chapter.
+#     - &quot;fs&quot; format. This is a representation equivalent to the
+#        output of /proc/device-tree, that is nodes are directories and
+#	properties are files
+#
+# Output formats:
+# ---------------
+#
+#     - &quot;dtb&quot;: &quot;blob&quot; format
+#     - &quot;dts&quot;: &quot;source&quot; format
+#     - &quot;asm&quot;: assembly language file. This is a file that can be
+#       sourced by gas to generate a device-tree &quot;blob&quot;. That file can
+#       then simply be added to your Makefile. Additionally, the
+#       assembly file exports some symbols that can be used.
+#dtc [-I &lt;input-format&gt;] [-O &lt;output-format&gt;] [-o output-filename] [-V output_version] input_filename
+
+./scripts/dtc/dtc -I dtb -O dts -o xxx.dts /arch/arm/boot/dts/xxx.dtb</pre>
+</div>
+</div>
+<div id="outline-container-orgcc110c8" class="outline-4">
+<h4 id="orgcc110c8">DTB(Device Tree Blob)</h4>
+<div class="outline-text-4" id="text-orgcc110c8">
+<p>
+.dtb&#x6587;&#x4EF6;&#x662F;&#x7531;.dts&#x6587;&#x4EF6;&#x901A;&#x8FC7;DTC&#x5DE5;&#x5177;&#x7F16;&#x8BD1;&#x8FC7;&#x6765;&#x7684;,&#x6B64;&#x6587;&#x4EF6;&#x53EF;&#x4EE5;&#x88AB;linux&#x5185;&#x6838;&#x548C;u-boot&#x8BC6;&#x522B;.
+&#x6B64;&#x6587;&#x4EF6;&#x53EF;&#x4EE5;&#x4E0E;&#x5185;&#x6838;&#x955C;&#x50CF;&#x5355;&#x72EC;&#x5B58;&#x653E;,&#x4E5F;&#x53EF;&#x4EE5;&#x4E0E;&#x5185;&#x6838;&#x955C;&#x50CF;&#x6253;&#x5305;.&#x7F16;&#x8BD1;&#x5185;&#x6838;&#x65F6;,&#x4F7F;&#x80FD; <code>CONFIG_ARM_APPENDED_DTB</code> &#x4FBF;&#x53EF;&#x4EE5;&#x6253;&#x5305;.
+</p>
+
+<p>
+&#x53EF;&#x4EE5;&#x4F7F;&#x7528;&#x5185;&#x6838;&#x81EA;&#x5E26;&#x7684;&#x811A;&#x672C;&#x5C06;dtb&#x8F6C;&#x4E3A;dts&#x4EE5;&#x9A8C;&#x8BC1;&#x662F;&#x5426;&#x8C03;&#x7528;&#x4E86;&#x6B63;&#x786E;&#x7684;&#x8BBE;&#x5907;&#x6811;:
+</p>
+<pre class="example">
+./scripts/dtc/dtc -I dtb -O dts -o devicetree.dts devicetree.dtb</pre>
+</div>
+</div>
+<div id="outline-container-org27922ee" class="outline-4">
+<h4 id="org27922ee">&#x7ED1;&#x5B9A;(Binding)</h4>
+<div class="outline-text-4" id="text-org27922ee">
+<p>
+&#x8BBE;&#x5907;&#x6811;&#x9488;&#x5BF9;&#x4E0D;&#x540C;&#x8BBE;&#x7F6E;&#x7684;&#x7ED1;&#x5B9A;&#x8BF4;&#x660E;&#x6587;&#x6863;&#x4F4D;&#x4E8E; <code>Documentation/devicetree/bindings</code>, &#x5728;&#x4F7F;&#x7528;&#x5185;&#x6838;&#x63D0;&#x4F9B;&#x7684;&#x9A71;&#x52A8;&#x65F6;&#xFF0C;&#x9700;&#x8981;&#x67E5;&#x770B;&#x6B64;&#x6587;&#x4EF6;&#x4EE5;&#x77E5;&#x9053;&#x54EA;&#x4E9B;&#x5C5E;&#x6027;&#x662F;&#x5FC5;&#x987B;&#x7684;&#xFF0C;&#x54EA;&#x4E9B;&#x662F;&#x53EF;&#x9009;&#x7684;&#x3002;
+</p>
+
+<p>
+<b>Linux&#x5185;&#x6838;&#x4E0B;&#x7684; <code>scripts/checkpath.pl</code> &#x4F1A;&#x8FD0;&#x884C;&#x4E00;&#x4E2A;&#x68C0;&#x67E5;,&#x5982;&#x679C;&#x6709;&#x4EBA;&#x5728;&#x8BBE;&#x5907;&#x6811;&#x4E2D;&#x65B0;&#x6DFB;&#x52A0;&#x4E86; compatible &#x5B57;&#x7B26;&#x4E32;,&#x800C;&#x6CA1;&#x6709;&#x6DFB;&#x52A0;&#x76F8;&#x5E94;&#x7684;&#x6587;&#x6863;&#x8FDB;&#x884C;&#x89E3;&#x91CA;, checkpatch &#x7A0B;&#x5E8F;&#x4F1A;&#x62A5;&#x51FA;&#x8B66;&#x544A; =UNDOCUMENTED_DT_STRINGDT compatible string xxx
+apperars un-documented</b>.
+</p>
+</div>
+</div>
+<div id="outline-container-org9109ed1" class="outline-4">
+<h4 id="org9109ed1">Bootloader</h4>
+<div class="outline-text-4" id="text-org9109ed1">
+<p>
+&#x5728;u-boot&#x4E2D;&#x4F7F;&#x80FD;&#x8BBE;&#x5907;&#x6811;&#x4F7F;&#x7528;: <code>CONFIG_OF_LIBFDT</code>
+</p>
+
+<p>
+&#x4EE5;&#x524D;u-boot&#x5C06;&#x542F;&#x52A8;&#x53C2;&#x6570;&#x53D1;&#x9001;&#x7ED9;&#x5185;&#x6838;&#x4F7F;&#x7528;&#x7684;&#x662F; ATAGS &#x65B9;&#x5F0F;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>r0 : 0</li>
+<li>r1 : Machine type number</li>
+<li>r2 : &#x5B58;&#x50A8;tagged list&#x7684;&#x7269;&#x7406;&#x5185;&#x5B58;&#x5730;&#x5740;</li>
+</ul>
+
+<p>
+&#x73B0;&#x5728;&#x4E00;&#x822C;&#x4F7F;&#x7528;&#x8BBE;&#x5907;&#x6811;&#x6765;&#x4F20;&#x9012;&#x542F;&#x52A8;&#x53C2;&#x6570;:
+</p>
+<ul class="org-ul">
+<li>r0 : 0</li>
+<li>f1 : &#x4E00;&#x7C7B;SOC&#x53F7;</li>
+<li>f2 : &#x5B58;&#x50A8;device-tree&#x7684;&#x7269;&#x7406;&#x5185;&#x5B58;&#x5730;&#x5740;(&#x9700;&#x8981;64&#x4F4D;&#x5BF9;&#x9F50;)</li>
+</ul>
+
+<p>
+kernel&#x901A;&#x8FC7;&#x533A;&#x5206; ATAG &#x548C; device-tree &#x7684;&#x6807;&#x8BB0;&#x6765;&#x77E5;&#x9053;&#x5F53;&#x524D;&#x4F20;&#x9012;&#x7684;&#x662F;&#x54EA;&#x79CD;&#x7C7B;&#x578B;&#x3002;
+</p>
+
+<p>
+&#x5BF9;&#x4E8E;arm&#x800C;&#x8A00;&#xFF0C;&#x5B83;&#x4EEC;&#x5177;&#x6709;&#x5171;&#x7528;&#x7684;&#x8BBE;&#x5907;&#x6811;&#x6587;&#x4EF6;&#x4E3A; <code>skeleton.dtsi</code> &#xFF0C;&#x6B64;&#x6587;&#x4EF6;&#x89C4;&#x5B9A;&#x4E86;&#x6700;&#x57FA;&#x672C;&#x7684;&#x51E0;&#x4E2A;&#x8282;&#x70B9;:
+</p>
+<ul class="org-ul">
+<li>chosen : &#x4F20;&#x9012;&#x7ED9;&#x5185;&#x6838;&#x7684;&#x542F;&#x52A8;&#x53C2;&#x6570;&#x3001;&#x63A7;&#x5236;&#x547D;&#x4EE4;&#x7B49;</li>
+<li>aliases : &#x5BF9;&#x4E00;&#x4E9B;&#x8282;&#x70B9;&#x7684;&#x91CD;&#x547D;&#x540D;</li>
+<li>memory : &#x5BF9;&#x7CFB;&#x7EDF;&#x7269;&#x7406;&#x5185;&#x5B58;&#x7684;&#x8BF4;&#x660E;</li>
+<li>model : &#x5F53;&#x524D;&#x76EE;&#x6807;&#x677F;&#x540D;&#x79F0;</li>
+</ul>
+
+<p>
+&#x6BD4;&#x5982;zynq&#x4E0B;&#x5BF9;&#x8FD9;&#x51E0;&#x4E2A;&#x8282;&#x70B9;&#x7684;&#x586B;&#x5145;&#x5982;&#x4E0B;:
+</p>
+<pre class="example">
+/include/ &quot;skeleton.dtsi&quot;
+/include/ &quot;zynq-7000.dtsi&quot;
+/include/ &quot;pcw.dtsi&quot;
+/include/ &quot;pl.dtsi&quot;
+
+/ {
+  model = &quot;kc_sdr&quot;;
+  aliases {
+    serial0 = &amp;uart1;
+    spi0 = &amp;qspi;
+  };
+  chosen {
+    bootargs = &quot;console=ttyPS0,460800 earlyprintk&quot;;
+    stdout-path = &quot;serial0:460800ns&quot;;
+  };
+  memory {
+    device_type = &quot;memory&quot;;
+    reg = &lt;0x0 0x40000000&gt;;
+  };
+};</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-orgf3aff26" class="outline-3">
+<h3 id="orgf3aff26">&#x6839;&#x8282;&#x70B9;&#x517C;&#x5BB9;&#x6027;</h3>
+<div class="outline-text-3" id="text-orgf3aff26">
+<p>
+&#x524D;&#x9762;&#x7684;&#x6839;&#x8282;&#x70B9;&#x517C;&#x5BB9;&#x6027;&#x4E3A; :  compatible = &quot;acme,coyotes-revenge&quot;;&#x5B9A;&#x4E49;&#x4E86;&#x6574;&#x4E2A;&#x7CFB;&#x7EDF;&#x7684;&#x540D;&#x79F0;,&#x5B83;&#x7684;&#x7EC4;&#x7EC7;&#x5F62;&#x5F0F;&#x4E3A;: &lt;manufacturer&gt;,&lt;model&gt;.
+</p>
+
+<p>
+Linux&#x5185;&#x6838;&#x901A;&#x8FC7;&#x6B64;&#x517C;&#x5BB9;&#x6027;&#x6765;&#x5224;&#x65AD;&#x542F;&#x52A8;&#x7684;&#x662F;&#x54EA;&#x7C7B;&#x8BBE;&#x5907;,&#x6B64;&#x5C5E;&#x6027;&#x4E00;&#x822C;&#x5305;&#x62EC;&#x4E24;&#x4E2A;&#x53CA;&#x4EE5;&#x4E0A;&#x7684;&#x517C;&#x5BB9;&#x6027;&#x5B57;&#x7B26;&#x4E32;,&#x9996;&#x4E2A;&#x517C;&#x5BB9;&#x6027;&#x5B57;&#x7B26;&#x4E32;&#x662F;&#x677F;&#x5B50;&#x7EA7;&#x522B;&#x7684;&#x540D;&#x79F0;,&#x540E;&#x9762;&#x4E00;&#x4E2A;&#x517C;&#x5BB9;&#x6027;&#x662F;&#x82AF;&#x7247;&#x7EA7;&#x522B;(&#x6216;&#x8005;&#x82AF;&#x7247;&#x7CFB;&#x5217;&#x7EA7;&#x522B;)&#x7684;&#x540D;&#x5B57;.
+</p>
+<ul class="org-ul">
+<li>&#x6BD4;&#x5982;&#x5728; zynq-zc702.dts &#x4E2D;: compatible = &quot;xlnx,zynq-zc702&quot;,&quot;xlnx,zynq-7000&quot;;</li>
+<li>&#x5BF9;&#x4E8E;&#x6839;&#x8282;&#x70B9;&#x517C;&#x5BB9;&#x6027;&#x7684;&#x8BBE;&#x7F6E;&#xFF0C;&#x4E00;&#x822C;&#x4E5F;&#x4F1A;&#x6709;&#x5BF9;&#x5E94;bind&#x6587;&#x6863;&#xFF0C;&#x6BD4;&#x5982; <code>/Documentation/devicetree/bindings/arm</code> &#x4E2D;&#x5177;&#x6709;&#x5BF9;arm&#x7C7B;&#x5404;SOC&#x7684;&#x517C;&#x5BB9;&#x8BF4;&#x660E;</li>
+</ul>
+<pre class="example">
+Xilinx Zynq Platforms Device Tree Bindings
+
+Boards with Zynq-7000 SOC based on an ARM Cortex A9 processor
+shall have the following properties.
+
+Required root node properties:
+    - compatible = &quot;xlnx,zynq-7000&quot;;</pre>
+
+<p>
+&#x5728;Linux2.6&#x5185;&#x6838;&#x4E2D;,&#x662F;&#x901A;&#x8FC7;&#x5339;&#x914D; bootloader &#x4F20;&#x5165;&#x7684; MACHINE_ID &#x6765;&#x6267;&#x884C;&#x76F8;&#x5E94;&#x7684;&#x521D;&#x59CB;&#x5316;&#x51FD;&#x6570;. <b>&#x5728;&#x5F15;&#x5165;&#x8BBE;&#x5907;&#x6811;&#x540E;,&#x5C31;&#x662F;&#x901A;&#x8FC7;&#x6839;&#x8282;&#x70B9;&#x517C;&#x5BB9;&#x6027;&#x548C;&#x5185;&#x6838;&#x4E2D;&#x7684; .dt_compat &#x6765;&#x5B9E;&#x73B0;&#x5339;&#x914D;</b>.
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//file arch/arm/mach-zynq/common.c</span></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">const</span> <span class="keyword">char</span> * <span class="keyword">const</span> zynq_dt_match[] = {</span><br><span class="line">  <span class="string">&quot;xlnx,zynq-7000&quot;</span>,</span><br><span class="line">  <span class="literal">NULL</span></span><br><span class="line">};</span><br><span class="line"></span><br><span class="line">DT_MACHINE_START(XILINX_EP107, <span class="string">&quot;Xilinx Zynq Platform&quot;</span>)</span><br><span class="line"><span class="comment">/* 64KB way size, 8-way associativity, parity disabled */</span></span><br><span class="line">.l2c_aux_val    = <span class="number">0x00400000</span>,</span><br><span class="line">  .l2c_aux_mask	= <span class="number">0xffbfffff</span>,</span><br><span class="line">  .smp		= smp_ops(zynq_smp_ops),</span><br><span class="line">  .map_io		= zynq_map_io,</span><br><span class="line">  .init_irq	= zynq_irq_init,</span><br><span class="line">  .init_machine	= zynq_init_machine,</span><br><span class="line">  .init_late	= zynq_init_late,</span><br><span class="line">  .init_time	= zynq_timer_init,</span><br><span class="line">  .dt_compat	= zynq_dt_match,</span><br><span class="line">  .reserve	= zynq_memory_init,</span><br><span class="line">  MACHINE_END</span><br></pre></td></tr></table></figure>
+</div>
+
+<p>
+Linux &#x5021;&#x5BFC;&#x9488;&#x5BF9;&#x591A;&#x4E2A;SOC,&#x591A;&#x4E2A;&#x7535;&#x8DEF;&#x677F;&#x7684;&#x901A;&#x7528;DT&#x8BBE;&#x5907;,&#x5373;&#x4E00;&#x4E2A;&#x8BBE;&#x5907;&#x7684; .dt_compat &#x5305;&#x542B;&#x591A;&#x4E2A;&#x7535;&#x8DEF;&#x677F;&#x7684;.dts&#x6587;&#x4EF6;&#x7684;&#x6839;&#x8282;&#x70B9;&#x517C;&#x5BB9;&#x5C5E;&#x6027;&#x5B57;&#x7B26;&#x4E32;.&#x4E4B;&#x540E;&#x5982;&#x679C;&#x8FD9;&#x591A;&#x4E2A;&#x7535;&#x8DEF;&#x677F;&#x7684;&#x521D;&#x59CB;&#x5316;&#x5E8F;&#x5217;&#x4E0D;&#x4E00;&#x6837;,&#x53EF;&#x4EE5;
+&#x901A;&#x8FC7; <code>int of_machine_is_compatible(const char *compat)</code> API&#x5224;&#x65AD;&#x5177;&#x4F53;&#x7684;&#x7535;&#x8DEF;&#x677F;&#x662F;&#x4EC0;&#x4E48;.
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">exynos_cpufreq_probe</span><span class="params">(<span class="keyword">struct</span> platform_device *pdev)</span></span><br><span class="line"></span>{</span><br><span class="line">	<span class="keyword">int</span> ret = -EINVAL;</span><br><span class="line">	exynos_info = kzalloc(<span class="keyword">sizeof</span>(*exynos_info), GFP_KERNEL);</span><br><span class="line">	<span class="keyword">if</span>(!exynos_info)</span><br><span class="line">		<span class="keyword">return</span> -ENOMEM;</span><br><span class="line">	exynos_info-&gt;dev = &amp;pdev-&gt;dev;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span>(of_machine_is_compatible(<span class="string">&quot;samsung,exynos4210&quot;</span>)){</span><br><span class="line">		exynos_info-&gt;type = EXYNOS_SIC_4210;</span><br><span class="line">		ret = exynos4210_cpufreq_init(exynos_info);</span><br><span class="line">	}<span class="keyword">else</span> <span class="keyword">if</span>(of_machine_is_compatible(<span class="string">&quot;samsung,exynos4212&quot;</span>)){</span><br><span class="line">		exynos_info-&gt;type = EXYNOS_SIC_4212;</span><br><span class="line">		ret = exynos4x12_cpufreq_init(exynos_info);</span><br><span class="line">	}</span><br><span class="line">	...</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+</div>
+</div>
+</div>
+<div id="outline-container-org3ae1fba" class="outline-3">
+<h3 id="org3ae1fba">&#x8BBE;&#x5907;&#x8282;&#x70B9;&#x517C;&#x5BB9;&#x6027;</h3>
+<div class="outline-text-3" id="text-org3ae1fba">
+<p>
+&#x8BBE;&#x5907;&#x517C;&#x5BB9;&#x5C5E;&#x6027;&#x7528;&#x4E8E;&#x9A71;&#x52A8;&#x548C;&#x8BBE;&#x5907;&#x7ED1;&#x5B9A;,&#x7B2C;&#x4E00;&#x4E2A;&#x5B57;&#x7B26;&#x4E32;&#x8868;&#x793A;&#x8282;&#x70B9;&#x4EE3;&#x8868;&#x7684;&#x786E;&#x5207;&#x8BBE;&#x5907;,&#x5F62;&#x5F0F;&#x4E3A;: &quot;&lt;manufacturer&gt;,&lt;model&gt;&quot;,&#x540E;&#x9762;&#x7684;&#x5B57;&#x7B26;&#x4E32;&#x8868;&#x660E;&#x53EF;&#x4EE5;&#x517C;&#x5BB9;&#x7684;&#x5176;&#x4ED6;&#x8BBE;&#x5907;.
+&#x6BD4;&#x5982;: compatible = &quot;arm,vexpress-flash&quot;, &quot;cfi-flash&quot;; <b>&#x8BBE;&#x5907;&#x8282;&#x70B9;&#x7684;&#x517C;&#x5BB9;&#x6027;&#x548C;&#x6839;&#x8282;&#x70B9;&#x7684;&#x517C;&#x5BB9;&#x6027;&#x662F;&#x7C7B;&#x4F3C;&#x7684;,&#x90FD;&#x662F;&#x4ECE;&#x5177;&#x4F53;&#x5230;&#x62BD;&#x8C61;</b>.
+</p>
+
+<p>
+&#x9A71;&#x52A8;&#x9700;&#x8981;&#x4E0E;.dts&#x4E2D;&#x63CF;&#x8FF0;&#x7684;&#x8BBE;&#x5907;&#x8282;&#x70B9;&#x5339;&#x914D;,&#x4ECE;&#x800C;&#x4F7F;&#x9A71;&#x52A8;&#x7684;probe()&#x51FD;&#x6570;&#x6267;&#x884C;.&#x9A71;&#x52A8;&#x9700;&#x8981;&#x6DFB;&#x52A0;OF&#x5339;&#x914D;&#x5217;&#x8868;(struct of_device_id).
+</p>
+
+<p>
+&#x4E00;&#x4E2A;&#x9A71;&#x52A8;&#x53EF;&#x4EE5;&#x5728; of_match_table &#x4E2D;&#x517C;&#x5BB9;&#x591A;&#x4E2A;&#x8BBE;&#x5907;,&#x4F7F;&#x7528;&#x5982;&#x4E0B;API&#x6765;&#x5224;&#x65AD;&#x5177;&#x4F53;&#x7684;&#x8BBE;&#x5907;&#x662F;&#x4EC0;&#x4E48;:
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">of_device_is_compatible</span><span class="params">(<span class="keyword">const</span> <span class="keyword">struct</span> device_node *device,<span class="keyword">const</span> <span class="keyword">char</span> *compat)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (immr_node &amp;&amp; (of_device_is_compatible(immr_node,<span class="string">&quot;fsl,mpc8315-immr&quot;</span>) ||</span><br><span class="line">		  of_device_is_compatible(immr_node, <span class="string">&quot;fsl,mpc8308-immr&quot;</span>)))</span><br><span class="line">	clrsetbits_be32(immap + MPC83XX_SCCR_OFFS,</span><br><span class="line">			MPC8315_SCCR_USB_MASK,</span><br><span class="line">			MPC8315_SCCR_USB_DRCM_01);</span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">	clrsetbits_be32(immap + MPC83XX_SCCR_OFFS,</span><br><span class="line">			MPC83XX_SCCR_USB_MASK,</span><br><span class="line">			MPC83XX_SCCR_USB_DRCM_11);</span><br></pre></td></tr></table></figure>
+</div>
+
+<p>
+&#x9664;&#x4E86;&#x4F7F;&#x7528; of_device_is_compatible() &#x4EE5;&#x5916;,&#x8FD8;&#x53EF;&#x4EE5;&#x4F7F;&#x7528; <b>&#x79C1;&#x6709;&#x6570;&#x636E;&#x7ED1;&#x5B9A;&#x7684;&#x65B9;&#x6CD5;</b> &#x6765;&#x5339;&#x914D;&#x4E0D;&#x540C;&#x7684;&#x8BBE;&#x5907;.
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> l2c_init_data{</span><br><span class="line">	<span class="keyword">const</span> <span class="keyword">char</span> *type;</span><br><span class="line">	<span class="keyword">unsigned</span> num_lock;</span><br><span class="line">	.....</span><br><span class="line">};</span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> L2C_ID(name, fns) {.compatible = name, .data = (void *)&amp;fns}</span></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">const</span> <span class="keyword">struct</span> of_device_id l2x0_ids[] __initconst = {</span><br><span class="line">	L2C_ID(<span class="string">&quot;arm,l210-cache&quot;</span>, of_l2c210_data),</span><br><span class="line">	L2C_ID(<span class="string">&quot;arm,l220-cache&quot;</span>, of_l2c220_data),</span><br><span class="line">	....</span><br><span class="line">};</span><br><span class="line"><span class="keyword">int</span> __<span class="function">init <span class="title">l2x0_of_init</span><span class="params">(u32 aux_val, u32 aux_mask)</span></span><br><span class="line"></span>{</span><br><span class="line">	<span class="keyword">const</span> <span class="keyword">struct</span> l2c_init_data *data;</span><br><span class="line">	<span class="keyword">struct</span> device_node *np;</span><br><span class="line">	np = of_find_matching_node(<span class="literal">NULL</span>, l2x0_ids);</span><br><span class="line">	<span class="keyword">if</span>(!np)</span><br><span class="line">		<span class="keyword">return</span> -ENODEV;</span><br><span class="line">	....</span><br><span class="line">		data = of_match_node(l2x0_ids, np)-&gt;data;</span><br><span class="line">};</span><br></pre></td></tr></table></figure>
+</div>
+<p>
+&#x901A;&#x8FC7;&#x8FD9;&#x79CD;&#x65B9;&#x6CD5;,&#x9A71;&#x52A8;&#x53EF;&#x4EE5;&#x628A;&#x4E0E;&#x67D0;&#x4E2A;&#x8BBE;&#x5907;&#x517C;&#x5BB9;&#x7684;&#x79C1;&#x6709;&#x6570;&#x636E;&#x5BFB;&#x627E;&#x51FA;&#x6765;,&#x4F53;&#x73B0;&#x4E86;&#x4E00;&#x79CD;&#x9762;&#x5411;&#x5BF9;&#x8C61;&#x7684;&#x8BBE;&#x8BA1;&#x601D;&#x60F3;,&#x907F;&#x514D;&#x4E86;&#x5927;&#x91CF;&#x7684; if,else.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgf563544" class="outline-3">
+<h3 id="orgf563544">&#x8BBE;&#x5907;&#x8282;&#x70B9;&#x53CA;lable&#x547D;&#x540D;</h3>
+<div class="outline-text-3" id="text-orgf563544">
+<p>
+&#x8282;&#x70B9;&#x547D;&#x540D;&#x7684;&#x683C;&#x5F0F;: &lt;name&gt;[@&lt;unit-address&gt;]; &lt;&gt;&#x4E2D;&#x7684;&#x5185;&#x5BB9;&#x662F;&#x5FC5;&#x9009;,[]&#x4E2D;&#x4F5C;&#x4E3A;&#x53EF;&#x9009;.
+</p>
+<ul class="org-ul">
+<li>&lt;name&gt; &#x4E3A;ASCII &#x5B57;&#x7B26;&#x4E32;,&#x591A;&#x4E2A;&#x540C;&#x7C7B;&#x8BBE;&#x5907;&#x8282;&#x70B9;&#x7684;name&#x53EF;&#x4EE5;&#x4E00;&#x6837;,&#x4F46;unit-address&#x8981;&#x4E0D;&#x4E00;&#x6837;.</li>
+<li>@&lt;unit-address&gt; &#x4E3A;&#x8BBE;&#x5907;&#x7684;&#x8D77;&#x59CB;&#x5730;&#x5740;.&#x4E5F;&#x7ECF;&#x5E38;&#x5728;&#x5BF9;&#x5E94;&#x8282;&#x70B9;&#x7684; reg &#x5C5E;&#x6027;&#x4E2D;&#x7ED9;&#x51FA;.
+<ul class="org-ul">
+<li>&#x5BF9;&#x4E8E;&#x6302;&#x5728;&#x5185;&#x5B58;&#x7A7A;&#x95F4;&#x7684;&#x8BBE;&#x5907;,&#x6B64;&#x5730;&#x5740;&#x76F4;&#x63A5;&#x4EE3;&#x8868;&#x5728;&#x5185;&#x5B58;&#x4E2D;&#x7684;&#x5730;&#x5740;.</li>
+<li>&#x5BF9;&#x4E8E;&#x6302;&#x5728;I2C&#x603B;&#x7EBF;&#x4E0A;&#x7684;&#x5916;&#x8BBE;,@&#x540E;&#x9762;&#x4E00;&#x822C;&#x8DDF;&#x7684;&#x662F;&#x4ECE;&#x8BBE;&#x5907;&#x7684;I2C&#x5730;&#x5740;.</li>
+</ul></li>
+</ul>
+
+<p>
+<b>&#x6CE8;&#x610F;&#xFF1A;&#x8282;&#x70B9;&#x540D;&#x548C;&#x5C5E;&#x6027;&#x540D;(@&#x7B26;&#x53F7;&#x5DE6;&#x8FB9;&#x7684;&#x5B57;&#x7B26;)&#x4E0D;&#x80FD;&#x8D85;&#x8FC7;31&#x4E2A;&#x5B57;&#x7B26;</b>
+</p>
+
+<p>
+&#x53EF;&#x4EE5;&#x7ED9;&#x8BBE;&#x5907;&#x8282;&#x70B9;&#x6DFB;&#x52A0; label,&#x4E4B;&#x540E;&#x53EF;&#x4EE5;&#x901A;&#x8FC7; &amp;label &#x7684;&#x5F62;&#x5F0F;&#x8BBF;&#x95EE;&#x8FD9;&#x4E2A;&#x8282;&#x70B9;&#x4EE5;&#x83B7;&#x53D6;&#x8BE5;&#x8282;&#x70B9;&#x7684;&#x8BBE;&#x5907;&#x5730;&#x5740;(&#x901A;&#x8FC7;phandle,pointer handle&#x8FDB;&#x884C;&#x7684;).
+</p>
+<ul class="org-ul">
+<li>&#x6BD4;&#x5982;&#x5728;&#x97F3;&#x9891;machine &#x9A71;&#x52A8;&#x4E2D;&#x7684;&#xFF0C;&#x8BBE;&#x5907;&#x6811;&#x4E2D;&#x8282;&#x70B9;&#x5B9A;&#x4E49;</li>
+</ul>
+<pre class="example">
+audio_speaker{
+    compatible = &quot;zynq, audio_speaker&quot;;
+    audio-codec = &lt;&amp;ssm2518_label&gt;;
+    cpu-dai = &lt;&amp;audio_i2s_label&gt;;
+};</pre>
+<ul class="org-ul">
+<li>&#x4E3A;&#x4E86;&#x80FD;&#x591F;&#x83B7;&#x53D6;codec&#x548C;platform&#x8282;&#x70B9;&#xFF0C;&#x5728;machine driver &#x7684; probe &#x51FD;&#x6570;&#x4E2D;&#x9700;&#x8981;&#x5982;&#x4E0B;&#x64CD;&#x4F5C;:</li>
+</ul>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">audio_speaker_probe</span><span class="params">(<span class="keyword">struct</span> platform_device *pdev)</span></span><br><span class="line"></span>{</span><br><span class="line">	<span class="keyword">int</span> rc = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	.....</span><br><span class="line">	<span class="keyword">struct</span> device_node *of_node = pdev-&gt;dev.of_node;</span><br><span class="line">	<span class="keyword">if</span>(of_node == <span class="literal">NULL</span>)</span><br><span class="line">	{</span><br><span class="line">		<span class="keyword">return</span> -ENXIO;</span><br><span class="line">	}</span><br><span class="line">	<span class="comment">//&#x83B7;&#x53D6;&#x8BBE;&#x5907;&#x6811;&#x8282;&#x70B9;</span></span><br><span class="line">	audio_speaker_link.codec_of_node = of_parse_phandle(of_node, <span class="string">&quot;audio-codec&quot;</span> , <span class="number">0</span>);</span><br><span class="line">	audio_speaker_link.cpu_of_node = of_parse_phandle(of_node, <span class="string">&quot;cpu-dai&quot;</span> , <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">	<span class="comment">//&#x5F97;&#x5230;&#x8BBE;&#x5907;</span></span><br><span class="line">	<span class="keyword">struct</span> device *codec_dev = &amp;of_find_device_by_node(</span><br><span class="line">		audio_speaker_link.codec_of_node)-&gt;dev;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">struct</span> device *cpu_dev = &amp;of_find_device_by_node(</span><br><span class="line">		audio_speaker_link.cpu_of_node)-&gt;dev;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+</div>
+<ul class="org-ul">
+<li>&#x540C;&#x65F6;&#x8BBE;&#x5907;&#x6811;&#x652F;&#x6301;C&#x8BED;&#x8A00;&#x7684;&#x9884;&#x5904;&#x7406;&#x8FC7;&#x7A0B;,&#x6240;&#x4EE5;&#x8BBE;&#x5907;&#x6811;&#x4E2D;&#x53EF;&#x4EE5;&#x5305;&#x542B;&#x5934;&#x6587;&#x4EF6;&#x5E76;&#x4F7F;&#x7528;&#x5B8F;&#x5B9A;&#x4E49;.</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-orgd5ba2c4" class="outline-3">
+<h3 id="orgd5ba2c4">&#x5730;&#x5740;&#x7F16;&#x7801;</h3>
+<div class="outline-text-3" id="text-orgd5ba2c4">
+</div>
+<div id="outline-container-org73b2f8a" class="outline-4">
+<h4 id="org73b2f8a">address-cells,size-cells</h4>
+<div class="outline-text-4" id="text-org73b2f8a">
+<pre class="example">
+#address-cells = &lt;num&gt;;
+#size-cells = &lt;num&gt;;</pre>
+<p>
+&#x4EE3;&#x8868; reg &#x5C5E;&#x6027;&#x7684; <b>&#x6BCF;&#x4E00;&#x5BF9;&#x8868;&#x73B0;&#x683C;&#x5F0F;</b>,&#x662F;&#x7531;&#x591A;&#x957F;&#x5730;&#x5740;&#x914D;&#x591A;&#x5927;&#x8303;&#x56F4;.
+</p>
+<ul class="org-ul">
+<li>&#x6BD4;&#x5982;&#x5F53;&#x4E24;&#x4E2A;&#x90FD;&#x4E3A;1&#x65F6;&#xFF0C;&#x4EE3;&#x8868;32&#x4F4D;&#x5730;&#x5740;&#x914D;32&#x4F4D;&#x5927;&#x5C0F;&#xFF0C;&#x5F53; #address-cells=2 #size-cells=1 &#x4EE3;&#x8868;64&#x4F4D;&#x5730;&#x5740;&#x914D;32&#x4F4D;&#x5927;&#x5C0F;</li>
+</ul>
+
+<p>
+<b>&#x6CE8;&#x610F;</b>:
+&#x5728;&#x5F53;&#x524D;&#x8282;&#x70B9;&#x4E0B;&#x6240;&#x8BBE;&#x7F6E;&#x7684;&#x8FD9;&#x4E24;&#x4E2A;&#x5C5E;&#x6027;, <b>&#x53EA;&#x5F71;&#x54CD;&#x5230;&#x5B50;&#x8282;&#x70B9;</b>.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org8a9230f" class="outline-4">
+<h4 id="org8a9230f">reg</h4>
+<div class="outline-text-4" id="text-org8a9230f">
+<ul class="org-ul">
+<li>&#x683C;&#x5F0F;: reg = &lt;address1 length1 [address2 length2] [address3 length3] ..&gt;;
+<ul class="org-ul">
+<li>&#x5176;&#x4E2D; address length &#x4EE3;&#x8868;&#x8BBE;&#x5907;&#x7684;&#x8D77;&#x59CB;&#x5730;&#x5740;&#x53CA;&#x5176;&#x4F7F;&#x7528;&#x8303;&#x56F4;.address &#x4E3A;&#x4E00;&#x4E2A;&#x6216;&#x591A;&#x4E2A;&#x7684;32&#x4F4D;&#x6574;&#x578B;(&#x5373; cell),length&#x5219;&#x610F;&#x5473;&#x7740;&#x4ECE; address &#x5230; address+length-1.</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div id="outline-container-org2405eca" class="outline-4">
+<h4 id="org2405eca">ranges</h4>
+<div class="outline-text-4" id="text-org2405eca">
+<p>
+&#x5982;&#x679C;&#x8BBE;&#x5907;&#x7ECF;&#x8FC7;&#x603B;&#x7EBF;&#x6865;&#x4E0E;CPU&#x8FDE;&#x63A5;,&#x5176; address &#x5F80;&#x5F80;&#x9700;&#x8981;&#x7ECF;&#x8FC7;&#x8F6C;&#x6362;&#x624D;&#x80FD;&#x5BF9;&#x5E94;CPU&#x7684;&#x5185;&#x5B58;&#x6620;&#x5C04;.
+&#x5982;&#x4E4B;&#x524D;&#x7684; external-bus &#x6240;&#x793A;:
+</p>
+<pre class="example">
+ranges = &lt;0 0 0x10100000 0x10000
+          1 0 0x10160000 0x10000
+          2 0 0x30000000 0x1000000&gt;;</pre>
+<p>
+ranges &#x662F;&#x5730;&#x5740;&#x8F6C;&#x6362;&#x8868;,&#x5176;&#x4E2D;&#x7684;&#x6BCF;&#x4E2A;&#x9879;&#x76EE;&#x662F;&#x4E00;&#x4E2A;&#x5B50;&#x5730;&#x5740;,&#x7236;&#x5730;&#x5740;&#x4EE5;&#x53CA;&#x5728;&#x5B50;&#x5730;&#x5740;&#x7A7A;&#x95F4;&#x7684;&#x5927;&#x5C0F;&#x6620;&#x5C04;.
+<b>&#x6620;&#x5C04;&#x8868;&#x4E2D;&#x7684;&#x5B50;&#x5730;&#x5740;,&#x7236;&#x5730;&#x5740;&#x5206;&#x522B;&#x91C7;&#x7528;&#x5B50;&#x5730;&#x5740;&#x7A7A;&#x95F4;&#x7684; #address-cells &#x548C;&#x7236;&#x5730;&#x5740;&#x7A7A;&#x95F4;&#x7684; #address-cells.</b>
+</p>
+
+<p>
+&#x5BF9;&#x4E8E;&#x672C;&#x4F8B;&#x800C;&#x8A00;,&#x5B50;&#x5730;&#x5740;&#x7A7A;&#x95F4;&#x7684; #address-cells = 2,&#x7236;&#x5730;&#x5740;&#x7A7A;&#x95F4;&#x7684; #address-cells = 1,&#x56E0;&#x6B64; 0 0 0x10100000 0x10000
+&#x7684;&#x524D;2&#x4E2A;cell&#x4E3A; external-bus &#x6865;&#x540E;external-bus&#x4E0A;&#x7247;&#x9009;0&#x504F;&#x79FB;&#x4E3A;0,&#x7B2C;3&#x4E2A;cell&#x8868;&#x793A;external-bus&#x4E0A;&#x7247;&#x9009;0&#x504F;&#x79FB;0&#x7684;&#x5730;&#x5740;&#x7A7A;&#x95F4;&#x88AB;&#x6620;&#x5C04;&#x5230;CPU
+&#x7684;&#x672C;&#x5730;&#x603B;&#x7EBF;&#x7684; 0x10100000 &#x4F4D;&#x7F6E;,&#x7B2C;4&#x4E2A;cell&#x8868;&#x793A;&#x6620;&#x5C04;&#x7684;&#x5927;&#x5C0F;&#x4E3A;0x10000.
+</p>
+</div>
+</div>
+</div>
+<div id="outline-container-org76cb217" class="outline-3">
+<h3 id="org76cb217">&#x4E2D;&#x65AD;&#x8FDE;&#x63A5;</h3>
+<div class="outline-text-3" id="text-org76cb217">
+<p>
+&#x5BF9;&#x4E8E;&#x4E2D;&#x65AD;&#x63A7;&#x5236;&#x5668;&#x800C;&#x8A00;,&#x5B83;&#x63D0;&#x4F9B;&#x5982;&#x4E0B;&#x5C5E;&#x6027;:
+</p>
+<ul class="org-ul">
+<li>interrupt-controller &#x6B64;&#x5C5E;&#x6027;&#x4E3A;&#x7A7A;,&#x4E2D;&#x65AD;&#x63A7;&#x5236;&#x5668;&#x5E94;&#x8BE5;&#x52A0;&#x4E0A;&#x6B64;&#x5C5E;&#x6027;&#x8868;&#x660E;&#x81EA;&#x5DF1;&#x7684;&#x8EAB;&#x4EFD;</li>
+<li>#interrupt-cells = &lt;num&gt; &#x4E0E;#address-cells &#x548C; #size-cells &#x76F8;&#x4F3C;,&#x8868;&#x660E;&#x8FDE;&#x63A5;&#x6B64;&#x4E2D;&#x65AD;&#x63A7;&#x5236;&#x5668;&#x7684;&#x8BBE;&#x5907;&#x7684;&#x4E2D;&#x65AD;&#x5C5E;&#x6027;&#x7684;cell&#x5927;&#x5C0F;</li>
+</ul>
+
+<p>
+&#x5BF9;&#x4E8E;&#x666E;&#x901A;&#x8BBE;&#x5907;,&#x4E0E;&#x4E2D;&#x65AD;&#x76F8;&#x5173;&#x7684;&#x5C5E;&#x6027;&#x8FD8;&#x5305;&#x62EC;:
+</p>
+<ul class="org-ul">
+<li>interrupt-parent = &lt;&amp;intc&gt; &#x6307;&#x5B9A;&#x6B64;&#x8BBE;&#x5907;&#x6240;&#x4F9D;&#x9644;&#x7684;&#x4E2D;&#x65AD;&#x63A7;&#x5236;&#x5668;&#x7684; phandle,&#x5F53;&#x8282;&#x70B9;&#x6CA1;&#x6709;&#x6B64;&#x5C5E;&#x6027;&#x65F6;,&#x5219;&#x4ECE;&#x7236;&#x8282;&#x70B9;&#x7EE7;&#x627F;.</li>
+<li>interrupt = &lt;val&gt; &#x6307;&#x5B9A;&#x4E2D;&#x65AD;&#x53F7;,&#x89E6;&#x53D1;&#x65B9;&#x5F0F;&#x7B49;.&#x5176;&#x503C;&#x7684;&#x4E2A;&#x6570;&#x7531; interrupt-cells &#x6307;&#x5B9A;,&#x800C;&#x5177;&#x4F53;&#x7684;&#x610F;&#x4E49;&#x7531;&#x9A71;&#x52A8;&#x51B3;&#x5B9A;.&#x5728;&#x76F8;&#x5E94;&#x7684;&#x7ED1;&#x5B9A;&#x6587;&#x6863;&#x4E5F;&#x4F1A;&#x8BF4;&#x660E;
+<ul class="org-ul">
+<li>&#x4E00;&#x4E2A;&#x8BBE;&#x5907;&#x8FD8;&#x53EF;&#x80FD;&#x4F1A;&#x7528;&#x5230;&#x591A;&#x4E2A;&#x4E2D;&#x65AD;&#x53F7;.&#x5BF9;&#x4E8E;ARM GIC&#x800C;&#x8A00;,&#x82E5;&#x67D0;&#x8BBE;&#x5907;&#x4F7F;&#x7528;&#x4E86; SPI&#x7684;168,169&#x53F7;&#x4E24;&#x4E2A;&#x4E2D;&#x65AD;,&#x4E14;&#x90FD;&#x662F;&#x9AD8;&#x7535;&#x5E73;&#x89E6;&#x53D1;,&#x5219;&#x5B9A;&#x4E49;&#x4E3A; interrupts = &lt;0 168 4&gt;,&lt;0 169 4&gt;;</li>
+</ul></li>
+</ul>
+
+<p>
+&#x83B7;&#x53D6;&#x4E2D;&#x65AD;&#x53F7;&#x53EF;&#x4EE5;&#x901A;&#x8FC7; <code>platform_get_irq</code> &#x76F4;&#x63A5;&#x83B7;&#x53D6;,&#x4E5F;&#x53EF;&#x4EE5;&#x901A;&#x8FC7;&#x540D;&#x79F0;&#x83B7;&#x53D6;,&#x5982;&#x4E0B;:
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">edma0: dma-controller@<span class="number">40018000</span>{</span><br><span class="line">	<span class="preprocessor">#dma-cells = &lt;<span class="number">2</span>&gt;;</span></span><br><span class="line">	compatible = <span class="string">&quot;fsl,vf610-edma&quot;</span>;</span><br><span class="line">	reg = &lt;<span class="number">0x40018000</span> <span class="number">0x2000</span>&gt;,</span><br><span class="line">		&lt;<span class="number">0x40024000</span> <span class="number">0x1000</span>&gt;,</span><br><span class="line">		&lt;<span class="number">0x40025000</span> <span class="number">0x1000</span>&gt;;</span><br><span class="line">	interrupts = &lt;<span class="number">0</span> <span class="number">8</span> IRQ_TYPE_LEVEL_HIGH&gt;,</span><br><span class="line">		&lt;<span class="number">0</span> <span class="number">9</span> IRQ_TYPE_LEVEL_HIGH&gt;;</span><br><span class="line">	interrupt-names = <span class="string">&quot;edma-tx&quot;</span>,<span class="string">&quot;edma-err&quot;</span>;</span><br><span class="line">	dma-channels = &lt;<span class="number">32</span>&gt;;</span><br><span class="line">	clock-names = <span class="string">&quot;dmamux0&quot;</span>,<span class="string">&quot;dmamux1&quot;</span>;</span><br><span class="line">	....</span><br><span class="line">};</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span></span><br><span class="line"><span class="title">fsl_edma_irq_init</span><span class="params">(<span class="keyword">struct</span> platform_device *pdev,<span class="keyword">struct</span> fsl_edma_engine *fsl_edma)</span></span><br><span class="line"></span>{</span><br><span class="line">	fsl_edma-&gt;txirq = platform_get_irq_byname(pdev,<span class="string">&quot;edma-tx&quot;</span>);</span><br><span class="line">	fsl_edma-&gt;errirq = platform_get_irq_byname(pdev,<span class="string">&quot;edma-err&quot;</span>);</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+</div>
+</div>
+</div>
+<div id="outline-container-orgcceb6ad" class="outline-3">
+<h3 id="orgcceb6ad">GPIO,&#x65F6;&#x949F;&#x8FDE;&#x63A5;</h3>
+<div class="outline-text-3" id="text-orgcceb6ad">
+</div>
+<div id="outline-container-org7690e93" class="outline-4">
+<h4 id="org7690e93">GPIO</h4>
+<div class="outline-text-4" id="text-org7690e93">
+<p>
+&#x5BF9;&#x4E8E;CPIO&#x63A7;&#x5236;&#x5668;&#x800C;&#x8A00;,&#x5176;&#x5BF9;&#x5E94;&#x7684;&#x8BBE;&#x5907;&#x8282;&#x70B9;&#x9700;&#x8981;&#x58F0;&#x660E; <code>gpio-controller</code> &#x5C5E;&#x6027;,&#x5E76;&#x8BBE;&#x7F6E; <code>#gpio-cells</code> &#x5927;&#x5C0F;.
+#gpio-cells &#x4E2D;&#x7B2C;&#x4E00;&#x4E2A;cell&#x4E3A;GPIO&#x53F7;,&#x7B2C;2&#x4E2A;&#x4E3A;GPIO&#x6781;&#x6027;.
+</p>
+<pre class="example">
+gpio0: gpio@e00a000{
+  compatible = &quot;xlnx,zynq-gpio-1.0&quot;;
+  #gpio-cells = &lt;2&gt;;
+  #interrupt-cells = &lt;2&gt;;
+  clocks = &lt;&amp;clkc 42&gt;;
+  gpio-controller;
+  interrupt-controller;
+  interrupt-parent = &lt;&amp;intc&gt;;
+  interrupts = &lt;0 20 4&gt;;
+  reg = &lt;0xe000a000 0x1000&gt;;
+};</pre>
+<p>
+&#x4F7F;&#x7528;GPIO&#x8BBE;&#x5907;&#x5219;&#x901A;&#x8FC7;&#x5B9A;&#x4E49;&#x547D;&#x540D; xxx-gpios &#x5C5E;&#x6027;&#x6765;&#x5F15;&#x7528;GPIO&#x63A7;&#x5236;&#x5668;&#x7684;&#x8BBE;&#x5907;&#x8282;&#x70B9;,
+</p>
+<pre class="example">
+sdhci@c8000400{
+status = &quot;okay&quot;;
+cd-gpios = &lt;&amp;gpio01 0&gt;;
+wp-gpios = &lt;&amp;gpio02 0&gt;;
+power-gpios = &lt;&amp;gpio03 0&gt;;
+bus-width = &lt;4&gt;;
+};</pre>
+<p>
+&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#x901A;&#x8FC7;&#x5982;&#x4E0B;&#x65B9;&#x6CD5;&#x6765;&#x83B7;&#x53D6;GPIO:
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">//&#x5728;.dts&#x548C;&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#x4E0D;&#x5173;&#x5FC3;GPIO&#x540D;&#x5B57;&#x7684;&#x60C5;&#x51B5;&#x4E0B;,&#x4E5F;&#x53EF;&#x4EE5;&#x901A;&#x8FC7;of_get_gpio() &#x83B7;&#x53D6;</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">int</span> <span class="title">of_get_gpio</span><span class="params">(<span class="keyword">struct</span> device_node *np,<span class="keyword">int</span> index)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">int</span> <span class="title">of_get_named_gpio</span><span class="params">(<span class="keyword">struct</span> device_node *np, <span class="keyword">const</span> <span class="keyword">char</span> *propname, <span class="keyword">int</span> index)</span></span>;</span><br><span class="line"></span><br><span class="line">cd_gpio = of_get_named_gpio(np, <span class="string">&quot;cd-gpios&quot;</span>, <span class="number">0</span>);</span><br><span class="line">wp_gpio = of_get_named_gpio(np, <span class="string">&quot;wp-gpios&quot;</span>, <span class="number">0</span>);</span><br><span class="line">power_gpio = of_get_named_gpio(np, <span class="string">&quot;power-gpios&quot;</span>, <span class="number">0</span>);</span><br></pre></td></tr></table></figure>
+</div>
+</div>
+</div>
+<div id="outline-container-org6ddee64" class="outline-4">
+<h4 id="org6ddee64">&#x65F6;&#x949F;</h4>
+<div class="outline-text-4" id="text-org6ddee64">
+<p>
+&#x4E0E;GPIO&#x7C7B;&#x4F3C;,&#x65F6;&#x949F;&#x63A7;&#x5236;&#x5668;&#x7684;&#x8282;&#x70B9;&#x88AB;&#x4F7F;&#x7528;&#x65F6;&#x949F;&#x7684;&#x6A21;&#x5757;&#x5F15;&#x7528;:
+</p>
+<pre class="example">
+clocks = &lt;&amp;clks 138&gt;,&lt;&amp;clks 140&gt;,&lt;&amp;clks 141&gt;;//&#x6570;&#x5B57;&#x4E0E;&#x76F8;&#x5E94;&#x65F6;&#x949F;&#x9A71;&#x52A8;&#x4E2D;&#x7684;CLK&#x8868;&#x7684;&#x987A;&#x5E8F;&#x5BF9;&#x5E94;
+clock-names = &quot;uart&quot;,&quot;general&quot;,&quot;noc&quot;;</pre>
+<p>
+&#x800C;&#x9A71;&#x52A8;&#x4E2D;&#x5219;&#x4F7F;&#x7528;&#x4E0A;&#x8FF0;&#x7684;clock-names&#x5C5E;&#x6027;&#x4F5C;&#x4E3A;clk_get()&#x6216;devm_clk_get()&#x7684;&#x7B2C;&#x4E8C;&#x4E2A;&#x53C2;&#x6570;&#x6765;&#x7533;&#x8BF7;&#x65F6;&#x949F;:
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">devm_clk_get(&amp;pdev-dev, <span class="string">&quot;general&quot;</span>);</span><br></pre></td></tr></table></figure>
+</div>
+<p>
+CLK&#x8868;&#x4F5C;&#x4E3A;&#x5B8F;&#x5B9A;&#x4E49;&#x5230;&#x4E86; <code>arch/arm/boot/dts/include/dt-bindings/clock</code> &#x4E2D;,&#x6240;&#x4EE5;&#x8BBE;&#x5907;&#x6811;&#x4E5F;&#x53EF;&#x4EE5;&#x4F7F;&#x7528;&#x5B8F;&#x6765;&#x5F15;&#x7528;.
+</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-orgd3f9d24" class="outline-2">
+<h2 id="orgd3f9d24">&#x5E38;&#x7528;API</h2>
+<div class="outline-text-2" id="text-orgd3f9d24">
+</div>
+<div id="outline-container-orgb49241d" class="outline-3">
+<h3 id="orgb49241d">&#x5BFB;&#x627E;&#x8282;&#x70B9;</h3>
+<div class="outline-text-3" id="text-orgb49241d">
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//&#x4E00;&#x822C;from&#x548C;type&#x4E3A;NULL,&#x67E5;&#x627E;&#x4E0E;compatible&#x5339;&#x914D;&#x7684;&#x8282;&#x70B9;</span></span><br><span class="line"><span class="function"><span class="keyword">struct</span> device_node *<span class="title">of_find_compatible_node</span><span class="params">(<span class="keyword">struct</span> device_node *from, <span class="keyword">const</span> <span class="keyword">char</span> *type,</span><br><span class="line">					    <span class="keyword">const</span> <span class="keyword">char</span> *compatible)</span></span>;</span><br></pre></td></tr></table></figure>
+</div>
+</div>
+</div>
+<div id="outline-container-org35e058d" class="outline-3">
+<h3 id="org35e058d">&#x8BFB;&#x53D6;&#x5C5E;&#x6027;</h3>
+<div class="outline-text-3" id="text-org35e058d">
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//&#x4ECE;&#x8282;&#x70B9;np&#x5904;&#x83B7;&#x53D6;propname&#x5C5E;&#x6027;&#x7684;&#x503C;&#x5E76;&#x5B58;&#x50A8;&#x4E8E;&#x7F13;&#x5B58; out_values</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">of_property_read_u8_array</span><span class="params">(<span class="keyword">const</span> <span class="keyword">struct</span> device_node *np,<span class="keyword">const</span> <span class="keyword">char</span> *propname,</span><br><span class="line">			      u8 *out_values, size_t sz)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">of_property_read_u16_array</span><span class="params">(<span class="keyword">const</span> <span class="keyword">struct</span> device_node *np,<span class="keyword">const</span> <span class="keyword">char</span> *propname,</span><br><span class="line">			      u16 *out_values, size_t sz)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">of_property_read_u32_array</span><span class="params">(<span class="keyword">const</span> <span class="keyword">struct</span> device_node *np,<span class="keyword">const</span> <span class="keyword">char</span> *propname,</span><br><span class="line">			      u32 *out_values, size_t sz)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">of_property_read_u64_array</span><span class="params">(<span class="keyword">const</span> <span class="keyword">struct</span> device_node *np,<span class="keyword">const</span> <span class="keyword">char</span> *propname,</span><br><span class="line">			      u64 *out_values, size_t sz)</span></span>;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">//&#x4ECE;&#x8282;&#x70B9;np&#x5904;&#x83B7;&#x53D6;propname&#x5C5E;&#x6027;&#x7684;&#x4E00;&#x4E2A;&#x503C;&#x5E76;&#x5B58;&#x50A8;&#x4E8E;&#x7F13;&#x5B58; out_values</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">of_property_read_u8</span><span class="params">(<span class="keyword">const</span> <span class="keyword">struct</span> device_node *np,<span class="keyword">const</span> <span class="keyword">char</span> *propname,</span><br><span class="line">			 u8 *out_values)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">of_property_read_u16</span><span class="params">(<span class="keyword">const</span> <span class="keyword">struct</span> device_node *np,<span class="keyword">const</span> <span class="keyword">char</span> *propname,</span><br><span class="line">			 u16 *out_values)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">of_property_read_u32</span><span class="params">(<span class="keyword">const</span> <span class="keyword">struct</span> device_node *np,<span class="keyword">const</span> <span class="keyword">char</span> *propname,</span><br><span class="line">			 u32 *out_values)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">of_property_read_u64</span><span class="params">(<span class="keyword">const</span> <span class="keyword">struct</span> device_node *np,<span class="keyword">const</span> <span class="keyword">char</span> *propname,</span><br><span class="line">			      u64 *out_values)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//&#x83B7;&#x53D6;&#x5B57;&#x7B26;&#x4E32;</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">of_property_read_string</span><span class="params">(<span class="keyword">struct</span> device_node *np, <span class="keyword">const</span> <span class="keyword">char</span> *propname, <span class="keyword">const</span> <span class="keyword">char</span> **outstring)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">of_property_read_string_index</span><span class="params">(<span class="keyword">struct</span> device_node *np, <span class="keyword">const</span> <span class="keyword">char</span> *propname,</span><br><span class="line">				  <span class="keyword">int</span> index,<span class="keyword">const</span> <span class="keyword">char</span> **outstring)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//&#x83B7;&#x53D6;bool&#x503C;,&#x5C5E;&#x6027;&#x5B58;&#x5728;&#x8FD4;&#x56DE;true</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">bool</span> <span class="title">of_property_read_bool</span><span class="params">(<span class="keyword">const</span> <span class="keyword">struct</span> device_node *np, <span class="keyword">const</span> <span class="keyword">char</span> *propname)</span></span>;</span><br></pre></td></tr></table></figure>
+</div>
+</div>
+</div>
+<div id="outline-container-org641cca1" class="outline-3">
+<h3 id="org641cca1">&#x5185;&#x5B58;&#x6620;&#x5C04;</h3>
+<div class="outline-text-3" id="text-org641cca1">
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//&#x901A;&#x8FC7;&#x8BBE;&#x5907;&#x8282;&#x70B9;&#x8FDB;&#x884C;&#x8BBE;&#x5907;&#x7684;&#x5185;&#x5B58;&#x6620;&#x5C04;,&#x53EF;&#x4EE5;&#x4EE3;&#x66FF; ioremap()</span></span><br><span class="line"><span class="keyword">void</span> __<span class="function">iomem *<span class="title">of_iomap</span><span class="params">(<span class="keyword">struct</span> device_node *node, <span class="keyword">int</span> index)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//&#x901A;&#x8FC7;&#x8BBE;&#x5907;&#x8282;&#x70B9;&#x83B7;&#x53D6;&#x5BF9;&#x5E94;&#x5185;&#x5B58;&#x7684;&#x8D44;&#x6E90;</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">of_address_to_resource</span><span class="params">(<span class="keyword">struct</span> device_node *dev,<span class="keyword">int</span> index, <span class="keyword">struct</span> resource *r)</span></span>;</span><br></pre></td></tr></table></figure>
+</div>
+</div>
+</div>
+<div id="outline-container-org9eefcff" class="outline-3">
+<h3 id="org9eefcff">&#x89E3;&#x6790;&#x4E2D;&#x65AD;</h3>
+<div class="outline-text-3" id="text-org9eefcff">
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//&#x901A;&#x8FC7;&#x8BBE;&#x5907;&#x6811;&#x83B7;&#x5F97;&#x8BBE;&#x5907;&#x4E2D;&#x65AD;&#x53F7;</span></span><br><span class="line"><span class="function"><span class="keyword">unsigned</span> <span class="keyword">int</span> <span class="title">irq_of_parse_and_map</span><span class="params">(<span class="keyword">struct</span> device_node *dev, <span class="keyword">int</span> index)</span></span>;</span><br></pre></td></tr></table></figure>
+</div>
+</div>
+</div>
+<div id="outline-container-orgc197636" class="outline-3">
+<h3 id="orgc197636">&#x83B7;&#x53D6;&#x8282;&#x70B9;&#x5BF9;&#x5E94;&#x7684; platform_device</h3>
+<div class="outline-text-3" id="text-orgc197636">
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">struct</span> platform_device *<span class="title">of_find_device_by_node</span><span class="params">(<span class="keyword">struct</span> device_node *np)</span></span>;</span><br><span class="line"><span class="comment">//&#x83B7;&#x53D6; platform_device &#x5BF9;&#x5E94;&#x7684;&#x8282;&#x70B9;</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">sirfsoc_dma_probe</span><span class="params">(<span class="keyword">struct</span> platform_device *op)</span></span><br><span class="line"></span>{</span><br><span class="line">	<span class="keyword">struct</span> device_node *dn = op-&gt;dev.of_node;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org2c54008" class="outline-2">
+<h2 id="org2c54008">&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x8BBF;&#x95EE;</h2>
+<div class="outline-text-2" id="text-org2c54008">
+<p>
+&#x4E3A;&#x4E86;&#x80FD;&#x591F;&#x9A8C;&#x8BC1;&#x8BBE;&#x5907;&#x6811;&#x7684;&#x52A0;&#x8F7D;&#x5B9E;&#x9645;&#x60C5;&#x51B5;&#xFF0C;&#x53EF;&#x4EE5;&#x67E5;&#x770B; <code>/sys/firmware/devicetree/base/</code> &#x6587;&#x4EF6;&#x5939;&#x4E0B;&#x7684;&#x6811;&#x5F62;&#x7ED3;&#x6784;&#x3002;
+</p>
+
+<p>
+&#x540C;&#x65F6;&#x5728; <code>/sys/bus/*/devices/**/</code> &#x4E0B;&#x7684; <code>of_node</code> &#x6587;&#x4EF6;&#x4F1A;&#x4EA7;&#x751F;&#x4E00;&#x4E2A;&#x4E0E;&#x8BBE;&#x5907;&#x6811;&#x6587;&#x4EF6;&#x7684;&#x7B26;&#x53F7;&#x94FE;&#x63A5;&#xFF0C;&#x5E76;&#x4E14;&#x5F53;&#x6B64;&#x8BBE;&#x5907;&#x4E0E;&#x5BF9;&#x5E94;&#x7684;&#x9A71;&#x52A8;&#x7ED1;&#x5B9A;&#x540E;&#xFF0C;&#x4F1A;&#x6709;&#x4E00;&#x4E2A; <code>driver</code> &#x6587;&#x4EF6;&#x7684;&#x7B26;&#x53F7;&#x94FE;&#x63A5;&#x6307;&#x5411;&#x9A71;&#x52A8;&#x6587;&#x4EF6;
+</p>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+Last Updated 2020-06-28 Sun 12:00.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+</div>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/driver/" rel="tag"># driver</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/04/13/linux_IO_overview_async/" rel="prev" title="[What]Linux I/O 异步">
+      <i class="fa fa-chevron-left"></i> [What]Linux I/O 异步
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/04/16/linux_driver_ALSA_debug/" rel="next" title="[What]linux -> ALSA 调试">
+      [What]linux -> ALSA 调试 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org3565d27"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x8BBE;&amp;#x5907;&amp;#x6811;&amp;#x7684;&amp;#x7EC4;&amp;#x6210;&amp;#x548C;&amp;#x7ED3;&amp;#x6784;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgfb4d6f8"><span class="nav-number">1.1.</span> <span class="nav-text">DTS,DTC&amp;#x548C;DTB</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org4d2c1c3"><span class="nav-number">1.1.1.</span> <span class="nav-text">DTS(Device Tree Source)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgf665c91"><span class="nav-number">1.1.2.</span> <span class="nav-text">DTC(Device Tree Compiler)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgcc110c8"><span class="nav-number">1.1.3.</span> <span class="nav-text">DTB(Device Tree Blob)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org27922ee"><span class="nav-number">1.1.4.</span> <span class="nav-text">&amp;#x7ED1;&amp;#x5B9A;(Binding)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org9109ed1"><span class="nav-number">1.1.5.</span> <span class="nav-text">Bootloader</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgf3aff26"><span class="nav-number">1.2.</span> <span class="nav-text">&amp;#x6839;&amp;#x8282;&amp;#x70B9;&amp;#x517C;&amp;#x5BB9;&amp;#x6027;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org3ae1fba"><span class="nav-number">1.3.</span> <span class="nav-text">&amp;#x8BBE;&amp;#x5907;&amp;#x8282;&amp;#x70B9;&amp;#x517C;&amp;#x5BB9;&amp;#x6027;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgf563544"><span class="nav-number">1.4.</span> <span class="nav-text">&amp;#x8BBE;&amp;#x5907;&amp;#x8282;&amp;#x70B9;&amp;#x53CA;lable&amp;#x547D;&amp;#x540D;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgd5ba2c4"><span class="nav-number">1.5.</span> <span class="nav-text">&amp;#x5730;&amp;#x5740;&amp;#x7F16;&amp;#x7801;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org73b2f8a"><span class="nav-number">1.5.1.</span> <span class="nav-text">address-cells,size-cells</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org8a9230f"><span class="nav-number">1.5.2.</span> <span class="nav-text">reg</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org2405eca"><span class="nav-number">1.5.3.</span> <span class="nav-text">ranges</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org76cb217"><span class="nav-number">1.6.</span> <span class="nav-text">&amp;#x4E2D;&amp;#x65AD;&amp;#x8FDE;&amp;#x63A5;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgcceb6ad"><span class="nav-number">1.7.</span> <span class="nav-text">GPIO,&amp;#x65F6;&amp;#x949F;&amp;#x8FDE;&amp;#x63A5;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org7690e93"><span class="nav-number">1.7.1.</span> <span class="nav-text">GPIO</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org6ddee64"><span class="nav-number">1.7.2.</span> <span class="nav-text">&amp;#x65F6;&amp;#x949F;</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgd3f9d24"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x5E38;&amp;#x7528;API</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgb49241d"><span class="nav-number">2.1.</span> <span class="nav-text">&amp;#x5BFB;&amp;#x627E;&amp;#x8282;&amp;#x70B9;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org35e058d"><span class="nav-number">2.2.</span> <span class="nav-text">&amp;#x8BFB;&amp;#x53D6;&amp;#x5C5E;&amp;#x6027;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org641cca1"><span class="nav-number">2.3.</span> <span class="nav-text">&amp;#x5185;&amp;#x5B58;&amp;#x6620;&amp;#x5C04;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org9eefcff"><span class="nav-number">2.4.</span> <span class="nav-text">&amp;#x89E3;&amp;#x6790;&amp;#x4E2D;&amp;#x65AD;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgc197636"><span class="nav-number">2.5.</span> <span class="nav-text">&amp;#x83B7;&amp;#x53D6;&amp;#x8282;&amp;#x70B9;&amp;#x5BF9;&amp;#x5E94;&amp;#x7684; platform_device</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org2c54008"><span class="nav-number">3.</span> <span class="nav-text">&amp;#x7528;&amp;#x6237;&amp;#x7A7A;&amp;#x95F4;&amp;#x8BBF;&amp;#x95EE;</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">我的世界</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">210</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">104</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">38</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+  
+  <span class="post-meta-divider">|</span>
+  <span>Hosted by <a href="https://pages.coding.me" target="_blank" rel="noopener" style="font-weight: bold">Coding Pages</a></span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+<script>
+  (function() {
+    function leancloudSelector(url) {
+      url = encodeURI(url);
+      return document.getElementById(url).querySelector('.leancloud-visitors-count');
+    }
+
+    function addCount(Counter) {
+      var visitors = document.querySelector('.leancloud_visitors');
+      var url = decodeURI(visitors.id);
+      var title = visitors.dataset.flagTitle;
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          if (results.length > 0) {
+            var counter = results[0];
+            leancloudSelector(url).innerText = counter.time + 1;
+            Counter('put', '/classes/Counter/' + counter.objectId, { time: { '__op': 'Increment', 'amount': 1 } })
+              .catch(error => {
+                console.error('Failed to save visitor count', error);
+              });
+          } else {
+              leancloudSelector(url).innerText = 'Counter not initialized! More info at console err msg.';
+              console.error('ATTENTION! LeanCloud counter has security bug, see how to solve it here: https://github.com/theme-next/hexo-leancloud-counter-security. \n However, you can still use LeanCloud without security, by setting `security` option to `false`.');
+            
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    function showTime(Counter) {
+      var visitors = document.querySelectorAll('.leancloud_visitors');
+      var entries = [...visitors].map(element => {
+        return decodeURI(element.id);
+      });
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url: { '$in': entries } })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          for (let url of entries) {
+            let target = results.find(item => item.url === url);
+            leancloudSelector(url).innerText = target ? target.time : 0;
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    let { app_id, app_key, server_url } = {"enable":true,"app_id":"ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI","app_key":"yh4vrfnscme1utPMpk65wcxn","server_url":null,"security":true};
+    function fetchData(api_server) {
+      var Counter = (method, url, data) => {
+        return fetch(`${api_server}/1.1${url}`, {
+          method,
+          headers: {
+            'X-LC-Id'     : app_id,
+            'X-LC-Key'    : app_key,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+      };
+      if (CONFIG.page.isPost) {
+        if (CONFIG.hostname !== location.hostname) return;
+        addCount(Counter);
+      } else if (document.querySelectorAll('.post-title-link').length >= 1) {
+        showTime(Counter);
+      }
+    }
+
+    let api_server = app_id.slice(-9) !== '-MdYXbMMI' ? server_url : `https://${app_id.slice(0, 8).toLowerCase()}.api.lncldglobal.com`;
+
+    if (api_server) {
+      fetchData(api_server);
+    } else {
+      fetch('https://app-router.leancloud.cn/2/route?appId=' + app_id)
+        .then(response => response.json())
+        .then(({ api_server }) => {
+          fetchData('https://' + api_server);
+        });
+    }
+  })();
+</script>
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+  <script defer src="/lib/three/three.min.js"></script>
+    <script defer src="/lib/three/three-waves.min.js"></script>
+    <script defer src="/lib/three/canvas_lines.min.js"></script>
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI',
+      appKey     : 'yh4vrfnscme1utPMpk65wcxn',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,2417 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="zLSyD2CN1AkyJqei3qKraT6372nBgMFKWe6kAj5JDeY">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="&amp;#x53C2;&amp;#x8003;&amp;#x4E66;&amp;#x7C4D;:Embedded Linux System with the Yocto Project   &amp;#x4E66;&amp;#x7C4D;&amp;#x6BD4;&amp;#x5B9E;&amp;#x9645;&amp;#x7684;yocto&amp;#x7248;&amp;#x672C;&amp;#x8981;&amp;#x4F4E;&amp;#xFF0C;&amp;#x6240;&amp;#x4EE5;yocto&amp;#x7">
+<meta property="og:type" content="article">
+<meta property="og:title" content="[What]Yocto Project --&gt; 编写 recipe">
+<meta property="og:url" content="http://kcmetercec.top/2019/09/19/yocto_write_recipe/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="&amp;#x53C2;&amp;#x8003;&amp;#x4E66;&amp;#x7C4D;:Embedded Linux System with the Yocto Project   &amp;#x4E66;&amp;#x7C4D;&amp;#x6BD4;&amp;#x5B9E;&amp;#x9645;&amp;#x7684;yocto&amp;#x7248;&amp;#x672C;&amp;#x8981;&amp;#x4F4E;&amp;#xFF0C;&amp;#x6240;&amp;#x4EE5;yocto&amp;#x7">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[make]/[What]Linux--yocto/create_new_recipe.jpg?raw=true">
+<meta property="article:published_time" content="2019-09-18T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-06-28T03:58:45.771Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="yocto">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[make]/[What]Linux--yocto/create_new_recipe.jpg?raw=true">
+
+<link rel="canonical" href="http://kcmetercec.top/2019/09/19/yocto_write_recipe/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>[What]Yocto Project --> 编写 recipe | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=112423075-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '112423075-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2ab4cc06d0da36106a4426465d0cb00d";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2019/09/19/yocto_write_recipe/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="我的世界">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          [What]Yocto Project --> 编写 recipe
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-09-19 00:00:00" itemprop="dateCreated datePublished" datetime="2019-09-19T00:00:00+08:00">2019-09-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-06-28 11:58:45" itemprop="dateModified" datetime="2020-06-28T11:58:45+08:00">2020-06-28</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/make/" itemprop="url" rel="index"><span itemprop="name">make</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/make/yocto/" itemprop="url" rel="index"><span itemprop="name">yocto</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2019/09/19/yocto_write_recipe/" class="post-meta-item leancloud_visitors" data-flag-title="[What]Yocto Project --> 编写 recipe" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2019/09/19/yocto_write_recipe/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2019/09/19/yocto_write_recipe/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <div id="content">
+<p>
+&#x53C2;&#x8003;&#x4E66;&#x7C4D;:Embedded Linux System with the Yocto Project
+</p>
+<ul class="org-ul">
+<li>&#x4E66;&#x7C4D;&#x6BD4;&#x5B9E;&#x9645;&#x7684;yocto&#x7248;&#x672C;&#x8981;&#x4F4E;&#xFF0C;&#x6240;&#x4EE5;yocto&#x7684;&#x8BE6;&#x7EC6;&#x547D;&#x4EE4;&#x9700;&#x8981;&#x53C2;&#x8003;&#x5176;<a href="https://www.yoctoproject.org/docs/" target="_blank" rel="noopener">&#x5BF9;&#x5E94;&#x7248;&#x672C;&#x624B;&#x518C;</a></li>
+</ul>
+
+<p>
+&#x8FD0;&#x884C;&#x73AF;&#x5883;:
+</p>
+<ul class="org-ul">
+<li>ubuntu18.04 amd64</li>
+<li>yocto 2.5.1</li>
+</ul>
+
+<p>
+&#x524D;&#x9762;&#x51E0;&#x7AE0;&#x90FD;&#x662F;&#x8D70;&#x9A6C;&#x89C2;&#x82B1;&#x5F0F;&#x7684;&#x4E86;&#x89E3;&#x4E86;&#x4E00;&#x4E0B; yocto &#x7CFB;&#x7EDF;&#xFF0C;&#x53EF;&#x4EE5;&#x770B;&#x5230;&#x5176;&#x6574;&#x4E2A;&#x6784;&#x5EFA;&#x6838;&#x5FC3;&#x5C31;&#x662F;&#x914D;&#x7F6E;&#x6587;&#x4EF6;&#x548C; recipe&#x3002;
+</p>
+
+<p>
+&#x5176;&#x4E2D;&#x914D;&#x7F6E;&#x6587;&#x4EF6;&#x4EC5;&#x4EC5;&#x662F;&#x53D8;&#x91CF;&#x7684;&#x8D4B;&#x503C;&#x53CA;&#x4FEE;&#x6539;&#xFF0C;&#x96BE;&#x70B9;&#x8FD8;&#x662F;&#x5728;&#x4E8E; recipe &#x7684;&#x7F16;&#x5199;&#x3002;
+</p>
+
+<p>
+&#x6709;&#x4E86; recipe &#x7684;&#x57FA;&#x7840;&#xFF0C;&#x63A5;&#x4E0B;&#x6765;&#x5C31;&#x4F1A;&#x8FDB;&#x5165;&#x5185;&#x6838;&#x3001;BSP&#x3001;APP 3&#x5927;&#x4E3B;&#x9898;&#xFF0C;&#x8FD9;&#x5B66;&#x4E60;&#x66F2;&#x7EBF;&#x8FD8;&#x662F;&#x6709;&#x70B9;&#x7ED5;&#x2026;&#x2026;
+</p>
+
+<a id="more"></a>
+
+<div id="outline-container-org0a34e98" class="outline-2">
+<h2 id="org0a34e98">recipe &#x7684;&#x5E03;&#x5C40;&#x548C;&#x60EF;&#x4F8B;</h2>
+<div class="outline-text-2" id="text-org0a34e98">
+<p>
+recipe &#x7684;&#x4E3B;&#x8981;&#x4F5C;&#x7528;&#x5C31;&#x662F;&#x6784;&#x5EFA;&#x4E00;&#x4E2A;&#x8F6F;&#x4EF6;&#x5305;&#xFF0C;OpenEmbedded &#x7684; wiki &#x63D0;&#x4F9B;&#x4E86;<a href="http://openembedded.org/wiki/Styleguide" target="_blank" rel="noopener">recipe &#x7F16;&#x5199;&#x98CE;&#x683C;&#x8BF4;&#x660E;</a>&#x3002;
+</p>
+</div>
+<div id="outline-container-org65bde27" class="outline-3">
+<h3 id="org65bde27">&#x6587;&#x4EF6;&#x540D;&#x79F0;</h3>
+<div class="outline-text-3" id="text-org65bde27">
+<p>
+recipe &#x6587;&#x4EF6;&#x540D;&#x79F0;&#x5176;&#x5B9E;&#x53EF;&#x4EE5;&#x5F88;&#x7075;&#x6D3B;&#xFF0C;&#x4F46;&#x6309;&#x7167;&#x6B63;&#x89C4;&#x7684;&#x547D;&#x540D;&#x89C4;&#x5219;&#x5206;&#x4E3A;&#x4E24;&#x79CD;&#x65B9;&#x5F0F;&#xFF1A;
+</p>
+</div>
+<div id="outline-container-orgd916bec" class="outline-4">
+<h4 id="orgd916bec">&#x4E0D;&#x901A;&#x8FC7;&#x7248;&#x672C;&#x63A7;&#x5236;&#x7684;&#x65B9;&#x5F0F;&#x6293;&#x53D6;&#x7684;&#x5305;</h4>
+<div class="outline-text-4" id="text-orgd916bec">
+<pre class="example">
+&lt;packagename&gt;_&lt;version&gt;-&lt;revision&gt;.bb
+&lt;packagename&gt;_&lt;version&gt;-&lt;revision&gt;.bbappend</pre>
+<ul class="org-ul">
+<li>packagename&#xFF1A;recipe &#x8981;&#x6784;&#x5EFA;&#x7684;&#x8F6F;&#x4EF6;&#x5305;&#x540D;&#xFF0C;bitbake &#x4F1A;&#x5C06;&#x5176;&#x8D4B;&#x503C;&#x7ED9;&#x53D8;&#x91CF; <code>PN</code></li>
+<li>version&#xFF1A;&#x8F6F;&#x4EF6;&#x5305;&#x7248;&#x672C;&#x53F7;&#xFF0C;bitbake &#x4F1A;&#x5C06;&#x5176;&#x8D4B;&#x503C;&#x7ED9;&#x53D8;&#x91CF; <code>PV</code></li>
+<li>revision&#xFF1A;&#x4FEE;&#x8BA2;&#x7248;&#x672C;&#x53F7;&#xFF0C;bitbake &#x4F1A;&#x5C06;&#x5176;&#x8D4B;&#x503C;&#x7ED9;&#x53D8;&#x91CF; <code>PR</code></li>
+</ul>
+
+<p>
+<b>&#x6CE8;&#x610F;&#xFF1A;</b>
+</p>
+<ul class="org-ul">
+<li>&#x4E0D;&#x8981;&#x518D;&#x5728; packagename &#x4E2D;&#x4F7F;&#x7528;&#x4E0B;&#x5212;&#x7EBF;&#x4E86;&#xFF0C;&#x800C;&#x5E94;&#x8BE5;&#x4F7F;&#x7528;&#x77ED;&#x6A2A;&#x7EBF;</li>
+<li>version &#x548C; revision &#x4E2D;&#x4E0D;&#x80FD;&#x518D;&#x542B;&#x6709;&#x77ED;&#x6A2A;&#x7EBF;&#x4E86;&#xFF0C;&#x800C;&#x5E94;&#x8BE5;&#x7528;&#x82F1;&#x6587;&#x53E5;&#x70B9;&#x5206;&#x5272;</li>
+</ul>
+<pre class="example">
+avahi_0.6.31.bb
+linux-yocto_3.14.bb
+wps-supplicant_2.2.bb</pre>
+</div>
+</div>
+<div id="outline-container-org74b961e" class="outline-4">
+<h4 id="org74b961e">&#x901A;&#x8FC7;&#x7248;&#x672C;&#x63A7;&#x5236;&#x65B9;&#x5F0F;&#x6293;&#x53D6;&#x7684;&#x5305;</h4>
+<div class="outline-text-4" id="text-org74b961e">
+<p>
+&#x7248;&#x672C;&#x63A7;&#x5236;&#x8FD9;&#x91CC;&#x6307;&#x7684;&#x662F;&#x50CF; git&#x3001;svn&#x3001;cvs &#x7B49;&#x8FD9;&#x79CD;&#x5DE5;&#x5177;&#xFF0C;&#x5B83;&#x4EEC;&#x7684;&#x547D;&#x540D;&#x89C4;&#x5219;&#x4E3A;&#xFF1A;
+</p>
+<pre class="example">
+&lt;packagename&gt;_&lt;scm&gt;.bb</pre>
+<p>
+packagename &#x7684;&#x89C4;&#x5219;&#x5982;&#x524D;&#x6240;&#x8FF0;&#xFF0C;scm &#x5C31;&#x662F;&#x7528; git&#x3001;svn&#x3001;cvs &#x66FF;&#x4EE3;&#x3002;
+</p>
+
+<p>
+&#x5728;&#x6B64;&#x57FA;&#x7840;&#x4E4B;&#x4E0A;&#xFF0C;recipe &#x8FD8;&#x9700;&#x8981;&#x5C06;&#x53D8;&#x91CF; <code>PV</code> &#x8BBE;&#x7F6E;&#x4E3A;&#x5982;&#x4E0B;&#x683C;&#x5F0F;&#xFF1A;
+</p>
+<pre class="example">
+PV = &quot;&lt;version&gt;+git${SRCREV}&quot;</pre>
+<p>
+version &#x6307;&#x7684;&#x662F; tag&#xFF0C;&#x800C; SRCREV &#x503C;&#x7684;&#x662F;&#x5176;&#x4FEE;&#x8BA2;&#x7248;&#x3002;
+</p>
+
+<p>
+&#x6BD4;&#x5982;&#x6709;&#x6587;&#x4EF6; <code>meta-openembedded/meta-python/recipes-devtools/gyp/gyp_git.bb</code> &#xFF0C;&#x8FD9;&#x8868;&#x660E;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>&#x8F6F;&#x4EF6;&#x5305;&#x540D;&#x662F; <code>gyp</code> &#xFF0C;&#x5E76;&#x4E14;&#x662F;&#x901A;&#x8FC7; git &#x8FDB;&#x884C;&#x7248;&#x672C;&#x63A7;&#x5236;</li>
+</ul>
+
+<p>
+&#x5BF9;&#x5E94;&#x5176;&#x5185;&#x5BB9;&#x4E3A;&#xFF1A;
+</p>
+<pre class="example">
+DESCRIPTION = &quot;GYP is a Meta-Build system: a build system that generates other build systems.&quot;
+HOMEPAGE = &quot;https://gyp.gsrc.io/&quot;
+LICENSE = &quot;BSD-3-Clause&quot;
+LIC_FILES_CHKSUM = &quot;file://LICENSE;md5=ab828cb8ce4c62ee82945a11247b6bbd&quot;
+SECTION = &quot;devel&quot;
+
+SRC_URI = &quot;git://chromium.googlesource.com/external/gyp;protocol=https&quot;
+SRCREV = &quot;8bee09f4a57807136593ddc906b0b213c21f9014&quot;
+
+S = &quot;${WORKDIR}/git&quot;
+PV = &quot;0.1+git${SRCPV}&quot;
+
+inherit setuptools3
+
+BBCLASSEXTEND = &quot;native nativesdk&quot;</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-orgc4c5b48" class="outline-3">
+<h3 id="orgc4c5b48">recipe &#x7684;&#x5185;&#x5BB9;&#x7ED3;&#x6784;</h3>
+<div class="outline-text-3" id="text-orgc4c5b48">
+<p>
+recipe &#x7684;&#x5185;&#x5BB9;&#x53EF;&#x4EE5;&#x5206;&#x4E3A;&#x591A;&#x4E2A;&#x5C0F;&#x8282;&#x6765;&#x770B;&#xFF0C;&#x4EE5; <code>meta/recipes-core/gettext/gettext_0.19.8.1.bb</code> &#x4E3A;&#x4F8B;&#xFF1A;
+</p>
+<pre class="example">
+# &#x5BF9;&#x6B64; recipe&#xFF08;&#x5143;&#x6570;&#x636E;&#xFF09;&#x7684;&#x8BF4;&#x660E;
+SUMMARY = &quot;Utilities and libraries for producing multi-lingual messages&quot;
+DESCRIPTION = &quot;GNU gettext is a set of tools that provides a framework to help other programs produce multi-lingual messages. \
+These tools include a set of conventions about how programs should be written to support message catalogs, a directory and file \
+naming organization for the message catalogs themselves, a runtime library supporting the retrieval of translated messages, and \
+a few stand-alone programs to massage in various ways the sets of translatable and already translated strings.&quot;
+HOMEPAGE = &quot;http://www.gnu.org/software/gettext/gettext.html&quot;
+
+# &#x5305;&#x7BA1;&#x7406;&#x65B9;&#x5F0F;
+SECTION = &quot;libs&quot;
+
+# &#x6388;&#x6743;
+LICENSE = &quot;GPLv3+ &amp; LGPL-2.1+&quot;
+LIC_FILES_CHKSUM = &quot;file://COPYING;md5=d32239bcb673463ab874e80d47fae504&quot;
+
+# &#x7EE7;&#x627F;&#x8BF4;&#x660E;
+inherit autotools texinfo pkgconfig
+
+# &#x6784;&#x5EFA;&#x8BF4;&#x660E;
+DEPENDS = &quot;gettext-native virtual/libiconv&quot;
+DEPENDS_class-native = &quot;gettext-minimal-native&quot;
+PROVIDES = &quot;virtual/libintl virtual/gettext&quot;
+PROVIDES_class-native = &quot;virtual/gettext-native&quot;
+RCONFLICTS_${PN} = &quot;proxy-libintl&quot;
+SRC_URI = &quot;${GNU_MIRROR}/gettext/gettext-${PV}.tar.gz \
+     file://parallel.patch \
+     file://add-with-bisonlocaledir.patch \
+     file://cr-statement.c-timsort.h-fix-formatting-issues.patch \
+     file://use-pkgconfig.patch \
+&quot;
+
+SRC_URI[md5sum] = &quot;97e034cf8ce5ba73a28ff6c3c0638092&quot;
+SRC_URI[sha256sum] = &quot;ff942af0e438ced4a8b0ea4b0b6e0d6d657157c5e2364de57baa279c1c125c43&quot;
+
+
+EXTRA_OECONF += &quot;--without-lispdir \
+                 --disable-csharp \
+                 --disable-libasprintf \
+                 --disable-java \
+                 --disable-native-java \
+                 --disable-openmp \
+                 --disable-acl \
+                 --without-emacs \
+                 --without-cvs \
+                 --without-git \
+                &quot;
+EXTRA_OECONF_append_class-target = &quot; \
+                 --with-bisonlocaledir=${datadir}/locale \
+&quot;
+
+PACKAGECONFIG ??= &quot;croco glib libxml&quot;
+PACKAGECONFIG_class-native = &quot;&quot;
+PACKAGECONFIG_class-nativesdk = &quot;&quot;
+
+PACKAGECONFIG[croco] = &quot;--without-included-libcroco,--with-included-libcroco,libcroco&quot;
+PACKAGECONFIG[glib] = &quot;--without-included-glib,--with-included-glib,glib-2.0&quot;
+PACKAGECONFIG[libxml] = &quot;--without-included-libxml,--with-included-libxml,libxml2&quot;
+# Need paths here to avoid host contamination but this can cause RPATH warnings
+# or problems if $libdir isn&apos;t $prefix/lib.
+PACKAGECONFIG[libunistring] = &quot;--with-libunistring-prefix=${STAGING_LIBDIR}/..,--with-included-libunistring,libunistring&quot;
+PACKAGECONFIG[msgcat-curses] = &quot;--with-libncurses-prefix=${STAGING_LIBDIR}/..,--disable-curses,ncurses,&quot;
+
+acpaths = &apos;-I ${S}/gettext-runtime/m4 \
+           -I ${S}/gettext-tools/m4&apos;
+
+do_install_append_libc-musl () {
+  rm -f ${D}${libdir}/charset.alias
+  rm -f ${D}${includedir}/libintl.h
+  rm -f ${D}${libdir}/libintl.la
+}
+
+# &#x6253;&#x5305;&#x8BF4;&#x660E;
+# these lack the .x behind the .so, but shouldn&apos;t be in the -dev package
+# Otherwise you get the following results:
+# 7.4M    glibc/images/ep93xx/Angstrom-console-image-glibc-ipk-2008.1-test-20080104-ep93xx.rootfs.tar.gz
+# 25M     uclibc/images/ep93xx/Angstrom-console-image-uclibc-ipk-2008.1-test-20080104-ep93xx.rootfs.tar.gz
+# because gettext depends on gettext-dev, which pulls in more -dev packages:
+# 15228   KiB /ep93xx/libstdc++-dev_4.2.2-r2_ep93xx.ipk
+# 1300    KiB /ep93xx/uclibc-dev_0.9.29-r8_ep93xx.ipk
+# 140     KiB /armv4t/gettext-dev_0.14.1-r6_armv4t.ipk
+# 4       KiB /ep93xx/libgcc-s-dev_4.2.2-r2_ep93xx.ipk
+
+PACKAGES =+ &quot;libgettextlib libgettextsrc&quot;
+FILES_libgettextlib = &quot;${libdir}/libgettextlib-*.so*&quot;
+FILES_libgettextsrc = &quot;${libdir}/libgettextsrc-*.so*&quot;
+
+PACKAGES =+ &quot;gettext-runtime gettext-runtime-dev gettext-runtime-doc&quot;
+
+FILES_${PN} += &quot;${libdir}/${BPN}/*&quot;
+
+# The its/Makefile.am has defined:
+# itsdir = $(pkgdatadir)$(PACKAGE_SUFFIX)/its
+# not itsdir = $(pkgdatadir), so use wildcard to match the version.
+FILES_${PN} += &quot;${datadir}/${BPN}-*/*&quot;
+
+FILES_gettext-runtime = &quot;${bindir}/gettext \
+                         ${bindir}/ngettext \
+                         ${bindir}/envsubst \
+                         ${bindir}/gettext.sh \
+                         ${libdir}/libasprintf.so* \
+                         ${libdir}/GNU.Gettext.dll \
+                        &quot;
+FILES_gettext-runtime-dev += &quot;${libdir}/libasprintf.a \
+                      ${includedir}/autosprintf.h \
+                     &quot;
+FILES_gettext-runtime-doc = &quot;${mandir}/man1/gettext.* \
+                             ${mandir}/man1/ngettext.* \
+                             ${mandir}/man1/envsubst.* \
+                             ${mandir}/man1/.* \
+                             ${mandir}/man3/* \
+                             ${docdir}/gettext/gettext.* \
+                             ${docdir}/gettext/ngettext.* \
+                             ${docdir}/gettext/envsubst.* \
+                             ${docdir}/gettext/*.3.html \
+                             ${datadir}/gettext/ABOUT-NLS \
+                             ${docdir}/gettext/csharpdoc/* \
+                             ${docdir}/libasprintf/autosprintf.html \
+                             ${infodir}/autosprintf.info \
+                            &quot;
+
+# &#x91CD;&#x5199;&#x4EFB;&#x52A1;
+do_install_append() {
+    rm -f ${D}${libdir}/preloadable_libintl.so
+}
+
+do_install_append_class-native () {
+  rm ${D}${datadir}/aclocal/*
+  rm ${D}${datadir}/gettext/config.rpath
+  rm ${D}${datadir}/gettext/po/Makefile.in.in
+  rm ${D}${datadir}/gettext/po/remove-potcdate.sin
+
+        create_wrapper ${D}${bindir}/msgfmt \
+                GETTEXTDATADIR=&quot;${STAGING_DATADIR_NATIVE}/gettext-0.19.8/&quot;
+
+}
+
+# &#x6269;&#x5C55;
+BBCLASSEXTEND = &quot;native nativesdk&quot;</pre>
+</div>
+<div id="outline-container-org428553f" class="outline-4">
+<h4 id="org428553f">&#x63CF;&#x8FF0; recipe &#x7684;&#x5143;&#x6570;&#x636E;</h4>
+<div class="outline-text-4" id="text-org428553f">
+<ul class="org-ul">
+<li>SUMMARY&#xFF1A;&#x5BF9;&#x8F6F;&#x4EF6;&#x5305;&#x7684;&#x7B80;&#x8981;&#x63CF;&#x8FF0;&#xFF0C;&#x4EE5;&#x4E00;&#x884C;&#x63CF;&#x8FF0;&#x4E14;&#x6700;&#x591A; 80 &#x4E2A;&#x5B57;&#x7B26;</li>
+<li>DESCRIPTION&#xFF1A;&#x5BF9;&#x8F6F;&#x4EF6;&#x5305;&#x7684;&#x8BE6;&#x7EC6;&#x63CF;&#x8FF0;</li>
+<li>AUTHOR&#xFF1A;&#x63CF;&#x8FF0;&#x4F5C;&#x8005;&#x7684;&#x540D;&#x5B57;&#x548C; email &#x65B9;&#x5F0F;&#xFF0C;&#x53EF;&#x4EE5;&#x5217;&#x51FA;&#x591A;&#x4E2A;&#x4F5C;&#x8005;&#x3002;</li>
+</ul>
+<pre class="example">
+AUTHOR = &quot;Santa Claus &lt;santa@northpole.com&gt;&quot;</pre>
+<ul class="org-ul">
+<li>HOMEPAGE&#xFF1A;&#x8F6F;&#x4EF6;&#x5305;&#x7684;&#x4E3B;&#x7AD9;</li>
+<li>BUGTRACKER&#xFF1A;&#x8FFD;&#x8E2A;&#x8F6F;&#x4EF6;&#x5305; BUG &#x7684;&#x7AD9;&#x70B9;</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-org4ee1710" class="outline-4">
+<h4 id="org4ee1710">&#x8F6F;&#x4EF6;&#x5305;&#x7BA1;&#x7406;&#x7684;&#x5143;&#x6570;&#x636E;</h4>
+<div class="outline-text-4" id="text-org4ee1710">
+<p>
+&#x8FD9;&#x90E8;&#x5206;&#x7528;&#x4E8E;&#x63D0;&#x4F9B;&#x7ED9;&#x5305;&#x7BA1;&#x7406;&#x7CFB;&#x7EDF;&#x3002;
+</p>
+<ul class="org-ul">
+<li>SECTION&#xFF1A;&#x8BF4;&#x660E;&#x5305;&#x7684;&#x7C7B;&#x578B;&#xFF0C;&#x5305;&#x7BA1;&#x7406;&#x7CFB;&#x7EDF;&#x6839;&#x636E;&#x6B64;&#x53D8;&#x91CF;&#x6765;&#x7EC4;&#x7EC7;&#x8BE5;&#x5305;&#xFF0C;&#x53EF;&#x7528;&#x7684;&#x503C;&#x6709;&#xFF1A;
+<ul class="org-ul">
+<li>app,audio,base,devel,libs</li>
+</ul></li>
+<li>PRIORITY&#xFF1A;&#x63CF;&#x8FF0;&#x6B64;&#x5305;&#x53EF;&#x4EE5;&#x4F5C;&#x7528;&#x4E8E;&#x54EA;&#x79CD;&#x7CFB;&#x7EDF;&#xFF0C;&#x4EC5;&#x4EC5;&#x5728; dpkg &#x548C; opkg &#x5305;&#x7BA1;&#x7406;&#x5668;&#x4E0B;&#x4F7F;&#x7528;
+<ul class="org-ul">
+<li>standard&#xFF1A;&#x4EFB;&#x4F55; linux &#x7CFB;&#x7EDF;&#x90FD;&#x9002;&#x7528;&#x7684;&#x6807;&#x51C6;&#x5305;</li>
+<li>required&#xFF1A;&#x7CFB;&#x7EDF;&#x6240;&#x5FC5;&#x9700;&#x7684;</li>
+<li>optional&#xFF1A;&#x53EF;&#x9009;&#x7684;</li>
+<li>extra&#xFF1A;&#x53EF;&#x80FD;&#x4F1A;&#x4E0E;&#x7CFB;&#x7EDF;&#x7684;&#x5176;&#x4ED6;&#x5305;&#x76F8;&#x51B2;&#x7A81;</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div id="outline-container-orge6a1a6a" class="outline-4">
+<h4 id="orge6a1a6a">&#x8BB8;&#x53EF;&#x8BF4;&#x660E;</h4>
+<div class="outline-text-4" id="text-orge6a1a6a">
+<p>
+&#x8BB8;&#x53EF;&#x8BF4;&#x660E;&#x662F; yocto &#x5F3A;&#x5236;&#x8981;&#x6C42;&#x7684;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>LICENSE&#xFF1A;&#x8BB8;&#x53EF;&#x540D;&#x79F0;</li>
+<li>LIC_FILES_CHECKSUM&#xFF1A;&#x8BB8;&#x53EF;&#x6587;&#x4EF6;&#x7684;&#x6821;&#x9A8C;</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-orgf2c6ffd" class="outline-4">
+<h4 id="orgf2c6ffd">&#x7EE7;&#x627F;&#x4E0E;&#x5305;&#x542B;</h4>
+<div class="outline-text-4" id="text-orgf2c6ffd">
+<ul class="org-ul">
+<li><code>inherit &lt;class name&gt;</code> &#xFF1A;&#x7EE7;&#x627F;&#x81EA; class&#xFF0C;&#x8FD9;&#x4E2A;&#x8BED;&#x53E5;&#x5728;&#x6587;&#x4EF6;&#x4E2D;&#x7684;&#x4F4D;&#x7F6E;&#x5E76;&#x4E0D;&#x4F1A;&#x5F71;&#x54CD; bitbake &#x7684;&#x89E3;&#x6790;</li>
+<li><code>include &lt;file name&gt;</code> , <code>requirde &lt;file name&gt;</code> &#xFF1A;&#x5305;&#x542B;&#x6587;&#x4EF6;&#xFF0C; <b>&#x8FD9;&#x53E5;&#x8BDD;&#x5728;&#x6587;&#x4EF6;&#x4E2D;&#x7684;&#x4F4D;&#x7F6E;&#x5C31;&#x5F88;&#x91CD;&#x8981;&#x4E86;&#xFF0C;bitbake &#x4F1A;&#x5728;&#x8BED;&#x53E5;&#x5904;&#x5C55;&#x5F00;&#x6587;&#x4EF6;</b></li>
+</ul>
+</div>
+</div>
+<div id="outline-container-orgab6ac68" class="outline-4">
+<h4 id="orgab6ac68">&#x6784;&#x5EFA;&#x8BF4;&#x660E;</h4>
+<div class="outline-text-4" id="text-orgab6ac68">
+<ul class="org-ul">
+<li>PROVIDES&#xFF1A;&#x7ED9; recipe &#x53D6;&#x522B;&#x540D;&#xFF0C;&#x8BE6;&#x7EC6;&#x53C2;&#x8003;<a href="http://kcmetercec.top/2018/09/16/linux_make_yocto_bitbake_hello/#org9b9b4dc">&#x6B64;&#x5904;</a>&#x3002;</li>
+<li>DEPENDS&#xFF1A;&#x5728;&#x6784;&#x5EFA;&#x6B64;&#x5305;&#x524D;&#xFF0C;&#x5FC5;&#x987B;&#x6784;&#x5EFA;&#x6307;&#x5B9A;&#x7684;&#x4F9D;&#x8D56;&#x5305;&#xFF0C;&#x8BE6;&#x7EC6;&#x53C2;&#x8003;<a href="http://kcmetercec.top/2018/09/16/linux_make_yocto_bitbake_hello/#org662313f">&#x6B64;&#x5904;</a>&#x3002;</li>
+<li>PN&#xFF1A;&#x5305;&#x7684;&#x540D;&#x5B57;&#xFF0C;&#x53EF;&#x4EE5;&#x7531; bitbake &#x4ECE;&#x6587;&#x4EF6;&#x4E2D;&#x83B7;&#x53D6;&#xFF0C;&#x4E5F;&#x53EF;&#x4EE5;&#x7528;&#x6237;&#x663E;&#x793A;&#x6307;&#x5B9A;&#xFF0C;<a href="http://kcmetercec.top/2018/09/16/linux_make_yocto_bitbake_hello/#org9b9b4dc">&#x6B64;&#x5904;&#x6709;&#x8BE6;&#x7EC6;&#x8BF4;&#x660E;</a>&#x3002;</li>
+<li>PV&#xFF1A;&#x5305;&#x7248;&#x672C;</li>
+<li>PR&#xFF1A;&#x5305;&#x4FEE;&#x8BA2;&#x7248;&#xFF0C;&#x9ED8;&#x8BA4;&#x503C;&#x4E3A; r0&#x3002;</li>
+<li>SRC_URI&#xFF1A;&#x6E90;&#x7801;&#x3001;&#x8865;&#x4E01;&#x53CA;&#x5176;&#x4ED6;&#x6587;&#x4EF6;&#x7684;&#x4E0B;&#x8F7D;&#x8DEF;&#x5F84;&#xFF0C;&#x8BE6;&#x7EC6;&#x53C2;&#x8003;<a href="http://kcmetercec.top/2018/09/16/linux_bitbake_build_engine/#org441957f">&#x6B64;&#x5904;</a>&#x3002;</li>
+<li>SRCDATA&#xFF1A;&#x6E90;&#x7801;&#x7684;&#x65E5;&#x671F;&#xFF0C;&#x8FD9;&#x4E2A;&#x53EA;&#x6709;&#x5728;&#x4F7F;&#x7528; SCM &#x4E3A;&#x6E90;&#x65F6;&#x624D;&#x6709;&#x7528;&#x3002;</li>
+<li>S&#xFF1A;&#x6307;&#x5B9A;&#x5B58;&#x653E;&#x6E90;&#x7801;&#x7684;&#x8DEF;&#x5F84;&#xFF0C;&#x9ED8;&#x8BA4;&#x4E3A; <code>${WORKDIR}/${PN}-${PV}</code> &#xFF0C;&#x5982;&#x679C;&#x4F7F;&#x7528; SCM &#x65B9;&#x5F0F;&#x83B7;&#x53D6;&#xFF0C;&#x9700;&#x8981;&#x4FEE;&#x6539;&#x4E3A; <code>${WORKDIR}/git</code></li>
+<li>B&#xFF1A;&#x6784;&#x5EFA;&#x8FC7;&#x7A0B;&#x4E2D;&#xFF0C;&#x4E2D;&#x95F4;&#x5BF9;&#x8C61;&#x7684;&#x5B58;&#x653E;&#x8DEF;&#x5F84;&#xFF0C;&#x9ED8;&#x8BA4;&#x548C; <code>S</code> &#x7684;&#x503C;&#x4E00;&#x81F4;</li>
+<li>FILESEXTRAPATHS&#xFF1A;&#x6269;&#x5C55;&#x6784;&#x5EFA;&#x7CFB;&#x7EDF;&#x7684;&#x641C;&#x5BFB;&#x8DEF;&#x5F84;</li>
+<li>PACKAGECONFIG&#xFF1A;&#x5BF9;&#x5305;&#x7684;&#x7279;&#x5F81;&#x8FDB;&#x884C;&#x914D;&#x7F6E;&#xFF0C;&#x6BD4;&#x5982;&#x6709;&#x5982;&#x4E0B; 3 &#x4E2A; feature&#xFF1A;</li>
+</ul>
+<pre class="example">
+PACKAGECONFIG[f1]	=	&#x201C;&#x2014;with-f1,&#x2014;wo-f1,build-deps-f1,rt-deps-f1&#x201D;
+PACKAGECONFIG[f2]	=	&#x201C;&#x2014;with-f2,&#x2014;wo-f2,build-deps-f2,rt-deps-f2&#x201D;
+PACKAGECONFIG[f3]	=	&#x201C;&#x2014;with-f3,&#x2014;wo-f3,build-deps-f3,rt-deps-f3&#x201D;</pre>
+<p>
+&#x6BCF;&#x4E2A; feature &#x901A;&#x8FC7;&#x9017;&#x53F7;&#x5206;&#x5272;&#x4E86; 4 &#x4E2A;&#x914D;&#x7F6E;&#xFF0C;&#x5F53;&#x5BF9;&#x5E94;&#x7684; feature &#x88AB;&#x4F7F;&#x80FD;&#x65F6;&#xFF1A;
+</p>
+<ol class="org-ol">
+<li>&#x7B2C;&#x4E00;&#x4E2A;&#x914D;&#x7F6E;&#x88AB;&#x5E94;&#x7528;&#x4E8E;&#x914D;&#x7F6E;&#x811A;&#x672C;&#x7684;&#x53C2;&#x6570;&#x5217;&#x8868;</li>
+<li>&#x7B2C;&#x4E8C;&#x4E2A;&#x914D;&#x7F6E;&#x88AB;&#x9644;&#x52A0;&#x4E8E; <code>EXTRA_OECONF</code></li>
+<li>&#x7B2C;&#x4E09;&#x4E2A;&#x53C2;&#x6570;&#x88AB;&#x9644;&#x52A0;&#x4E8E; <code>DEPENDS</code> &#x6784;&#x5EFA;&#x4F9D;&#x8D56;</li>
+<li>&#x7B2C;&#x56DB;&#x4E2A;&#x53C2;&#x6570;&#x88AB;&#x9644;&#x52A0;&#x4E8E; <code>RDEPENDS</code> &#x8FD0;&#x884C;&#x65F6;&#x4F9D;&#x8D56;</li>
+</ol>
+
+<p>
+&#x4E3A;&#x4E86;&#x80FD;&#x4F7F;&#x80FD;&#x8FD9;&#x4E9B;&#x7279;&#x5F81;&#xFF0C;&#x53EF;&#x4EE5;&#x4F7F;&#x7528;&#x4EE5;&#x4E0B;&#x4E24;&#x79CD;&#x65B9;&#x5F0F;&#xFF1A;
+</p>
+<ol class="org-ol">
+<li>&#x4F7F;&#x7528;&#x9644;&#x52A0;&#x6587;&#x4EF6; <code>append file</code> &#xFF0C;&#x521B;&#x5EFA;&#x9644;&#x52A0;&#x6587;&#x4EF6; <code>&lt;recipe file name&gt;.bbappend</code> &#xFF0C;&#x7136;&#x540E;&#x53EF;&#x4EE5;&#x4F7F;&#x80FD;&#x7279;&#x5F81;&#x3002;</li>
+</ol>
+<pre class="example">
+PACKAGECONFIG = &quot;f2 f3&quot;
+# &#x6216;&#x8005;
+PACKAGECONFIG_append = &quot; f2 f3&quot;</pre>
+<ol class="org-ol">
+<li>&#x4F7F;&#x7528;&#x914D;&#x7F6E;&#x6587;&#x4EF6; <code>local.conf</code> &#xFF1A;</li>
+</ol>
+<pre class="example">
+PACKAGECONFIG_pn-&lt;packagename&gt; = &quot;f2 f3&quot;
+# &#x6216;&#x8005;
+PACKAGECONFIG_append_pn-&lt;packagename&gt; = &quot; f2 f3&quot;</pre>
+<ul class="org-ul">
+<li>EXTRA_OECONF&#xFF1A;&#x914D;&#x7F6E;&#x811A;&#x672C;&#xFF08;&#x6307;&#x7684;&#x662F; autotools &#x4E2D;&#x7684; <code>configure</code> &#x914D;&#x7F6E;&#x811A;&#x672C; &#xFF09;&#x7684;&#x9644;&#x52A0;&#x53C2;&#x6570;</li>
+<li>EXTRA_OEMAKE&#xFF1A;GUN Make &#x7684;&#x9644;&#x52A0;&#x914D;&#x7F6E;</li>
+<li>EXTRA_OECMAKE&#xFF1A;CMake &#x7684;&#x9644;&#x52A0;&#x914D;&#x7F6E;</li>
+<li>LDFLAGS&#xFF1A;&#x94FE;&#x63A5;&#x811A;&#x672C;&#x914D;&#x7F6E;</li>
+<li>PACKAGE_ARCH&#xFF1A;&#x8F6F;&#x4EF6;&#x5305;&#x5E94;&#x7528;&#x7684;&#x786C;&#x4EF6;&#x6784;&#x5EFA;&#x3002;
+<ul class="org-ul">
+<li>&#x9ED8;&#x8BA4;&#x60C5;&#x51B5;&#x4E0B;&#xFF0C;&#x5BF9;&#x4E8E;&#x76EE;&#x6807;&#x677F;&#x8FD9;&#x4E2A;&#x503C;&#x8BBE;&#x7F6E;&#x4E3A; <code>TUNE_PAGARCH</code> &#xFF0C; &#x5BF9;&#x4E8E;&#x4E3B;&#x673A;&#x8FD9;&#x4E2A;&#x503C;&#x8BBE;&#x7F6E;&#x4E3A; <code>BUILD_ARCH</code> &#xFF0C;&#x5BF9;&#x4E8E; SDK &#x8FD9;&#x4E2A;&#x503C;&#x8BBE;&#x7F6E;&#x4E3A; <code>${SDK_ARCH}-{SDKPKGSUFFIX}</code></li>
+<li>&#x5982;&#x679C;&#x8FD9;&#x4E2A;&#x8F6F;&#x4EF6;&#x5305;&#x662F;&#x5B8C;&#x5168;&#x72EC;&#x7ACB;&#x4E8E;&#x4EFB;&#x4F55;&#x6784;&#x67B6;&#x7684;&#xFF0C;&#x90A3;&#x4E48;&#x53EF;&#x4EE5;&#x4E3B;&#x52A8;&#x5C06;&#x5176;&#x8BBE;&#x7F6E;&#x4E3A; <code>${MACHINE_ARCH}</code></li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div id="outline-container-org2a77835" class="outline-4">
+<h4 id="org2a77835">&#x6253;&#x5305;</h4>
+<div class="outline-text-4" id="text-org2a77835">
+<p>
+&#x8FD9;&#x90E8;&#x5206;&#x8BBE;&#x7F6E;&#x4F7F;&#x7528;&#x6253;&#x5305;&#x5668;&#x5982;&#x4F55;&#x6253;&#x5305;&#x6B64;&#x7F16;&#x8BD1;&#x597D;&#x7684;&#x8F6F;&#x4EF6;&#xFF0C;&#x6253;&#x5305;&#x5728;&#x8F6F;&#x4EF6;&#x88AB;&#x6784;&#x5EFA;&#x5E76;&#x88AB;&#x5B89;&#x88C5;&#x5230;&#x6839;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x76EE;&#x5F55;&#x540E;&#x6267;&#x884C;&#x3002;
+</p>
+<ul class="org-ul">
+<li>PACKAGES&#xFF1A;&#x6307;&#x5B9A;&#x8BE5;&#x5305;&#x88AB;&#x6253;&#x5305;&#x7684;&#x51E0;&#x79CD;&#x5F62;&#x5F0F;&#x7684;&#x5217;&#x8868;&#xFF0C;&#x9ED8;&#x8BA4;&#x503C;&#x4E3A; <code>${PN}-dbg ${PN}-staticdev ${PN}-dev ${PN}-doc ${PN}-locale ${PACKAGE_BEFORE_PN} ${PN}</code></li>
+<li>FILES&#xFF1A;&#x6307;&#x5B9A;&#x54EA;&#x4E9B;&#x6587;&#x4EF6;&#x4F1A;&#x88AB;&#x5305;&#x542B;&#x8FDB;&#x5305;&#xFF0C;&#x9ED8;&#x8BA4;&#x60C5;&#x51B5;&#x4E0B;&#x4E0D;&#x9700;&#x8981;&#x4FEE;&#x6539;&#x6B64;&#x503C;&#x3002;
+<ul class="org-ul">
+<li>&#x4F46;&#x5982;&#x679C;&#x9700;&#x8981;&#x5305;&#x542B;&#x989D;&#x5916;&#x7684;&#x6587;&#x4EF6;&#xFF0C;&#x6216;&#x8005;&#x662F;&#x5728; <code>PACKAGES</code> &#x4E2D;&#x65B0;&#x589E;&#x4E86;&#x5305;&#x7C7B;&#x578B;&#x65F6;&#xFF0C;&#x5C31;&#x9700;&#x8981;&#x4FEE;&#x6539;&#x6B64;&#x503C;&#x4E86;</li>
+</ul></li>
+<li>PACKAGE_BEFORE_PN&#xFF1A;&#x5728;&#x5305;&#x540D;&#x5B57;&#x88AB;&#x521B;&#x5EFA;&#x4E4B;&#x524D;&#xFF0C;&#x65B0;&#x589E;&#x4E00;&#x4E2A;&#x5305;</li>
+<li>PACKAGE_DEBUG_SPLIT_STYLE&#xFF1A;&#x5F53; <code>${PN}-dbg</code> &#x5305;&#x88AB;&#x521B;&#x5EFA;&#x65F6;&#xFF0C;&#x6307;&#x5B9A;&#x5176;&#x6587;&#x4EF6;&#x7EC4;&#x7EC7;&#x65B9;&#x5F0F;
+<ul class="org-ul">
+<li>&quot;.debug&quot;&#xFF1A;&#x5C06;&#x5E26;&#x6709;&#x8C03;&#x8BD5;&#x4FE1;&#x606F;&#x7684;&#x6587;&#x4EF6;&#x5B58;&#x653E;&#x5728; <code>.debug</code> &#x6587;&#x4EF6;&#x5939;&#x4E2D;&#xFF0C;&#x8FD9;&#x4E2A;&#x6587;&#x4EF6;&#x5939;&#x548C;&#x7F16;&#x8BD1;&#x4EA7;&#x751F;&#x7684;&#x4E8C;&#x8FDB;&#x5236;&#x6587;&#x4EF6;&#x653E;&#x5728;&#x4E00;&#x8D77;</li>
+<li>&quot;debug-file-directory&quot;&#xFF1A;&#x5C06;&#x5E26;&#x6709;&#x8C03;&#x8BD5;&#x4FE1;&#x606F;&#x7684;&#x6587;&#x4EF6;&#x5B58;&#x653E;&#x5728; <code>/usr/lib/debug</code></li>
+<li>&quot;debug-without_src&quot;&#xFF1A;&#x4E0E; <code>.debug</code> &#x7684;&#x653E;&#x7F6E;&#x4F4D;&#x7F6E;&#x4E00;&#x6837;&#xFF0C;&#x53EA;&#x662F;&#x4E0D;&#x5305;&#x542B;&#x6E90;&#x7801;&#x4E86;</li>
+</ul></li>
+<li>PACKAGESPLITFUNCS&#xFF1A;&#x5236;&#x5B9A;&#x5305;&#x5B58;&#x653E;&#x65B9;&#x5F0F;&#x7684;&#x4EFB;&#x52A1;&#xFF0C;&#x9ED8;&#x8BA4;&#x7531; <code>package.bbclass</code> &#x7684; <code>package_do_split_locales_populate_packages</code> &#x4EFB;&#x52A1;&#x6765;&#x505A;&#x3002;</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-orgf1999f9" class="outline-4">
+<h4 id="orgf1999f9">&#x4EFB;&#x52A1;</h4>
+<div class="outline-text-4" id="text-orgf1999f9">
+<p>
+&#x7528;&#x6237;&#x53EF;&#x4EE5;&#x91CD;&#x5199;&#xFF0C;&#x9644;&#x52A0;&#x9ED8;&#x8BA4;&#x7684;&#x4EFB;&#x52A1;&#x3002;
+</p>
+</div>
+</div>
+<div id="outline-container-orgf0d6cea" class="outline-4">
+<h4 id="orgf0d6cea">&#x53D8;&#x91CF;&#x548C;&#x7C7B;&#x7684;&#x6269;&#x5C55;</h4>
+<div class="outline-text-4" id="text-orgf0d6cea">
+<p>
+<code>BBCLASSEXTEND</code> &#x53D8;&#x91CF;&#x53EF;&#x4EE5;&#x6269;&#x5C55;&#x5305;&#x3002;
+</p>
+</div>
+</div>
+<div id="outline-container-org76da47d" class="outline-4">
+<h4 id="org76da47d">&#x8FD0;&#x884C;&#x65F6;&#x914D;&#x7F6E;</h4>
+<div class="outline-text-4" id="text-org76da47d">
+<ul class="org-ul">
+<li>RDEPENDS&#xFF1A;&#x6307;&#x5B9A;&#x5305;&#x5728;&#x8FD0;&#x884C;&#x65F6;&#x7684;&#x4F9D;&#x8D56;&#xFF0C;&#x4E00;&#x822C;&#x90FD;&#x8981;&#x6307;&#x5B9A;&#x54EA;&#x4E2A;&#x5305;&#x7684;&#x4F9D;&#x8D56;&#xFF0C;&#x6BD4;&#x5982;&#xFF1A;</li>
+</ul>
+<pre class="example">
+# &#x6B64;&#x8F6F;&#x4EF6;&#x7684; dev &#x5305;&#x4F9D;&#x8D56;&#x4E8E; perl &#x5305;
+RDEPENDS_${PN}-dev += &quot;perl&quot;
+# &#x5305;&#x4F9D;&#x8D56;&#x8FD8;&#x652F;&#x6301;&#x7248;&#x672C;&#x9009;&#x62E9;
+# RDEPENDS_${PN}	=	&#x201C;&lt;package&gt;	(&lt;operator&gt;	&lt;version&gt;)&#x201D; , &lt;operator&gt; &#x53EF;&#x4EE5;&#x662F; =,&lt;,&gt;,&lt;=,&gt;=
+RDEPENDS_${PN}	=	&#x201C;gettext	(&gt;	0.16)&#x201D;</pre>
+<ul class="org-ul">
+<li>RRECOMMENDS&#xFF1A;&#x4E0E; <code>RDEPENDS</code> &#x4E00;&#x6837;&#xFF0C;&#x53EA;&#x662F;&#x5E76;&#x4E0D;&#x5F3A;&#x5236;&#x8981;&#x6C42;&#x88AB;&#x4F9D;&#x8D56;&#x7684;&#x5305;&#x5FC5;&#x987B;&#x5B58;&#x5728;</li>
+<li>RSUGGESTS&#xFF1A;&#x4E0E; <code>RRECOMMENDS</code> &#x4E00;&#x6837;&#xFF0C;&#x53EA;&#x662F;&#x5F53;&#x5305;&#x5B58;&#x5728;&#x65F6;&#x6784;&#x5EFA;&#x7CFB;&#x7EDF;&#x4E5F;&#x4E0D;&#x4F1A;&#x6784;&#x5EFA;&#x6B64;&#x5305;&#xFF0C;&#x800C;&#x662F;&#x63D0;&#x9192;&#x7528;&#x6237;&#x6709;&#x8FD9;&#x4E2A;&#x5305;&#x5B58;&#x5728;</li>
+<li>RPROVIDES&#xFF1A;&#x6B64;&#x5305;&#x7684;&#x522B;&#x540D;&#xFF0C;&#x7528;&#x4E8E;&#x5176;&#x4ED6;&#x5305;&#x53EF;&#x4EE5;&#x901A;&#x8FC7;&#x6B64;&#x540D;&#x5B57;&#x6765;&#x4F9D;&#x8D56;&#x5B83;</li>
+<li>RCONFLICTS&#xFF1A;&#x6307;&#x5B9A;&#x6B64;&#x5305;&#x4E0E;&#x54EA;&#x4E9B;&#x5305;&#x51B2;&#x7A81;&#xFF0C;&#x5982;&#x679C;&#x5DF2;&#x7ECF;&#x6784;&#x5EFA;&#x4E86;&#x90A3;&#x4E9B;&#x5305;&#xFF0C;&#x90A3;&#x4E48;&#x6B64;&#x5305;&#x4E0D;&#x4F1A;&#x88AB;&#x6784;&#x5EFA;&#x3002;&#x5B9E;&#x9645;&#x4F7F;&#x7528;&#x65F6;&#x5E94;&#x8BE5;&#x52A0;&#x4E0A;&#x5305;&#x540D;&#x79F0;&#xFF1A;</li>
+</ul>
+<pre class="example">
+RCONFILCTS_${PN} = &quot;conflicting-package-name&quot;</pre>
+<ul class="org-ul">
+<li>RREPLACES&#xFF1A;&#x8FD9;&#x4E2A;&#x8F6F;&#x4EF6;&#x5305;&#x53EF;&#x4EE5;&#x66FF;&#x4EE3;&#x54EA;&#x4E9B;&#x8F6F;&#x4EF6;&#x5305;&#xFF0C;&#x5982;&#x679C;&#x4E0E;&#x90A3;&#x4E9B;&#x5305;&#x8FD8;&#x6709;&#x51B2;&#x7A81;&#xFF0C;&#x90A3;&#x4E48;&#x5E94;&#x8BE5;&#x8BBE;&#x7F6E; <code>RCONFLICTS</code> &#x53D8;&#x91CF;&#xFF0C;&#x5B9E;&#x9645;&#x4F7F;&#x7528;&#x4E8B;&#x5E94;&#x8BE5;&#x52A0;&#x4E0A;&#x5305;&#x540D;&#x79F0;&#xFF1A;</li>
+</ul>
+<pre class="example">
+RREPLACES_${PN} = &quot;other_package_being_replaced&quot;</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-org3e1c827" class="outline-3">
+<h3 id="org3e1c827">recipe &#x683C;&#x5F0F;</h3>
+<div class="outline-text-3" id="text-org3e1c827">
+<ul class="org-ul">
+<li>&#x53D8;&#x91CF;&#x7684;&#x8D4B;&#x503C;&#xFF1A;&#x7B49;&#x53F7;&#x4E24;&#x7AEF;&#x7531;&#x7A7A;&#x683C;&#x5206;&#x5272;&#xFF0C;&#x7B49;&#x53F7;&#x53F3;&#x8FB9;&#x7531;&#x53CC;&#x5F15;&#x53F7;&#x5305;&#x542B;&#x503C;</li>
+</ul>
+<pre class="example">
+VARIABLE = &quot;VALUE&quot;</pre>
+<ul class="org-ul">
+<li>&#x7EED;&#x884C;&#xFF1A;&#x4F7F;&#x7528;&#x53F3;&#x659C;&#x6760;&#xFF08;\&#xFF09;&#x6765;&#x7EED;&#x884C;&#xFF0C;&#x659C;&#x6760;&#x540E;&#x4E0D;&#x80FD;&#x6709;&#x7A7A;&#x683C;&#xFF0C;&#x5F15;&#x53F7;&#x4F7F;&#x7528;&#x5355;&#x72EC;&#x4E00;&#x884C;</li>
+</ul>
+<pre class="example">
+VARIABLE	=	&#x201C;\
+             value1	\
+             value2	\
+            &#x201D;</pre>
+<ul class="org-ul">
+<li>python &#x548C; shell &#x51FD;&#x6570;&#xFF1A;&#x7EDF;&#x4E00;&#x4F7F;&#x7528; 4 &#x4E2A;&#x7A7A;&#x683C;&#x6765;&#x4EE3;&#x66FF; Tab</li>
+<li>&#x6CE8;&#x91CA;&#xFF1A;&#x6CE8;&#x91CA;&#x8981;&#x5355;&#x72EC;&#x5360;&#x7528;&#x4E00;&#x4E2A;&#x884C;&#x6216;&#x591A;&#x884C;&#xFF0C;&#x4E0D;&#x80FD;&#x5728;&#x8BED;&#x53E5;&#x540C;&#x4E00;&#x884C;&#x540E;&#x52A0;&#x5165;&#x6CE8;&#x91CA;</li>
+<li>task &#x7684;&#x987A;&#x5E8F;&#xFF1A;&#x6309;&#x7167;&#x4EE5;&#x4E0B;&#x987A;&#x5E8F;&#x6765;&#x653E;&#x7F6E; task</li>
+</ul>
+<pre class="example">
+# &#x8FD9;&#x4E2A;&#x5C31;&#x662F;&#x6784;&#x5EFA;&#x8F6F;&#x4EF6;&#x5305;&#x7684;&#x6807;&#x51C6;&#x6D41;&#x7A0B;
+do_fetch
+do_unpack
+do_patch
+do_configure
+do_compile
+do_install
+do_populate_sysroot
+do_package</pre>
+<ul class="org-ul">
+<li>&#x7EC4;&#x7EC7;&#x987A;&#x5E8F;&#xFF1A;recipe &#x7EC4;&#x7EC7;&#x7684;&#x5148;&#x540E;&#x987A;&#x5E8F;&#x5982;&#x4E0B;&#xFF1A;</li>
+</ul>
+<pre class="example">
+SUMMARY&#xFF1A;&#x7B80;&#x8981;&#x8BF4;&#x660E;&#xFF0C;&#x6700;&#x591A; 80 &#x5B57;&#x7B26;
+DESCRIPTION&#xFF1A;&#x8BE6;&#x7EC6;&#x8BF4;&#x660E;&#xFF0C;&#x53EF;&#x9009;
+AUTHOR
+HOMEPAGE
+BUGTRACKER
+SECTION
+LICENSE
+LIC_FILES_CHKSUM
+DEPENDS
+PROVIDES
+PV
+SRC_URI
+SRCREV
+S
+inherit ...
+PACKAGECONFIG
+build class specific variables, i.e. EXTRA_QMAKEVARS_POST, EXTRA_OECONF
+task overrides, i.e. do_configure
+PACKAGE_ARCH
+PACKAGES
+FILES
+RDEPENDS
+RRECOMMENDS
+RSUGGESTS
+RPROVIDES
+RCONFLICTS
+BBCLASSEXTEND</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-org872e708" class="outline-2">
+<h2 id="org872e708">&#x4ECE;&#x5934;&#x5F00;&#x59CB;&#x5199;&#x4E00;&#x4E2A;&#x65B0;&#x7684; recipe</h2>
+<div class="outline-text-2" id="text-org872e708">
+</div>
+<div id="outline-container-org4313807" class="outline-3">
+<h3 id="org4313807">&#x7F16;&#x5199; recipe &#x7684;&#x601D;&#x8DEF;</h3>
+<div class="outline-text-3" id="text-org4313807">
+<p>
+&#x7F16;&#x5199; recipe &#x65F6;&#xFF0C;&#x6309;&#x7167;&#x4E0B;&#x56FE;&#x601D;&#x8DEF;&#x7136;&#x540E;&#x518D;&#x6309;&#x7167;&#x524D;&#x9762;&#x8BF4;&#x7684; recipe &#x7EC4;&#x7EC7;&#x683C;&#x5F0F;&#x6392;&#x5217;&#x5373;&#x53EF;&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x53EF;&#x4EE5;&#x5148;&#x4ECE;<a href="http://layers.openembedded.org/layerindex/branch/master/layers/" target="_blank" rel="noopener">&#x5B98;&#x65B9; layer</a> &#x6216; github &#x4E2D;&#x5BFB;&#x627E;&#x4E00;&#x4E2A;&#x76F8;&#x4F3C;&#x7684; recipe&#xFF0C;&#x7136;&#x540E;&#x5728;&#x6B64;&#x57FA;&#x7840;&#x4E0A;&#x505A;&#x4FEE;&#x6539;</li>
+</ul>
+<img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[make]/[What]Linux--yocto/create_new_recipe.jpg?raw=true" alt="create_new_recipe.jpg">
+<p>
+&#x5982;&#x679C;&#x60F3;&#x5BF9;&#x5305;&#x7684;&#x67D0;&#x4E2A;&#x6B65;&#x9AA4;&#x505A;&#x5355;&#x72EC;&#x68C0;&#x67E5;&#xFF0C;&#x53EF;&#x4EE5;&#x53EA;&#x8FD0;&#x884C;&#x5BF9;&#x5E94;&#x7684;&#x4EFB;&#x52A1;&#xFF1A;
+</p>
+<pre class="example">
+bitbake -c fetch &lt;recipe name&gt;
+bitbake -c unpack &lt;recipe name&gt;</pre>
+</div>
+</div>
+<div id="outline-container-org054decf" class="outline-3">
+<h3 id="org054decf">&#x65B0;&#x5EFA;&#x5C42;&#x540E;&#x521B;&#x5EFA; recipe</h3>
+<div class="outline-text-3" id="text-org054decf">
+<p>
+&#x5728;&#x5BF9;&#x9ED8;&#x8BA4;&#x7684;&#x5DE5;&#x7A0B;&#x589E;&#x52A0; recipe &#x65F6;&#xFF0C;&#x9996;&#x5148;&#x8981;&#x505A;&#x7684;&#x5C31;&#x662F;&#x65B0;&#x5EFA;&#x4E00;&#x4E2A;&#x5C42;&#x3002;
+</p>
+
+<p>
+&#x8FD9;&#x6837;&#x5373;&#x6709;&#x4FBF;&#x4E8E;&#x4ECA;&#x540E;&#x7EF4;&#x62A4;&#xFF0C;&#x4E5F;&#x4E0D;&#x4F1A;&#x7834;&#x574F;&#x539F;&#x6709;&#x7684;&#x5DE5;&#x7A0B;&#x3002;
+</p>
+
+<p>
+&#x65B0;&#x5EFA;&#x5C42;&#x4F7F;&#x7528;&#x547D;&#x4EE4;&#xFF1A;
+</p>
+<pre class="example">
+bitbake-layers create-layer meta-&lt;layername&gt;</pre>
+
+<p>
+&#x7136;&#x540E;&#x65B0;&#x5EFA;&#x7684;&#x5C42;&#x4FBF;&#x4F1A;&#x63D0;&#x4F9B;&#x4E00;&#x4E2A;&#x793A;&#x4F8B;&#x7684; recipe &#x4EE5;&#x53CA; <code>conf/layer.conf</code> &#xFF1A;
+</p>
+<ul class="org-ul">
+<li>&#x4E00;&#x822C;&#x4F7F;&#x7528;&#x6B64;&#x9ED8;&#x8BA4;&#x8BBE;&#x7F6E;&#x5373;&#x53EF;</li>
+</ul>
+<pre class="example">
+# We have a conf and classes directory, add to BBPATH
+BBPATH .= &quot;:${LAYERDIR}&quot;
+
+# We have recipes-* directories, add to BBFILES
+# &#x7531; BBFILES &#x53EF;&#x4EE5;&#x770B;&#x51FA;&#xFF0C;&#x5F53;&#x524D;&#x5C42;&#x4E2D;&#x7684; recipes-* &#x6587;&#x4EF6;&#x5939;&#x4E0B;&#x7684;&#x6240;&#x6709;&#x5B50;&#x6587;&#x4EF6;&#x5939;&#x4E2D;&#x7684; *.bb &#x548C; *.bbappend &#x6587;&#x4EF6;&#x90FD;&#x4F1A;&#x88AB;&#x5305;&#x542B;&#x3002;
+BBFILES += &quot;${LAYERDIR}/recipes-*/*/*.bb \
+            ${LAYERDIR}/recipes-*/*/*.bbappend&quot;
+
+BBFILE_COLLECTIONS += &quot;meta-nano&quot;
+BBFILE_PATTERN_meta-nano = &quot;^${LAYERDIR}/&quot;
+BBFILE_PRIORITY_meta-nano = &quot;6&quot;
+LAYERSERIES_COMPAT_meta-nano = &quot;sumo&quot;</pre>
+
+<p>
+&#x6BD4;&#x5982;&#x5BF9;&#x4E8E;&#x5F53;&#x524D;&#x7CFB;&#x7EDF;&#xFF0C;&#x6211;&#x60F3;&#x8981;&#x5199; app&#xFF0C;&#x90A3;&#x4E48;&#x5C31;&#x53EF;&#x4EE5;&#x5728;&#x5C42;&#x4E2D;&#x65B0;&#x5EFA; <code>recipes-apps/apps</code> &#x6587;&#x4EF6;&#x5939;&#xFF0C;&#x7136;&#x540E;&#x65B0;&#x5EFA; recipe &#x6765;&#x5305;&#x542B; app &#x4EE3;&#x7801;&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x5173;&#x4E8E; recipe &#x7684;&#x6587;&#x4EF6;&#x7684;&#x547D;&#x540D;&#xFF0C;&#x524D;&#x9762;&#x5DF2;&#x7ECF;&#x8BE6;&#x7EC6;&#x8BF4;&#x8FC7;&#x4E86;&#xFF0C;&#x4E00;&#x822C;&#x4F7F;&#x7528; <code>&lt;package_name&gt;_&lt;version&gt;.bb</code> &#x5373;&#x53EF;&#x3002;</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-orgc92c44a" class="outline-3">
+<h3 id="orgc92c44a">&#x83B7;&#x53D6;&#x6E90;&#x7801;</h3>
+<div class="outline-text-3" id="text-orgc92c44a">
+<p>
+&#x53EF;&#x4EE5;&#x5728; bitbake &#x63D0;&#x4F9B;&#x7684;&#x793A;&#x4F8B; recipe &#x7684;&#x57FA;&#x7840;&#x4E4B;&#x4E0A;&#x5F00;&#x59CB;&#x8C03;&#x6574;&#x3002;
+</p>
+
+<p>
+&#x83B7;&#x53D6;&#x6E90;&#x7801;&#x6700;&#x5173;&#x952E;&#x7684;&#x5C31;&#x662F;&#x8BBE;&#x7F6E; <code>SRC_URI</code> ,&#x5728;<a href="http://kcmetercec.top/2018/09/16/linux_bitbake_build_engine/">&#x6E90;&#x7801;&#x7684;&#x4E0B;&#x8F7D;</a>&#x4E00;&#x8282;&#x4E2D;&#x5DF2;&#x7ECF;&#x8BE6;&#x7EC6;&#x8BF4;&#x660E;&#x4E86;&#x6B64;&#x53D8;&#x91CF;&#x8BE5;&#x5982;&#x4F55;&#x8BBE;&#x7F6E;&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x4E00;&#x822C;&#x6765;&#x8BB2;&#x9ED8;&#x8BA4;&#x4F7F;&#x7528; <code>base.bbclass</code> &#x4E2D;&#x7684; <code>do_fetch</code> &#x65B9;&#x6CD5;&#x5373;&#x53EF;&#xFF0C;&#x4E5F;&#x5C31;&#x662F;&#x4E0D;&#x7528;&#x5355;&#x72EC;&#x5B9E;&#x73B0;&#x4E00;&#x6B21;&#x4E86;</li>
+</ul>
+
+<p>
+&#x5728;&#x586B;&#x5199;&#x6E90;&#x7801;&#x5730;&#x5740;&#x65F6;&#xFF0C;&#x4E00;&#x822C;&#x4F1A;&#x542B;&#x6709;&#x5305;&#x7684;&#x7248;&#x672C;&#xFF0C;&#x8FD9;&#x79CD;&#x60C5;&#x51B5;&#x4E0B;&#x4F7F;&#x7528; <code>PV</code> &#x6765;&#x66FF;&#x4EE3;&#x6BD4;&#x8F83;&#x597D;&#x4EE5;&#x540E;&#x79FB;&#x690D;&#x3002;
+</p>
+<pre class="example">
+SRC_URI = &quot;https://nano-editor.org/dist/v4/nano-${PV}.tar.xz&quot;</pre>
+
+<p>
+&#x5728;&#x586B;&#x5199;&#x538B;&#x7F29;&#x5305;&#x7684; MD5 &#x6216; SHA256 &#x6821;&#x9A8C;&#x65F6;&#xFF0C;&#x4E00;&#x822C;&#x4E3A;&#x5305;&#x5355;&#x72EC;&#x53D6;&#x540D;&#x5E76;&#x4E3A;&#x5176;&#x6307;&#x5B9A;&#x6821;&#x9A8C;&#x548C;&#x3002;
+</p>
+
+<p>
+&#x800C;&#x5BF9;&#x4E8E; git &#x65B9;&#x5F0F;&#x83B7;&#x53D6;&#x7684;&#x6E90;&#x7801;&#x4E0D;&#x9700;&#x8981;&#x63D0;&#x4F9B;&#x6821;&#x9A8C;&#x548C;&#xFF0C;&#x4F46;&#x4E00;&#x822C;&#x9700;&#x8981;&#x6307;&#x5B9A; <code>branch</code> &#x3002;
+</p>
+</div>
+</div>
+<div id="outline-container-orgf8675ee" class="outline-3">
+<h3 id="orgf8675ee">&#x89E3;&#x538B;&#x7F29;</h3>
+<div class="outline-text-3" id="text-orgf8675ee">
+<p>
+&#x5BF9;&#x4E8E;&#x901A;&#x8FC7;&#x538B;&#x7F29;&#x5305;&#x7684;&#x65B9;&#x5F0F;&#x83B7;&#x53D6;&#x7684;&#x6E90;&#x7801;&#xFF0C;&#x9700;&#x8981;&#x89E3;&#x538B;&#x7F29;&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x4E00;&#x822C;&#x6765;&#x8BB2;&#x9ED8;&#x8BA4;&#x4F7F;&#x7528; <code>base.bbclass</code> &#x4E2D;&#x7684; <code>do_unpack</code> &#x65B9;&#x6CD5;&#x5373;&#x53EF;&#xFF0C;&#x4E5F;&#x5C31;&#x662F;&#x4E0D;&#x7528;&#x5355;&#x72EC;&#x5B9E;&#x73B0;&#x4E00;&#x6B21;&#x4E86;</li>
+</ul>
+
+<p>
+&#x4E0B;&#x8F7D;&#x7684;&#x6587;&#x4EF6;&#x4F1A;&#x88AB;&#x5B58;&#x653E;&#x4E8E; <code>DL_DIR</code> &#x4E2D;&#x3002;
+</p>
+
+<p>
+&#x88AB;&#x89E3;&#x538B;&#x7F29;&#x7684;&#x6587;&#x4EF6;&#x5B58;&#x653E;&#x4E8E;&#x53D8;&#x91CF; <code>S</code> &#x6240;&#x6307;&#x5B9A;&#x7684;&#x8DEF;&#x5F84;&#x4E2D;&#x3002;
+</p>
+<pre class="example">
+BPN = &quot;${@oe.utils.prune_suffix(d.getVar(&apos;PN&apos;), d.getVar(&apos;SPECIAL_PKGSUFFIX&apos;).split(), d)}&quot;
+BP = &quot;${BPN}-${PV}&quot;
+S = &quot;${WORKDIR}/${BP}&quot;</pre>
+<p>
+&#x4ECE;&#x4E0A;&#x9762;&#x8BBE;&#x7F6E;&#x53EF;&#x4EE5;&#x770B;&#x51FA;&#x9ED8;&#x8BA4;&#x89E3;&#x538B;&#x7F29;&#x5305;&#x6587;&#x4EF6;&#x540D;&#x4E3A;&#xFF1A; &lt;package_name&gt;-&lt;packager_version&gt;
+</p>
+<ul class="org-ul">
+<li>&#x6BD4;&#x5982;&#x4E00;&#x4E2A;&#x540D;&#x4E3A; <code>hello_2.9.bb</code> &#x7684; recipe &#x4E0B;&#x8F7D; <code>hello-2.9.tar.gz</code> &#x6587;&#x4EF6;&#x5305;&#xFF0C;&#x6700;&#x540E;&#x88AB;&#x89E3;&#x538B;&#x7F29;&#x5230; <code>hello-2.9</code> &#x6587;&#x4EF6;&#x5939;&#x4E2D;</li>
+</ul>
+
+<p>
+&#x5BF9;&#x4E8E;&#x4F7F;&#x7528; SCM &#x83B7;&#x53D6;&#x7684;&#x4EE3;&#x7801;&#x4F1A;&#x88AB;&#x5B58;&#x653E;&#x4E8E; <code>${WORKDIR}/&lt;scm&gt;</code>
+</p>
+<ul class="org-ul">
+<li>scm &#x5C31;&#x662F;&#x5BF9;&#x5E94;&#x5DE5;&#x5177;&#x7684;&#x540D;&#x79F0;&#xFF0C;&#x6BD4;&#x5982; <code>${WORKDIR}/git</code></li>
+</ul>
+</div>
+</div>
+<div id="outline-container-org0da1e13" class="outline-3">
+<h3 id="org0da1e13">&#x6253;&#x8865;&#x4E01;</h3>
+<div class="outline-text-3" id="text-org0da1e13">
+<p>
+<code>base.bbclass</code> &#x7EE7;&#x627F;&#x4E86; <code>patch.bbclass</code> &#xFF0C;&#x6240;&#x4EE5;&#x4E00;&#x822C;&#x60C5;&#x51B5;&#x4E0B;&#x7528;&#x6237;&#x4E5F;&#x4E0D;&#x7528;&#x7F16;&#x5199; <code>do_patch</code> &#x4EFB;&#x52A1;&#x3002;
+</p>
+
+<p>
+&#x5F53;&#x4E00;&#x4E2A;&#x8F6F;&#x4EF6;&#x5305;&#x9700;&#x8981;&#x6253;&#x8865;&#x4E01;&#x65F6;&#xFF0C;&#x9700;&#x8981;&#x505A;&#x5982;&#x4E0B;&#x5DE5;&#x4F5C;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>&#x5728;&#x5BF9;&#x5E94;&#x7684; recipe &#x6587;&#x4EF6;&#x65C1;&#x65B0;&#x5EFA;&#x4E0E; recipe name &#x4E00;&#x6837;&#x7684;&#x6587;&#x4EF6;&#x5939;&#xFF0C;&#x7528;&#x4E8E;&#x5B58;&#x653E;&#x8865;&#x4E01;&#x6587;&#x4EF6;&#x3002;
+<ul class="org-ul">
+<li>&#x6BD4;&#x5982;&#x5728; <code>meta-openembedded/meta-perl/recipes-perl/libnet</code> &#x4E0B;&#x6709; recipe &#x6587;&#x4EF6;&#xFF1A; <code>libnet-ssleay-perl_1.85.bb</code> &#x3002;&#x90A3;&#x4E48;&#x5BF9;&#x5E94;&#x7684;&#x8865;&#x4E01;&#x6587;&#x4EF6;&#x5939;&#x540D;&#x79F0;&#x5C31;&#x662F; <code>libnet-ssleay-perl</code> &#x3002;</li>
+</ul></li>
+<li>&#x5728;&#x8865;&#x4E01;&#x6587;&#x4EF6;&#x5939;&#x4E2D;&#x65B9;&#x5F0F;&#x8865;&#x4E01;&#xFF0C;&#x786E;&#x4FDD;&#x8865;&#x4E01;&#x4F7F;&#x7528; <code>-p1</code> &#x9009;&#x9879;&#xFF08;&#x5FFD;&#x7565;&#x9876;&#x5C42;&#x6587;&#x4EF6;&#x5939;&#xFF09;</li>
+<li>&#x53EA;&#x9700;&#x8981;&#x5728; <code>SRC_URI</code> &#x4E2D;&#x52A0;&#x5165;&#x8865;&#x4E01;&#x6587;&#x4EF6;&#xFF08;.patch / .diff&#xFF09;&#x5728;&#x8865;&#x4E01;&#x6587;&#x4EF6;&#x5939;&#x4E2D;&#x7684;&#x8DEF;&#x5F84;&#x3002;
+<ul class="org-ul">
+<li>&#x5F53;&#x9700;&#x8981;&#x5FFD;&#x7565;&#x591A;&#x7EA7;&#x8DEF;&#x5F84;&#x65F6;&#xFF0C;&#x9700;&#x8981;&#x589E;&#x52A0; <code>striplevel</code> &#x9009;&#x9879;</li>
+<li>&#x5F53;&#x8DEF;&#x5F84;&#x5728;&#x5176;&#x4ED6;&#x6587;&#x4EF6;&#x5939;&#x65F6;&#xFF0C;&#x9700;&#x8981;&#x589E;&#x52A0; <code>patchdir</code> &#x9009;&#x9879;</li>
+</ul></li>
+</ul>
+<pre class="example">
+SRC_URI = &quot;http://search.cpan.org/CPAN/authors/id/M/MI/MIKEM/Net-SSLeay-${PV}.tar.gz \
+           file://no-exec-on-configure.patch &quot;</pre>
+</div>
+</div>
+<div id="outline-container-org04ed39e" class="outline-3">
+<h3 id="org04ed39e">&#x589E;&#x52A0;&#x8BB8;&#x53EF;</h3>
+<div class="outline-text-3" id="text-org04ed39e">
+<p>
+&#x6784;&#x5EFA;&#x7CFB;&#x7EDF;&#x5728;&#x4E0B;&#x8F7D;&#x548C;&#x89E3;&#x538B;&#x7F29;&#x6E90;&#x7801;&#x540E;&#xFF0C;&#x4FBF;&#x4F1A;&#x68C0;&#x67E5;&#x5B83;&#x7684;&#x8BB8;&#x53EF;&#x3002;   
+</p>
+
+<p>
+&#x6240;&#x6709;&#x7684; recipe &#x5FC5;&#x987B;&#x589E;&#x52A0;&#x8BB8;&#x53EF;&#x8BF4;&#x660E;&#xFF0C;&#x4E0D;&#x7136;&#x6784;&#x5EFA;&#x7CFB;&#x7EDF;&#x4F1A;&#x62A5;&#x9519;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>LICENSE&#xFF1A;&#x8BB8;&#x53EF;&#x540D;&#x79F0;
+<ul class="org-ul">
+<li>&#x5728; <code>meta/files/common-licenses/</code> &#x4E2D;&#x5217;&#x51FA;&#x4E86;&#x4E1A;&#x5185;&#x7684;&#x53EF;&#x7528;&#x8BB8;&#x53EF;</li>
+</ul></li>
+<li>LIC_FILES_CHKSUM&#xFF1A;&#x8BB8;&#x53EF;&#x6587;&#x4EF6;&#x7684;&#x6821;&#x9A8C;&#x548C;</li>
+</ul>
+<pre class="example">
+LICENSE = &quot;Artistic-1.0 | GPL-1.0+&quot;
+LIC_FILES_CHKSUM = &quot;file://README;beginline=274;endline=294;md5=67d67095d83e339da538a082fad5f38e&quot;</pre>
+
+<p>
+&#x6709;&#x4E9B;&#x5F00;&#x6E90;&#x8F6F;&#x4EF6;&#x5305;&#x53EA;&#x662F;&#x5728;&#x8BF4;&#x660E;&#x4E2D;&#x63D0;&#x51FA;&#x4E86;&#x8BE5;&#x8F6F;&#x4EF6;&#x7684;&#x8BB8;&#x53EF;&#xFF0C;&#x4F46;&#x5E76;&#x6CA1;&#x6709;&#x7ED9;&#x51FA;&#x8BB8;&#x53EF;&#x6587;&#x4EF6;&#xFF0C;&#x8FD9;&#x4E2A;&#x65F6;&#x5019;&#x4F7F;&#x7528; <code>COMMON_LICENSE_DIR</code> &#xFF1A;
+</p>
+<pre class="example">
+LIC_FILES_CHKSUM = &quot;file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302&quot;</pre>
+<p>
+&#x8FD9;&#x79CD;&#x60C5;&#x51B5;&#x4E0B;&#xFF0C;&#x5982;&#x679C;&#x4E0D;&#x77E5;&#x9053;&#x8BE5;&#x6587;&#x4EF6;&#x7684; md5&#xFF0C;&#x90A3;&#x53EF;&#x4EE5;&#x5148;&#x4E0D;&#x586B;&#xFF0C;&#x7136;&#x540E;&#x7B49;&#x6784;&#x5EFA;&#x7CFB;&#x7EDF;&#x62A5;&#x9519;&#x4EE5;&#x540E;&#x4ECE;&#x63D0;&#x793A;&#x4E2D;&#x62F7;&#x8D1D;&#x8FC7;&#x6765;&#x5373;&#x53EF;&#x3002;
+</p>
+</div>
+</div>
+<div id="outline-container-org6958082" class="outline-3">
+<h3 id="org6958082">&#x6E90;&#x7801;&#x7684;&#x914D;&#x7F6E;</h3>
+<div class="outline-text-3" id="text-org6958082">
+<p>
+&#x6E90;&#x7801;&#x7684;&#x6784;&#x5EFA;&#x4E00;&#x822C;&#x6709; <code>makefile</code> , <code>autotools</code> , <code>cmake</code> &#x7B49;&#xFF0C;&#x4F46; <code>makefile</code> &#x57FA;&#x672C;&#x4E0A;&#x5C5E;&#x4E8E;&#x4E0A;&#x4E16;&#x7EAA;&#x7684;&#x4EA7;&#x7269;&#x4E86;&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x6700;&#x63A8;&#x8350;&#x7684;&#x5F53;&#x7136;&#x662F;&#x4F18;&#x79C0;&#x7684; <code>cmake</code> &#x3002;</li>
+</ul>
+
+<p>
+&#x5728;&#x914D;&#x7F6E;&#x5F53;&#x524D;&#x6E90;&#x7801;&#x524D;&#xFF0C;&#x9700;&#x8981;&#x5148;&#x786E;&#x8BA4;&#x5F53;&#x524D;&#x6E90;&#x7801;&#x662F;&#x5426;&#x8FD8;&#x4F9D;&#x8D56;&#x5176;&#x4ED6;&#x7684;&#x6E90;&#x7801;&#xFF0C;&#x5982;&#x679C;&#x6709;&#x9700;&#x8981;&#x5C06;&#x5176;&#x52A0;&#x5165; <code>DEPENDS</code> &#x53D8;&#x91CF;&#x4E2D;&#x3002;
+</p>
+</div>
+
+<div id="outline-container-orgf657275" class="outline-4">
+<h4 id="orgf657275">GNU Autotools</h4>
+<div class="outline-text-4" id="text-orgf657275">
+<p>
+&#x5F53;&#x6E90;&#x7801;&#x5305;&#x4E2D;&#x5305;&#x542B; <code>configure.ac</code> &#x6587;&#x4EF6;&#x65F6;&#xFF0C;&#x4EE3;&#x8868;&#x5B83;&#x4F7F;&#x7528;&#x7684;&#x6784;&#x5EFA;&#x7CFB;&#x7EDF;&#x662F; <code>GNU Autotools</code> &#x3002;
+</p>
+
+<p>
+&#x5BF9;&#x4E8E;&#x8FD9;&#x79CD;&#x6784;&#x5EFA;&#x7CFB;&#x7EDF;&#xFF0C;&#x7528;&#x6237;&#x53EA;&#x9700;&#x8981;&#x7EE7;&#x627F; <code>autotools</code> &#x7C7B;&#x5373;&#x53EF;&#xFF0C;&#x8FD9;&#x4E2A;&#x7C7B;&#x5DF2;&#x7ECF;&#x63D0;&#x4F9B;&#x4E86; <code>do_configure</code> &#x4EFB;&#x52A1;&#x3002;
+</p>
+
+<p>
+&#x5F53;&#x9700;&#x8981;&#x4FEE;&#x6539;&#x914D;&#x7F6E;&#x65F6;&#xFF0C;&#x9700;&#x8981;&#x914D;&#x7F6E;&#x53D8;&#x91CF; <code>EXTRA_OECONF</code> &#xFF1A;
+</p>
+<pre class="example">
+# set default mailgroup to mail
+# --with-libnfslock specify where to install nfslock.so.NVER
+EXTRA_OECONF = &quot;--enable-shared \
+                --with-mailgroup=mail \
+                --with-libnfslock=${libdir} \
+               &quot;</pre>
+</div>
+</div>
+<div id="outline-container-orgf2cfd04" class="outline-4">
+<h4 id="orgf2cfd04">cmake</h4>
+<div class="outline-text-4" id="text-orgf2cfd04">
+<p>
+&#x5F53;&#x6E90;&#x7801;&#x5305;&#x4E2D;&#x5305;&#x542B; <code>CMakeLists.txt</code> &#x65F6;&#xFF0C;&#x4EE3;&#x8868;&#x5B83;&#x4F7F;&#x7528;&#x7684;&#x6784;&#x5EFA;&#x7CFB;&#x7EDF;&#x662F; <code>CMake</code> &#x3002;
+</p>
+
+<p>
+&#x5BF9;&#x4E8E;&#x8FD9;&#x79CD;&#x6784;&#x5EFA;&#x7CFB;&#x7EDF;&#xFF0C;&#x7528;&#x6237;&#x53EA;&#x9700;&#x8981;&#x7EE7;&#x627F; <code>cmake</code> &#x7C7B;&#x5373;&#x53EF;&#xFF0C;&#x8FD9;&#x4E2A;&#x7C7B;&#x5DF2;&#x7ECF;&#x63D0;&#x4F9B;&#x4E86; <code>do_configure</code> &#x4EFB;&#x52A1;&#x3002;
+</p>
+
+<p>
+&#x5F53;&#x9700;&#x8981;&#x4FEE;&#x6539;&#x914D;&#x7F6E;&#x65F6;&#xFF0C;&#x9700;&#x8981;&#x914D;&#x7F6E;&#x53D8;&#x91CF; <code>EXTRA_OECMAKE</code> &#xFF1A;
+</p>
+<pre class="example">
+EXTRA_OECMAKE = &quot;-DBUILD_WSI_MIR_SUPPORT=OFF \
+                 -DBUILD_LAYERS=OFF \
+                 -DBUILD_TESTS=OFF&quot;</pre>
+</div>
+</div>
+<div id="outline-container-orgc5f9430" class="outline-4">
+<h4 id="orgc5f9430">&#x5176;&#x4ED6;</h4>
+<div class="outline-text-4" id="text-orgc5f9430">
+<p>
+&#x5982;&#x679C;&#x65E2;&#x4E0D;&#x662F; <code>autotools</code> &#x4E5F;&#x4E0D;&#x662F; <code>cmake</code> &#x6784;&#x5EFA;&#xFF0C;&#x7528;&#x6237;&#x5C31;&#x9700;&#x8981;&#x81EA;&#x5DF1;&#x6765;&#x5B8C;&#x6210; <code>do_configure</code> &#x4EFB;&#x52A1;&#x3002;
+</p>
+
+<p>
+&#x4FEE;&#x6539;&#x914D;&#x7F6E;&#x65F6;&#xFF0C;&#x9700;&#x8981;&#x914D;&#x7F6E;&#x53D8;&#x91CF; <code>EXTRA_OEMAKE</code> :
+</p>
+<pre class="example">
+EXTRA_OEMAKE = &quot;&apos;CC=${CC}&apos; &apos;BIND=${CC}&apos; &apos;AS=${CC} -c&apos; &apos;CPP=${CPP}&apos; \
+    &apos;CFLAGS=-I. -DUNIX ${CFLAGS}&apos; \
+    &apos;CFLAGS_NOOPT=-I. -DUNIX ${CFLAGS}&apos; \
+    &apos;INSTALL=install&apos; &apos;INSTALL_D=install -d&apos; \
+    &apos;BINFLAGS=0755&apos;&quot;</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-org2a67cb2" class="outline-3">
+<h3 id="org2a67cb2">&#x6E90;&#x7801;&#x7684;&#x7F16;&#x8BD1;</h3>
+<div class="outline-text-3" id="text-org2a67cb2">
+<p>
+&#x524D;&#x9762;&#x7ECF;&#x8FC7;&#x6E90;&#x7801;&#x7684;&#x914D;&#x7F6E;&#x4EE5;&#x540E;&#xFF0C;&#x6700;&#x7EC8;&#x5C31;&#x90FD;&#x662F;&#x7531; <code>Makefile</code> &#x6765;&#x7F16;&#x8BD1;&#x4E86;&#x3002;
+</p>
+<ul class="org-ul">
+<li><code>base.bbclass</code> &#x4E2D;&#x5DF2;&#x7ECF;&#x63D0;&#x4F9B;&#x4E86; <code>do_compile</code> &#x4EFB;&#x52A1;&#xFF0C;&#x6240;&#x4EE5;&#x4E00;&#x822C;&#x6765;&#x8BB2;&#x7528;&#x6237;&#x4E0D;&#x9700;&#x8981;&#x4EFB;&#x4F55;&#x591A;&#x4F59;&#x5DE5;&#x4F5C;&#x3002;</li>
+</ul>
+
+<p>
+&#x5F53;&#x7F16;&#x8BD1;&#x5931;&#x8D25;&#x65F6;&#xFF0C;&#x4E00;&#x822C;&#x4F1A;&#x6709;&#x4EE5;&#x4E0B; 3 &#x79CD;&#x53EF;&#x80FD;&#xFF1A;
+</p>
+</div>
+<div id="outline-container-org2eff7af" class="outline-4">
+<h4 id="org2eff7af">&#x5E76;&#x884C;&#x6784;&#x5EFA;&#x9519;&#x8BEF;</h4>
+<div class="outline-text-4" id="text-org2eff7af">
+<p>
+&#x6784;&#x5EFA;&#x7CFB;&#x7EDF;&#x9ED8;&#x8BA4;&#x60C5;&#x51B5;&#x4E0B;&#x4F7F;&#x80FD;&#x4E86;&#x5E76;&#x884C;&#x6784;&#x5EFA;&#xFF0C;&#x4E5F;&#x5C31;&#x662F;&#x591A;&#x7EBF;&#x7A0B;&#x4F7F;&#x7528; Make &#x6765;&#x540C;&#x65F6;&#x7F16;&#x8BD1;&#x3002;
+</p>
+
+<p>
+&#x4F46;&#x5728;&#x6709;&#x4E9B;&#x60C5;&#x51B5;&#x4E0B;&#x7531;&#x4E8E;&#x7F16;&#x8BD1;&#x7684;&#x5148;&#x540E;&#x987A;&#x5E8F;&#x95EE;&#x9898;&#xFF0C;&#x5BFC;&#x81F4; Make &#x62A5;&#x9519;&#x3002;
+</p>
+
+<p>
+&#x7B80;&#x5355;&#x7C97;&#x66B4;&#x7684;&#x529E;&#x6CD5;&#x5C31;&#x662F;&#x5C06;&#x53D8;&#x91CF; <code>PRALLEL_MAKE</code> &#x8BBE;&#x7F6E;&#x4E3A;&#x7A7A;&#x5B57;&#x7B26;&#x4E32;&#x3002;
+</p>
+</div>
+</div>
+<div id="outline-container-org32d7036" class="outline-4">
+<h4 id="org32d7036">&#x4E3B;&#x673A;&#x6CC4;&#x6F0F;</h4>
+<div class="outline-text-4" id="text-org32d7036">
+<p>
+&#x5C31;&#x662F;&#x6307;&#x672C;&#x6765;&#x5E94;&#x8BE5;&#x4F7F;&#x7528;&#x4EA4;&#x53C9;&#x7F16;&#x8BD1;&#x5DE5;&#x5177;&#x94FE;&#x7684;&#x5934;&#x6587;&#x4EF6;&#x548C;&#x5E93;&#xFF0C;&#x5374;&#x4F7F;&#x7528;&#x4E86;&#x4E3B;&#x673A;&#x81EA;&#x5DF1;&#x7684;&#x5934;&#x6587;&#x4EF6;&#x548C;&#x5E93;&#x3002;
+</p>
+
+<p>
+&#x8FD9;&#x7C7B;&#x9519;&#x8BEF;&#x4F1A;&#x7531;&#x6784;&#x5EFA;&#x7CFB;&#x7EDF;&#x62A5;&#x9519;&#xFF0C;&#x6839;&#x636E;&#x63D0;&#x793A;&#x66F4;&#x6539;&#x5373;&#x53EF;&#x3002;
+</p>
+</div>
+</div>
+<div id="outline-container-orgb9d6361" class="outline-4">
+<h4 id="orgb9d6361">&#x7F3A;&#x4E4F;&#x5934;&#x6587;&#x4EF6;&#x548C;&#x5E93;</h4>
+<div class="outline-text-4" id="text-orgb9d6361">
+<p>
+&#x4E00;&#x822C;&#x6765;&#x8BB2;&#xFF0C;&#x7F3A;&#x4E4F;&#x5934;&#x6587;&#x4EF6;&#x548C;&#x5E93;&#x662F;&#x7531;&#x4E8E;&#x5176;&#x4F9D;&#x8D56;&#x7684;&#x8F6F;&#x4EF6;&#x5305;&#x6CA1;&#x6709;&#x88AB;&#x6784;&#x5EFA;&#x5BFC;&#x81F4;&#x7684;&#x3002;
+</p>
+
+<p>
+&#x9700;&#x8981;&#x8BBE;&#x7F6E; <code>DEPENDS</code> &#x53D8;&#x91CF;&#x4EE5;&#x89E3;&#x51B3;&#x6B64;&#x95EE;&#x9898;&#x3002;
+</p>
+
+<p>
+&#x4E5F;&#x6709;&#x53EF;&#x80FD;&#x662F;&#x5934;&#x6587;&#x4EF6;&#x548C;&#x5E93;&#x7684;&#x8BBF;&#x95EE;&#x8DEF;&#x5F84;&#x8BBE;&#x7F6E;&#x9519;&#x8BEF;&#xFF0C;&#x90A3;&#x4E48;&#x9700;&#x8981;&#x914D;&#x7F6E;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>STAGING_BINDIR</li>
+<li>STAGING_INCDIR</li>
+<li>STAGING_DATADIR</li>
+<li>STAGING_BASELIBDIR</li>
+</ul>
+</div>
+</div>
+</div>
+<div id="outline-container-org692cd91" class="outline-3">
+<h3 id="org692cd91">&#x7F16;&#x8BD1;&#x7ED3;&#x679C;&#x7684;&#x5B89;&#x88C5;</h3>
+<div class="outline-text-3" id="text-org692cd91">
+<p>
+&#x5F53;&#x7F16;&#x8BD1;&#x5B8C;&#x6210;&#x540E;&#xFF0C; <code>base.bbclass</code> &#x63D0;&#x4F9B;&#x7684; <code>do_install</code> &#x4EFB;&#x52A1;&#x5C06;&#x53EF;&#x6267;&#x884C;&#x6587;&#x4EF6;&#x3001;&#x5934;&#x6587;&#x4EF6;&#x3001;&#x5E93;&#x3001;&#x914D;&#x7F6E;&#x6587;&#x4EF6;&#x7B49;&#xFF0C;
+&#x4ECE; <code>S</code> , <code>B</code> , <code>WORKDIR</code> &#x4ECE;&#x62F7;&#x8D1D;&#x5230; <code>D</code> &#x6240;&#x6307;&#x5B9A;&#x7684;&#x76EE;&#x5F55;&#x4E2D;&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x6E90;&#x7801;&#x4E5F;&#x4F1A;&#x5B58;&#x5728;&#x8FD9;&#x4E2A;&#x76EE;&#x5F55;&#x4E2D;</li>
+</ul>
+<pre class="example">
+TARGET_VENDOR = &quot;-oe&quot;
+MULTIMACH_TARGET_SYS = &quot;${PACKAGE_ARCH}${TARGET_VENDOR}-${TARGET_OS}&quot;
+TMPDIR ?= &quot;${TOPDIR}/tmp&quot;
+BASE_WORKDIR ?= &quot;${TMPDIR}/work&quot;
+
+# build/tmp/work/xxx-linux/&lt;package_name&gt;/
+WORKDIR = &quot;${BASE_WORKDIR}/${MULTIMACH_TARGET_SYS}/${PN}/${EXTENDPE}${PV}-${PR}&quot;
+T = &quot;${WORKDIR}/temp&quot;
+D = &quot;${WORKDIR}/image&quot;
+S = &quot;${WORKDIR}/${BP}&quot;
+B = &quot;${S}&quot;</pre>
+
+<p>
+&#x5BF9;&#x4E8E;&#x5B89;&#x88C5;&#x4F4D;&#x7F6E;&#x7684;&#x914D;&#x7F6E;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>autotools &#x548C; cmake&#xFF1A;&#x8FD9;&#x4E24;&#x4E2A;&#x7684;&#x7C7B;&#x6587;&#x4EF6;&#x4E2D;&#x5DF2;&#x7ECF;&#x63D0;&#x4F9B;&#x4E86; <code>do_install</code> &#x4EFB;&#x52A1;&#x3002;
+<ul class="org-ul">
+<li>&#x5982;&#x679C;&#x8981;&#x589E;&#x52A0;&#x914D;&#x7F6E;&#xFF0C;&#x7528;&#x6237;&#x9700;&#x8981;&#x65B0;&#x5EFA; <code>do_install_append</code> &#x4EFB;&#x52A1;&#xFF0C;&#x7136;&#x540E;&#x4F7F;&#x7528; <code>install -d &lt;source&gt; &lt;dest&gt;</code> &#x8BED;&#x53E5;</li>
+</ul></li>
+<li>make&#xFF1A;&#x4F7F;&#x7528; make &#x65B9;&#x5F0F;&#xFF0C;&#x9700;&#x8981;&#x7528;&#x6237;&#x65B0;&#x5EFA; <code>do_install</code> &#x4EFB;&#x52A1;&#xFF0C;&#x7136;&#x540E;&#x6839;&#x636E; Makefile &#x800C;&#x8BBE;&#x5B9A;&#x5BF9;&#x5E94;&#x53D8;&#x91CF;&#xFF08;DESTDIR/PREFIX/INSTALLROOT&#xFF09;
+<ul class="org-ul">
+<li>yocto &#x63D0;&#x4F9B;&#x4E86; <code>oe_runmake</code> &#x51FD;&#x6570;&#x53EF;&#x4EE5;&#x76F4;&#x63A5;&#x8C03;&#x7528; make</li>
+</ul></li>
+</ul>
+<pre class="example">
+do_install(){
+  oe_runmake install PREFIX=${D}
+}</pre>
+<ul class="org-ul">
+<li>&#x624B;&#x52A8;&#x5B89;&#x88C5;&#xFF1A;&#x5982;&#x679C;&#x8FDE; Makefile &#x90FD;&#x6CA1;&#x6709;&#x63D0;&#x4F9B; install &#x65B9;&#x6CD5;&#xFF0C;&#x90A3;&#x4E48;&#x5C31;&#x9700;&#x8981;&#x5728; <code>do_install</code> &#x4E2D;&#x4F7F;&#x7528; <code>install -d &lt;src&gt; &lt;dest</code> &#x8BED;&#x53E5;&#x5B89;&#x88C5;</li>
+</ul>
+<pre class="example">
+do_install(){
+  install -d ${B}/bin/hello ${D}${bindir}
+  install -d ${B}/lib/hello.lib ${D}${libdir}
+}</pre>
+<p>
+yocto &#x9ED8;&#x8BA4;&#x5B9A;&#x4E49;&#x4E86;&#x4EE5;&#x4E0B;&#x53D8;&#x91CF;&#x4EE5;&#x6307;&#x5B9A;&#x5B89;&#x88C5;&#x4F4D;&#x7F6E;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>bindir = &quot;/usr/bin&quot;</li>
+<li>sbindir = &quot;/usr/sbin&quot;</li>
+<li>libdir = &quot;/usr/lib&quot;</li>
+<li>libexecdir = &quot;/usr/lib&quot;</li>
+<li>sysconfdir = &quot;/etc&quot;</li>
+<li>datadir = &quot;/usr/share&quot;</li>
+<li>mandir = &quot;/usr/share/man&quot;</li>
+<li>includedir = &quot;/usr/include&quot;</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-org357cf8d" class="outline-3">
+<h3 id="org357cf8d">&#x7CFB;&#x7EDF;&#x670D;&#x52A1;&#x8BBE;&#x7F6E;</h3>
+<div class="outline-text-3" id="text-org357cf8d">
+<p>
+&#x5F53;&#x9700;&#x8981;&#x7CFB;&#x7EDF;&#x5728;&#x542F;&#x52A8;&#x65F6;&#x9ED8;&#x8BA4;&#x8FD0;&#x884C;&#x67D0;&#x4E9B;&#x670D;&#x52A1;&#xFF0C;&#x5728;&#x5173;&#x673A;&#x65F6;&#x505C;&#x6B62;&#x67D0;&#x4E9B;&#x670D;&#x52A1;&#xFF0C;&#x90A3;&#x4E48;&#x5C31;&#x9700;&#x8981;&#x8BBE;&#x7F6E;&#x7CFB;&#x7EDF;&#x670D;&#x52A1;&#x3002;
+</p>
+
+<p>
+&#x8FD9;&#x79CD;&#x60C5;&#x51B5;&#x4E0B;&#xFF0C;&#x7528;&#x6237;&#x9700;&#x8981;&#x7F16;&#x5199;&#x542F;&#x52A8;&#x811A;&#x672C;&#x3002;
+</p>
+
+<p>
+yocto &#x652F;&#x6301; sysvinit &#x548C; systemd &#x4E24;&#x79CD;&#x670D;&#x52A1;&#x7BA1;&#x7406;&#x5668;&#x3002;
+</p>
+</div>
+
+<div id="outline-container-org198b26c" class="outline-4">
+<h4 id="org198b26c">SysVinit</h4>
+<div class="outline-text-4" id="text-org198b26c">
+<p>
+&#x5BF9;&#x4E8E; sysvinit &#x9700;&#x8981;&#x5C06;&#x542F;&#x52A8;&#x811A;&#x672C;&#x653E;&#x7F6E;&#x4E8E; <code>/etc/init.d</code> &#x4EE5;&#x53CA;&#x5728;&#x5BF9;&#x5E94;&#x7684; <code>/etc/rcx.d</code> &#x4E3A;&#x8BE5;&#x811A;&#x672C;&#x521B;&#x5EFA;&#x7B26;&#x53F7;&#x94FE;&#x63A5;&#x3002;
+</p>
+
+<p>
+yocto &#x63D0;&#x4F9B;&#x4E86; <code>update-rc.d</code> &#x7C7B;&#x6765;&#x5B8C;&#x6210;&#x8FD9;&#x4E9B;&#x5DE5;&#x4F5C;&#xFF0C;&#x901A;&#x8FC7;&#x8BBE;&#x7F6E;&#x4EE5;&#x4E0B;&#x53D8;&#x91CF;&#x5373;&#x53EF;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>INITSCRIPT_PACKAGES&#xFF1A;&#x5305;&#x542B; <code>init</code> &#x811A;&#x672C;&#x7684;&#x8F6F;&#x4EF6;&#x5305;&#x540D;&#x79F0;&#xFF0C;&#x4E00;&#x822C;&#x8FD9;&#x4E2A;&#x503C;&#x4E0D;&#x7528;&#x8BBE;&#x7F6E;&#xFF0C;&#x56E0;&#x4E3A;&#x9ED8;&#x8BA4;&#x4E3A;: <code>${PN}</code></li>
+<li>INITSCRIPT_NAME&#xFF1A;&#x542F;&#x52A8;&#x811A;&#x672C;&#x7684;&#x540D;&#x79F0;</li>
+<li>INITSCRIPT_PARAMS&#xFF1A;&#x4F20;&#x9012;&#x7ED9; <code>update-rc.d</code> &#x7684;&#x53C2;&#x6570;
+<ul class="org-ul">
+<li>&#x5177;&#x4F53;&#x53C2;&#x6570;&#x8BBE;&#x7F6E;&#x53C2;&#x770B;<a href="./www.tin.org/bin/man.cgi?section=8&amp;topic=update-rc.d">&#x6B64;&#x7F51;&#x9875;&#x8BF4;&#x660E;</a></li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div id="outline-container-orgf85ac95" class="outline-4">
+<h4 id="orgf85ac95">systemd</h4>
+<div class="outline-text-4" id="text-orgf85ac95">
+<p>
+systemd &#x53EF;&#x4EE5;&#x5E76;&#x884C;&#x542F;&#x52A8;&#x4EFB;&#x52A1;&#xFF0C;&#x4EE5;&#x63D0;&#x9AD8;&#x5F00;&#x673A;&#x901F;&#x5EA6;&#x3002;&#x5BF9;&#x5E94;&#x7684;&#x914D;&#x7F6E;&#x811A;&#x672C;&#x653E;&#x7F6E;&#x5728; <code>/lib/systemd/system</code> &#x3002;
+</p>
+
+<p>
+yocto &#x63D0;&#x4F9B;&#x4E86; <code>systemd</code> &#x7C7B;&#x6765;&#x5B8C;&#x6210;&#x811A;&#x672C;&#x65B9;&#x5F0F;&#xFF0C;&#x901A;&#x8FC7;&#x8BBE;&#x7F6E;&#x4EE5;&#x4E0B;&#x53D8;&#x91CF;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>SYSTEMD_PACKAGES&#xFF1A;&#x5305;&#x542B;&#x914D;&#x7F6E;&#x811A;&#x672C;&#x5305;&#x540D;&#x79F0;&#xFF0C;&#x9ED8;&#x8BA4;&#x4E0D;&#x7528;&#x8BBE;&#x7F6E;&#x3002;</li>
+<li>SYSTEMD_SERVICE&#xFF1A;&#x914D;&#x7F6E;&#x6587;&#x4EF6;&#x540D;&#x79F0;</li>
+</ul>
+</div>
+</div>
+</div>
+<div id="outline-container-org94c0111" class="outline-3">
+<h3 id="org94c0111">&#x8F93;&#x51FA;&#x7ED3;&#x679C;&#x6253;&#x5305;</h3>
+<div class="outline-text-3" id="text-org94c0111">
+<p>
+&#x76EE;&#x524D;&#x6784;&#x5EFA;&#x5DF2;&#x7ECF;&#x5B8C;&#x6210;&#xFF0C;&#x63A5;&#x4E0B;&#x6765;&#x5C31;&#x662F; <code>do_package</code> &#x4EFB;&#x52A1;&#x4E86;&#xFF0C;&#x901A;&#x8FC7;&#x5305;&#x7BA1;&#x7406;&#x7CFB;&#x7EDF;&#x5C06;&#x6784;&#x5EFA;&#x8F93;&#x51FA;&#x8FDB;&#x884C;&#x6253;&#x5305;&#x3002;
+</p>
+</div>
+<div id="outline-container-org9d0cfc4" class="outline-4">
+<h4 id="org9d0cfc4">&#x5305;&#x7684;&#x5206;&#x79BB;</h4>
+<div class="outline-text-4" id="text-org9d0cfc4">
+<p>
+&#x5305;&#x5206;&#x79BB;&#xFF08;package splitting&#xFF09;&#x5C31;&#x662F;&#x5C06;&#x6784;&#x5EFA;&#x8F93;&#x51FA;&#x6587;&#x4EF6;&#x653E;&#x7F6E;&#x5230;&#x4E0D;&#x540C;&#x7684;&#x5305;&#x4E2D;&#xFF0C;&#x53EF;&#x4EE5;&#x914D;&#x7F6E;&#x8F93;&#x51FA;&#x6587;&#x4EF6;&#x662F;&#x5426;&#x5305;&#x542B;&#x76F8;&#x5E94;&#x7684;&#x5E93;&#x3001;&#x8C03;&#x8BD5;&#x4FE1;&#x606F;&#x7B49;&#x7B49;&#x3002;
+</p>
+
+<p>
+&#x4E3B;&#x8981;&#x7531;&#x4EE5;&#x4E0B;&#x4E24;&#x4E2A;&#x53D8;&#x91CF;&#x5B8C;&#x6210;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>PACKAGES&#xFF1A;&#x7528;&#x7A7A;&#x683C;&#x5206;&#x79BB;&#xFF0C;&#x4EE3;&#x8868;&#x8F93;&#x51FA;&#x6587;&#x4EF6;&#x53EF;&#x4EE5;&#x8F93;&#x51FA;&#x54EA;&#x4E9B;&#x5305;&#x3002;
+<ul class="org-ul">
+<li>&#x5728; <code>meta/conf/bitbake.conf</code> &#x4E2D;&#x5B9A;&#x4E49;&#x4E86;&#x5176;&#x9ED8;&#x8BA4;&#x503C; <code>PACKAGES = &quot;${PN}-dbg ${PN}-staticdev ${PN}-dev ${PN}-doc ${PN}-locale ${PACKAGE_BEFORE_PN} ${PN}&quot;</code></li>
+</ul></li>
+<li>FILES&#xFF1A;&#x7528;&#x4E8E;&#x89C4;&#x5B9A;&#x54EA;&#x4E9B;&#x6587;&#x4EF6;&#x5939;&#x548C;&#x6587;&#x4EF6;&#x4F1A;&#x88AB;&#x5305;&#x542B;&#x8FDB;&#x5305;&#xFF0C;&#x8FD9;&#x4E2A;&#x503C;&#x901A;&#x5E38;&#x542B;&#x6709;&#x6761;&#x4EF6;&#xFF1A;</li>
+</ul>
+<pre class="example">
+# &#x6587;&#x4EF6;&#x6216;&#x6587;&#x4EF6;&#x5939;&#x540D;&#x4EE5;&#x7A7A;&#x683C;&#x5206;&#x5272;
+FILES_${PN}-dbg = &quot;&lt;files&gt;&quot;
+# bitbake.conf &#x4E2D;&#x7684;&#x9ED8;&#x8BA4;&#x503C;
+FILES_${PN} = &quot;${bindir}/* ${sbindir}/* ${libexecdir}/* ${libdir}/lib*${SOLIBS} \
+            ${sysconfdir} ${sharedstatedir} ${localstatedir} \
+            ${base_bindir}/* ${base_sbindir}/* \
+            ${base_libdir}/*${SOLIBS} \
+            ${base_prefix}/lib/udev ${prefix}/lib/udev \
+            ${base_libdir}/udev ${libdir}/udev \
+            ${datadir}/${BPN} ${libdir}/${BPN}/* \
+            ${datadir}/pixmaps ${datadir}/applications \
+            ${datadir}/idl ${datadir}/omf ${datadir}/sounds \
+            ${libdir}/bonobo/servers&quot;
+
+FILES_${PN}-bin = &quot;${bindir}/* ${sbindir}/*&quot;
+
+FILES_${PN}-doc = &quot;${docdir} ${mandir} ${infodir} ${datadir}/gtk-doc \
+            ${datadir}/gnome/help&quot;
+SECTION_${PN}-doc = &quot;doc&quot;
+
+FILES_SOLIBSDEV ?= &quot;${base_libdir}/lib*${SOLIBSDEV} ${libdir}/lib*${SOLIBSDEV}&quot;
+FILES_${PN}-dev = &quot;${includedir} ${FILES_SOLIBSDEV} ${libdir}/*.la \
+                ${libdir}/*.o ${libdir}/pkgconfig ${datadir}/pkgconfig \
+                ${datadir}/aclocal ${base_libdir}/*.o \
+                ${libdir}/${BPN}/*.la ${base_libdir}/*.la&quot;
+SECTION_${PN}-dev = &quot;devel&quot;
+ALLOW_EMPTY_${PN}-dev = &quot;1&quot;
+RDEPENDS_${PN}-dev = &quot;${PN} (= ${EXTENDPKGV})&quot;
+
+FILES_${PN}-staticdev = &quot;${libdir}/*.a ${base_libdir}/*.a ${libdir}/${BPN}/*.a&quot;
+SECTION_${PN}-staticdev = &quot;devel&quot;
+RDEPENDS_${PN}-staticdev = &quot;${PN}-dev (= ${EXTENDPKGV})&quot;
+
+FILES_${PN}-dbg = &quot;/usr/lib/debug /usr/src/debug&quot;
+
+SECTION_${PN}-dbg = &quot;devel&quot;
+ALLOW_EMPTY_${PN}-dbg = &quot;1&quot;
+
+FILES_${PN}-locale = &quot;${datadir}/locale&quot;</pre>
+</div>
+</div>
+<div id="outline-container-org8a31cc5" class="outline-4">
+<h4 id="org8a31cc5">&#x65B0;&#x5EFA;&#x5305;</h4>
+<div class="outline-text-4" id="text-org8a31cc5">
+<p>
+&#x7528;&#x6237;&#x4E5F;&#x53EF;&#x4EE5;&#x65B0;&#x5EFA;&#x5305;&#x7C7B;&#x578B;&#xFF1A;
+</p>
+<pre class="example">
+SUMMARY	=	&#x201C;Hello	Universe	Application&#x201D;
+DESCRPTION	=	&#x201C;The	ultimate	hello	extending	beyond	&#x2018;world&#x2019;.&#x201D;
+AUTHOR	=	&#x201C;spacey@universetrotter.com&#x201D;
+HOMEPAGE	=	&#x201C;http://universetrotter.com&#x201D;
+BUGTRACKER	=	&#x201C;https://bugs.universetrotter.com&#x201D;
+PN	=	&#x201C;hellouniverse&#x201D;
+#	Other	recipe	stuff
+#	&#x2026;
+# &#x65B0;&#x589E;&#x52A0;&#x4E00;&#x4E2A; graphics &#x5305;
+PACKAGES	=+	&#x201C;graphics&#x201D;
+FILES_${PN}-graphics	=	&#x201C;${datadir}/pixmaps/*&#x201D;
+# &#x5411; doc &#x5305;&#x4E2D;&#x589E;&#x52A0;&#x6587;&#x4EF6;
+FILES_${PN}-doc	=+	&#x201C;${datadir}/blurbs/*&#x201D;
+PACKAGE_BEFORE_PN	=	&#x201C;examples&#x201D;
+FILES_${PN}-examples	=	&#x201C;${datadir}/examples&#x201D;</pre>
+</div>
+</div>
+
+<div id="outline-container-org642060e" class="outline-4">
+<h4 id="org642060e">&#x6253;&#x5305;&#x8FC7;&#x7A0B;&#x68C0;&#x67E5;</h4>
+<div class="outline-text-4" id="text-org642060e">
+<p>
+<code>insane</code> &#x7C7B;&#x53EF;&#x4EE5;&#x68C0;&#x67E5;&#x6253;&#x5305;&#x8FC7;&#x7A0B;&#x662F;&#x5426;&#x6B63;&#x5E38;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>&#x6587;&#x4EF6;&#x6216;&#x6587;&#x4EF6;&#x5939;&#x7684;&#x6743;&#x9650;</li>
+<li>&#x76EE;&#x5F55;&#x7ED3;&#x6784;</li>
+</ul>
+
+<p>
+&#x7528;&#x6237;&#x4E5F;&#x53EF;&#x4EE5;&#x589E;&#x52A0; <code>WARN_QA</code> , <code>ERROR_QA</code> &#x8FD9;&#x79CD;&#x8F93;&#x51FA;&#x4E2D;&#x95F4;&#x8FC7;&#x7A0B;&#x3002;
+</p>
+
+<p>
+&#x5305;&#x5B58;&#x653E;&#x4E8E; <code>${WORKDIR}/packages-split</code> &#xFF0C;&#x7528;&#x6237;&#x53EF;&#x4EE5;&#x5728;&#x6B64;&#x5904;&#x68C0;&#x67E5;&#x3002;
+</p>
+</div>
+</div>
+<div id="outline-container-org00f6b33" class="outline-4">
+<h4 id="org00f6b33">&#x5305;&#x7684;&#x67B6;&#x6784;</h4>
+<div class="outline-text-4" id="text-org00f6b33">
+<p>
+&#x4E00;&#x822C;&#x6765;&#x8BB2;&#x9ED8;&#x8BA4;&#x7684;&#x5305;&#x67B6;&#x6784;&#x5C31;&#x53EF;&#x4EE5;&#x4E86;&#xFF0C;&#x4F46;&#x7528;&#x6237;&#x4E5F;&#x53EF;&#x4EE5;&#x505A;&#x8C03;&#x6574;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>PACKAGE_ARCH = &quot;${MACHINE_ARCH}&quot; &#xFF1A;&#x6B64;&#x5305;&#x53EA;&#x5728;&#x5BF9;&#x5E94;&#x7684; <code>MACHINE_ARCH</code> &#x65F6;&#x624D;&#x6784;&#x5EFA;</li>
+<li>inherit allarch &#xFF1A;&#x6B64;&#x5305;&#x5E94;&#x7528;&#x4E8E;&#x6240;&#x6709;&#x67B6;&#x6784;</li>
+</ul>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgef584a1" class="outline-3">
+<h3 id="orgef584a1">&#x5B9A;&#x5236;&#x5B89;&#x88C5;&#x811A;&#x672C;</h3>
+<div class="outline-text-3" id="text-orgef584a1">
+<p>
+&#x7528;&#x6237;&#x53EF;&#x4EE5;&#x5728;&#x5305;&#x5B89;&#x88C5;&#x3001;&#x5347;&#x7EA7;&#x3001;&#x5378;&#x8F7D;&#x524D;&#x540E;&#x63D2;&#x5165;&#x5B9A;&#x5236;&#x5316;&#x811A;&#x672C;&#xFF0C;RPM&#x3001;dpkg&#x3001;ipkg &#x90FD;&#x652F;&#x6301;&#x8FD9;&#x79CD;&#x65B9;&#x5F0F;&#x3002;
+</p>
+
+<p>
+&#x53EF;&#x4EE5;&#x5B9A;&#x4E49;&#x4EE5;&#x4E0B; 4 &#x79CD;&#x811A;&#x672C;&#x4EFB;&#x52A1;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>pkg_preinst_&lt;package_name&gt;&#xFF1A;&#x5728;&#x5305;&#x88AB;&#x5B89;&#x88C5;&#x524D;&#x8FD0;&#x884C;&#x8BE5;&#x811A;&#x672C;</li>
+<li>pkg_postinst_&lt;package_name&gt;&#xFF1A;&#x5728;&#x5305;&#x88AB;&#x5B89;&#x88C5;&#x540E;&#x8FD0;&#x884C;&#x8BE5;&#x811A;&#x672C;</li>
+<li>pkg_prerm_&lt;package_name&gt;&#xFF1A;&#x5728;&#x5305;&#x88AB;&#x5378;&#x8F7D;&#x524D;&#x8FD0;&#x884C;&#x8BE5;&#x811A;&#x672C;</li>
+<li>pkg_postrm_&lt;package_name&gt;&#xFF1A;&#x5728;&#x5305;&#x88AB;&#x5378;&#x8F7D;&#x540E;&#x8FD0;&#x884C;&#x8BE5;&#x811A;&#x672C;</li>
+</ul>
+
+<p>
+&#x811A;&#x672C;&#x5185;&#x5BB9;&#x662F; shell &#x811A;&#x672C;&#xFF1A;
+</p>
+<pre class="example">
+# &#x5728;&#x5305;&#x88AB;&#x5B89;&#x88C5;&#x540E;&#x6267;&#x884C;&#xFF0C;&#x4F1A;&#x6267;&#x884C;&#x4E24;&#x6B21;
+# &#x4E00;&#x6B21;&#x662F;&#x6784;&#x5EFA;&#x7CFB;&#x7EDF;&#x5728;&#x521B;&#x5EFA;&#x6839;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x65F6;&#xFF0C;&#x5C5E;&#x4E8E;&#x6784;&#x5EFA;&#x65F6;
+# &#x4E00;&#x6B21;&#x662F;&#x5728;&#x76EE;&#x6807;&#x677F;&#x4E0A;&#x88AB;&#x5305;&#x7BA1;&#x7406;&#x5668;&#x8C03;&#x7528;&#x65F6;&#xFF0C;&#x5C5E;&#x4E8E;&#x8FD0;&#x884C;&#x65F6;
+pkg_postinst_${PN}()
+{
+  #!/bin/sh
+  # shell commands go here
+}
+
+# &#x4E0B;&#x9762;&#x8FD9;&#x79CD;&#x65B9;&#x5F0F;&#x4FBF;&#x53EF;&#x4EE5;&#x533A;&#x5206;&#x6784;&#x5EFA;&#x65F6;&#x548C;&#x8FD0;&#x884C;&#x65F6;
+pkg_postinst_${PN}()
+{
+  #!/bin/sh
+  if [ x&quot;$D&quot; = &quot;x&quot; ];then
+     # shell commands for target execution
+  else
+     # shell commands for build system execution
+  fi
+}</pre>
+</div>
+</div>
+<div id="outline-container-org1af2e44" class="outline-3">
+<h3 id="org1af2e44">&#x53D8;&#x4F53;</h3>
+<div class="outline-text-3" id="text-org1af2e44">
+<p>
+&#x53EF;&#x4EE5;&#x6307;&#x5B9A;&#x6B64;&#x5305;&#x662F;&#x5BF9;&#x5E94;&#x4E8E;&#x54EA;&#x4E2A;&#x5BF9;&#x8C61;&#x7684;&#xFF0C;&#x9ED8;&#x8BA4;&#x90FD;&#x4F1A;&#x4E3A;&#x76EE;&#x6807;&#x677F;&#x7F16;&#x8BD1;&#x4E00;&#x4EFD;&#x3002;
+</p>
+
+<pre class="example">
+# &#x4E3A;&#x4E3B;&#x673A;&#x6784;&#x5EFA;
+BBCLASSEXTEND = &quot;native&quot;
+# &#x4E3A; SDK &#x6784;&#x5EFA;
+BBCLASSEXTEND = &quot;native-sdk&quot;</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-org18546a9" class="outline-2">
+<h2 id="org18546a9">recipe &#x8303;&#x4F8B;</h2>
+<div class="outline-text-2" id="text-org18546a9">
+<p>
+&#x524D;&#x9762;&#x8BF4;&#x4E86;&#x4E00;&#x5927;&#x5806;&#xFF0C;&#x73B0;&#x5728;&#x8981;&#x5B9E;&#x8DF5;&#x4E00;&#x4E0B;&#x3002;
+</p>
+</div>
+<div id="outline-container-org7b096ea" class="outline-3">
+<h3 id="org7b096ea">&#x65B0;&#x5EFA;&#x5E76;&#x5305;&#x542B; layer</h3>
+<div class="outline-text-3" id="text-org7b096ea">
+<p>
+&#x5728;&#x7F16;&#x5199; recipe &#x4E4B;&#x524D;&#xFF0C;&#x9700;&#x8981;&#x65B0;&#x5EFA;&#x4E00;&#x4E2A; layer&#xFF1A;
+</p>
+<pre class="example">
+bitbake-layers create-layer meta-mylayer</pre>
+<p>
+&#x7136;&#x540E;&#x5728; <code>bblayers.conf</code> &#x4E2D;&#x52A0;&#x5165;&#x65B0;&#x5EFA;&#x7684;&#x5C42;&#xFF1A;
+</p>
+<pre class="example">
+# POKY_BBLAYERS_CONF_VERSION is increased each time build/conf/bblayers.conf
+# changes incompatibly
+POKY_BBLAYERS_CONF_VERSION = &quot;2&quot;
+
+BBPATH = &quot;${TOPDIR}&quot;
+BBFILES ?= &quot;&quot;
+
+BBLAYERS ?= &quot; \
+  /home/cec/github/poky/meta \
+  /home/cec/github/poky/meta-poky \
+  /home/cec/github/poky/meta-yocto-bsp \
+  /home/cec/github/poky/meta-nano \
+  /home/cec/github/poky/meta-mylayer \
+  &quot;</pre>
+
+<p>
+&#x5728; mylayer &#x4E2D;&#x589E;&#x52A0;&#x4E00;&#x4E2A; app &#x5BF9;&#x5E94; 1.0 &#x7248;&#x672C;&#x7684; recipe &#xFF1A; hello_1.0.bb
+</p>
+<pre class="example">
+.
+&#x251C;&#x2500;&#x2500; conf
+&#x2502;&#xA0;&#xA0; &#x2514;&#x2500;&#x2500; layer.conf
+&#x251C;&#x2500;&#x2500; COPYING.MIT
+&#x251C;&#x2500;&#x2500; README
+&#x2514;&#x2500;&#x2500; recipes-apps
+    &#x2514;&#x2500;&#x2500; hello
+        &#x2514;&#x2500;&#x2500; hello_1.0.bb
+
+3 directories, 4 files</pre>
+<p>
+&#x5E76;&#x4E14;&#x9700;&#x8981;&#x5728; <code>layer.conf</code> &#x4E2D;&#x589E;&#x52A0;&#x517C;&#x5BB9;&#x6027;&#x58F0;&#x660E;&#xFF1A;
+</p>
+<pre class="example">
+LAYERSERIES_COMPAT_meta-mylayer = &quot;sumo&quot;</pre>
+</div>
+</div>
+<div id="outline-container-org50dc798" class="outline-3">
+<h3 id="org50dc798">&#x7F16;&#x5199;&#x8F6F;&#x4EF6;&#x5305;</h3>
+<div class="outline-text-3" id="text-org50dc798">
+<p>
+&#x65B0;&#x5EFA;&#x6E90;&#x7801;&#x6587;&#x4EF6;&#x5982;&#x4E0B;&#xFF1A;
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//hello.c</span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&quot;helloprint.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span><br><span class="line"></span>{</span><br><span class="line">    print_hello();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br><span class="line"><span class="comment">//helloprint.c</span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&quot;helloprint.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">print_hello</span><span class="params">(<span class="keyword">void</span>)</span></span><br><span class="line"></span>{</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Hello world!My first Yocto project recipe.\n&quot;</span>);</span><br><span class="line">}</span><br><span class="line"><span class="comment">//helloprint.h</span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">ifndef</span> __HELLOPRINT_H__</span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> __HELLOPRINT_H__</span></span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">void</span> <span class="title">print_hello</span><span class="params">(<span class="keyword">void</span>)</span></span>;</span><br><span class="line"><span class="preprocessor">#<span class="keyword">endif</span></span></span><br></pre></td></tr></table></figure>
+</div>
+
+<p>
+&#x7136;&#x540E;&#x5C06;&#x8FD9;&#x4E09;&#x4E2A;&#x6587;&#x4EF6;&#x6253;&#x5305;&#xFF1A;
+</p>
+<pre class="example">
+tar cvfz hello-1.0.tgz .</pre>
+
+<p>
+&#x7136;&#x540E;&#x5C06;&#x6B64;&#x6587;&#x4EF6;&#x62F7;&#x8D1D;&#x81F3; recipe &#x540C;&#x4E00;&#x76EE;&#x5F55;&#x4E2D;&#x7684; <b>files</b> &#x6587;&#x4EF6;&#x5939;&#x4E2D;&#x3002;
+</p>
+<ul class="org-ul">
+<li>bitbake &#x4F1A;&#x6765;&#x641C;&#x5BFB;&#x8FD9;&#x4E2A;&#x6587;&#x4EF6;&#x5939;&#x7684;</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-org9a22b8a" class="outline-3">
+<h3 id="org9a22b8a">&#x7F16;&#x5199; recipe</h3>
+<div class="outline-text-3" id="text-org9a22b8a">
+<p>
+&#x4E0B;&#x9762;&#x5C31;&#x6309;&#x7167;&#x524D;&#x9762;&#x8BB2;&#x7684;&#x7F16;&#x5199; recipe &#x7684;&#x8303;&#x4F8B;&#x6765;&#x7F16;&#x5199; recipe &#x3002;
+</p>
+</div>
+<div id="outline-container-orge8a6098" class="outline-4">
+<h4 id="orge8a6098">&#x6587;&#x4EF6;&#x540D;&#x79F0;</h4>
+<div class="outline-text-4" id="text-orge8a6098">
+<p>
+&#x524D;&#x9762;&#x8BB2;&#x8FC7;&#x6587;&#x4EF6;&#x540D;&#x79F0;&#x7684;&#x683C;&#x5F0F;&#xFF0C;&#x5E76;&#x4E14;&#x6211;&#x4EEC;&#x8FD9;&#x4E2A;&#x6CA1;&#x6709;&#x901A;&#x8FC7; scm &#x6765;&#x83B7;&#x53D6;&#x800C; <code>&lt;revision&gt;</code> &#x4E00;&#x822C;&#x4E0D;&#x7528;&#x8BBE;&#x7F6E;&#xFF0C;&#x90A3;&#x4E48;&#x540D;&#x79F0;&#x5C31;&#x662F;&#xFF1A;
+</p>
+<pre class="example">
+#&lt;package name&gt;_&lt;version&gt;.bb
+hello_1.0.bb</pre>
+</div>
+</div>
+<div id="outline-container-orgaf5f907" class="outline-4">
+<h4 id="orgaf5f907">&#x6587;&#x4EF6;&#x7684;&#x57FA;&#x672C;&#x63CF;&#x8FF0;</h4>
+<div class="outline-text-4" id="text-orgaf5f907">
+<p>
+&#x5148;&#x6DFB;&#x52A0;&#x57FA;&#x672C;&#x7684;&#x5BF9;&#x6B64; reciep &#x7684;&#x63CF;&#x8FF0;&#xFF1A;
+</p>
+<pre class="example">
+SUMMARY = &quot;exercise for yocto&quot;
+DESCRIPTION = &quot;Recipe created by bitbake-layers&quot;
+AUTHOR = &quot;kcmetercec &lt;kcmeter.cec@gmail.com&gt;&quot;</pre>
+</div>
+</div>
+<div id="outline-container-orgf667ac1" class="outline-4">
+<h4 id="orgf667ac1">&#x6E90;&#x7801;&#x7684;&#x83B7;&#x53D6;</h4>
+<div class="outline-text-4" id="text-orgf667ac1">
+<p>
+&#x7531;&#x4E8E;&#x5F53;&#x524D;&#x6211;&#x4EEC;&#x5C06;&#x6E90;&#x7801;&#x5305;&#x653E;&#x5728;&#x548C; recipe &#x540C;&#x4E00;&#x4E2A;&#x76EE;&#x5F55;&#x90A3;&#xFF0C;&#x90A3;&#x4E48;&#x5C31;&#x662F;&#x76F8;&#x5BF9;&#x8DEF;&#x5F84;&#x4E0B;&#x7684;&#x5F53;&#x524D;&#x76EE;&#x5F55;&#x3002;
+</p>
+
+<pre class="example">
+SRC_URI = &quot;file://hello-1.0.tgz&quot;</pre>
+</div>
+</div>
+<div id="outline-container-org961368a" class="outline-4">
+<h4 id="org961368a">&#x89E3;&#x538B;&#x7F29;</h4>
+<div class="outline-text-4" id="text-org961368a">
+<p>
+&#x5728; <code>base.bbclass</code> &#x4E2D;&#x5DF2;&#x7ECF;&#x5177;&#x6709;&#x4E86;&#x89E3;&#x538B;&#x7F29;&#x7684;&#x65B9;&#x6CD5;&#xFF0C;&#x6240;&#x4EE5;&#x4E0D;&#x9700;&#x8981;&#x518D;&#x5B9E;&#x73B0;&#x4E00;&#x6B21;&#x3002;
+</p>
+</div>
+</div>
+<div id="outline-container-orgf2b6144" class="outline-4">
+<h4 id="orgf2b6144">&#x6253;&#x8865;&#x4E01;</h4>
+<div class="outline-text-4" id="text-orgf2b6144">
+<p>
+&#x76EE;&#x524D;&#x4E0D;&#x9700;&#x8981;&#x6253;&#x8865;&#x4E01;
+</p>
+</div>
+</div>
+
+<div id="outline-container-org0ed34f7" class="outline-4">
+<h4 id="org0ed34f7">&#x6DFB;&#x52A0;&#x8BB8;&#x53EF;</h4>
+<div class="outline-text-4" id="text-org0ed34f7">
+<p>
+&#x7531;&#x4E8E; LICENSE &#x662F;&#x5FC5;&#x987B;&#x7684;&#xFF0C;&#x4F46;&#x7531;&#x4E8E;&#x6211;&#x4EEC;&#x5E76;&#x6CA1;&#x6709;&#x5305;&#x542B; LICENSE &#x6587;&#x4EF6;&#xFF0C;&#x6240;&#x4EE5;&#x5C31;&#x4F7F;&#x7528; yocto &#x6240;&#x9ED8;&#x8BA4;&#x63D0;&#x4F9B;&#x7684; LICENSE&#x3002;
+</p>
+<pre class="example">
+LICENSE = &quot;MIT&quot;
+LIC_FILES_CHKSUM = &quot;file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302&quot;</pre>
+<p>
+&#x8FD9;&#x4E2A; md5 &#x662F;&#x6211;&#x7528; <code>md5sum</code> &#x5728; <code>meta/files/common-licenses/MIT</code> &#x83B7;&#x53D6;&#x7684;&#x3002;
+</p>
+</div>
+</div>
+<div id="outline-container-org4e88fc1" class="outline-4">
+<h4 id="org4e88fc1">&#x6E90;&#x7801;&#x914D;&#x7F6E;</h4>
+<div class="outline-text-4" id="text-org4e88fc1">
+<p>
+&#x7531;&#x4E8E;&#x6211;&#x4EEC;&#x5F53;&#x524D;&#x5E76;&#x6CA1;&#x6709;&#x4F7F;&#x7528;&#x6784;&#x5EFA;&#x7CFB;&#x7EDF;&#xFF0C;&#x6240;&#x4EE5;&#x8FD9;&#x4E00;&#x6B65;&#x53EF;&#x4EE5;&#x4E0D;&#x505A;&#x3002;
+</p>
+</div>
+</div>
+<div id="outline-container-orga8162b9" class="outline-4">
+<h4 id="orga8162b9">&#x6E90;&#x7801;&#x7684;&#x7F16;&#x8BD1;</h4>
+<div class="outline-text-4" id="text-orga8162b9">
+<p>
+&#x6E90;&#x7801;&#x7684;&#x7F16;&#x8BD1;&#x9700;&#x8981;&#x91CD;&#x5199; <code>do_compile()</code> &#x4EFB;&#x52A1;&#xFF1A;
+</p>
+<pre class="example">
+do_compile() {
+    ${CC} -c ${WORKDIR}/helloprint.c
+    ${CC} -c ${WORKDIR}/hello.c
+    ${CC} -o hello hello.o helloprint.o
+}</pre>
+</div>
+</div>
+<div id="outline-container-org3fbeea6" class="outline-4">
+<h4 id="org3fbeea6">&#x6E90;&#x7801;&#x7684;&#x5B89;&#x88C5;</h4>
+<div class="outline-text-4" id="text-org3fbeea6">
+<p>
+&#x7531;&#x4E8E;&#x6CA1;&#x6709;&#x4F7F;&#x7528;&#x6784;&#x5EFA;&#x7CFB;&#x7EDF;&#xFF0C;&#x6211;&#x4EEC;&#x4E5F;&#x9700;&#x8981;&#x91CD;&#x5199; <code>do_install()</code> &#x4EFB;&#x52A1;&#xFF1A;
+</p>
+<pre class="example">
+do_install() {
+    install -d ${D}${bindir}
+    install -m 0755 hello ${D}${bindir}
+}</pre>
+</div>
+</div>
+<div id="outline-container-org9e41c11" class="outline-4">
+<h4 id="org9e41c11">&#x5176;&#x4ED6;&#x914D;&#x7F6E;</h4>
+<div class="outline-text-4" id="text-org9e41c11">
+<p>
+&#x9664;&#x6B64;&#x4E4B;&#x5916;&#xFF0C;&#x8FD8;&#x9700;&#x8981;&#x6DFB;&#x52A0;&#xFF1A;
+</p>
+<pre class="example">
+TARGET_CC_ARCH += &quot;${LDFLAGS}&quot;</pre>
+<p>
+&#x8FD9;&#x4E2A;&#x662F; yocto &#x6700;&#x65B0;&#x6587;&#x6863;&#x6240;&#x6807;&#x6CE8;&#x7684;&#x9700;&#x8981;&#x6DFB;&#x52A0;&#x6B64;&#x53D8;&#x91CF;&#x3002;
+</p>
+
+<p>
+&#x5173;&#x4E8E;&#x7CFB;&#x7EDF;&#x670D;&#x52A1;&#x53CA;&#x6253;&#x5305;&#x5BF9;&#x4E8E;&#x6211;&#x4EEC;&#x73B0;&#x5728;&#x7EC3;&#x4E60;&#x5E76;&#x4E0D;&#x76F8;&#x5173;&#xFF0C;&#x6240;&#x4EE5;&#x53EF;&#x4EE5;&#x5148;&#x4E0D;&#x7528;&#x7BA1;&#x3002;
+</p>
+</div>
+</div>
+<div id="outline-container-orgf5d6a32" class="outline-4">
+<h4 id="orgf5d6a32">&#x6700;&#x7EC8;&#x6587;&#x4EF6;</h4>
+<div class="outline-text-4" id="text-orgf5d6a32">
+<p>
+&#x6309;&#x7167;&#x524D;&#x9762;&#x8BB2;&#x7684;&#x6587;&#x4EF6;&#x683C;&#x5F0F;&#x8FDB;&#x884C;&#x6574;&#x7406;&#xFF0C;&#x6574;&#x4E2A; reciep &#x5982;&#x4E0B;&#xFF1A;
+</p>
+<pre class="example">
+SUMMARY = &quot;exercise for yocto&quot;
+DESCRIPTION = &quot;Recipe created by bitbake-layers&quot;
+AUTHOR = &quot;kcmetercec &lt;kcmeter.cec@gmail.com&gt;&quot;
+
+LICENSE = &quot;MIT&quot;
+LIC_FILES_CHKSUM = &quot;file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302&quot;
+
+SRC_URI = &quot;file://hello-1.0.tgz&quot;
+
+TARGET_CC_ARCH += &quot;${LDFLAGS}&quot;
+
+do_compile() {
+    ${CC} -c ${WORKDIR}/helloprint.c
+    ${CC} -c ${WORKDIR}/hello.c
+    ${CC} -o hello hello.o helloprint.o
+}
+
+do_install() {
+    install -d ${D}${bindir}
+    install -m 0755 hello ${D}${bindir}
+}</pre>
+</div>
+</div>
+<div id="outline-container-org36f5ec5" class="outline-4">
+<h4 id="org36f5ec5">&#x6784;&#x5EFA;&#x5E76;&#x9A8C;&#x8BC1;</h4>
+<div class="outline-text-4" id="text-org36f5ec5">
+<pre class="example">
+#&#x6784;&#x5EFA; apps/hello &#x6587;&#x4EF6;&#x5939;&#x4E0B;&#x7684; recipe&#xFF0C;&#x770B;&#x662F;&#x5426;&#x6709;&#x62A5;&#x9519;
+bitbake hello</pre>
+
+<p>
+&#x53EF;&#x4EE5;&#x770B;&#x5230;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li><code>/home/cec/github/poky/build/tmp/work/i586-poky-linux/hello/1.0-r0/</code> &#x6709;&#x88AB;&#x89E3;&#x538B;&#x7F29;&#x7684;&#x6E90;&#x7801;</li>
+<li><code>/home/cec/github/poky/build/tmp/work/i586-poky-linux/hello/1.0-r0/hello-1.0/</code> &#x6709;&#x88AB;&#x7F16;&#x8BD1;&#x540E;&#x7684;&#x8F93;&#x51FA;</li>
+<li><code>/home/cec/github/poky/build/tmp/work/i586-poky-linux/hello/1.0-r0/packages-split/</code> &#x6709;&#x88AB;&#x6253;&#x5305;&#x7684;&#x76EE;&#x5F55;&#x7ED3;&#x6784;</li>
+<li><code>/home/cec/github/poky/build/tmp/work/i586-poky-linux/hello/1.0-r0/deploy-rpms/</code> &#x6709;&#x6700;&#x7EC8;&#x7684;&#x6253;&#x5305;&#x8F93;&#x51FA;</li>
+<li><code>/home/cec/github/poky/build/tmp/work/i586-poky-linux/hello/1.0-r0/image/</code> &#x6709;&#x5728;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x7684;&#x76EE;&#x5F55;&#x7ED3;&#x6784;</li>
+</ul>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgeea559e" class="outline-3">
+<h3 id="orgeea559e">&#x57FA;&#x4E8E; Makefile &#x7684;&#x6784;&#x5EFA;</h3>
+<div class="outline-text-3" id="text-orgeea559e">
+</div>
+<div id="outline-container-orgbdd0328" class="outline-4">
+<h4 id="orgbdd0328">&#x7F16;&#x5199; Makefile &#x5E76;&#x538B;&#x7F29;</h4>
+<div class="outline-text-4" id="text-orgbdd0328">
+<p>
+&#x57FA;&#x4E8E;&#x4E0A;&#x9762;&#x7684;&#x6E90;&#x7801;&#x7F16;&#x5199; Makefile&#xFF0C;&#x6765;&#x5B8C;&#x6210;&#x81EA;&#x52A8;&#x5316;&#x6784;&#x5EFA;&#xFF1A;
+</p>
+<pre class="example">
+CC=gcc
+RM=rm
+
+CFLAGS=-c -Wall
+LDFLAGS=
+
+DESTDIR=
+BINDIR=/usr/bin
+
+SOURCES=hello.c helloprint.c
+OBJECTS=$(SOURCES:.c=.o)
+
+EXECUTABLE=hellomake
+
+.cpp.o:
+  ${CC} ${CFLAGS} $&lt; -o $@
+all: ${SOURCES} ${EXECUTABLE}
+
+${EXECUTABLE}: ${OBJECTS}
+  ${CC} ${LDFLAGS} $^ -o $@
+clean:
+  ${RM} ${EXECUTABLE} *.o
+install:${EXECUTABLE}
+  mkdir -p ${DESTDIR}/${BINDIR}
+  install -m 0755 $&lt; ${DESTDIR}/${BINDIR}</pre>
+<p>
+&#x7136;&#x540E;&#x91CD;&#x65B0;&#x538B;&#x7F29;&#xFF1A;
+</p>
+<pre class="example">
+tar --transform &quot;s/^./hellomake-1.0/&quot; -cvzf hellomake-1.0.tgz .</pre>
+<p>
+&#x4E4B;&#x6240;&#x4EE5;&#x8981;&#x50CF;&#x4E0A;&#x9762;&#x8FD9;&#x6837;&#x538B;&#x7F29;&#xFF0C;&#x662F;&#x56E0;&#x4E3A; <code>oe_runmake</code> &#x6784;&#x5EFA;&#x5DE5;&#x5177;&#x9ED8;&#x8BA4;&#x6784;&#x5EFA;&#x76EE;&#x5F55;&#x662F;&#x5728; <code>${WORKDIR}/${PN}-${PV}/${RECIPE_NAME}</code> &#x6587;&#x4EF6;&#x5939;&#x4E0B;,
+&#x800C;&#x4EE5;&#x4E0A;&#x7684;&#x6253;&#x5305;&#x547D;&#x4EE4;&#x4F1A;&#x521B;&#x5EFA;&#x6587;&#x4EF6;&#x5939; <code>hellomake-1.0</code> &#xFF0C;&#x4E5F;&#x5C31;&#x662F;&#x8BF4;&#x4F1A;&#x89E3;&#x538B;&#x65F6;&#x4F1A;&#x81EA;&#x52A8;&#x521B;&#x5EFA;&#x8BE5;&#x6587;&#x4EF6;&#x3002;
+</p>
+
+<p>
+&#x4E0D;&#x7136;&#x5B9E;&#x9645;&#x7F16;&#x8BD1;&#x65F6; <code>oe_runmake</code> &#x5C31;&#x627E;&#x4E0D;&#x5230;&#x88AB;&#x6784;&#x5EFA;&#x7684;&#x6587;&#x4EF6;&#x3002;
+</p>
+</div>
+</div>
+<div id="outline-container-orgb278d3e" class="outline-4">
+<h4 id="orgb278d3e">&#x65B0;&#x5EFA; recipe</h4>
+<div class="outline-text-4" id="text-orgb278d3e">
+<p>
+&#x65B0;&#x5EFA; hellomake-1.0.bb &#x5E76;&#x5C06; <code>hellomake-1.0.tgz</code> &#x62F7;&#x8D1D;&#x81F3; <code>files</code> &#x6587;&#x4EF6;&#x5939;&#x4E2D;&#xFF0C;&#x5982;&#x4E0B;&#x76EE;&#x5F55;&#x7ED3;&#x6784;&#xFF1A;
+</p>
+<pre class="example">
+cec@box:~/github/poky/meta-mylayer/recipes-apps$ tree
+.
+&#x251C;&#x2500;&#x2500; hello
+&#x2502;&#xA0;&#xA0; &#x251C;&#x2500;&#x2500; files
+&#x2502;&#xA0;&#xA0; &#x2502;&#xA0;&#xA0; &#x2514;&#x2500;&#x2500; hello-1.0.tgz
+&#x2502;&#xA0;&#xA0; &#x2514;&#x2500;&#x2500; hello_1.0.bb
+&#x2514;&#x2500;&#x2500; hello-make
+    &#x251C;&#x2500;&#x2500; files
+    &#x2502;&#xA0;&#xA0; &#x2514;&#x2500;&#x2500; hellomake-1.0.tgz
+    &#x2514;&#x2500;&#x2500; hellomake_1.0.bb
+
+4 directories, 4 files</pre>
+<p>
+&#x65B0;&#x5199;&#x7684; recipe &#x5982;&#x4E0B;&#xFF1A;
+</p>
+<pre class="example">
+SUMMARY = &quot;exercise for yocto&quot;
+DESCRIPTION = &quot;Recipe created by bitbake-layers&quot;
+AUTHOR = &quot;kcmetercec &lt;kcmeter.cec@gmail.com&gt;&quot;
+
+LICENSE = &quot;MIT&quot;
+LIC_FILES_CHKSUM = &quot;file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302&quot;
+
+SRC_URI = &quot;file://hellomake-1.0.tgz&quot;
+
+TARGET_CC_ARCH += &quot;${LDFLAGS}&quot;
+
+EXTRA_OEMAKE = &quot;&apos;CC=${CC}&apos;&quot;
+
+do_install() {
+    oe_runmake install DESTDIR=${D} BINDIR=${bindir}
+}</pre>
+<ul class="org-ul">
+<li>&#x7531;&#x4E8E;&#x9ED8;&#x8BA4;&#x7684; <code>Makefile</code> &#x4E2D; <code>CC</code> &#x503C;&#x4E3A; <code>gcc</code> &#xFF0C;&#x6240;&#x4EE5;&#x9700;&#x8981;&#x5728; <code>EXTRA_OEMAKE</code> &#x4E2D;&#x4FEE;&#x6539;&#x5176;&#x503C;&#x3002;</li>
+<li><code>base.bbclass</code> &#x4E2D;&#x5E76;&#x6CA1;&#x6709; <code>do_install</code> &#x7684;&#x5B9E;&#x9645;&#x6267;&#x884C;&#x4EE3;&#x7801;&#xFF0C;&#x6240;&#x4EE5;&#x8FD8;&#x9700;&#x8981;&#x8C03;&#x7528; <code>oe_runmake</code> &#x6765;&#x4E3B;&#x52A8;&#x6267;&#x884C;
+<ul class="org-ul">
+<li>&#x540C;&#x6837;&#x7684;&#x9700;&#x8981;&#x4FEE;&#x6539; <code>DESTDIR</code> &#x548C; <code>BINDIR</code></li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div id="outline-container-org1f1fa6d" class="outline-4">
+<h4 id="org1f1fa6d">&#x9A8C;&#x8BC1;</h4>
+<div class="outline-text-4" id="text-org1f1fa6d">
+<p>
+&#x5F53;&#x4F7F;&#x7528; <code>bitbake hellmake</code> &#x4E4B;&#x540E;&#xFF0C;&#x53EF;&#x4EE5;&#x770B;&#x5230;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>/home/cec/github/poky/build/tmp/work/i586-poky-linux/hellomake/1.0-r0/hellomake-1.0 &#x4E2D;&#x5305;&#x542B;&#x6E90;&#x7801;&#x53CA;&#x7F16;&#x8BD1;&#x540E;&#x7684;&#x8F93;&#x51FA;</li>
+<li>/home/cec/github/poky/build/tmp/work/i586-poky-linux/hellomake/1.0-r0/deploy-rpms &#x4E2D;&#x6709; rpm &#x5305;</li>
+</ul>
+
+<p>
+&#x4E3A;&#x4E86;&#x80FD;&#x591F;&#x5728;&#x76EE;&#x6807; image &#x4E2D;&#x8FD0;&#x884C;&#x8BE5;&#x7F16;&#x8BD1;&#x8F93;&#x51FA;&#xFF0C;&#x9700;&#x8981;&#x5728; <code>build/conf/local.conf</code> &#x4E2D;&#x5C06;&#x6B64; package &#x52A0;&#x5165;&#xFF1A;
+</p>
+<pre class="example">
+CORE_IMAGE_EXTRA_INSTALL = &quot;hellomake&quot;</pre>
+<p>
+&#x7136;&#x540E;&#x8FD0;&#x884C; <code>bitbake core-image-sato</code> &#xFF0C;&#x542F;&#x52A8; qemu &#x4FBF;&#x53EF;&#x4EE5;&#x8FD0;&#x884C;&#x4E86;&#x3002;
+</p>
+</div>
+</div>
+</div>
+<div id="outline-container-orgf543848" class="outline-3">
+<h3 id="orgf543848">&#x57FA;&#x4E8E; Cmake &#x7684;&#x6784;&#x5EFA;</h3>
+<div class="outline-text-3" id="text-orgf543848">
+<p>
+&#x4F9D;&#x7136;&#x662F;&#x57FA;&#x4E8E;&#x4E0A;&#x9762;&#x7684;&#x6E90;&#x7801;&#x7F16;&#x5199; CMakeLists.txt&#xFF1A;
+</p>
+<pre class="example">
+#Specify the minimum version for CMake
+#&#x4F7F;&#x7528; cmake -version &#x67E5;&#x770B;&#x7248;&#x672C;
+cmake_minimum_required(VERSION 2.8)
+
+#Project&apos;s names
+set(EXEC_NAME &quot;hellocmake&quot;)
+project(${EXEC_NAME})
+
+#Set the output folder where you program will be created
+# CMAKE_SOURCE_DIR : CMakeLists.txt &#x6587;&#x4EF6;&#x6240;&#x5728;&#x4F4D;&#x7F6E;
+# CMAKE_BINARY_DIR: &#x4E8C;&#x8FDB;&#x5236;&#x6587;&#x4EF6;&#x7684;&#x8F93;&#x51FA;&#x8DEF;&#x5F84;&#xFF08;&#x6B64;&#x5904;&#x7406;&#x89E3;&#x53EF;&#x80FD;&#x6709;&#x8BEF;&#xFF09;
+set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
+
+# EXECUTABLE_OUTPUT_PATH: &#x6700;&#x7EC8;&#x53EF;&#x6267;&#x884C;&#x6587;&#x4EF6;&#x7684;&#x8F93;&#x51FA;&#x8DEF;&#x5F84;
+set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
+
+# LIBRARY_OUTPUT_PATH: &#x5E93;&#x8F93;&#x51FA;&#x8DEF;&#x5F84;
+set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR})
+
+set(CMAKE_BUILD_TYPE Debug)
+# PROJECT_SOURCE_DIR: &#x5DE5;&#x7A0B;&#x7684;&#x6839;&#x76EE;&#x5F55;&#x8DEF;&#x5F84;
+#The following folder will be included
+include_directories(&quot;${PROJECT_SOURCE_DIR}&quot;)
+
+file(GLOB SOURCES ${PROJECT_SOURCE_DIR}/*.c)
+
+#add source file
+add_executable(${EXEC_NAME} ${SOURCES})</pre>
+<p>
+&#x540C;&#x6837;&#x7684;&#x6253;&#x5305;&#x65B9;&#x5F0F;&#xFF1A;
+</p>
+<pre class="example">
+tar --transform &quot;s/^./hellocmake-1.0/&quot; -cvzf hellocmake-1.0.tgz .</pre>
+<p>
+&#x540C;&#x6837;&#x7684;&#x76EE;&#x5F55;&#x7ED3;&#x6784;&#xFF1A;
+</p>
+<pre class="example">
+cec@box:~/github/poky/meta-mylayer/recipes-apps$ tree hello-cmake/
+hello-cmake/
+&#x251C;&#x2500;&#x2500; files
+&#x2502;&#xA0;&#xA0; &#x2514;&#x2500;&#x2500; hellocmake-1.0.tgz
+&#x2514;&#x2500;&#x2500; hellocmake_1.0.bb
+
+1 directory, 2 files</pre>
+<p>
+recipe &#x5185;&#x5BB9;&#x5982;&#x4E0B;&#xFF1A;
+</p>
+<pre class="example">
+SUMMARY = &quot;exercise for yocto&quot;
+DESCRIPTION = &quot;Recipe created by bitbake-layers&quot;
+AUTHOR = &quot;kcmetercec &lt;kcmeter.cec@gmail.com&gt;&quot;
+
+LICENSE = &quot;MIT&quot;
+LIC_FILES_CHKSUM = &quot;file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302&quot;
+
+SRC_URI = &quot;file://hellocmake-1.0.tgz&quot;
+
+inherit cmake
+
+do_install() {
+    install -d ${D}${bindir}
+    install -m 0755 ${S}/bin/hellocmake ${D}${bindir}
+}</pre>
+<p>
+&#x6700;&#x540E;&#x5C31;&#x662F;&#x9A8C;&#x8BC1;&#x7ED3;&#x679C;&#x4E86;&#x3002;
+</p>
+</div>
+</div>
+<div id="outline-container-org3df44c5" class="outline-3">
+<h3 id="org3df44c5">&#x57FA;&#x4E8E; autotools &#x7684;&#x6784;&#x5EFA;</h3>
+<div class="outline-text-3" id="text-org3df44c5">
+<p>
+&#x4E4B;&#x524D;&#x6211;&#x4EEC;&#x7F16;&#x5199;&#x7684;<a href="http://kcmetercec.top/2018/09/16/linux_make_yocto_bitbake_hello/">nano recipe</a>&#x5E76;&#x4E0D;&#x5B8C;&#x6210;&#xFF0C;&#x73B0;&#x5728;&#x5C06;&#x5176;&#x5B8C;&#x6574;&#x5316;&#xFF1A;
+</p>
+<pre class="example">
+SUMMARY = &quot;bitbake-layers recipe&quot;
+DESCRIPTION = &quot;nano editor&quot;
+LICENSE = &quot;GPLv3&quot;
+LIC_FILES_CHKSUM = &quot;file://COPYING;md5=f27defe1e96c2e1ecd4e0c9be8967949&quot;
+
+SRC_URI = &quot;https://nano-editor.org/dist/v4/nano-${PV}.tar.xz&quot;
+SRC_URI[md5sum] = &quot;9650dd3eb0adbab6aaa748a6f1398ccb&quot;
+
+# nano&#x4F9D;&#x8D56;&#x4E8E; ncurses
+DEPENDS = &quot;ncurses&quot;
+RDEPENDS_${PN} = &quot;ncurses&quot;
+
+inherit autotools gettext</pre>
+<p>
+&#x6587;&#x4EF6;&#x76EE;&#x5F55;&#x7ED3;&#x6784;&#x5982;&#x4E0B;&#xFF1A;
+</p>
+<pre class="example">
+cec@box:~/github/poky/meta-mylayer/recipes-apps$ tree nano/
+nano/
+&#x2514;&#x2500;&#x2500; nano_4.4.bb</pre>
+<p>
+&#x63A5;&#x4E0B;&#x6765;&#x6309;&#x7167;&#x524D;&#x9762;&#x7684;&#x6B65;&#x9AA4;&#x6784;&#x5EFA;&#x5B89;&#x88C5;&#x5373;&#x53EF;&#x3002;
+</p>
+</div>
+</div>
+
+<div id="outline-container-org2b632f5" class="outline-3">
+<h3 id="org2b632f5">&#x57FA;&#x4E8E;&#x4E8C;&#x8FDB;&#x5236;&#x6587;&#x4EF6;&#x7684;&#x5B89;&#x88C5;</h3>
+<div class="outline-text-3" id="text-org2b632f5">
+<p>
+&#x5982;&#x679C;&#x6709;&#x4E9B;&#x53EF;&#x6267;&#x884C;&#x6587;&#x4EF6;&#x662F;&#x5DF2;&#x7ECF;&#x63D0;&#x524D;&#x9884;&#x7F16;&#x8BD1;&#x597D;&#x7684;&#xFF0C;&#x4E5F;&#x53EF;&#x4EE5;&#x901A;&#x8FC7;&#x7EE7;&#x627F; <code>bin_package</code> &#x7C7B;&#x6765;&#x5C06;&#x5176;&#x8F6C;&#x8FDB;&#x7CFB;&#x7EDF;&#x3002;
+</p>
+
+<p>
+&#x8FD9;&#x4E2A;&#x7C7B;&#x5C06;&#x4F1A;&#x8DF3;&#x8FC7; <code>do_configure</code> &#x548C; <code>do_compile</code> &#x4EFB;&#x52A1;&#xFF0C;&#x76F4;&#x63A5;&#x5C06;&#x53EF;&#x6267;&#x884C;&#x4EE3;&#x7801;&#x6253;&#x5305;&#x3002;
+</p>
+<pre class="example">
+SUMMARY	=	&#x201C;Package	the	Proprietary	Software&#x201D;
+DESCRIPTION	=	&#x201C;A	sample	recipe	utilizing	the	bin_package	class	\
+                              to	package	the	externally	build	Proprietary	software	\
+                              package.&#x201D;
+LICENSE	=	&#x201C;CLOSED&#x201D;
+SRC_URI	=	&#x201C;file://proprietary-${PV}.rpm&#x201D;
+inherit	bin_package</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org4f2d302" class="outline-2">
+<h2 id="org4f2d302">devtool</h2>
+<div class="outline-text-2" id="text-org4f2d302">
+<p>
+devtool &#x8FD8;&#x53EF;&#x4EE5;&#x5C06;&#x4E0A;&#x8FF0;&#x6784;&#x5EFA; layer&#xFF0C;&#x52A0;&#x5165;&#x6784;&#x5EFA;&#x73AF;&#x5883;&#xFF0C;&#x90E8;&#x7F72;&#x7B49;&#x5DE5;&#x4F5C;&#x7B80;&#x5316;&#x3002;
+</p>
+
+<p>
+devtool &#x521B;&#x5EFA;&#x548C;&#x7EF4;&#x62A4;&#x4E00;&#x4E2A;&#x5DE5;&#x4F5C;&#x533A;&#x5C42;&#xFF0C;&#x5728;&#x8FD9;&#x4E2A;&#x5C42;&#x4E2D;&#x4FEE;&#x6539;&#x548C;&#x7F16;&#x8F91; recipe&#xFF0C;config &#x5E76;&#x53EF;&#x4EE5;&#x90E8;&#x7F72;&#x5230;&#x5F53;&#x524D;&#x7684;&#x6784;&#x5EFA;&#x73AF;&#x5883;&#x4E2D;&#x3002;
+</p>
+</div>
+<div id="outline-container-org85b5037" class="outline-3">
+<h3 id="org85b5037">&#x65B0;&#x5EFA; workspace &#x5C42;</h3>
+<div class="outline-text-3" id="text-org85b5037">
+<pre class="example">
+# &#x5982;&#x679C;&#x4E0D;&#x586B; [layerpath] &#x90A3;&#x4E48;&#x5C31;&#x4F1A;&#x5728;&#x5F53;&#x524D;&#x8DEF;&#x5F84;&#x4E0B;&#x65B0;&#x5EFA; workspace &#x5C42;
+devtool create-workspace [layerpath]</pre>
+<p>
+&#x4F7F;&#x7528;&#x4EE5;&#x4E0A;&#x547D;&#x4EE4;&#xFF0C;devtool &#x4F1A;&#x5C06;&#x65B0;&#x5EFA;&#x7684;&#x5C42;&#x52A0;&#x5165; <code>build/conf/bblayers.conf</code> &#x4E2D;&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x5982;&#x679C;&#x4E0D;&#x60F3;&#x5C42;&#x88AB;&#x52A0;&#x5165;&#xFF0C;&#x53EF;&#x4EE5;&#x5728;&#x547D;&#x4EE4;&#x540E;&#x52A0;&#x5165; <code>--create-only</code></li>
+</ul>
+</div>
+</div>
+<div id="outline-container-orge1137be" class="outline-3">
+<h3 id="orge1137be">&#x65B0;&#x5EFA; recipe</h3>
+<div class="outline-text-3" id="text-orge1137be">
+<pre class="example">
+# &lt;source-path&gt; &#x4EE3;&#x8868;&#x88AB;&#x6784;&#x5EFA;&#x8F6F;&#x4EF6;&#x7684;&#x672C;&#x5730;&#x8DEF;&#x5F84;
+devtool add &lt;recipe-name&gt; &lt;source-path&gt;
+
+#&#x5982;&#x679C;&#x4ECE;&#x975E;&#x672C;&#x5730;&#x6293;&#x53D6;&#x8F6F;&#x4EF6;&#xFF0C;&#x53EF;&#x4EE5;&#x4F7F;&#x7528;
+devtool add &lt;recipe-name&gt; &lt;source-path&gt; -f &lt;source-uri&gt;
+</pre>
+<p>
+&#x6B64;&#x547D;&#x4EE4;&#x4F1A;&#x5728;&#x4E4B;&#x524D;&#x7684;&#x65B0;&#x5EFA;&#x5C42;&#x4E2D;&#x65B0;&#x5EFA; <code>recipes/&lt;recipe-name&gt;/&lt;recipe-name&gt;.bb</code> &#x548C; <code>appends/&lt;recipe-name&gt;.bbappend</code> 
+</p>
+<ul class="org-ul">
+<li>&#x5BF9;&#x5E94;&#x8F6F;&#x4EF6;&#x7684;&#x8DEF;&#x5F84;&#x88AB;&#x5199;&#x5165; <code>&lt;recipe-name&gt;.bbappend</code> &#x4E2D;</li>
+</ul>
+
+<p>
+&#x6BD4;&#x5982;&#x8981;&#x589E;&#x52A0; nano4.5 &#x7684; recipe&#xFF0C;&#x5219;&#x8FD9;&#x4E48;&#x7528;&#xFF1A;
+</p>
+<pre class="example">
+#&#x4ECE;&#x8FDC;&#x7A0B;&#x6293;&#x53D6;&#x4EE3;&#x7801;&#x5E76;&#x89E3;&#x538B;&#x540E;&#x5B58;&#x653E;&#x5728;&#x5F53;&#x524D;&#x76EE;&#x5F55;&#x7684; files/nano &#x4E2D;
+devtool add nano files/nano -f https://www.nano-editor.org/dist/v4/nano-4.5.tar.gz</pre>
+<p>
+&#x7136;&#x540E;&#x76EE;&#x5F55;&#x7ED3;&#x6784;&#x5982;&#x4E0B;&#xFF1A;
+</p>
+<pre class="example">
+&#x251C;&#x2500;&#x2500; appends
+&#x2502;&#xA0;&#xA0; &#x251C;&#x2500;&#x2500; lrzsz_0.12.20.bbappend
+&#x2502;&#xA0;&#xA0; &#x2514;&#x2500;&#x2500; nano_4.5.bbappend
+&#x251C;&#x2500;&#x2500; conf
+&#x2502;&#xA0;&#xA0; &#x2514;&#x2500;&#x2500; layer.conf
+&#x251C;&#x2500;&#x2500; README
+&#x2514;&#x2500;&#x2500; recipes
+    &#x251C;&#x2500;&#x2500; lrzsz
+    &#x2502;&#xA0;&#xA0; &#x251C;&#x2500;&#x2500; lrzsz
+    &#x2502;&#xA0;&#xA0; &#x2502;&#xA0;&#xA0; &#x2514;&#x2500;&#x2500; lrzsz.patch
+    &#x2502;&#xA0;&#xA0; &#x2514;&#x2500;&#x2500; lrzsz_0.12.20.bb
+    &#x2514;&#x2500;&#x2500; nano
+        &#x2514;&#x2500;&#x2500; nano_4.5.bb
+
+6 directories, 7 files</pre>
+<p>
+&#x53EF;&#x4EE5;&#x67E5;&#x770B;&#x5176; recipe &#xFF0C;&#x53D1;&#x73B0;&#x8FDE; LICENSE &#x548C;&#x6784;&#x5EFA;&#x89C4;&#x5219;&#x90FD;&#x586B;&#x597D;&#x4E86;&#xFF0C;&#x800C; bbappend &#x4E2D;&#x5219;&#x662F;&#x672C;&#x5730;&#x7684;&#x8DEF;&#x5F84;&#x3002;
+</p>
+</div>
+</div>
+<div id="outline-container-orgd9e90fc" class="outline-3">
+<h3 id="orgd9e90fc">&#x6784;&#x5EFA; recipe</h3>
+<div class="outline-text-3" id="text-orgd9e90fc">
+<pre class="example">
+devtool build nano</pre>
+</div>
+</div>
+<div id="outline-container-orgbf0ba74" class="outline-3">
+<h3 id="orgbf0ba74">&#x90E8;&#x7F72;&#x5230;&#x76EE;&#x6807;&#x7CFB;&#x7EDF;</h3>
+<div class="outline-text-3" id="text-orgbf0ba74">
+<p>
+&#x76EE;&#x6807;&#x7CFB;&#x7EDF;&#x9700;&#x8981;&#x8FD0;&#x884C;&#x4E86; ssh &#x670D;&#x52A1;&#xFF1A;
+</p>
+<pre class="example">
+devtool	deploy-target	&lt;recipe-name&gt;	[user@]target-host[:destdir]
+#&#x5982;&#x679C;&#x8981;&#x5378;&#x8F7D;&#xFF0C;&#x5219;&#x4F7F;&#x7528;
+devtool	undploy-target	&lt;recipe-name&gt;	[user@]target-host</pre>
+</div>
+</div>
+<div id="outline-container-org686d92f" class="outline-3">
+<h3 id="org686d92f">&#x6DFB;&#x52A0;&#x8FDB; image</h3>
+<div class="outline-text-3" id="text-org686d92f">
+<pre class="example">
+devtool	build-image	&lt;image-name&gt;</pre>
+</div>
+</div>
+<div id="outline-container-org4f35e10" class="outline-3">
+<h3 id="org4f35e10">&#x4F7F;&#x7528; devtool &#x4E3A;&#x539F; recipe &#x4E2D;&#x7684;&#x8F6F;&#x4EF6;&#x6253;&#x8865;&#x4E01;</h3>
+<div class="outline-text-3" id="text-org4f35e10">
+</div>
+<div id="outline-container-orgd7145f9" class="outline-4">
+<h4 id="orgd7145f9">&#x5EFA;&#x7ACB;&#x6E90;&#x7801;&#x526F;&#x672C;</h4>
+<div class="outline-text-4" id="text-orgd7145f9">
+<pre class="example">
+#1. &#x5C06; &lt;recipe-name&gt; &#x4E2D;&#x7684;&#x6E90;&#x7801;&#x89E3;&#x538B;&#x81F3; &lt;source-path&gt;&#xFF0C;&#x5E76;&#x4E3A;&#x5176;&#x65B0;&#x5EFA; git &#x4ED3;&#x5E93;
+#2. &#x4E3A; &lt;recipe-name&gt; &#x5EFA;&#x7ACB; bbappend &#x6587;&#x4EF6;&#xFF0C;&#x8986;&#x76D6;&#x539F; recipe &#x4E2D;&#x7684; SRC_URI
+devtool	modify	-x	&lt;recipe-name&gt;	&lt;source-path&gt;</pre>
+</div>
+</div>
+<div id="outline-container-org3d93621" class="outline-4">
+<h4 id="org3d93621">&#x66F4;&#x65B0; recipe</h4>
+<div class="outline-text-4" id="text-org3d93621">
+<p>
+&#x5F53;&#x4FEE;&#x6539;&#x6E90;&#x7801;&#x5E76;&#x7528; git &#x63D0;&#x4EA4;&#x540E;&#xFF1A;
+</p>
+<pre class="example">
+# &#x6839;&#x636E;&#x5F53;&#x524D;&#x7684;&#x4FEE;&#x6539;&#x4E3A;&#x539F; recipe &#x6253;&#x8865;&#x4E01;
+# &#x6B64;&#x547D;&#x4EE4;&#x4F1A;&#x4E3A;&#x521D;&#x59CB;&#x6E90;&#x7801;&#x589E;&#x52A0;&#x8865;&#x4E01;&#x6587;&#x4EF6;&#xFF0C;&#x5E76;&#x4FEE;&#x6539;&#x539F;&#x59CB; recipe &#x6587;&#x4EF6;
+devtool	update-recipe	&lt;recipe-name&gt;
+
+# &#x5982;&#x679C;&#x4E0D;&#x5E0C;&#x671B;&#x4FEE;&#x6539;&#x539F;&#x59CB;&#x7684; recipe &#x6587;&#x4EF6;&#xFF0C;&#x800C;&#x662F;&#x4F7F;&#x7528; append &#x6587;&#x4EF6;&#xFF0C;&#x4F7F;&#x7528;&#x4E0B;&#x9762;&#x8FD9;&#x4E2A;&#x547D;&#x4EE4;
+# &#x5728; &lt;layer-dir&gt; &#x4E2D;&#x4E3A; &lt;recipe-name&gt; &#x589E;&#x52A0;&#x9644;&#x52A0;&#x6587;&#x4EF6;
+devtool	update-recipe	&lt;recipe-name&gt;	-a	&lt;layer-dir&gt;</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+Last Updated 2020-06-28 Sun 12:00.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+</div>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/yocto/" rel="tag"># yocto</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/09/17/yocto_build_raspberry_linux/" rel="prev" title="[What]Yocto Project --> 构建树莓派 3B 发行版">
+      <i class="fa fa-chevron-left"></i> [What]Yocto Project --> 构建树莓派 3B 发行版
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/10/14/book_linux_server_chapter_4/" rel="next" title="[What]TCP/IP 练习：访问 Internet 上的 Web 服务器">
+      [What]TCP/IP 练习：访问 Internet 上的 Web 服务器 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org0a34e98"><span class="nav-number">1.</span> <span class="nav-text">recipe &amp;#x7684;&amp;#x5E03;&amp;#x5C40;&amp;#x548C;&amp;#x60EF;&amp;#x4F8B;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org65bde27"><span class="nav-number">1.1.</span> <span class="nav-text">&amp;#x6587;&amp;#x4EF6;&amp;#x540D;&amp;#x79F0;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgd916bec"><span class="nav-number">1.1.1.</span> <span class="nav-text">&amp;#x4E0D;&amp;#x901A;&amp;#x8FC7;&amp;#x7248;&amp;#x672C;&amp;#x63A7;&amp;#x5236;&amp;#x7684;&amp;#x65B9;&amp;#x5F0F;&amp;#x6293;&amp;#x53D6;&amp;#x7684;&amp;#x5305;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org74b961e"><span class="nav-number">1.1.2.</span> <span class="nav-text">&amp;#x901A;&amp;#x8FC7;&amp;#x7248;&amp;#x672C;&amp;#x63A7;&amp;#x5236;&amp;#x65B9;&amp;#x5F0F;&amp;#x6293;&amp;#x53D6;&amp;#x7684;&amp;#x5305;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgc4c5b48"><span class="nav-number">1.2.</span> <span class="nav-text">recipe &amp;#x7684;&amp;#x5185;&amp;#x5BB9;&amp;#x7ED3;&amp;#x6784;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org428553f"><span class="nav-number">1.2.1.</span> <span class="nav-text">&amp;#x63CF;&amp;#x8FF0; recipe &amp;#x7684;&amp;#x5143;&amp;#x6570;&amp;#x636E;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org4ee1710"><span class="nav-number">1.2.2.</span> <span class="nav-text">&amp;#x8F6F;&amp;#x4EF6;&amp;#x5305;&amp;#x7BA1;&amp;#x7406;&amp;#x7684;&amp;#x5143;&amp;#x6570;&amp;#x636E;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orge6a1a6a"><span class="nav-number">1.2.3.</span> <span class="nav-text">&amp;#x8BB8;&amp;#x53EF;&amp;#x8BF4;&amp;#x660E;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgf2c6ffd"><span class="nav-number">1.2.4.</span> <span class="nav-text">&amp;#x7EE7;&amp;#x627F;&amp;#x4E0E;&amp;#x5305;&amp;#x542B;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgab6ac68"><span class="nav-number">1.2.5.</span> <span class="nav-text">&amp;#x6784;&amp;#x5EFA;&amp;#x8BF4;&amp;#x660E;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org2a77835"><span class="nav-number">1.2.6.</span> <span class="nav-text">&amp;#x6253;&amp;#x5305;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgf1999f9"><span class="nav-number">1.2.7.</span> <span class="nav-text">&amp;#x4EFB;&amp;#x52A1;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgf0d6cea"><span class="nav-number">1.2.8.</span> <span class="nav-text">&amp;#x53D8;&amp;#x91CF;&amp;#x548C;&amp;#x7C7B;&amp;#x7684;&amp;#x6269;&amp;#x5C55;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org76da47d"><span class="nav-number">1.2.9.</span> <span class="nav-text">&amp;#x8FD0;&amp;#x884C;&amp;#x65F6;&amp;#x914D;&amp;#x7F6E;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org3e1c827"><span class="nav-number">1.3.</span> <span class="nav-text">recipe &amp;#x683C;&amp;#x5F0F;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org872e708"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x4ECE;&amp;#x5934;&amp;#x5F00;&amp;#x59CB;&amp;#x5199;&amp;#x4E00;&amp;#x4E2A;&amp;#x65B0;&amp;#x7684; recipe</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org4313807"><span class="nav-number">2.1.</span> <span class="nav-text">&amp;#x7F16;&amp;#x5199; recipe &amp;#x7684;&amp;#x601D;&amp;#x8DEF;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org054decf"><span class="nav-number">2.2.</span> <span class="nav-text">&amp;#x65B0;&amp;#x5EFA;&amp;#x5C42;&amp;#x540E;&amp;#x521B;&amp;#x5EFA; recipe</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgc92c44a"><span class="nav-number">2.3.</span> <span class="nav-text">&amp;#x83B7;&amp;#x53D6;&amp;#x6E90;&amp;#x7801;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgf8675ee"><span class="nav-number">2.4.</span> <span class="nav-text">&amp;#x89E3;&amp;#x538B;&amp;#x7F29;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org0da1e13"><span class="nav-number">2.5.</span> <span class="nav-text">&amp;#x6253;&amp;#x8865;&amp;#x4E01;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org04ed39e"><span class="nav-number">2.6.</span> <span class="nav-text">&amp;#x589E;&amp;#x52A0;&amp;#x8BB8;&amp;#x53EF;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org6958082"><span class="nav-number">2.7.</span> <span class="nav-text">&amp;#x6E90;&amp;#x7801;&amp;#x7684;&amp;#x914D;&amp;#x7F6E;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgf657275"><span class="nav-number">2.7.1.</span> <span class="nav-text">GNU Autotools</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgf2cfd04"><span class="nav-number">2.7.2.</span> <span class="nav-text">cmake</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgc5f9430"><span class="nav-number">2.7.3.</span> <span class="nav-text">&amp;#x5176;&amp;#x4ED6;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org2a67cb2"><span class="nav-number">2.8.</span> <span class="nav-text">&amp;#x6E90;&amp;#x7801;&amp;#x7684;&amp;#x7F16;&amp;#x8BD1;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org2eff7af"><span class="nav-number">2.8.1.</span> <span class="nav-text">&amp;#x5E76;&amp;#x884C;&amp;#x6784;&amp;#x5EFA;&amp;#x9519;&amp;#x8BEF;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org32d7036"><span class="nav-number">2.8.2.</span> <span class="nav-text">&amp;#x4E3B;&amp;#x673A;&amp;#x6CC4;&amp;#x6F0F;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgb9d6361"><span class="nav-number">2.8.3.</span> <span class="nav-text">&amp;#x7F3A;&amp;#x4E4F;&amp;#x5934;&amp;#x6587;&amp;#x4EF6;&amp;#x548C;&amp;#x5E93;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org692cd91"><span class="nav-number">2.9.</span> <span class="nav-text">&amp;#x7F16;&amp;#x8BD1;&amp;#x7ED3;&amp;#x679C;&amp;#x7684;&amp;#x5B89;&amp;#x88C5;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org357cf8d"><span class="nav-number">2.10.</span> <span class="nav-text">&amp;#x7CFB;&amp;#x7EDF;&amp;#x670D;&amp;#x52A1;&amp;#x8BBE;&amp;#x7F6E;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org198b26c"><span class="nav-number">2.10.1.</span> <span class="nav-text">SysVinit</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgf85ac95"><span class="nav-number">2.10.2.</span> <span class="nav-text">systemd</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org94c0111"><span class="nav-number">2.11.</span> <span class="nav-text">&amp;#x8F93;&amp;#x51FA;&amp;#x7ED3;&amp;#x679C;&amp;#x6253;&amp;#x5305;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org9d0cfc4"><span class="nav-number">2.11.1.</span> <span class="nav-text">&amp;#x5305;&amp;#x7684;&amp;#x5206;&amp;#x79BB;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org8a31cc5"><span class="nav-number">2.11.2.</span> <span class="nav-text">&amp;#x65B0;&amp;#x5EFA;&amp;#x5305;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org642060e"><span class="nav-number">2.11.3.</span> <span class="nav-text">&amp;#x6253;&amp;#x5305;&amp;#x8FC7;&amp;#x7A0B;&amp;#x68C0;&amp;#x67E5;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org00f6b33"><span class="nav-number">2.11.4.</span> <span class="nav-text">&amp;#x5305;&amp;#x7684;&amp;#x67B6;&amp;#x6784;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgef584a1"><span class="nav-number">2.12.</span> <span class="nav-text">&amp;#x5B9A;&amp;#x5236;&amp;#x5B89;&amp;#x88C5;&amp;#x811A;&amp;#x672C;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org1af2e44"><span class="nav-number">2.13.</span> <span class="nav-text">&amp;#x53D8;&amp;#x4F53;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org18546a9"><span class="nav-number">3.</span> <span class="nav-text">recipe &amp;#x8303;&amp;#x4F8B;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org7b096ea"><span class="nav-number">3.1.</span> <span class="nav-text">&amp;#x65B0;&amp;#x5EFA;&amp;#x5E76;&amp;#x5305;&amp;#x542B; layer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org50dc798"><span class="nav-number">3.2.</span> <span class="nav-text">&amp;#x7F16;&amp;#x5199;&amp;#x8F6F;&amp;#x4EF6;&amp;#x5305;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org9a22b8a"><span class="nav-number">3.3.</span> <span class="nav-text">&amp;#x7F16;&amp;#x5199; recipe</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orge8a6098"><span class="nav-number">3.3.1.</span> <span class="nav-text">&amp;#x6587;&amp;#x4EF6;&amp;#x540D;&amp;#x79F0;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgaf5f907"><span class="nav-number">3.3.2.</span> <span class="nav-text">&amp;#x6587;&amp;#x4EF6;&amp;#x7684;&amp;#x57FA;&amp;#x672C;&amp;#x63CF;&amp;#x8FF0;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgf667ac1"><span class="nav-number">3.3.3.</span> <span class="nav-text">&amp;#x6E90;&amp;#x7801;&amp;#x7684;&amp;#x83B7;&amp;#x53D6;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org961368a"><span class="nav-number">3.3.4.</span> <span class="nav-text">&amp;#x89E3;&amp;#x538B;&amp;#x7F29;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgf2b6144"><span class="nav-number">3.3.5.</span> <span class="nav-text">&amp;#x6253;&amp;#x8865;&amp;#x4E01;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org0ed34f7"><span class="nav-number">3.3.6.</span> <span class="nav-text">&amp;#x6DFB;&amp;#x52A0;&amp;#x8BB8;&amp;#x53EF;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org4e88fc1"><span class="nav-number">3.3.7.</span> <span class="nav-text">&amp;#x6E90;&amp;#x7801;&amp;#x914D;&amp;#x7F6E;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orga8162b9"><span class="nav-number">3.3.8.</span> <span class="nav-text">&amp;#x6E90;&amp;#x7801;&amp;#x7684;&amp;#x7F16;&amp;#x8BD1;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org3fbeea6"><span class="nav-number">3.3.9.</span> <span class="nav-text">&amp;#x6E90;&amp;#x7801;&amp;#x7684;&amp;#x5B89;&amp;#x88C5;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org9e41c11"><span class="nav-number">3.3.10.</span> <span class="nav-text">&amp;#x5176;&amp;#x4ED6;&amp;#x914D;&amp;#x7F6E;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgf5d6a32"><span class="nav-number">3.3.11.</span> <span class="nav-text">&amp;#x6700;&amp;#x7EC8;&amp;#x6587;&amp;#x4EF6;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org36f5ec5"><span class="nav-number">3.3.12.</span> <span class="nav-text">&amp;#x6784;&amp;#x5EFA;&amp;#x5E76;&amp;#x9A8C;&amp;#x8BC1;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgeea559e"><span class="nav-number">3.4.</span> <span class="nav-text">&amp;#x57FA;&amp;#x4E8E; Makefile &amp;#x7684;&amp;#x6784;&amp;#x5EFA;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgbdd0328"><span class="nav-number">3.4.1.</span> <span class="nav-text">&amp;#x7F16;&amp;#x5199; Makefile &amp;#x5E76;&amp;#x538B;&amp;#x7F29;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgb278d3e"><span class="nav-number">3.4.2.</span> <span class="nav-text">&amp;#x65B0;&amp;#x5EFA; recipe</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org1f1fa6d"><span class="nav-number">3.4.3.</span> <span class="nav-text">&amp;#x9A8C;&amp;#x8BC1;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgf543848"><span class="nav-number">3.5.</span> <span class="nav-text">&amp;#x57FA;&amp;#x4E8E; Cmake &amp;#x7684;&amp;#x6784;&amp;#x5EFA;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org3df44c5"><span class="nav-number">3.6.</span> <span class="nav-text">&amp;#x57FA;&amp;#x4E8E; autotools &amp;#x7684;&amp;#x6784;&amp;#x5EFA;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org2b632f5"><span class="nav-number">3.7.</span> <span class="nav-text">&amp;#x57FA;&amp;#x4E8E;&amp;#x4E8C;&amp;#x8FDB;&amp;#x5236;&amp;#x6587;&amp;#x4EF6;&amp;#x7684;&amp;#x5B89;&amp;#x88C5;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org4f2d302"><span class="nav-number">4.</span> <span class="nav-text">devtool</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org85b5037"><span class="nav-number">4.1.</span> <span class="nav-text">&amp;#x65B0;&amp;#x5EFA; workspace &amp;#x5C42;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orge1137be"><span class="nav-number">4.2.</span> <span class="nav-text">&amp;#x65B0;&amp;#x5EFA; recipe</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgd9e90fc"><span class="nav-number">4.3.</span> <span class="nav-text">&amp;#x6784;&amp;#x5EFA; recipe</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgbf0ba74"><span class="nav-number">4.4.</span> <span class="nav-text">&amp;#x90E8;&amp;#x7F72;&amp;#x5230;&amp;#x76EE;&amp;#x6807;&amp;#x7CFB;&amp;#x7EDF;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org686d92f"><span class="nav-number">4.5.</span> <span class="nav-text">&amp;#x6DFB;&amp;#x52A0;&amp;#x8FDB; image</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org4f35e10"><span class="nav-number">4.6.</span> <span class="nav-text">&amp;#x4F7F;&amp;#x7528; devtool &amp;#x4E3A;&amp;#x539F; recipe &amp;#x4E2D;&amp;#x7684;&amp;#x8F6F;&amp;#x4EF6;&amp;#x6253;&amp;#x8865;&amp;#x4E01;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgd7145f9"><span class="nav-number">4.6.1.</span> <span class="nav-text">&amp;#x5EFA;&amp;#x7ACB;&amp;#x6E90;&amp;#x7801;&amp;#x526F;&amp;#x672C;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org3d93621"><span class="nav-number">4.6.2.</span> <span class="nav-text">&amp;#x66F4;&amp;#x65B0; recipe</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">我的世界</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">210</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">104</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">38</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+  
+  <span class="post-meta-divider">|</span>
+  <span>Hosted by <a href="https://pages.coding.me" target="_blank" rel="noopener" style="font-weight: bold">Coding Pages</a></span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+<script>
+  (function() {
+    function leancloudSelector(url) {
+      url = encodeURI(url);
+      return document.getElementById(url).querySelector('.leancloud-visitors-count');
+    }
+
+    function addCount(Counter) {
+      var visitors = document.querySelector('.leancloud_visitors');
+      var url = decodeURI(visitors.id);
+      var title = visitors.dataset.flagTitle;
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          if (results.length > 0) {
+            var counter = results[0];
+            leancloudSelector(url).innerText = counter.time + 1;
+            Counter('put', '/classes/Counter/' + counter.objectId, { time: { '__op': 'Increment', 'amount': 1 } })
+              .catch(error => {
+                console.error('Failed to save visitor count', error);
+              });
+          } else {
+              leancloudSelector(url).innerText = 'Counter not initialized! More info at console err msg.';
+              console.error('ATTENTION! LeanCloud counter has security bug, see how to solve it here: https://github.com/theme-next/hexo-leancloud-counter-security. \n However, you can still use LeanCloud without security, by setting `security` option to `false`.');
+            
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    function showTime(Counter) {
+      var visitors = document.querySelectorAll('.leancloud_visitors');
+      var entries = [...visitors].map(element => {
+        return decodeURI(element.id);
+      });
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url: { '$in': entries } })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          for (let url of entries) {
+            let target = results.find(item => item.url === url);
+            leancloudSelector(url).innerText = target ? target.time : 0;
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    let { app_id, app_key, server_url } = {"enable":true,"app_id":"ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI","app_key":"yh4vrfnscme1utPMpk65wcxn","server_url":null,"security":true};
+    function fetchData(api_server) {
+      var Counter = (method, url, data) => {
+        return fetch(`${api_server}/1.1${url}`, {
+          method,
+          headers: {
+            'X-LC-Id'     : app_id,
+            'X-LC-Key'    : app_key,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+      };
+      if (CONFIG.page.isPost) {
+        if (CONFIG.hostname !== location.hostname) return;
+        addCount(Counter);
+      } else if (document.querySelectorAll('.post-title-link').length >= 1) {
+        showTime(Counter);
+      }
+    }
+
+    let api_server = app_id.slice(-9) !== '-MdYXbMMI' ? server_url : `https://${app_id.slice(0, 8).toLowerCase()}.api.lncldglobal.com`;
+
+    if (api_server) {
+      fetchData(api_server);
+    } else {
+      fetch('https://app-router.leancloud.cn/2/route?appId=' + app_id)
+        .then(response => response.json())
+        .then(({ api_server }) => {
+          fetchData('https://' + api_server);
+        });
+    }
+  })();
+</script>
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+  <script defer src="/lib/three/three.min.js"></script>
+    <script defer src="/lib/three/three-waves.min.js"></script>
+    <script defer src="/lib/three/canvas_lines.min.js"></script>
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI',
+      appKey     : 'yh4vrfnscme1utPMpk65wcxn',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

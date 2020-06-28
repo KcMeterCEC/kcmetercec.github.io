@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="zLSyD2CN1AkyJqei3qKraT6372nBgMFKWe6kAj5JDeY">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="&amp;#x672C;&amp;#x6765;&amp;#x60F3;&amp;#x81EA;&amp;#x5DF1;&amp;#x5199;&amp;#x4E2A;&amp;#x589E;&amp;#x91CF;&amp;#x7F16;&amp;#x7801;&amp;#x5668;&amp;#x7684;client driver&amp;#xFF0C;&amp;#x7ED3;&amp;#x679C;&amp;#x4E00;&amp;#x641C; Documentation&#x2F;input&#x2F;rotary-encoder.txt &amp;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="[What]linux -&gt; incremental rotary encoder">
+<meta property="og:url" content="http://kcmetercec.top/2018/04/26/linux_driver_chip_inc_encoder/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="&amp;#x672C;&amp;#x6765;&amp;#x60F3;&amp;#x81EA;&amp;#x5DF1;&amp;#x5199;&amp;#x4E2A;&amp;#x589E;&amp;#x91CF;&amp;#x7F16;&amp;#x7801;&amp;#x5668;&amp;#x7684;client driver&amp;#xFF0C;&amp;#x7ED3;&amp;#x679C;&amp;#x4E00;&amp;#x641C; Documentation&#x2F;input&#x2F;rotary-encoder.txt &amp;">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[driver]/[What]Linux--chip/rotary%20encoder/inc_encoder.jpg?raw=true">
+<meta property="article:published_time" content="2018-04-25T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-06-28T03:58:45.981Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="driver">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[driver]/[What]Linux--chip/rotary%20encoder/inc_encoder.jpg?raw=true">
+
+<link rel="canonical" href="http://kcmetercec.top/2018/04/26/linux_driver_chip_inc_encoder/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>[What]linux -> incremental rotary encoder | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=112423075-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '112423075-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2ab4cc06d0da36106a4426465d0cb00d";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2018/04/26/linux_driver_chip_inc_encoder/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="我的世界">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          [What]linux -> incremental rotary encoder
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-04-26 00:00:00" itemprop="dateCreated datePublished" datetime="2018-04-26T00:00:00+08:00">2018-04-26</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-06-28 11:58:45" itemprop="dateModified" datetime="2020-06-28T11:58:45+08:00">2020-06-28</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/driver/" itemprop="url" rel="index"><span itemprop="name">driver</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/driver/chip/" itemprop="url" rel="index"><span itemprop="name">chip</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2018/04/26/linux_driver_chip_inc_encoder/" class="post-meta-item leancloud_visitors" data-flag-title="[What]linux -> incremental rotary encoder" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2018/04/26/linux_driver_chip_inc_encoder/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2018/04/26/linux_driver_chip_inc_encoder/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <div id="content">
+<p>
+&#x672C;&#x6765;&#x60F3;&#x81EA;&#x5DF1;&#x5199;&#x4E2A;&#x589E;&#x91CF;&#x7F16;&#x7801;&#x5668;&#x7684;client driver&#xFF0C;&#x7ED3;&#x679C;&#x4E00;&#x641C; <code>Documentation/input/rotary-encoder.txt</code> &#x53D1;&#x73B0;&#x5185;&#x6838;&#x5DF2;&#x7ECF;&#x63D0;&#x4F9B;&#x4E86;&#x901A;&#x7528;&#x6846;&#x67B6;&#x4E86;&#x3002;
+&#x8FD9;&#x91CC;&#x5C31;&#x8BB0;&#x5F55;&#x4EE5;&#x4E0B;&#x6B64;&#x6846;&#x67B6;&#x7684;&#x4F7F;&#x7528;&#x3002;
+</p>
+
+<a id="more"></a>
+
+<div id="outline-container-org337477d" class="outline-2">
+<h2 id="org337477d">&#x6CE2;&#x5F62;&#x4E0E;&#x5224;&#x65AD;</h2>
+<div class="outline-text-2" id="text-org337477d">
+<img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[driver]/[What]Linux--chip/rotary encoder/inc_encoder.jpg?raw=true" alt="inc_encoder.jpg">
+<p>
+&#x9A71;&#x52A8;&#x6587;&#x6863;&#x4E0A;&#x6307;&#x51FA;&#x4E86;&#x6B63;&#x8F6C;&#x7684;&#x6CE2;&#x5F62;&#x8F93;&#x51FA;&#xFF0C;&#x53EF;&#x4EE5;&#x7406;&#x89E3;&#x4E3A;A&#x8D85;&#x524D;B 90&#xB0;&#xFF0C;&#x5F53;&#x53CD;&#x8F6C;&#x65F6;&#x5C31;&#x662F;A&#x6EDE;&#x540E;B 90&#xB0;&#x3002;
+</p>
+</div>
+
+<div id="outline-container-org3664ae8" class="outline-3">
+<h3 id="org3664ae8">&#x7B80;&#x6613;&#x5224;&#x65AD;&#x65B9;&#x6CD5;</h3>
+<div class="outline-text-3" id="text-org3664ae8">
+<p>
+&#x524D;&#x51E0;&#x5E74;&#x505A;&#x5355;&#x7247;&#x673A;&#x7684;&#x65F6;&#x5019;&#xFF0C;&#x7528;&#x7684;&#x662F;&#x7B80;&#x6613;&#x5224;&#x65AD;&#x65B9;&#x6CD5;&#xFF1A;
+</p>
+<ol class="org-ol">
+<li>&#x914D;&#x7F6E;AB&#x7BA1;&#x811A;&#x4E3A;&#x8F93;&#x5165;&#x6A21;&#x5F0F;&#xFF0C;&#x4E14;A&#x4E3A;&#x4E0A;&#x5347;&#x6CBF;&#x89E6;&#x53D1;&#x4E2D;&#x65AD;</li>
+<li>&#x5F53;&#x8FDB;&#x5165;&#x4E2D;&#x65AD;&#x540E;&#x8FDB;&#x884C;&#x4E00;&#x6BB5;&#x65F6;&#x95F4;&#x7684;&#x5FAA;&#x73AF;&#x5224;&#x65AD;(&#x8FD9;&#x4E2A;&#x65F6;&#x95F4;&#x8981;&#x5148;&#x6839;&#x636E;&#x793A;&#x6CE2;&#x5668;&#x89C2;&#x5BDF;&#x7F16;&#x7801;&#x5668;&#x5468;&#x671F;&#x957F;&#x77ED;&#x6765;&#x786E;&#x5B9A;)
+<ul class="org-ul">
+<li>&#x5224;&#x65AD;&#x903B;&#x8F91;&#x4E3A;&#xFF1A;&#x53EA;&#x8981;&#x5728;&#x8FD9;&#x6BB5;&#x65F6;&#x95F4;A&#x7535;&#x5E73;&#x4E3A;&#x4F4E;&#x5219;&#x9000;&#x51FA;&#x5904;&#x7406;&#x51FD;&#x6570;&#xFF0C;&#x5224;&#x65AD;&#x4E3A;&#x8BEF;&#x89E6;&#x53D1;</li>
+</ul></li>
+<li>&#x5728;&#x4E2D;&#x65AD;&#x4E2D;&#x8BFB;&#x53D6;AB&#x7684;&#x7535;&#x5E73;&#xFF0C;&#x5F53;A&#x548C;B&#x90FD;&#x4E3A;&#x9AD8;&#x65F6;&#x4EE3;&#x8868;&#x6B63;&#x8F6C;&#xFF0C;&#x5F53;A&#x4E3A;&#x9AD8;B&#x4E3A;&#x4F4E;&#x65F6;&#x4EE3;&#x8868;&#x53CD;&#x8F6C;</li>
+</ol>
+</div>
+</div>
+<div id="outline-container-org9a8c128" class="outline-3">
+<h3 id="org9a8c128">&#x9A71;&#x52A8;&#x4E2D;&#x7684;&#x5224;&#x65AD;&#x903B;&#x8F91;</h3>
+<div class="outline-text-3" id="text-org9a8c128">
+<p>
+&#x6839;&#x636E;AB&#x6CE2;&#x5F62;&#x65F6;&#x5E8F;&#x53EF;&#x4EE5;&#x5F97;&#x51FA;&#x5176;&#x7EC4;&#x5408;&#x503C;&#x4E3A;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>&#x6B63;&#x8F6C;&#xFF1A; 0b10(0x2) -&gt; 0b11(0x3) -&gt; 0b01(0x1) -&gt; 0b00(0x0)</li>
+<li>&#x53CD;&#x8F6C;:  0b11(0x3) -&gt; 0b10(0x2) -&gt; 0b00(0x0) -&gt; 0b01(0x1)</li>
+</ul>
+
+<p>
+&#x9A71;&#x52A8;&#x7684;&#x903B;&#x8F91;&#x4E3A;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>&#x5C06;AB&#x811A;&#x90FD;&#x914D;&#x7F6E;&#x4E3A;&#x53CC;&#x8FB9;&#x6CBF;&#x89E6;&#x53D1;</li>
+<li>&#x8FDB;&#x5165;&#x4E2D;&#x65AD;&#x4EE5;&#x540E;&#x9A71;&#x52A8;&#x5148;&#x540E;&#x8BFB;&#x53D6;AB&#x7684;&#x503C;&#xFF0C;A&#x653E;&#x5728;&#x7B2C;1&#x4F4D;&#x4E0E;B&#x7684;&#x503C;&#x6216;&#x3002;</li>
+<li>&#x6839;&#x636E;&#x4E0A;&#x9762;&#x7684;&#x6B63;&#x53CD;&#x8F6C;&#x505A;&#x6210;&#x72B6;&#x6001;&#x673A;&#xFF0C;&#x5F53;&#x8FDB;&#x5165;&#x5230;&#x72B6;&#x6001; 0b00 &#x65F6;&#x5373;&#x53EF;&#x5411;&#x4E0A;&#x5C42;&#x53CD;&#x5E94;&#x65B9;&#x5411;
+<ul class="org-ul">
+<li>&#x56E0;&#x4E3A;&#x5728;&#x72B6;&#x6001; 0b10 &#x548C; 0b01 &#x4E2D;&#x90FD;&#x4F1A;&#x5224;&#x65AD;&#x65B9;&#x5411;&#xFF0C;&#x5728;&#x53CD;&#x8F6C;&#x4E2D;&#x53EA;&#x5224;&#x65AD; 0b10 &#x5373;&#x53EF;</li>
+</ul></li>
+</ul>
+
+<p>
+&#x6709;&#x4E2A;&#x7591;&#x95EE;&#xFF1A;&#x8FD9;&#x91CC;&#x4E3A;&#x4EC0;&#x4E48;&#x6CA1;&#x6709;&#x6D88;&#x6296;&#x5904;&#x7406;&#xFF0C;&#x662F;&#x9ED8;&#x8BA4;&#x786C;&#x4EF6;&#x4E0A;&#x4EE5;&#x5E76;&#x7535;&#x5BB9;&#x7684;&#x65B9;&#x5F0F;&#x5904;&#x7406;&#x7684;&#x5417;&#xFF1F;
+</p>
+
+<p>
+&#x5177;&#x4F53;&#x6D41;&#x7A0B;&#x770B;&#x4EE3;&#x7801;:
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">rotary_encoder_get_state</span><span class="params">(<span class="keyword">const</span> <span class="keyword">struct</span> rotary_encoder_platform_data *pdata)</span></span><br><span class="line"></span>{</span><br><span class="line">	<span class="keyword">int</span> a = !!gpio_get_value(pdata-&gt;gpio_a);</span><br><span class="line">	<span class="keyword">int</span> b = !!gpio_get_value(pdata-&gt;gpio_b);</span><br><span class="line"></span><br><span class="line">	a ^= pdata-&gt;inverted_a;</span><br><span class="line">	b ^= pdata-&gt;inverted_b;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//&#x7EC4;&#x5408;AB&#x503C;</span></span><br><span class="line">	<span class="keyword">return</span> ((a &lt;&lt; <span class="number">1</span>) | b);</span><br><span class="line">}</span><br><span class="line"><span class="comment">//&#x8FDB;&#x5165;&#x72B6;&#x6001;&#x673A;&#x5224;&#x65AD;</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> irqreturn_t <span class="title">rotary_encoder_irq</span><span class="params">(<span class="keyword">int</span> irq, <span class="keyword">void</span> *dev_id)</span></span><br><span class="line"></span>{</span><br><span class="line">	<span class="keyword">struct</span> rotary_encoder *encoder = dev_id;</span><br><span class="line">	<span class="keyword">int</span> state;</span><br><span class="line"></span><br><span class="line">	state = rotary_encoder_get_state(encoder-&gt;pdata);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">switch</span> (state) {</span><br><span class="line">	<span class="keyword">case</span> <span class="number">0x0</span>:</span><br><span class="line">		<span class="keyword">if</span> (encoder-&gt;armed) {</span><br><span class="line">			rotary_encoder_report_event(encoder);</span><br><span class="line">			encoder-&gt;armed = <span class="literal">false</span>;</span><br><span class="line">		}</span><br><span class="line">		<span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">case</span> <span class="number">0x1</span>:</span><br><span class="line">	<span class="keyword">case</span> <span class="number">0x2</span>:</span><br><span class="line">		<span class="keyword">if</span> (encoder-&gt;armed)</span><br><span class="line">			encoder-&gt;dir = state - <span class="number">1</span>;</span><br><span class="line">		<span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">case</span> <span class="number">0x3</span>:</span><br><span class="line">		encoder-&gt;armed = <span class="literal">true</span>;</span><br><span class="line">		<span class="keyword">break</span>;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> IRQ_HANDLED;</span><br><span class="line">}</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">rotary_encoder_report_event</span><span class="params">(<span class="keyword">struct</span> rotary_encoder *encoder)</span></span><br><span class="line"></span>{</span><br><span class="line">	<span class="keyword">const</span> <span class="keyword">struct</span> rotary_encoder_platform_data *pdata = encoder-&gt;pdata;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (pdata-&gt;relative_axis) {</span><br><span class="line">		<span class="comment">//&#x65B9;&#x5411;&#x8FD4;&#x56DE;</span></span><br><span class="line">		input_report_rel(encoder-&gt;input,</span><br><span class="line">				 pdata-&gt;axis, encoder-&gt;dir ? -<span class="number">1</span> : <span class="number">1</span>);</span><br><span class="line">	} <span class="keyword">else</span> {</span><br><span class="line">		<span class="keyword">unsigned</span> <span class="keyword">int</span> pos = encoder-&gt;pos;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (encoder-&gt;dir) {</span><br><span class="line">			<span class="comment">/* turning counter-clockwise */</span></span><br><span class="line">			<span class="keyword">if</span> (pdata-&gt;rollover)</span><br><span class="line">				pos += pdata-&gt;steps;</span><br><span class="line">			<span class="keyword">if</span> (pos)</span><br><span class="line">				pos--;</span><br><span class="line">		} <span class="keyword">else</span> {</span><br><span class="line">			<span class="comment">/* turning clockwise */</span></span><br><span class="line">			<span class="keyword">if</span> (pdata-&gt;rollover || pos &lt; pdata-&gt;steps)</span><br><span class="line">				pos++;</span><br><span class="line">		}</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (pdata-&gt;rollover)</span><br><span class="line">			pos %= pdata-&gt;steps;</span><br><span class="line"></span><br><span class="line">		encoder-&gt;pos = pos;</span><br><span class="line">		input_report_abs(encoder-&gt;input, pdata-&gt;axis, encoder-&gt;pos);</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	input_sync(encoder-&gt;input);</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org64eefd1" class="outline-2">
+<h2 id="org64eefd1">&#x9A71;&#x52A8;&#x7684;&#x4F7F;&#x7528;</h2>
+<div class="outline-text-2" id="text-org64eefd1">
+</div>
+<div id="outline-container-org72402a5" class="outline-3">
+<h3 id="org72402a5">&#x4F7F;&#x7528;&#x524D;&#x7684;&#x786E;&#x8BA4;</h3>
+<div class="outline-text-3" id="text-org72402a5">
+<p>
+&#x5728;&#x4F7F;&#x7528;&#x6B64;&#x9A71;&#x52A8;&#x524D;&#x9700;&#x8981;&#x786E;&#x4FDD;&#xFF1A;
+</p>
+<ol class="org-ol">
+<li>GPIO&#x9A71;&#x52A8;&#x5DF2;&#x7ECF;&#x6B63;&#x786E;&#x52A0;&#x8F7D;</li>
+<li>GPIO&#x76F8;&#x5173;&#x4E2D;&#x65AD;&#x63A7;&#x5236;&#x5668;&#x80FD;&#x6B63;&#x5E38;&#x5DE5;&#x4F5C;&#x4E14;&#x80FD;&#x63A5;&#x6536;&#x53CC;&#x8FB9;&#x6CBF;&#x89E6;&#x53D1;</li>
+</ol>
+</div>
+</div>
+
+<div id="outline-container-orgbc4f746" class="outline-3">
+<h3 id="orgbc4f746">&#x914D;&#x7F6E;&#x8BBE;&#x5907;&#x6811;</h3>
+<div class="outline-text-3" id="text-orgbc4f746">
+<p>
+&#x53C2;&#x8003;&#x6587;&#x6863; <code>Documentation/devicetree/bindings/input/rotary-encoder.txt</code> &#x53EF;&#x4EE5;&#x77E5;&#x9053;&#x5176;&#x5178;&#x578B;&#x8BBE;&#x5907;&#x6811;&#x4E3A;&#xFF1A;
+</p>
+<pre class="example">
+rotary@0 {
+             compatible = &quot;rotary-encoder&quot;;
+             gpios = &lt;&amp;gpio 19 0&gt;, &lt;&amp;gpio 20 0&gt;;
+             rotary-encoder,relative-axis;
+          };</pre>
+</div>
+</div>
+<div id="outline-container-org03d365c" class="outline-3">
+<h3 id="org03d365c">&#x52A0;&#x5165;&#x7F16;&#x8BD1;&#x9009;&#x9879;</h3>
+<div class="outline-text-3" id="text-org03d365c">
+<p>
+&#x4F4D;&#x4E8E; <code>Device Dervers-&gt;Input device support-&gt;Generic input layer -&gt; Miscellaneous devices ::Rotary encoders connected to GPIO pins</code>
+</p>
+</div>
+</div>
+<div id="outline-container-orgc82d9b9" class="outline-3">
+<h3 id="orgc82d9b9">&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x4F7F;&#x7528;</h3>
+<div class="outline-text-3" id="text-orgc82d9b9">
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;sys/file.h&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;linux/input.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[])</span></span><br><span class="line"></span>{</span><br><span class="line">	<span class="keyword">struct</span> input_event ev;</span><br><span class="line">	<span class="keyword">int</span> fd, rd;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> ((fd = open (<span class="string">&quot;/dev/input/event0&quot;</span>, O_RDONLY|O_NONBLOCK)) == -<span class="number">1</span>)</span><br><span class="line">	{</span><br><span class="line">		perror(<span class="string">&quot;Can not open device!&quot;</span>);</span><br><span class="line">		<span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	<span class="keyword">while</span> (<span class="number">1</span>)</span><br><span class="line">	{</span><br><span class="line"></span><br><span class="line">		<span class="built_in">memset</span>((<span class="keyword">void</span>*)&amp;ev, <span class="number">0</span>, <span class="keyword">sizeof</span>(ev));</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span>((rd = read (fd, (<span class="keyword">void</span>*)&amp;ev, <span class="keyword">sizeof</span>(ev))) &gt; <span class="number">0</span>)</span><br><span class="line">		{</span><br><span class="line">		    <span class="built_in">printf</span>(<span class="string">&quot;value: %d\n&quot;</span>, ev.value);</span><br><span class="line">		}</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+</div>
+<p>
+&#x901A;&#x8FC7;&#x4E0A;&#x9762;&#x7A0B;&#x5E8F;&#x9A8C;&#x8BC1;&#x53EF;&#x4EE5;&#x53D1;&#x73B0;event&#x53EA;&#x8FD4;&#x56DE; 1,0,-1 &#x8FD9;&#x4E2A;&#x65B9;&#x5411;&#xFF0C;&#x800C;&#x65E0;&#x6CD5;&#x5224;&#x65AD;&#x51FA;&#x901F;&#x5EA6;&#x3002;
+&#x800C;&#x5173;&#x4E8E;&#x901F;&#x5EA6;&#x7684;&#x5224;&#x65AD;&#xFF0C;&#x53EF;&#x4EE5;&#x901A;&#x8FC7;&#x72B6;&#x6001;&#x673A;&#x7684;&#x65B9;&#x5F0F;&#x5728;&#x5E94;&#x7528;&#x4EE3;&#x7801;&#x4E2D;&#x5B9E;&#x73B0;(&#x5728;&#x4E00;&#x5B9A;&#x65F6;&#x95F4;&#x5185;&#x5224;&#x65AD;&#x5355;&#x4E00;&#x65B9;&#x5411;&#x4E0A;&#x6570;&#x636E;&#x589E;&#x52A0;&#x7684;&#x4E2A;&#x6570;&#x6765;&#x533A;&#x5206;&#x901F;&#x5EA6;)&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x5728;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x901A;&#x8FC7; poll &#x6765;&#x67E5;&#x8BE2;&#x7F16;&#x7801;&#x5668;&#x8F93;&#x5165;&#xFF0C;&#x5E76;&#x8BA1;&#x6570;</li>
+<li>&#x5728;&#x6BCF;&#x6B21; poll <b>&#x7B2C;&#x4E00;&#x6B21;&#x89E6;&#x53D1;</b> &#x5F00;&#x59CB;&#x540E;&#x901A;&#x8FC7;&#x4FE1;&#x53F7;&#x91CF;&#x5524;&#x9192;&#x53E6;&#x4E00;&#x4E2A;&#x7EBF;&#x7A0B;&#x5728;&#x4E00;&#x6BB5;&#x65F6;&#x95F4;&#x5185;&#x7684;&#x8BA1;&#x6570;&#x503C;</li>
+</ul>
+
+<p>
+<b>&#x9700;&#x8981;&#x6CE8;&#x610F;&#x7684;&#x662F;&#xFF1A;</b> &#x7F16;&#x7801;&#x5668;&#x8F93;&#x51FA;&#x4E00;&#x822C;&#x4F1A;&#x5E76;&#x4E00;&#x4E2A;&#x7535;&#x5BB9;&#xFF0C;&#x4E00;&#x822C;&#x5728; 1nF&#xFF5E;10nF&#xFF0C;&#x5177;&#x4F53;&#x7684;&#x53D6;&#x503C;&#x4EE5;&#x793A;&#x6CE2;&#x5668;&#x89C2;&#x5BDF;&#x6CE2;&#x5F62;&#x662F;&#x5426;&#x5931;&#x771F;&#x4E3A;&#x51C6;&#x3002;
+</p>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+Last Updated 2020-06-28 Sun 12:00.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+</div>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/driver/" rel="tag"># driver</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/04/26/linux_fs_overview_struct/" rel="prev" title="[What]Linux文件系统结构概览">
+      <i class="fa fa-chevron-left"></i> [What]Linux文件系统结构概览
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/04/28/processor_zynq_hd_ttc/" rel="next" title="zynq hardware -> ttc">
+      zynq hardware -> ttc <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org337477d"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x6CE2;&amp;#x5F62;&amp;#x4E0E;&amp;#x5224;&amp;#x65AD;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org3664ae8"><span class="nav-number">1.1.</span> <span class="nav-text">&amp;#x7B80;&amp;#x6613;&amp;#x5224;&amp;#x65AD;&amp;#x65B9;&amp;#x6CD5;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org9a8c128"><span class="nav-number">1.2.</span> <span class="nav-text">&amp;#x9A71;&amp;#x52A8;&amp;#x4E2D;&amp;#x7684;&amp;#x5224;&amp;#x65AD;&amp;#x903B;&amp;#x8F91;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org64eefd1"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x9A71;&amp;#x52A8;&amp;#x7684;&amp;#x4F7F;&amp;#x7528;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org72402a5"><span class="nav-number">2.1.</span> <span class="nav-text">&amp;#x4F7F;&amp;#x7528;&amp;#x524D;&amp;#x7684;&amp;#x786E;&amp;#x8BA4;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgbc4f746"><span class="nav-number">2.2.</span> <span class="nav-text">&amp;#x914D;&amp;#x7F6E;&amp;#x8BBE;&amp;#x5907;&amp;#x6811;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org03d365c"><span class="nav-number">2.3.</span> <span class="nav-text">&amp;#x52A0;&amp;#x5165;&amp;#x7F16;&amp;#x8BD1;&amp;#x9009;&amp;#x9879;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgc82d9b9"><span class="nav-number">2.4.</span> <span class="nav-text">&amp;#x7528;&amp;#x6237;&amp;#x7A7A;&amp;#x95F4;&amp;#x4F7F;&amp;#x7528;</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">我的世界</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">210</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">104</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">38</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+  
+  <span class="post-meta-divider">|</span>
+  <span>Hosted by <a href="https://pages.coding.me" target="_blank" rel="noopener" style="font-weight: bold">Coding Pages</a></span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+<script>
+  (function() {
+    function leancloudSelector(url) {
+      url = encodeURI(url);
+      return document.getElementById(url).querySelector('.leancloud-visitors-count');
+    }
+
+    function addCount(Counter) {
+      var visitors = document.querySelector('.leancloud_visitors');
+      var url = decodeURI(visitors.id);
+      var title = visitors.dataset.flagTitle;
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          if (results.length > 0) {
+            var counter = results[0];
+            leancloudSelector(url).innerText = counter.time + 1;
+            Counter('put', '/classes/Counter/' + counter.objectId, { time: { '__op': 'Increment', 'amount': 1 } })
+              .catch(error => {
+                console.error('Failed to save visitor count', error);
+              });
+          } else {
+              leancloudSelector(url).innerText = 'Counter not initialized! More info at console err msg.';
+              console.error('ATTENTION! LeanCloud counter has security bug, see how to solve it here: https://github.com/theme-next/hexo-leancloud-counter-security. \n However, you can still use LeanCloud without security, by setting `security` option to `false`.');
+            
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    function showTime(Counter) {
+      var visitors = document.querySelectorAll('.leancloud_visitors');
+      var entries = [...visitors].map(element => {
+        return decodeURI(element.id);
+      });
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url: { '$in': entries } })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          for (let url of entries) {
+            let target = results.find(item => item.url === url);
+            leancloudSelector(url).innerText = target ? target.time : 0;
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    let { app_id, app_key, server_url } = {"enable":true,"app_id":"ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI","app_key":"yh4vrfnscme1utPMpk65wcxn","server_url":null,"security":true};
+    function fetchData(api_server) {
+      var Counter = (method, url, data) => {
+        return fetch(`${api_server}/1.1${url}`, {
+          method,
+          headers: {
+            'X-LC-Id'     : app_id,
+            'X-LC-Key'    : app_key,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+      };
+      if (CONFIG.page.isPost) {
+        if (CONFIG.hostname !== location.hostname) return;
+        addCount(Counter);
+      } else if (document.querySelectorAll('.post-title-link').length >= 1) {
+        showTime(Counter);
+      }
+    }
+
+    let api_server = app_id.slice(-9) !== '-MdYXbMMI' ? server_url : `https://${app_id.slice(0, 8).toLowerCase()}.api.lncldglobal.com`;
+
+    if (api_server) {
+      fetchData(api_server);
+    } else {
+      fetch('https://app-router.leancloud.cn/2/route?appId=' + app_id)
+        .then(response => response.json())
+        .then(({ api_server }) => {
+          fetchData('https://' + api_server);
+        });
+    }
+  })();
+</script>
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+  <script defer src="/lib/three/three.min.js"></script>
+    <script defer src="/lib/three/three-waves.min.js"></script>
+    <script defer src="/lib/three/canvas_lines.min.js"></script>
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI',
+      appKey     : 'yh4vrfnscme1utPMpk65wcxn',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

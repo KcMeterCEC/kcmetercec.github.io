@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="zLSyD2CN1AkyJqei3qKraT6372nBgMFKWe6kAj5JDeY">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="&amp;#x8BB0;&amp;#x5F55;&amp;#x5728;&amp;#x8C03;&amp;#x8BD5;axi dma &amp;#x8FC7;&amp;#x7A0B;&amp;#x4E2D;&amp;#x6240;&amp;#x9700;&amp;#x8981;&amp;#x7684;&amp;#x95EE;&amp;#x9898;&amp;#x3002;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="zynq debug -&gt; axi dma">
+<meta property="og:url" content="http://kcmetercec.top/2018/05/07/processor_zynq_dbg_axidma/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="&amp;#x8BB0;&amp;#x5F55;&amp;#x5728;&amp;#x8C03;&amp;#x8BD5;axi dma &amp;#x8FC7;&amp;#x7A0B;&amp;#x4E2D;&amp;#x6240;&amp;#x9700;&amp;#x8981;&amp;#x7684;&amp;#x95EE;&amp;#x9898;&amp;#x3002;">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-05-06T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-06-28T03:58:46.141Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="zynq">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://kcmetercec.top/2018/05/07/processor_zynq_dbg_axidma/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>zynq debug -> axi dma | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=112423075-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '112423075-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2ab4cc06d0da36106a4426465d0cb00d";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2018/05/07/processor_zynq_dbg_axidma/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="我的世界">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          zynq debug -> axi dma
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-05-07 00:00:00" itemprop="dateCreated datePublished" datetime="2018-05-07T00:00:00+08:00">2018-05-07</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-06-28 11:58:46" itemprop="dateModified" datetime="2020-06-28T11:58:46+08:00">2020-06-28</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/processor/" itemprop="url" rel="index"><span itemprop="name">processor</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/processor/zynq/" itemprop="url" rel="index"><span itemprop="name">zynq</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/processor/zynq/debug/" itemprop="url" rel="index"><span itemprop="name">debug</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2018/05/07/processor_zynq_dbg_axidma/" class="post-meta-item leancloud_visitors" data-flag-title="zynq debug -> axi dma" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2018/05/07/processor_zynq_dbg_axidma/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2018/05/07/processor_zynq_dbg_axidma/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <div id="content">
+<p>
+&#x8BB0;&#x5F55;&#x5728;&#x8C03;&#x8BD5;axi dma &#x8FC7;&#x7A0B;&#x4E2D;&#x6240;&#x9700;&#x8981;&#x7684;&#x95EE;&#x9898;&#x3002;
+</p>
+
+<a id="more"></a>
+
+<div id="outline-container-orgf611b93" class="outline-2">
+<h2 id="orgf611b93">Channel xxx has errors 10019 cdr xxx cdr msb &#x2026;.</h2>
+<div class="outline-text-2" id="text-orgf611b93">
+</div>
+<div id="outline-container-orgbc53f3b" class="outline-3">
+<h3 id="orgbc53f3b">&#x63CF;&#x8FF0;</h3>
+<div class="outline-text-3" id="text-orgbc53f3b">
+<p>
+&#x5F53;&#x4F7F;&#x7528;axi_dma&#x7684;S2MM&#x901A;&#x9053;&#x63A5;&#x6536;&#x6570;&#x636E;&#x5230;&#x5185;&#x5B58;&#x65F6;&#xFF0C;&#x9A71;&#x52A8;&#x6253;&#x5370;&#x51FA;&#x6B64;&#x9519;&#x8BEF;&#x3002;
+</p>
+</div>
+</div>
+<div id="outline-container-org4fb2249" class="outline-3">
+<h3 id="org4fb2249">&#x5206;&#x6790;</h3>
+<div class="outline-text-3" id="text-org4fb2249">
+<p>
+&#x9996;&#x5148;&#x7406;&#x4E86;&#x4E00;&#x4E0B; dma engine &#x7684;&#x914D;&#x7F6E;&#x4EE3;&#x7801;&#xFF0C;&#x5E76;&#x6CA1;&#x6709;&#x53D1;&#x73B0;&#x4EC0;&#x4E48;&#x95EE;&#x9898;&#x3002;
+</p>
+
+<p>
+&#x7136;&#x540E;&#x67E5;&#x770B;&#x72B6;&#x6001;&#x5BC4;&#x5B58;&#x5668;&#x7684;&#x503C;&#x4E3A; <code>0x10019</code> &#xFF0C;&#x5176;&#x4E2D;&#x6709;&#x4E00;&#x4E2A;&#x6807;&#x5FD7;&#x4F4D; <code>DMAIntErr</code> &#x88AB;&#x7F6E;&#x4F4D;&#x4E86;&#xFF0C;&#x67E5;&#x770B;&#x5176;&#x624B;&#x518C;&#x63CF;&#x8FF0;&#x5982;&#x4E0B;&#xFF1A;
+</p>
+<pre class="example">
+This error occurs if the buffer length specified in the fetched descriptor is set to 0.
+
+Also, when in Scatter Gather Mode and using the status app length field, this error occurs
+when the Status AXI4-Stream packet RxLength field does not match the S2MM packet being received
+by the S_AXIS_S2MM interface.
+
+When Scatter Gather is disabled, this error is flagged if any error occurs during Memory write or
+if the incoming packet is bigger than what is specified in the DMA length register.</pre>
+<p>
+&#x6839;&#x636E;&#x4EE5;&#x4E0A;&#x63CF;&#x8FF0;&#x5206;&#x6790;&#xFF1A;&#x9996;&#x5148;&#x6211;&#x4F7F;&#x7528;&#x7684;&#x662F;SG&#x6A21;&#x5F0F;&#xFF0C;&#x5E76;&#x4E14;&#x4E5F;&#x786E;&#x5B9A;&#x4F20;&#x8F93;&#x7684;&#x6570;&#x636E;&#x6570;&#x91CF;&#x503C;&#x4E0D;&#x4E3A;0&#xFF0C;&#x90A3;&#x4E48;&#x5C31;&#x53EA;&#x6709;&#x53EF;&#x80FD;&#x662F;&#x6570;&#x636E;&#x503C;&#x4E0D;&#x5339;&#x914D;&#x9020;&#x6210;&#x7684;&#x3002;
+</p>
+
+<ul class="org-ul">
+<li>&#x6240;&#x8C13;&#x7684;&#x6570;&#x636E;&#x4E0D;&#x5339;&#x914D;&#x6307;&#x7684;&#x662F;&#x7528;&#x6237;&#x8BBE;&#x7F6E;&#x7684;&#x63A5;&#x6536;&#x6570;&#x636E;&#x957F;&#x5EA6;&#x548C;&#x63A5;&#x53E3;&#x5B9E;&#x9645;&#x63A5;&#x6536;&#x7684;&#x6570;&#x636E;&#x957F;&#x5EA6;&#x4E0D;&#x4E00;&#x81F4;&#x3002;
+<ul class="org-ul">
+<li>&#x800C;&#x63A5;&#x53E3;&#x63A5;&#x6536;&#x7684;&#x6570;&#x636E;&#x957F;&#x5EA6;&#x662F;&#x4EE5; <code>tlast</code> &#x4FE1;&#x53F7;&#x4E3A;&#x5206;&#x9694;&#x7684;&#x3002;</li>
+</ul></li>
+</ul>
+
+<p>
+&#x901A;&#x8FC7;&#x8C03;&#x8BD5;&#x6838;&#x6765;&#x6293;&#x53D6;tlast&#x53D1;&#x73B0;&#x679C;&#x7136;&#x662F;&#x4E0A;&#x5C42;&#x8BBE;&#x7F6E;&#x7684; <code>peroid</code> &#x503C;&#x6BD4; <code>tlast</code> &#x6570;&#x636E;&#x5468;&#x671F;&#x5927;&#x9020;&#x6210;&#x7684;&#xFF01;
+</p>
+</div>
+</div>
+<div id="outline-container-org0e8ef54" class="outline-3">
+<h3 id="org0e8ef54">&#x89E3;&#x51B3;</h3>
+<div class="outline-text-3" id="text-org0e8ef54">
+<p>
+<b><code>axi_dma</code> &#x7684; <code>period</code> &#x5FC5;&#x987B;&#x5C0F;&#x4E8E;&#x6216;&#x7B49;&#x4E8E; <code>tlast</code> &#x4FE1;&#x53F7;&#x5468;&#x671F;</b> &#xFF0C;&#x5982;&#x679C;&#x6B64;&#x503C;&#x662F;&#x4F1A;&#x53D8;&#x52A8;&#x7684;&#xFF0C;&#x90A3;&#x4E48;&#x4E0A;&#x5C42;&#x9700;&#x8981;&#x6CE8;&#x610F;&#x52A8;&#x6001;&#x5339;&#x914D;&#xFF01;
+</p>
+</div>
+</div>
+<div id="outline-container-org351bebf" class="outline-3">
+<h3 id="org351bebf">&#x53CD;&#x601D;</h3>
+<div class="outline-text-3" id="text-org351bebf">
+<p>
+&#x5176;&#x5B9E;&#x8FD9;&#x662F;&#x4E00;&#x4E2A;&#x5F88;&#x4F4E;&#x7EA7;&#x7684;&#x9519;&#x8BEF;&#xFF0C;&#x5176;&#x6839;&#x672C;&#x539F;&#x56E0;&#x5728;&#x4E8E;&#x81EA;&#x5DF1;&#x6CA1;&#x6709;&#x6DF1;&#x5165;&#x7406;&#x89E3;axi_dma&#x7684;&#x6570;&#x636E;&#x901A;&#x4FE1;&#x534F;&#x8BAE;&#x3002;&#x5018;&#x82E5;&#x4E00;&#x5F00;&#x59CB;&#x5C31;&#x5F88;&#x6E05;&#x695A;&#x5176; <code>period</code> 
+&#x4E0E; <code>tlast</code> &#x4E4B;&#x95F4;&#x7684;&#x5173;&#x7CFB;&#xFF0C;&#x90A3;&#x4E48;&#x5728;&#x6700;&#x5F00;&#x59CB;&#x5199;&#x9A71;&#x52A8;&#x7684;&#x65F6;&#x5019;&#x5C31;&#x4F1A;&#x6CE8;&#x610F;&#x8FD9;&#x4E2A;&#x95EE;&#x9898;&#x7684;&#x3002;
+</p>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+Last Updated 2020-06-28 Sun 12:00.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+</div>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/zynq/" rel="tag"># zynq</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/05/02/processor_zynq_petalinux_mkfs/" rel="prev" title="zynq petalinux -> 使能ext格式化">
+      <i class="fa fa-chevron-left"></i> zynq petalinux -> 使能ext格式化
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/05/08/matlab_curve_test/" rel="next" title="[What]Matlab 测试曲线">
+      [What]Matlab 测试曲线 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#orgf611b93"><span class="nav-number">1.</span> <span class="nav-text">Channel xxx has errors 10019 cdr xxx cdr msb &amp;#x2026;.</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgbc53f3b"><span class="nav-number">1.1.</span> <span class="nav-text">&amp;#x63CF;&amp;#x8FF0;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org4fb2249"><span class="nav-number">1.2.</span> <span class="nav-text">&amp;#x5206;&amp;#x6790;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org0e8ef54"><span class="nav-number">1.3.</span> <span class="nav-text">&amp;#x89E3;&amp;#x51B3;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org351bebf"><span class="nav-number">1.4.</span> <span class="nav-text">&amp;#x53CD;&amp;#x601D;</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">我的世界</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">210</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">104</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">38</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+  
+  <span class="post-meta-divider">|</span>
+  <span>Hosted by <a href="https://pages.coding.me" target="_blank" rel="noopener" style="font-weight: bold">Coding Pages</a></span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+<script>
+  (function() {
+    function leancloudSelector(url) {
+      url = encodeURI(url);
+      return document.getElementById(url).querySelector('.leancloud-visitors-count');
+    }
+
+    function addCount(Counter) {
+      var visitors = document.querySelector('.leancloud_visitors');
+      var url = decodeURI(visitors.id);
+      var title = visitors.dataset.flagTitle;
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          if (results.length > 0) {
+            var counter = results[0];
+            leancloudSelector(url).innerText = counter.time + 1;
+            Counter('put', '/classes/Counter/' + counter.objectId, { time: { '__op': 'Increment', 'amount': 1 } })
+              .catch(error => {
+                console.error('Failed to save visitor count', error);
+              });
+          } else {
+              leancloudSelector(url).innerText = 'Counter not initialized! More info at console err msg.';
+              console.error('ATTENTION! LeanCloud counter has security bug, see how to solve it here: https://github.com/theme-next/hexo-leancloud-counter-security. \n However, you can still use LeanCloud without security, by setting `security` option to `false`.');
+            
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    function showTime(Counter) {
+      var visitors = document.querySelectorAll('.leancloud_visitors');
+      var entries = [...visitors].map(element => {
+        return decodeURI(element.id);
+      });
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url: { '$in': entries } })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          for (let url of entries) {
+            let target = results.find(item => item.url === url);
+            leancloudSelector(url).innerText = target ? target.time : 0;
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    let { app_id, app_key, server_url } = {"enable":true,"app_id":"ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI","app_key":"yh4vrfnscme1utPMpk65wcxn","server_url":null,"security":true};
+    function fetchData(api_server) {
+      var Counter = (method, url, data) => {
+        return fetch(`${api_server}/1.1${url}`, {
+          method,
+          headers: {
+            'X-LC-Id'     : app_id,
+            'X-LC-Key'    : app_key,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+      };
+      if (CONFIG.page.isPost) {
+        if (CONFIG.hostname !== location.hostname) return;
+        addCount(Counter);
+      } else if (document.querySelectorAll('.post-title-link').length >= 1) {
+        showTime(Counter);
+      }
+    }
+
+    let api_server = app_id.slice(-9) !== '-MdYXbMMI' ? server_url : `https://${app_id.slice(0, 8).toLowerCase()}.api.lncldglobal.com`;
+
+    if (api_server) {
+      fetchData(api_server);
+    } else {
+      fetch('https://app-router.leancloud.cn/2/route?appId=' + app_id)
+        .then(response => response.json())
+        .then(({ api_server }) => {
+          fetchData('https://' + api_server);
+        });
+    }
+  })();
+</script>
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+  <script defer src="/lib/three/three.min.js"></script>
+    <script defer src="/lib/three/three-waves.min.js"></script>
+    <script defer src="/lib/three/canvas_lines.min.js"></script>
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI',
+      appKey     : 'yh4vrfnscme1utPMpk65wcxn',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

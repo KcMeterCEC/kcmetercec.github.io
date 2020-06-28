@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="zLSyD2CN1AkyJqei3qKraT6372nBgMFKWe6kAj5JDeY">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="&amp;#x5728;PC&amp;#x4E0A;&amp;#x5982;&amp;#x679C;&amp;#x4E00;&amp;#x4E2A;&amp;#x4EE3;&amp;#x7801;&amp;#x9700;&amp;#x8981;&amp;#x7ECF;&amp;#x5E38;&amp;#x8C03;&amp;#x8BD5;&amp;#x7684;&amp;#x8BDD;&amp;#xFF0C;&amp;#x90A3;&amp;#x4E48;&amp;#x5EFA;&amp;#x8BAE;&amp;#x4E3A;GDB&amp;#x5355;&amp;#x72EC;&amp;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="[What]GDB 基本使用总结">
+<meta property="og:url" content="http://kcmetercec.top/2018/01/18/linux_debug_gdb_overview/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="&amp;#x5728;PC&amp;#x4E0A;&amp;#x5982;&amp;#x679C;&amp;#x4E00;&amp;#x4E2A;&amp;#x4EE3;&amp;#x7801;&amp;#x9700;&amp;#x8981;&amp;#x7ECF;&amp;#x5E38;&amp;#x8C03;&amp;#x8BD5;&amp;#x7684;&amp;#x8BDD;&amp;#xFF0C;&amp;#x90A3;&amp;#x4E48;&amp;#x5EFA;&amp;#x8BAE;&amp;#x4E3A;GDB&amp;#x5355;&amp;#x72EC;&amp;">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-01-17T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-06-28T03:58:45.651Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="debug">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://kcmetercec.top/2018/01/18/linux_debug_gdb_overview/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>[What]GDB 基本使用总结 | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=112423075-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '112423075-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2ab4cc06d0da36106a4426465d0cb00d";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2018/01/18/linux_debug_gdb_overview/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="我的世界">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          [What]GDB 基本使用总结
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-01-18 00:00:00" itemprop="dateCreated datePublished" datetime="2018-01-18T00:00:00+08:00">2018-01-18</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-06-28 11:58:45" itemprop="dateModified" datetime="2020-06-28T11:58:45+08:00">2020-06-28</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/debug/" itemprop="url" rel="index"><span itemprop="name">debug</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/debug/gdb/" itemprop="url" rel="index"><span itemprop="name">gdb</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2018/01/18/linux_debug_gdb_overview/" class="post-meta-item leancloud_visitors" data-flag-title="[What]GDB 基本使用总结" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2018/01/18/linux_debug_gdb_overview/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2018/01/18/linux_debug_gdb_overview/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <div id="content">
+<p>
+&#x5728;PC&#x4E0A;&#x5982;&#x679C;&#x4E00;&#x4E2A;&#x4EE3;&#x7801;&#x9700;&#x8981;&#x7ECF;&#x5E38;&#x8C03;&#x8BD5;&#x7684;&#x8BDD;&#xFF0C;&#x90A3;&#x4E48;&#x5EFA;&#x8BAE;&#x4E3A;GDB&#x5355;&#x72EC;&#x5F00;&#x4E00;&#x4E2A;&#x7A97;&#x53E3;&#x7136;&#x540E;&#x4E0D;&#x9000;&#x51FA;&#xFF0C;&#x8FD9;&#x6837;gdb&#x5C31;&#x53EF;&#x4EE5;&#x4FDD;&#x6301;&#x65AD;&#x70B9;&#x7B49;&#x4E00;&#x4E9B;&#x8BBE;&#x7F6E;&#xFF0C;
+&#x800C;&#x4F7F;&#x7528; <code>r</code> &#x8FD0;&#x884C;&#x65F6;&#xFF0C;&#x53C8;&#x4F1A;&#x8C03;&#x7528;&#x6700;&#x65B0;&#x7F16;&#x8BD1;&#x7684;&#x53EF;&#x6267;&#x884C;&#x6587;&#x4EF6;&#xFF0C;&#x8FD9;&#x6837;&#x5C31;&#x4E0D;&#x7528;&#x6BCF;&#x6B21;&#x91CD;&#x65B0;&#x542F;&#x52A8;&#x53C8;&#x8BBE;&#x7F6E;&#x5F88;&#x591A;&#x914D;&#x7F6E;&#x4E86;&#x3002;
+</p>
+<div id="outline-container-org0de62e4" class="outline-2">
+<h2 id="org0de62e4">&#x57FA;&#x7840;&#x5FC5;&#x5907;&#x77E5;&#x8BC6;</h2>
+<div class="outline-text-2" id="text-org0de62e4">
+</div>
+<div id="outline-container-org9890849" class="outline-3">
+<h3 id="org9890849">gdb&#x5B8C;&#x6574;&#x8C03;&#x8BD5;&#x7684;&#x5FC5;&#x5907;&#x6761;&#x4EF6;</h3>
+<div class="outline-text-3" id="text-org9890849">
+<p>
+&#x8981;&#x8BA9;gdb&#x80FD;&#x591F;&#x5B8C;&#x6574;&#x7684;&#x8C03;&#x8BD5;&#x4E00;&#x4E2A;&#x7A0B;&#x5E8F;&#xFF0C;&#x5FC5;&#x987B;&#x5177;&#x5907;:
+</p>
+<ul class="org-ul">
+<li>dwarf(debugging with attributed record formats) : &#x7F16;&#x8BD1;&#x6BCF;&#x4E2A;&#x6E90;&#x7801;&#x5FC5;&#x987B;&#x52A0;&#x4E0A; <code>-g</code> &#x9009;&#x9879;&#x4EE5;&#x5305;&#x542B; <code>dwarf</code> &#x4FE1;&#x606F;</li>
+<li>symbol table : &#x9ED8;&#x8BA4;&#x7684;&#x4E0D;&#x52A0;&#x4EFB;&#x4F55;&#x53C2;&#x6570;&#x7F16;&#x8BD1;&#x51FA;&#x7684;&#x53EF;&#x6267;&#x884C;&#x6587;&#x4EF6;&#x90FD;&#x5E26;&#x6709;symbol table</li>
+<li>source code : &#x6E90;&#x4EE3;&#x7801;</li>
+</ul>
+
+<p>
+<a href="http://dwarfstd.org" target="_blank" rel="noopener">dwarf</a> &#x683C;&#x5F0F;&#x4E2D;&#x5305;&#x542B;&#x4E86;&#x5BF9;&#x7A0B;&#x5E8F;&#x4E2D;&#x51FD;&#x6570;&#x540D;&#x3001;&#x53D8;&#x91CF;&#x540D;&#x7B49;&#x7B26;&#x53F7;&#x7684;&#x8BE6;&#x7EC6;&#x63CF;&#x8FF0;(&#x6BD4;&#x5982;&#x5728;&#x6E90;&#x7801;&#x4E2D;&#x7684;&#x4F4D;&#x7F6E;&#xFF0C;&#x5927;&#x5C0F;&#xFF0C;&#x540D;&#x79F0;&#x7B49;&#x7B49;)&#x3002;&#x53EF;&#x4EE5;&#x4F7F;&#x7528; <code>dwarfdump &lt;execfile&gt;</code> &#x6765;&#x67E5;&#x770B;&#x5176;&#x683C;&#x5F0F;&#x3002;
+</p>
+
+<p>
+&#x4F46; dwarf &#x4E2D;&#x5E76;&#x4E0D;&#x5305;&#x542B;&#x5B9E;&#x9645;&#x7684;&#x4EE3;&#x7801;&#xFF0C;&#x6240;&#x4EE5;&#x4E3A;&#x4E86;&#x8BA9;gdb&#x53EF;&#x4EE5;&#x8DDF;&#x8E2A;&#x4EE3;&#x7801;&#xFF0C;&#x8FD8;&#x9700;&#x8981;&#x6574;&#x4E2A;&#x6E90;&#x7801;&#x3002;
+&#x9ED8;&#x8BA4;&#x60C5;&#x51B5;&#x4E0B;&#x6E90;&#x7801;&#x8DEF;&#x5F84;&#x5373;&#x4E3A;&#x7F16;&#x8BD1;&#x8DEF;&#x5F84;&#xFF0C;&#x5982;&#x679C;&#x79FB;&#x52A8;&#x4E86;&#x53EF;&#x6267;&#x884C;&#x6587;&#x4EF6;&#x4F4D;&#x7F6E;&#x5230;&#x522B;&#x5904;&#xFF0C;&#x9700;&#x8981;<a href="https://kcmetercec.github.io/2018/06/14/linux_debug_gdb_sourcedir/" target="_blank" rel="noopener">&#x8BBE;&#x7F6E;&#x6E90;&#x6587;&#x4EF6;&#x8DEF;&#x5F84;</a>&#x3002;
+</p>
+
+<p>
+&#x4E3A;&#x4E86;&#x660E;&#x786E;&#x4E00;&#x4E2A;&#x53EF;&#x6267;&#x884C;&#x6587;&#x4EF6;&#x4E2D;&#x662F;&#x5426;&#x542B;&#x6709;dwarf&#x548C;symbol table&#xFF0C;&#x53EF;&#x4EE5;&#x4F7F;&#x7528; <code>readelf -S &lt;execfile&gt;</code> &#x7684;&#x65B9;&#x5F0F;&#x67E5;&#x770B;&#x662F;&#x5426;&#x6709;&#x5BF9;&#x5E94;&#x7684;&#x6BB5;&#x3002;
+</p>
+
+<pre class="example">
+&#x5176;&#x5B9E;&#x5728;&#x5D4C;&#x5165;&#x5F0F;&#x8C03;&#x8BD5;&#x4E2D;&#xFF0C;&#x5373;&#x4F7F;gdb&#x6CA1;&#x6709;&#x6E90;&#x7801;&#xFF0C;&#x53EA;&#x8981;&#x6709;dwarf&#x4E5F;&#x53EF;&#x4EE5;&#x6293;&#x53D6;&#x5230;&#x5F88;&#x591A;&#x6709;&#x7528;&#x7684;&#x4FE1;&#x606F;&#x3002;
+
+&#x9700;&#x4E0D;&#x9700;&#x8981;&#x6E90;&#x7801;&#x9700;&#x8981;&#x6839;&#x636E;&#x5B9E;&#x9645;&#x60C5;&#x51B5;&#x800C;&#x5B9A;&#x3002;</pre>
+
+<p>
+&#x5728;&#x4EA7;&#x54C1;&#x51FA;&#x5382;&#x65F6;&#xFF0C;&#x5C31;&#x4E0D;&#x9700;&#x8981; <code>dwarf</code> &#x548C; <code>symbol table</code> &#x4FE1;&#x606F;&#x4E86;&#xFF0C;&#x8FD9;&#x65F6;&#x4F7F;&#x7528; <code>strip &lt;execfile&gt;</code> &#x6765;&#x7626;&#x8EAB;&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x5728;&#x5D4C;&#x5165;&#x5F0F;&#x4E2D;&#x4F7F;&#x7528;&#x5BF9;&#x5E94;&#x7684;&#x5DE5;&#x5177;&#xFF0C;&#x6BD4;&#x5982;&#x5728;arm-linux&#x4E2D;&#x4F7F;&#x7528; <code>arm-linux-gnueabihf-strip &lt;execfile&gt;</code></li>
+</ul>
+</div>
+</div>
+</div>
+<div id="outline-container-org1e873e8" class="outline-2">
+<h2 id="org1e873e8">&#x6B63;&#x5F0F;&#x8C03;&#x8BD5;&#x524D;&#x7684;&#x51C6;&#x5907;&#x5DE5;&#x4F5C;</h2>
+<div class="outline-text-2" id="text-org1e873e8">
+</div>
+<div id="outline-container-orgd995e8f" class="outline-3">
+<h3 id="orgd995e8f">&#x751F;&#x6210;&#x5E26;&#x8C03;&#x8BD5;&#x4FE1;&#x606F;&#x7684;&#x53EF;&#x6267;&#x884C;&#x6587;&#x4EF6;</h3>
+<div class="outline-text-3" id="text-orgd995e8f">
+<p>
+&#x5728;&#x4F7F;&#x7528; GDB&#x524D;,&#x9700;&#x8981;&#x8BA9;&#x7F16;&#x8BD1;&#x5668; <b>&#x5C06;&#x4EE3;&#x7801;&#x7684;&#x8C03;&#x8BD5;&#x4FE1;&#x606F;&#x5305;&#x542B;&#x5728;&#x53EF;&#x6267;&#x884C;&#x6587;&#x4EF6;&#x4E2D;</b> &#xFF0C;&#x4EE5;C&#x4E3A;&#x4F8B;,gcc&#x7F16;&#x8BD1;&#x5668;&#x9700;&#x8981;&#x52A0;&#x4E0A; <code>-g</code> &#x9009;&#x9879;:
+</p>
+<pre class="example">
+gcc -g hello.c -o hello</pre>
+
+<p>
+&#x5F88;&#x591A;&#x65F6;&#x5019;&#x4E5F;&#x4F1A;&#x4F7F;&#x7528;CMake&#x6765;&#x751F;&#x6210;&#xFF0C;&#x4E00;&#x822C;&#x5728; CMakeLists.txt &#x6587;&#x4EF6;&#x4E2D;&#x52A0;&#x5165;&#xFF1A;
+</p>
+<pre class="example">
+set(CMAKE_BUILD_TYPE Debug)
+#&#x6216;&#x8005;&#x4E5F;&#x53EF;&#x4EE5;&#x5728;&#x5165;&#x53E3;&#x53C2;&#x6570;&#x4E2D;&#x6307;&#x5B9A;
+cmake -DCMAKE_BUILD_TYPE=Debug ....</pre>
+
+<a id="more"></a>
+</div>
+</div>
+
+<div id="outline-container-org36a05ea" class="outline-3">
+<h3 id="org36a05ea">&#x4E3A;&#x6587;&#x4EF6;&#x8F93;&#x5165;&#x53C2;&#x6570;</h3>
+<div class="outline-text-3" id="text-org36a05ea">
+<p>
+&#x5728;&#x542F;&#x52A8;gdb&#x540E; <code>gdb ./hello</code> &#xFF0C;&#x5F88;&#x591A;&#x7A0B;&#x5E8F;&#x9700;&#x8981;&#x5E26;&#x5165;&#x53E3;&#x53C2;&#x6570;&#xFF0C;&#x90A3;&#x4E48;&#x5C31;&#x9700;&#x8981;&#x4F7F;&#x7528;&#x547D;&#x4EE4; <code>set args</code> 
+</p>
+<ul class="org-ul">
+<li>&#x5982;&#x679C;&#x8981;&#x76D1;&#x89C6;&#x540E;&#x53F0;&#x8FDB;&#x7A0B;&#xFF0C;&#x5219;&#x9700;&#x8981;&#x5148;&#x4F7F;&#x7528; <code>ps -aux</code> &#x6216; <code>pidof</code> &#x6765;&#x83B7;&#x53D6;Pid&#xFF0C;&#x7136;&#x540E;&#x4F7F;&#x7528; &quot;gdb -pid=&lt;pid&gt;&quot; &#x6765;&#x8FDE;&#x63A5;&#x540E;&#x53F0;&#x8FDB;&#x7A0B;</li>
+</ul>
+<pre class="example">
+#&#x8BBE;&#x7F6E;&#x5165;&#x53E3;&#x53C2;&#x6570;&#x4E3A; 1 2 3
+set args 1 2 3
+#&#x663E;&#x793A;&#x5165;&#x53E3;&#x53C2;&#x6570;&#x8BBE;&#x5B9A;&#x503C;
+show args </pre>
+</div>
+</div>
+<div id="outline-container-org65e4c2e" class="outline-3">
+<h3 id="org65e4c2e">&#x542F;&#x52A8;&#x89C6;&#x7A97;</h3>
+<div class="outline-text-3" id="text-org65e4c2e">
+<p>
+&#x4E2A;&#x4EBA;&#x8BA4;&#x4E3A;&#x5E26;&#x6709;&#x89C6;&#x7A97;&#x7684;&#x64CD;&#x4F5C;&#x65B9;&#x5F0F;&#x80FD;&#x66F4;&#x52A0;&#x6E05;&#x695A;&#x7684;&#x53CD;&#x5E94;&#x4EE3;&#x7801;&#x4E0A;&#x4E0B;&#x6587;&#xFF0C;&#x542F;&#x52A8;&#x6216;&#x9000;&#x51FA;&#x56FE;&#x5F62;&#x5316;&#x7A97;&#x53E3;&#x4F7F;&#x7528;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li><code>CTRL + X A</code> &#x6216; <code>layout src</code>
+<ul class="org-ul">
+<li>&#x5728;&#x8C03;&#x8BD5;&#x8FC7;&#x7A0B;&#x4E2D;&#x5982;&#x679C;&#x9700;&#x8981;&#x770B;&#x6C47;&#x7F16;&#x4EE3;&#x7801;&#xFF0C;&#x53EF;&#x4EE5;&#x4F7F;&#x7528; <code>CTRL + X 2</code> , &#x9000;&#x51FA;&#x6C47;&#x7F16;&#x7A97;&#x53E3;&#x4F7F;&#x7528; <code>CTRL + X 1</code></li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div id="outline-container-org854e0be" class="outline-3">
+<h3 id="org854e0be">&#x8F93;&#x5165;&#x548C;&#x8F93;&#x51FA;&#x91CD;&#x6620;&#x5C04;</h3>
+<div class="outline-text-3" id="text-org854e0be">
+<p>
+&#x5F88;&#x591A;&#x7A0B;&#x5E8F;&#x90FD;&#x5E26;&#x6709;&#x7528;&#x6237;&#x4EA4;&#x4E92;&#xFF0C;&#x5982;&#x679C;&#x5728;&#x8C03;&#x8BD5;&#x7EC8;&#x7AEF;&#x5219;&#x64CD;&#x4F5C;&#x4E0D;&#x4FBF;&#xFF0C;&#x53EF;&#x4EE5;&#x5C06;&#x8F93;&#x5165;&#x8F93;&#x51FA;&#x6620;&#x5C04;&#x5230;&#x53E6;&#x4E00;&#x4E2A;&#x7EC8;&#x7AEF;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>&#x6253;&#x5F00;&#x4E00;&#x4E2A;&#x65B0;&#x7684;&#x63A7;&#x5236;&#x53F0;,&#x4F7F;&#x7528;&#x547D;&#x4EE4; <code>tty</code>,&#x8BB0;&#x4F4F;&#x5F53;&#x524D;&#x6587;&#x4EF6;&#x8DEF;&#x5F84;,&#x6BD4;&#x5982; <code>/dev/pts/19</code></li>
+<li>&#x5728;GDB&#x4E2D;&#x4F7F;&#x7528;&#x547D;&#x4EE4; <code>tty /dev/pts/19</code>, &#x8FD9;&#x6837;&#x5C31;&#x628A;&#x8F93;&#x5165;&#x8F93;&#x51FA;&#x5B9A;&#x5411;&#x5230;&#x4E86;&#x65B0;&#x63A7;&#x5236;&#x53F0;</li>
+</ul>
+</div>
+</div>
+</div>
+<div id="outline-container-org68596b2" class="outline-2">
+<h2 id="org68596b2">&#x5E38;&#x7528;&#x7684;&#x64CD;&#x4F5C;&#x547D;&#x4EE4;</h2>
+<div class="outline-text-2" id="text-org68596b2">
+</div>
+<div id="outline-container-orgc1b5ca2" class="outline-3">
+<h3 id="orgc1b5ca2">&#x4EE3;&#x7801;&#x67E5;&#x770B;</h3>
+<div class="outline-text-3" id="text-orgc1b5ca2">
+<ul class="org-ul">
+<li>list , &#x7F29;&#x5199; l</li>
+</ul>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">&#x547D;&#x4EE4;</th>
+<th scope="col" class="org-left">&#x8BF4;&#x660E;</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">l</td>
+<td class="org-left">&#x663E;&#x793A;&#x5F53;&#x524D;&#x884C;&#x540E;&#x9762;&#x7684;&#x6E90;&#x7801;</td>
+</tr>
+
+<tr>
+<td class="org-left">l -</td>
+<td class="org-left">&#x663E;&#x793A;&#x5F53;&#x524D;&#x884C;&#x524D;&#x9762;&#x7684;&#x6E90;&#x7801;</td>
+</tr>
+
+<tr>
+<td class="org-left">l &lt;linenum&gt;</td>
+<td class="org-left">&#x663E;&#x793A; &lt;linenum&gt; &#x884C;&#x5468;&#x56F4;&#x7684;&#x6E90;&#x7801;</td>
+</tr>
+
+<tr>
+<td class="org-left">l &lt;func&gt;</td>
+<td class="org-left">&#x663E;&#x793A; &lt;func&gt; &#x5468;&#x56F4;&#x7684;&#x6E90;&#x7801;</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="outline-container-org52e9399" class="outline-3">
+<h3 id="org52e9399">&#x8BBE;&#x7F6E;&#x65AD;&#x70B9;</h3>
+<div class="outline-text-3" id="text-org52e9399">
+<ul class="org-ul">
+<li>break, &#x7F29;&#x5199; b</li>
+</ul>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">&#x547D;&#x4EE4;</th>
+<th scope="col" class="org-left">&#x8BF4;&#x660E;</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">b &lt;func&gt;</td>
+<td class="org-left">&#x5728;&#x51FD;&#x6570; &lt;func&gt; &#x4E2D;&#x8BBE;&#x5B9A;&#x65AD;&#x70B9;</td>
+</tr>
+
+<tr>
+<td class="org-left">b &lt;linenum&gt;</td>
+<td class="org-left">&#x5728; &lt;linenum&gt; &#x884C;&#x8BBE;&#x5B9A;&#x65AD;&#x70B9;</td>
+</tr>
+
+<tr>
+<td class="org-left">b -&lt;linenum&gt;</td>
+<td class="org-left">&#x5728;&#x5F53;&#x524D;&#x884C;&#x540E; &lt;linenum&gt; &#x8BBE;&#x65AD;&#x70B9;</td>
+</tr>
+
+<tr>
+<td class="org-left">b +&lt;linenum&gt;</td>
+<td class="org-left">&#x5728;&#x5F53;&#x524D;&#x884C;&#x524D; &lt;linenum&gt; &#x8BBE;&#x65AD;&#x70B9;</td>
+</tr>
+
+<tr>
+<td class="org-left">b &lt;filename&gt;:&lt;linenum&gt;</td>
+<td class="org-left">&#x5728;&#x6307;&#x5B9A;&#x6587;&#x4EF6;&#x884C;&#x6570;&#x8BBE;&#x65AD;&#x70B9;</td>
+</tr>
+
+<tr>
+<td class="org-left">b &lt;filename&gt;:&lt;func&gt;</td>
+<td class="org-left">&#x5728;&#x6307;&#x5B9A;&#x6587;&#x4EF6;&#x51FD;&#x6570;&#x8BBE;&#x65AD;&#x70B9;</td>
+</tr>
+
+<tr>
+<td class="org-left">b</td>
+<td class="org-left">&#x5728;&#x4E0B;&#x4E00;&#x6761;&#x6307;&#x4EE4;&#x5904;&#x65AD;&#x70B9;</td>
+</tr>
+
+<tr>
+<td class="org-left">b *&lt;address&gt;</td>
+<td class="org-left">&#x5728;&#x5730;&#x5740;&#x5904;&#x8BBE;&#x5B9A;&#x65AD;&#x70B9;</td>
+</tr>
+
+<tr>
+<td class="org-left">b if&lt;condition&gt;</td>
+<td class="org-left">&#x795E;&#x547D;&#x4EE4;&#xFF0C;&#x4E00;&#x822C;&#x5728;&#x5FAA;&#x73AF;&#x4F53;&#x4E2D;&#x7279;&#x5B9A;&#x65F6;&#x5019;&#x6253;&#x65AD;&#x70B9;&#xFF0C;&#x6BD4;&#x5982; b if i=10</td>
+</tr>
+
+<tr>
+<td class="org-left">info breakpoints</td>
+<td class="org-left">&#x67E5;&#x770B;&#x5F53;&#x524D;&#x8BBE;&#x5B9A;&#x7684;&#x6240;&#x6709;&#x65AD;&#x70B9;</td>
+</tr>
+
+<tr>
+<td class="org-left">delete &lt;index&gt;</td>
+<td class="org-left">&#x5220;&#x9664;&#x5728; <code>info breakpoints</code> &#x4E2D;&#x7D22;&#x5F15;&#x5904;&#x7684;&#x65AD;&#x70B9;</td>
+</tr>
+
+<tr>
+<td class="org-left">clear &lt;linenum&gt;</td>
+<td class="org-left">&#x5220;&#x9664;&#x5728;linenum&#x5904;&#x7684;&#x65AD;&#x70B9;</td>
+</tr>
+
+<tr>
+<td class="org-left">clear [file:]&lt;func&gt;</td>
+<td class="org-left">&#x5220;&#x9664;&#xFF08;&#x67D0;&#x4E2A;&#x6587;&#x4EF6;&#x4E2D;&#xFF09;&#x67D0;&#x4E2A;&#x51FD;&#x6570;&#x7684;&#x65AD;&#x70B9;</td>
+</tr>
+
+<tr>
+<td class="org-left">clear</td>
+<td class="org-left">&#x5220;&#x9664;&#x5F53;&#x524D;&#x884C;&#x6240;&#x5728;&#x7684;&#x65AD;&#x70B9;</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="outline-container-orgd6e8edf" class="outline-3">
+<h3 id="orgd6e8edf">&#x6267;&#x884C;</h3>
+<div class="outline-text-3" id="text-orgd6e8edf">
+<ul class="org-ul">
+<li>next&#xFF0C;&#x7F29;&#x5199; n</li>
+<li>step,  &#x7F29;&#x5199; s</li>
+<li>continue,&#x7F29;&#x5199; c</li>
+<li>until&#xFF0C;&#x7F29;&#x5199; u</li>
+</ul>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">&#x547D;&#x4EE4;</th>
+<th scope="col" class="org-left">&#x8BF4;&#x660E;</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">s</td>
+<td class="org-left">&#x5355;&#x6B65;&#x6267;&#x884C;&#xFF0C;&#x5982;&#x679C;&#x6709;&#x51FD;&#x6570;&#x5219;&#x8FDB;&#x5165;&#x8BE5;&#x51FD;&#x6570;</td>
+</tr>
+
+<tr>
+<td class="org-left">si</td>
+<td class="org-left">&#x4EE5;&#x6C47;&#x7F16;&#x6267;&#x884C;&#x5355;&#x6B65;&#x6267;&#x884C;&#xFF0C;&#x4F1A;&#x8FDB;&#x5165;&#x51FD;&#x6570;(&#x4E00;&#x822C;&#x5728;&#x6C47;&#x7F16;&#x7A97;&#x53E3;&#x6253;&#x5F00;&#x65F6;&#x4F7F;&#x7528;)</td>
+</tr>
+
+<tr>
+<td class="org-left">s &lt;count&gt;</td>
+<td class="org-left">&#x6267;&#x884C; &lt;count&gt; &#x6761;&#x540E;&#x505C;&#x6B62;&#xFF0C;&#x5982;&#x679C;&#x6709;&#x51FD;&#x6570;&#x5219;&#x8FDB;&#x5165;</td>
+</tr>
+
+<tr>
+<td class="org-left">set step-mode on</td>
+<td class="org-left">&#x6253;&#x5F00;step-mode&#x6A21;&#x5F0F;&#xFF0C;&#x5F53;&#x51FD;&#x6570;&#x6CA1;&#x6709;&#x8C03;&#x8BD5;&#x4FE1;&#x606F;&#x65F6;&#xFF0C;&#x5219;&#x8FDB;&#x5165;&#x6C47;&#x7F16;&#x6A21;&#x5F0F;</td>
+</tr>
+
+<tr>
+<td class="org-left">n</td>
+<td class="org-left">&#x5355;&#x6B65;&#x6267;&#x884C;&#xFF0C;&#x4E0D;&#x4F1A;&#x8FDB;&#x5165;&#x51FD;&#x6570;</td>
+</tr>
+
+<tr>
+<td class="org-left">ni</td>
+<td class="org-left">&#x4EE5;&#x6C47;&#x7F16;&#x6267;&#x884C;&#x5355;&#x6B65;&#x6267;&#x884C;&#xFF0C;&#x4E0D;&#x4F1A;&#x8FDB;&#x5165;&#x51FD;&#x6570;(&#x4E00;&#x822C;&#x5728;&#x6C47;&#x7F16;&#x7A97;&#x53E3;&#x6253;&#x5F00;&#x65F6;&#x4F7F;&#x7528;)</td>
+</tr>
+
+<tr>
+<td class="org-left">n &lt;count&gt;</td>
+<td class="org-left">&#x6267;&#x884C;&lt;count&gt; &#x6761;&#x540E;&#x505C;&#x6B62;&#xFF0C;&#x4E0D;&#x4F1A;&#x8FDB;&#x5165;&#x51FD;&#x6570;</td>
+</tr>
+
+<tr>
+<td class="org-left">finish</td>
+<td class="org-left">&#x9000;&#x51FA;&#x5F53;&#x524D;&#x51FD;&#x6570;&#x5E76;&#x505C;&#x6B62;</td>
+</tr>
+
+<tr>
+<td class="org-left">u</td>
+<td class="org-left">&#x9000;&#x51FA;&#x5FAA;&#x73AF;&#x8BED;&#x53E5;&#x540E;&#x505C;&#x6B62;</td>
+</tr>
+
+<tr>
+<td class="org-left">c</td>
+<td class="org-left">&#x5168;&#x901F;&#x8FD0;&#x884C;&#xFF0C;&#x76F4;&#x5230;&#x7A0B;&#x5E8F;&#x9000;&#x51FA;&#x6216;&#x9047;&#x5230;&#x4E0B;&#x4E00;&#x4E2A;&#x65AD;&#x70B9;</td>
+</tr>
+
+<tr>
+<td class="org-left">c &lt;count&gt;</td>
+<td class="org-left">&#x5168;&#x901F;&#x8FD0;&#x884C;&#x5E76;&#x8DF3;&#x8FC7;&lt;count&gt;&#x4E2A;&#x65AD;&#x70B9;</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="outline-container-org28a75a6" class="outline-3">
+<h3 id="org28a75a6">&#x67E5;&#x770B;&#x4EE5;&#x53CA;&#x4FEE;&#x6539;</h3>
+<div class="outline-text-3" id="text-org28a75a6">
+<ul class="org-ul">
+<li>print, &#x7F29;&#x5199; p
+<ul class="org-ul">
+<li>&lt;f&gt; &#x663E;&#x793A;&#x683C;&#x5F0F;&#x53EF;&#x4EE5;&#x4F7F;&#x7528;: x(16&#x8FDB;&#x5236;),u(16&#x8FDB;&#x5236;&#x65E0;&#x7B26;&#x53F7;),d(&#x5341;&#x8FDB;&#x5236;),o(&#x516B;&#x8FDB;&#x5236;),t(&#x4E8C;&#x8FDB;&#x5236;),c(&#x5B57;&#x7B26;),s(&#x5B57;&#x7B26;&#x4E32;),f(&#x6D6E;&#x70B9;)</li>
+</ul></li>
+<li>examine(&#x6253;&#x5370;&#x5185;&#x5B58;), &#x7F29;&#x5199; x
+<ul class="org-ul">
+<li>&lt;u&gt; &#x5B57;&#x8282;&#x5BF9;&#x9F50;&#x53EF;&#x4EE5;&#x4F7F;&#x7528;: b(&#x5355;&#x5B57;&#x8282;),h(&#x53CC;&#x5B57;&#x8282;),w(4&#x5B57;&#x8282;),g(8&#x5B57;&#x8282;)</li>
+</ul></li>
+</ul>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">&#x547D;&#x4EE4;</th>
+<th scope="col" class="org-left">&#x8BF4;&#x660E;</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">p &lt;variable&gt;</td>
+<td class="org-left">&#x67E5;&#x770B;&#x53D8;&#x91CF; &lt;variable&gt; &#x7684;&#x503C;</td>
+</tr>
+
+<tr>
+<td class="org-left">bt</td>
+<td class="org-left">&#x67E5;&#x770B;&#x8C03;&#x7528;&#x5173;&#x7CFB;</td>
+</tr>
+
+<tr>
+<td class="org-left">p &lt;var&gt;@&lt;len&gt;</td>
+<td class="org-left">&#x67E5;&#x770B;&#x5730;&#x5740;&lt;var&gt;&#x5730;&#x5740;&#x5F00;&#x59CB;&#x7684;&#x503C;&#xFF0C;&#x6253;&#x5370;&lt;len&gt;&#x4E2A;&#x957F;&#x5EA6;</td>
+</tr>
+
+<tr>
+<td class="org-left">p /&lt;f&gt; &lt;variable&gt;</td>
+<td class="org-left">&#x4EE5; &lt;f&gt; &#x683C;&#x5F0F;&#x663E;&#x793A;&#x53D8;&#x91CF;&lt;variable&gt;</td>
+</tr>
+
+<tr>
+<td class="org-left">p &lt;variable&gt;=&lt;value&gt;</td>
+<td class="org-left">&#x4FEE;&#x6539;&#x53D8;&#x91CF; &lt;variable&gt;&#x7684;&#x503C;&#x4E3A;&lt;value&gt;</td>
+</tr>
+
+<tr>
+<td class="org-left">watch  &lt;expr&gt;</td>
+<td class="org-left">&#x5F53;&#x8868;&#x8FBE;&#x5F0F;(&#x53D8;&#x91CF;)&#x7684;&#x503C;&#x6709;&#x53D8;&#x5316;&#x65F6;&#x5219;&#x505C;&#x6B62;&#x8FD0;&#x884C;</td>
+</tr>
+
+<tr>
+<td class="org-left">rwatch &lt;expr&gt;</td>
+<td class="org-left">&#x5F53;&#x8868;&#x8FBE;&#x5F0F;(&#x53D8;&#x91CF;)&#x88AB;&#x8BFB;&#x65F6;&#x5219;&#x505C;&#x6B62;&#x8FD0;&#x884C;</td>
+</tr>
+
+<tr>
+<td class="org-left">x/&lt;num&gt;&lt;f&gt;&lt;u&gt; &lt;address&gt;</td>
+<td class="org-left">&#x5728;&#x5730;&#x5740;&lt;address&gt;&#x5F00;&#x59CB;&#x5904;&#x663E;&#x793A;&lt;num&gt;&#x4E2A;&#x5355;&#x4F4D;&#xFF0C;&#x6BCF;&#x4E2A;&#x5355;&#x4F4D;&#x4EE5;&lt;f&gt;&#x683C;&#x5F0F;&#x4EE5;&lt;u&gt;&#x5B57;&#x8282;&#x5BF9;&#x9F50;,&#x5173;&#x4E8E;&lt;u&gt;&#x7684;&#x53D6;&#x503C;&#xFF0C;&#x5728;gdb&#x4E2D;&#x4F7F;&#x7528; <code>help x</code> &#x67E5;&#x770B;</td>
+</tr>
+
+<tr>
+<td class="org-left">set *(type *)(point)=value</td>
+<td class="org-left">&#x6307;&#x9488;&#x4EE5;type&#x7C7B;&#x578B;&#x6307;&#x5B9A;&#x4F4D;&#x7F6E;&#x5904;&#x7684;&#x503C;&#x4E3A; value, ex: set *(unsigned char *)p = &apos;a&apos; , &lt;pointer&gt; &#x4E5F;&#x53EF;&#x4EE5;&#x662F;&#x5185;&#x5B58;&#x4E2D;&#x7684;&#x5730;&#x5740;</td>
+</tr>
+
+<tr>
+<td class="org-left">info</td>
+<td class="org-left">&#x67E5;&#x770B;&#x5BC4;&#x5B58;&#x5668;&#x3001;&#x65AD;&#x70B9;&#x7B49;&#x4FE1;&#x606F;</td>
+</tr>
+
+<tr>
+<td class="org-left">disassemble</td>
+<td class="org-left">&#x67E5;&#x770B;&#x6C47;&#x7F16;&#x4EE3;&#x7801;</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div id="outline-container-org3b11997" class="outline-2">
+<h2 id="org3b11997">&#x6355;&#x6349; core dump</h2>
+<div class="outline-text-2" id="text-org3b11997">
+<p>
+&#x5728;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x6355;&#x6349;core dump&#x4E4B;&#x524D;&#xFF0C;&#x7528;&#x6237;&#x9700;&#x8981;&#x5728;&#x5F53;&#x524D;shell&#x4F7F;&#x7528;&#x547D;&#x4EE4;&#x4F7F;&#x7A0B;&#x5E8F;&#x5D29;&#x6E83;&#x540E;&#x4EA7;&#x751F;&#x65E0;&#x5927;&#x5C0F;&#x9650;&#x5236;&#x7684; <code>core</code> &#x6587;&#x4EF6;:
+</p>
+<pre class="example">
+ulimit -c unlimited</pre>
+
+<p>
+&#x7136;&#x540E;&#x5F53;&#x7A0B;&#x5E8F;&#x8FD0;&#x884C;&#x51FA;&#x73B0; <code>Segmentation fault (core dumped)</code> &#x63D0;&#x793A;&#x540E;&#xFF0C;&#x4FBF;&#x4F1A;&#x5728;&#x5F53;&#x524D;&#x76EE;&#x5F55;&#x4E0B;&#x751F;&#x6210; <code>core</code> &#x6587;&#x4EF6;&#x3002;
+</p>
+
+<p>
+gdb &#x4F7F;&#x7528;&#x5982;&#x4E0B;&#x65B9;&#x5F0F;&#x8F7D;&#x5165; core &#x6587;&#x4EF6;&#x5206;&#x6790;&#x51FA;&#x9519;&#x4F4D;&#x7F6E;:
+</p>
+<pre class="example">
+gdb [exec file name] [core file]</pre>
+<p>
+&#x6BD4;&#x5982; <code>gdb ./a.out core</code> 
+</p>
+
+<p>
+&#x5728; gdb &#x8F7D;&#x5165; core &#x6587;&#x4EF6;&#x4EE5;&#x540E;&#x5C31;&#x83B7;&#x5F97;&#x4E86;&#x5F53;&#x65F6;&#x5D29;&#x6E83;&#x7684;&#x73AF;&#x5883;&#xFF0C;&#x4E8E;&#x662F;&#x53EF;&#x4EE5;&#x67E5;&#x770B;&#x5F53;&#x65F6;&#x7684;&#x8C03;&#x7528;&#x6808;&#xFF0C;&#x5BC4;&#x5B58;&#x5668;&#x72B6;&#x6001;&#x7B49;&#x7B49;&#x4FE1;&#x606F;&#x3002;
+</p>
+</div>
+</div>
+<div id="outline-container-orgc6eb98b" class="outline-2">
+<h2 id="orgc6eb98b">&#x6355;&#x6349;&#x591A;&#x7EBF;&#x7A0B;&#x6808;</h2>
+<div class="outline-text-2" id="text-orgc6eb98b">
+<ul class="org-ul">
+<li>&#x4F7F;&#x7528; <code>info threads</code> &#x67E5;&#x770B;&#x5F53;&#x524D;&#x521B;&#x5EFA;&#x7684;&#x7EBF;&#x7A0B;&#x4FE1;&#x606F;</li>
+<li>&#x4F7F;&#x7528; <code>thread &lt;index&gt;</code> &#x8DF3;&#x8F6C;&#x5230;&#x5BF9;&#x5E94;&#x7EBF;&#x7A0B;id
+<ul class="org-ul">
+<li>&#x53EF;&#x4EE5;&#x4F7F;&#x7528; <code>set scheduler-locking on</code> &#x6765;&#x9501;&#x4F4F;&#x8C03;&#x5EA6;&#x5668;&#xFF0C;&#x7981;&#x6B62;&#x7EBF;&#x7A0B;&#x5207;&#x6362;&#xFF0C;&#x4EE5;&#x5355;&#x72EC;&#x8FD0;&#x884C;&#x5F53;&#x524D;&#x7EBF;&#x7A0B;
+<ul class="org-ul">
+<li>&#x4F7F;&#x7528; <code>set scheduler-locking off</code> &#x6765;&#x6062;&#x590D;&#x8C03;&#x5EA6;&#x5668;</li>
+<li>&#x4F7F;&#x7528; <code>set scheduler-locking step</code> &#x5728;&#x5F53;&#x524D;&#x7EBF;&#x7A0B;&#x5355;&#x6B65;&#x6267;&#x884C;&#x65F6;&#xFF0C;&#x5176;&#x4ED6;&#x7EBF;&#x7A0B;&#x4E0D;&#x8FD0;&#x884C;</li>
+</ul></li>
+</ul></li>
+<li>&#x4F7F;&#x7528; <code>bt</code> &#x67E5;&#x770B;&#x5F53;&#x524D;&#x7EBF;&#x7A0B;&#x6808;</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-orgfab48c2" class="outline-2">
+<h2 id="orgfab48c2">&#x8FDC;&#x7A0B;&#x4E0E;&#x76EE;&#x6807;&#x677F;&#x8FDE;&#x63A5;</h2>
+<div class="outline-text-2" id="text-orgfab48c2">
+<p>
+&#x5F53;&#x76EE;&#x6807;&#x677F;&#x5177;&#x6709;gdbserver&#x65F6;&#xFF0C;&#x53EF;&#x4EE5;&#x8FDC;&#x7A0B;&#x94FE;&#x63A5;&#x4E3B;&#x673A;gdb&#x8FDB;&#x884C;&#x8C03;&#x8BD5;&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x8FD9;&#x79CD;&#x65F6;&#x5019;&#x5728;&#x4F20;&#x7ED9;&#x76EE;&#x6807;&#x677F;&#x7A0B;&#x5E8F;&#x524D;&#xFF0C;&#x53EF;&#x4EE5;&#x5148;&#x5C06;&#x5176; <code>strip</code> &#x4E00;&#x4E0B;&#x51CF;&#x5C0F;&#x4F53;&#x79EF;&#x3002;</li>
+</ul>
+</div>
+<div id="outline-container-org9c233a9" class="outline-3">
+<h3 id="org9c233a9">&#x76EE;&#x6807;&#x677F;</h3>
+<div class="outline-text-3" id="text-org9c233a9">
+<ul class="org-ul">
+<li>&#x9996;&#x5148;&#x4F7F;&#x7528; <code>gdbserver --version</code> &#x67E5;&#x770B;&#x6B64;server&#x5BF9;&#x5E94;&#x7684;&#x7F16;&#x8BD1;&#x5668;,&#x8FD9;&#x6837;&#x4E3B;&#x673A;&#x7AEF;&#x624D;&#x80FD;&#x5BF9;&#x5E94;&#x3002;</li>
+<li>&#x542F;&#x52A8;&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x4F7F;&#x7528;: <code>gdbserver :&lt;port&gt; &lt;execfile&gt;</code></li>
+<li>&#x6302;&#x8F7D;&#x6B63;&#x5728;&#x8FD0;&#x884C;&#x7684;&#x8FDB;&#x7A0B;&#x4F7F;&#x7528; <code>gdbserver :&lt;port&gt; --attach &lt;pid&gt;</code></li>
+</ul>
+</div>
+</div>
+<div id="outline-container-org36b9eb7" class="outline-3">
+<h3 id="org36b9eb7">&#x4E3B;&#x673A;</h3>
+<div class="outline-text-3" id="text-org36b9eb7">
+<ul class="org-ul">
+<li>&#x4E3B;&#x673A;&#x7684;gdb&#x7248;&#x672C;&#x9700;&#x8981;&#x4E0E;&#x76EE;&#x6807;&#x673A;&#x5BF9;&#x5E94;&#xFF0C;&#x5728;&#x5BF9;&#x5E94;&#x7A0B;&#x5E8F;&#x7684;&#x7F16;&#x8BD1;&#x76EE;&#x5F55;&#x4F7F;&#x7528; <code>arm-linux-gnueabihf-gdb &lt;execfile&gt;</code></li>
+<li>&#x7136;&#x540E;&#x8FDE;&#x63A5;&#x76EE;&#x6807;&#x673A;: <code>target remote &lt;target ip&gt;:&lt;port&gt;</code></li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+Last Updated 2020-06-28 Sun 11:59.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+</div>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/debug/" rel="tag"># debug</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/01/16/rf_protocol_sdr_overview/" rel="prev" title="[What]SDR通信协议概览">
+      <i class="fa fa-chevron-left"></i> [What]SDR通信协议概览
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/01/18/editer_vim_overview/" rel="next" title="[What] vim 基本操作总结">
+      [What] vim 基本操作总结 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org0de62e4"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x57FA;&amp;#x7840;&amp;#x5FC5;&amp;#x5907;&amp;#x77E5;&amp;#x8BC6;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org9890849"><span class="nav-number">1.1.</span> <span class="nav-text">gdb&amp;#x5B8C;&amp;#x6574;&amp;#x8C03;&amp;#x8BD5;&amp;#x7684;&amp;#x5FC5;&amp;#x5907;&amp;#x6761;&amp;#x4EF6;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org1e873e8"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x6B63;&amp;#x5F0F;&amp;#x8C03;&amp;#x8BD5;&amp;#x524D;&amp;#x7684;&amp;#x51C6;&amp;#x5907;&amp;#x5DE5;&amp;#x4F5C;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgd995e8f"><span class="nav-number">2.1.</span> <span class="nav-text">&amp;#x751F;&amp;#x6210;&amp;#x5E26;&amp;#x8C03;&amp;#x8BD5;&amp;#x4FE1;&amp;#x606F;&amp;#x7684;&amp;#x53EF;&amp;#x6267;&amp;#x884C;&amp;#x6587;&amp;#x4EF6;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org36a05ea"><span class="nav-number">2.2.</span> <span class="nav-text">&amp;#x4E3A;&amp;#x6587;&amp;#x4EF6;&amp;#x8F93;&amp;#x5165;&amp;#x53C2;&amp;#x6570;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org65e4c2e"><span class="nav-number">2.3.</span> <span class="nav-text">&amp;#x542F;&amp;#x52A8;&amp;#x89C6;&amp;#x7A97;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org854e0be"><span class="nav-number">2.4.</span> <span class="nav-text">&amp;#x8F93;&amp;#x5165;&amp;#x548C;&amp;#x8F93;&amp;#x51FA;&amp;#x91CD;&amp;#x6620;&amp;#x5C04;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org68596b2"><span class="nav-number">3.</span> <span class="nav-text">&amp;#x5E38;&amp;#x7528;&amp;#x7684;&amp;#x64CD;&amp;#x4F5C;&amp;#x547D;&amp;#x4EE4;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgc1b5ca2"><span class="nav-number">3.1.</span> <span class="nav-text">&amp;#x4EE3;&amp;#x7801;&amp;#x67E5;&amp;#x770B;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org52e9399"><span class="nav-number">3.2.</span> <span class="nav-text">&amp;#x8BBE;&amp;#x7F6E;&amp;#x65AD;&amp;#x70B9;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgd6e8edf"><span class="nav-number">3.3.</span> <span class="nav-text">&amp;#x6267;&amp;#x884C;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org28a75a6"><span class="nav-number">3.4.</span> <span class="nav-text">&amp;#x67E5;&amp;#x770B;&amp;#x4EE5;&amp;#x53CA;&amp;#x4FEE;&amp;#x6539;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org3b11997"><span class="nav-number">4.</span> <span class="nav-text">&amp;#x6355;&amp;#x6349; core dump</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgc6eb98b"><span class="nav-number">5.</span> <span class="nav-text">&amp;#x6355;&amp;#x6349;&amp;#x591A;&amp;#x7EBF;&amp;#x7A0B;&amp;#x6808;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgfab48c2"><span class="nav-number">6.</span> <span class="nav-text">&amp;#x8FDC;&amp;#x7A0B;&amp;#x4E0E;&amp;#x76EE;&amp;#x6807;&amp;#x677F;&amp;#x8FDE;&amp;#x63A5;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org9c233a9"><span class="nav-number">6.1.</span> <span class="nav-text">&amp;#x76EE;&amp;#x6807;&amp;#x677F;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org36b9eb7"><span class="nav-number">6.2.</span> <span class="nav-text">&amp;#x4E3B;&amp;#x673A;</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">我的世界</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">210</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">104</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">38</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+  
+  <span class="post-meta-divider">|</span>
+  <span>Hosted by <a href="https://pages.coding.me" target="_blank" rel="noopener" style="font-weight: bold">Coding Pages</a></span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+<script>
+  (function() {
+    function leancloudSelector(url) {
+      url = encodeURI(url);
+      return document.getElementById(url).querySelector('.leancloud-visitors-count');
+    }
+
+    function addCount(Counter) {
+      var visitors = document.querySelector('.leancloud_visitors');
+      var url = decodeURI(visitors.id);
+      var title = visitors.dataset.flagTitle;
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          if (results.length > 0) {
+            var counter = results[0];
+            leancloudSelector(url).innerText = counter.time + 1;
+            Counter('put', '/classes/Counter/' + counter.objectId, { time: { '__op': 'Increment', 'amount': 1 } })
+              .catch(error => {
+                console.error('Failed to save visitor count', error);
+              });
+          } else {
+              leancloudSelector(url).innerText = 'Counter not initialized! More info at console err msg.';
+              console.error('ATTENTION! LeanCloud counter has security bug, see how to solve it here: https://github.com/theme-next/hexo-leancloud-counter-security. \n However, you can still use LeanCloud without security, by setting `security` option to `false`.');
+            
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    function showTime(Counter) {
+      var visitors = document.querySelectorAll('.leancloud_visitors');
+      var entries = [...visitors].map(element => {
+        return decodeURI(element.id);
+      });
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url: { '$in': entries } })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          for (let url of entries) {
+            let target = results.find(item => item.url === url);
+            leancloudSelector(url).innerText = target ? target.time : 0;
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    let { app_id, app_key, server_url } = {"enable":true,"app_id":"ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI","app_key":"yh4vrfnscme1utPMpk65wcxn","server_url":null,"security":true};
+    function fetchData(api_server) {
+      var Counter = (method, url, data) => {
+        return fetch(`${api_server}/1.1${url}`, {
+          method,
+          headers: {
+            'X-LC-Id'     : app_id,
+            'X-LC-Key'    : app_key,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+      };
+      if (CONFIG.page.isPost) {
+        if (CONFIG.hostname !== location.hostname) return;
+        addCount(Counter);
+      } else if (document.querySelectorAll('.post-title-link').length >= 1) {
+        showTime(Counter);
+      }
+    }
+
+    let api_server = app_id.slice(-9) !== '-MdYXbMMI' ? server_url : `https://${app_id.slice(0, 8).toLowerCase()}.api.lncldglobal.com`;
+
+    if (api_server) {
+      fetchData(api_server);
+    } else {
+      fetch('https://app-router.leancloud.cn/2/route?appId=' + app_id)
+        .then(response => response.json())
+        .then(({ api_server }) => {
+          fetchData('https://' + api_server);
+        });
+    }
+  })();
+</script>
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+  <script defer src="/lib/three/three.min.js"></script>
+    <script defer src="/lib/three/three-waves.min.js"></script>
+    <script defer src="/lib/three/canvas_lines.min.js"></script>
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI',
+      appKey     : 'yh4vrfnscme1utPMpk65wcxn',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

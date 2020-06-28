@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="zLSyD2CN1AkyJqei3qKraT6372nBgMFKWe6kAj5JDeY">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="perf &amp;#x662F;Linux(2.6+)&amp;#x5185;&amp;#x7F6E;&amp;#x7684;&amp;#x5F3A;&amp;#x5927;&amp;#x7684;&amp;#x5206;&amp;#x6790;&amp;#x5DE5;&amp;#x5177;&amp;#xFF0C;&amp;#x4F46;&amp;#x662F;&amp;#x5176;&amp;#x8F93;&amp;#x51FA;&amp;#x5E76;&amp;#x4E0D;&amp;#x76F4;&amp;#x89C2;&amp;#xFF0C;&amp;#x914">
+<meta property="og:type" content="article">
+<meta property="og:title" content="[What]perf 与 Flame Graph联立显示">
+<meta property="og:url" content="http://kcmetercec.top/2018/06/15/linux_debug_perf_flameGraph/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="perf &amp;#x662F;Linux(2.6+)&amp;#x5185;&amp;#x7F6E;&amp;#x7684;&amp;#x5F3A;&amp;#x5927;&amp;#x7684;&amp;#x5206;&amp;#x6790;&amp;#x5DE5;&amp;#x5177;&amp;#xFF0C;&amp;#x4F46;&amp;#x662F;&amp;#x5176;&amp;#x8F93;&amp;#x51FA;&amp;#x5E76;&amp;#x4E0D;&amp;#x76F4;&amp;#x89C2;&amp;#xFF0C;&amp;#x914">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-06-14T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-06-28T03:58:45.681Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="debug">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://kcmetercec.top/2018/06/15/linux_debug_perf_flameGraph/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>[What]perf 与 Flame Graph联立显示 | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=112423075-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '112423075-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2ab4cc06d0da36106a4426465d0cb00d";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2018/06/15/linux_debug_perf_flameGraph/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="我的世界">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          [What]perf 与 Flame Graph联立显示
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-06-15 00:00:00" itemprop="dateCreated datePublished" datetime="2018-06-15T00:00:00+08:00">2018-06-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-06-28 11:58:45" itemprop="dateModified" datetime="2020-06-28T11:58:45+08:00">2020-06-28</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/debug/" itemprop="url" rel="index"><span itemprop="name">debug</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/debug/perf/" itemprop="url" rel="index"><span itemprop="name">perf</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2018/06/15/linux_debug_perf_flameGraph/" class="post-meta-item leancloud_visitors" data-flag-title="[What]perf 与 Flame Graph联立显示" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2018/06/15/linux_debug_perf_flameGraph/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2018/06/15/linux_debug_perf_flameGraph/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <div id="content">
+<p>
+perf &#x662F;Linux(2.6+)&#x5185;&#x7F6E;&#x7684;&#x5F3A;&#x5927;&#x7684;&#x5206;&#x6790;&#x5DE5;&#x5177;&#xFF0C;&#x4F46;&#x662F;&#x5176;&#x8F93;&#x51FA;&#x5E76;&#x4E0D;&#x76F4;&#x89C2;&#xFF0C;&#x914D;&#x5408;&#x706B;&#x7130;&#x56FE;&#x66F4;&#x80FD;&#x603B;&#x89C8;&#x5168;&#x5C40;&#x3002;
+</p>
+
+<a id="more"></a>
+
+<div id="outline-container-org5a75e84" class="outline-2">
+<h2 id="org5a75e84">&#x7B80;&#x6613;&#x6B65;&#x9AA4;</h2>
+<div class="outline-text-2" id="text-org5a75e84">
+</div>
+<div id="outline-container-orgf5240e2" class="outline-3">
+<h3 id="orgf5240e2">&#x57FA;&#x672C;&#x547D;&#x4EE4;</h3>
+<div class="outline-text-3" id="text-orgf5240e2">
+<p>
+&#x6570;&#x636E;&#x7684;&#x91C7;&#x96C6;&#x4F7F;&#x7528;&#x4EE5;&#x4E0B;&#x4E24;&#x79CD;&#x57FA;&#x672C;&#x547D;&#x4EE4;:
+</p>
+<ul class="org-ul">
+<li>&#x91C7;&#x96C6;&#x67D0;&#x4E2A;&#x8FDB;&#x7A0B;&#x4E00;&#x6BB5;&#x65F6;&#x95F4;</li>
+</ul>
+<pre class="example">
+#-F &#x540E;&#x7684;99&#x4EE3;&#x8868;1&#x79D2;&#x5185;&#x91C7;&#x6837;99&#x6B21;
+#-p &#x540E;&#x8DDF;&#x8981;&#x91C7;&#x96C6;&#x8FDB;&#x7A0B;&#x7684;pid
+#-g &#x4EE3;&#x8868;&#x91C7;&#x6837;&#x51FD;&#x6570;&#x8C03;&#x7528;&#x6808;
+#&#x6CE8;&#x610F; -- &#x548C; sleep &#x4E4B;&#x95F4;&#x7684;&#x7A7A;&#x683C;!
+#sleep &#x540E;&#x7684;&#x6570;&#x5B57;&#x4EE3;&#x8868;&#x91C7;&#x96C6;&#x591A;&#x957F;&#x7684;&#x65F6;&#x95F4;
+#--call-graph dwarf &#x89E3;&#x538B;&#x7F29;&#x6808;
+#&#x6CE8;&#x610F;&#xFF1A;&#x76D1;&#x89C6;&#x7684;&#x7A0B;&#x5E8F;&#x9700;&#x8981;&#x5177;&#x6709;&#x7B26;&#x53F7;&#x8868;&#xFF0C;&#x4E5F;&#x5C31;&#x662F;&#x7F16;&#x8BD1;&#x7684;&#x65F6;&#x5019;&#x9700;&#x8981;&#x4F7F;&#x7528; -g &#x9009;&#x9879;
+perf record -F 99 -p &lt;pid&gt; -g --call-graph dwarf -- sleep 60</pre>
+<ul class="org-ul">
+<li>&#x91C7;&#x96C6;&#x6574;&#x4E2A;&#x7CFB;&#x7EDF;</li>
+</ul>
+<pre class="example">
+#&#x4E5F;&#x5C31;&#x662F;&#x8BF4;&#x53D6;&#x6D88;pid&#x9009;&#x9879;&#x6362;&#x4E3A; -a
+perf record -F 99 -a -g -- sleep 60</pre>
+</div>
+<div id="outline-container-orgd8bbc44" class="outline-4">
+<h4 id="orgd8bbc44">&#x4E3A;&#x4EC0;&#x4E48;&#x91C7;&#x6837;&#x9891;&#x7387;&#x662F;&#x6BCF;&#x79D2;99&#x6B21;&#x800C;&#x4E0D;&#x662F;100&#x6B21;&#xFF1F;</h4>
+<div class="outline-text-4" id="text-orgd8bbc44">
+<p>
+&#x8FD9;&#x91CC;&#x6D89;&#x53CA;&#x5230;&#x4E00;&#x4E2A; <code>lockstep</code> &#x7684;&#x6982;&#x5FF5;&#x3002;
+</p>
+
+<pre class="example">
+&#x5047;&#x8BBE;&#x8981;&#x6D4B;&#x8BD5;&#x67D0;&#x4E2A;&#x8DEF;&#x6BB5;&#x4E00;&#x5929;&#x7684;&#x5168;&#x5C40;&#x62E5;&#x5835;&#x60C5;&#x51B5;&#xFF0C;&#x5982;&#x679C;&#x6211;&#x4EEC;&#x8BBE;&#x7F6E;&#x6BCF;&#x9694;24&#x4E2A;&#x5C0F;&#x65F6;&#x91C7;&#x6837;&#x4E00;&#x6B21;&#x8F66;&#x51B5;&#xFF0C;&#x8FD9;&#x4F1A;&#x5BFC;&#x81F4;&#x7ED3;&#x679C;&#x4E0D;&#x51C6;&#x786E;&#x3002;
+&#x56E0;&#x4E3A;&#x5F53;&#x91C7;&#x6837;&#x65F6;&#x95F4;&#x56FA;&#x5B9A;&#xFF0C;&#x5047;&#x8BBE;&#x4F60;&#x662F;&#x5728;&#x6BCF;&#x5929;&#x4E0A;&#x5348;8&#x70B9;&#x6216;&#x4E0B;&#x5348;5&#x70B9;&#x5F00;&#x59CB;&#x91C7;&#x6837;&#xFF0C;&#x90A3;&#x4E48;&#x5F97;&#x5230;&#x7684;&#x7ED3;&#x679C;&#x662F;&#x5168;&#x5929;&#x62E5;&#x5835;&#x3002;&#x4F46;&#x5982;&#x679C;&#x662F;&#x51CC;&#x6668;3&#x70B9;&#x91C7;&#x6837;&#xFF0C;&#x5F97;&#x5230;&#x7684;&#x7ED3;&#x679C;&#x662F;&#x5168;&#x5929;&#x7545;&#x901A;&#x3002;
+
+&#x4E3A;&#x4E86;&#x89E3;&#x51B3;&#x8FD9;&#x4E2A;&#x95EE;&#x9898;&#xFF0C;&#x53EF;&#x4EE5;&#x6BCF;&#x5929;&#x91C7;&#x6837;&#x65F6;&#x95F4;&#x968F;&#x673A;&#xFF0C;&#x6216;&#x8005;&#x63D0;&#x9AD8;&#x91C7;&#x6837;&#x9891;&#x7387;&#x3002;&#x76F8;&#x5BF9;&#x6765;&#x8BB2;&#xFF0C;&#x4FEE;&#x6539;&#x91C7;&#x6837;&#x9891;&#x7387;&#x662F;&#x4E00;&#x4E2A;&#x6700;&#x7B80;&#x5355;&#x7684;&#x529E;&#x6CD5;&#x3002;
+
+&#x6BD4;&#x5982;&#x6BCF;&#x9694;23&#x4E2A;&#x5C0F;&#x65F6;&#x91C7;&#x6837;&#xFF0C;&#x90A3;&#x4E48;&#x6309;&#x7167;&#x7406;&#x8BBA;&#x8BB2;&#xFF0C;&#x65E0;&#x8BBA;&#x8D77;&#x59CB;&#x91C7;&#x6837;&#x65F6;&#x95F4;&#x662F;&#x4EC0;&#x4E48;&#x65F6;&#x5019;&#xFF0C;24&#x5929;&#x540E;&#x5C31;&#x53EF;&#x4EE5;&#x8F6E;&#x8F6C;&#x5168;&#x5929;&#x6BCF;&#x4E2A;&#x5C0F;&#x65F6;&#x7684;&#x91C7;&#x6837;&#x3002;</pre>
+<p>
+&#x6240;&#x4EE5;&#x5C06; <code>perf</code> &#x91C7;&#x6837;&#x7387;&#x8BBE;&#x4E3A;99&#x4E5F;&#x662F;&#x57FA;&#x4E8E;&#x8FD9;&#x4E2A;&#x539F;&#x7406;&#xFF0C;&#x82E5;&#x8BBE;&#x7F6E;&#x5F97;&#x592A;&#x9AD8;&#x5219;&#x4F1A;&#x5BFC;&#x81F4;&#x91C7;&#x6837;&#x7A0B;&#x5E8F;&#x5360;&#x7528;&#x592A;&#x591A;&#x8D44;&#x6E90;&#xFF0C;&#x592A;&#x4F4E;&#x5219;&#x4F1A;&#x5BB9;&#x6613;&#x6F0F;&#x6389;&#x77ED;&#x4FE1;&#x53F7;&#x3002;
+</p>
+</div>
+</div>
+<div id="outline-container-orgc6c3344" class="outline-4">
+<h4 id="orgc6c3344">perf interrupt took too long</h4>
+<div class="outline-text-4" id="text-orgc6c3344">
+<p>
+&#x5F53;&#x542F;&#x52A8; <code>perf</code> &#x65F6;&#x6709;&#x65F6;&#x4F1A;&#x5F97;&#x5230;&#x8FD9;&#x6837;&#x7684;&#x8B66;&#x544A;&#xFF0C;&#x5176;&#x4EA7;&#x751F;&#x4E8E;&#x51FD;&#x6570; <code>static void perf_duration_warn(struct irq_work *w)</code> &#x3002;
+</p>
+
+<p>
+&#x4E0D;&#x8FC7;kernel&#x5185;&#x90E8;&#x7ED9;&#x4E86;&#x5982;&#x4E0B;&#x6CE8;&#x91CA;&#xFF0C;&#x610F;&#x601D;&#x662F;&#x8BF4;&#x8FD9;&#x4E2A;&#x662F;&#x5185;&#x6838;&#x81EA;&#x52A8;&#x8C03;&#x6574;&#x673A;&#x5236;&#xFF0C;&#x7528;&#x6237;&#x4E0D;&#x7528;&#x62C5;&#x5FC3;&#x6B64;&#x63D0;&#x793A;&#x3002;
+</p>
+<pre class="example">
+/*
+ * perf samples are done in some very critical code paths (NMIs).
+ * If they take too much CPU time, the system can lock up and not
+ * get any real work done.  This will drop the sample rate when
+ * we detect that events are taking too long.
+ */</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-org667d1fd" class="outline-3">
+<h3 id="org667d1fd">&#x6B65;&#x9AA4;</h3>
+<div class="outline-text-3" id="text-org667d1fd">
+</div>
+<div id="outline-container-org6dbf286" class="outline-4">
+<h4 id="org6dbf286">&#x91C7;&#x6837;&#x6570;&#x636E;</h4>
+<div class="outline-text-4" id="text-org6dbf286">
+<ul class="org-ul">
+<li>&#x5728;&#x76EE;&#x6807;&#x677F;&#x4E0A;&#x8FD0;&#x884C;&#x88AB;&#x91C7;&#x6837;&#x7684;&#x8FDB;&#x7A0B;&#xFF0C;&#x5E76;&#x4F7F;&#x7528; <code>ps</code> &#x547D;&#x4EE4;&#x53D6;&#x5F97;&#x5176;pid</li>
+<li>&#x4F7F;&#x7528; <code>perf</code> &#x6307;&#x5B9A;&#x5176;pid&#x8FDB;&#x884C;&#x91C7;&#x96C6;</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-orge53bf11" class="outline-4">
+<h4 id="orge53bf11">&#x4F20;&#x8F93;&#x6570;&#x636E;&#x6587;&#x4EF6;</h4>
+<div class="outline-text-4" id="text-orge53bf11">
+<p>
+&#x4F7F;&#x7528; <code>perf script &gt; out.perf</code> &#x751F;&#x6210;&#x6570;&#x636E;&#x6587;&#x4EF6; <code>out.perf</code> &#xFF0C;&#x5E76;&#x901A;&#x8FC7;&#x7F51;&#x53E3;&#xFF0C;&#x4E32;&#x53E3;&#x6216;USB&#x53E3;&#x4F20;&#x8F93;&#x7ED9;&#x4E3B;&#x673A;&#x3002;
+</p>
+</div>
+</div>
+<div id="outline-container-org6c05298" class="outline-4">
+<h4 id="org6c05298">&#x751F;&#x6210;&#x706B;&#x7130;&#x56FE;</h4>
+<div class="outline-text-4" id="text-org6c05298">
+<ul class="org-ul">
+<li>&#x5728; <a href="https://github.com/brendangregg/FlameGraph" target="_blank" rel="noopener">github</a> &#x62F7;&#x8D1D;&#x4EE3;&#x7801;</li>
+<li>&#x4F7F;&#x7528;&#x547D;&#x4EE4; <code>./stackcollapse-perf.pl out.perf &gt; out.folded</code> &#x751F;&#x6210;&#x4E2D;&#x95F4;&#x6587;&#x4EF6; <code>out.folded</code></li>
+<li>&#x4F7F;&#x7528;&#x547D;&#x4EE4; <code>./flamegraph.pl out.folded &gt; kernel.svg</code> &#x751F;&#x6210;&#x56FE;&#x5F62;</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+Last Updated 2020-06-28 Sun 12:00.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+</div>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/debug/" rel="tag"># debug</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/06/14/linux_debug_gdb_sourcedir/" rel="prev" title="[What]GDB 设置源文件路径">
+      <i class="fa fa-chevron-left"></i> [What]GDB 设置源文件路径
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/06/17/linux_memory_overview_consume/" rel="next" title="[What]Linux 进程(用户空间)内存的消耗与泄露">
+      [What]Linux 进程(用户空间)内存的消耗与泄露 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org5a75e84"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x7B80;&amp;#x6613;&amp;#x6B65;&amp;#x9AA4;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgf5240e2"><span class="nav-number">1.1.</span> <span class="nav-text">&amp;#x57FA;&amp;#x672C;&amp;#x547D;&amp;#x4EE4;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgd8bbc44"><span class="nav-number">1.1.1.</span> <span class="nav-text">&amp;#x4E3A;&amp;#x4EC0;&amp;#x4E48;&amp;#x91C7;&amp;#x6837;&amp;#x9891;&amp;#x7387;&amp;#x662F;&amp;#x6BCF;&amp;#x79D2;99&amp;#x6B21;&amp;#x800C;&amp;#x4E0D;&amp;#x662F;100&amp;#x6B21;&amp;#xFF1F;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgc6c3344"><span class="nav-number">1.1.2.</span> <span class="nav-text">perf interrupt took too long</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org667d1fd"><span class="nav-number">1.2.</span> <span class="nav-text">&amp;#x6B65;&amp;#x9AA4;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org6dbf286"><span class="nav-number">1.2.1.</span> <span class="nav-text">&amp;#x91C7;&amp;#x6837;&amp;#x6570;&amp;#x636E;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orge53bf11"><span class="nav-number">1.2.2.</span> <span class="nav-text">&amp;#x4F20;&amp;#x8F93;&amp;#x6570;&amp;#x636E;&amp;#x6587;&amp;#x4EF6;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org6c05298"><span class="nav-number">1.2.3.</span> <span class="nav-text">&amp;#x751F;&amp;#x6210;&amp;#x706B;&amp;#x7130;&amp;#x56FE;</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">我的世界</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">210</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">104</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">38</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+  
+  <span class="post-meta-divider">|</span>
+  <span>Hosted by <a href="https://pages.coding.me" target="_blank" rel="noopener" style="font-weight: bold">Coding Pages</a></span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+<script>
+  (function() {
+    function leancloudSelector(url) {
+      url = encodeURI(url);
+      return document.getElementById(url).querySelector('.leancloud-visitors-count');
+    }
+
+    function addCount(Counter) {
+      var visitors = document.querySelector('.leancloud_visitors');
+      var url = decodeURI(visitors.id);
+      var title = visitors.dataset.flagTitle;
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          if (results.length > 0) {
+            var counter = results[0];
+            leancloudSelector(url).innerText = counter.time + 1;
+            Counter('put', '/classes/Counter/' + counter.objectId, { time: { '__op': 'Increment', 'amount': 1 } })
+              .catch(error => {
+                console.error('Failed to save visitor count', error);
+              });
+          } else {
+              leancloudSelector(url).innerText = 'Counter not initialized! More info at console err msg.';
+              console.error('ATTENTION! LeanCloud counter has security bug, see how to solve it here: https://github.com/theme-next/hexo-leancloud-counter-security. \n However, you can still use LeanCloud without security, by setting `security` option to `false`.');
+            
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    function showTime(Counter) {
+      var visitors = document.querySelectorAll('.leancloud_visitors');
+      var entries = [...visitors].map(element => {
+        return decodeURI(element.id);
+      });
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url: { '$in': entries } })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          for (let url of entries) {
+            let target = results.find(item => item.url === url);
+            leancloudSelector(url).innerText = target ? target.time : 0;
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    let { app_id, app_key, server_url } = {"enable":true,"app_id":"ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI","app_key":"yh4vrfnscme1utPMpk65wcxn","server_url":null,"security":true};
+    function fetchData(api_server) {
+      var Counter = (method, url, data) => {
+        return fetch(`${api_server}/1.1${url}`, {
+          method,
+          headers: {
+            'X-LC-Id'     : app_id,
+            'X-LC-Key'    : app_key,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+      };
+      if (CONFIG.page.isPost) {
+        if (CONFIG.hostname !== location.hostname) return;
+        addCount(Counter);
+      } else if (document.querySelectorAll('.post-title-link').length >= 1) {
+        showTime(Counter);
+      }
+    }
+
+    let api_server = app_id.slice(-9) !== '-MdYXbMMI' ? server_url : `https://${app_id.slice(0, 8).toLowerCase()}.api.lncldglobal.com`;
+
+    if (api_server) {
+      fetchData(api_server);
+    } else {
+      fetch('https://app-router.leancloud.cn/2/route?appId=' + app_id)
+        .then(response => response.json())
+        .then(({ api_server }) => {
+          fetchData('https://' + api_server);
+        });
+    }
+  })();
+</script>
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+  <script defer src="/lib/three/three.min.js"></script>
+    <script defer src="/lib/three/three-waves.min.js"></script>
+    <script defer src="/lib/three/canvas_lines.min.js"></script>
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI',
+      appKey     : 'yh4vrfnscme1utPMpk65wcxn',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

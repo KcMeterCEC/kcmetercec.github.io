@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="zLSyD2CN1AkyJqei3qKraT6372nBgMFKWe6kAj5JDeY">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="&amp;#x8BFE;&amp;#x7A0B;: &amp;#x5B8B;&amp;#x5B9D;&amp;#x534E;&amp;#x8001;&amp;#x5E08;&amp;#x7684;&amp;#x8FDB;&amp;#x7A0B;&amp;#x8BFE;&amp;#x7A0B;              kernel version arch     v4.4.0 arm32">
+<meta property="og:type" content="article">
+<meta property="og:title" content="[What]Linux下进程和线程的基本概念及操作">
+<meta property="og:url" content="http://kcmetercec.top/2018/05/24/linux_ps_overview/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="&amp;#x8BFE;&amp;#x7A0B;: &amp;#x5B8B;&amp;#x5B9D;&amp;#x534E;&amp;#x8001;&amp;#x5E08;&amp;#x7684;&amp;#x8FDB;&amp;#x7A0B;&amp;#x8BFE;&amp;#x7A0B;              kernel version arch     v4.4.0 arm32">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[PS]/[What]ps--basic/linux_process_life_cycle.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[PS]/[What]ps--basic/orphan.jpg?raw=true">
+<meta property="article:published_time" content="2018-05-23T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-06-28T03:58:45.551Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="process">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[PS]/[What]ps--basic/linux_process_life_cycle.jpg?raw=true">
+
+<link rel="canonical" href="http://kcmetercec.top/2018/05/24/linux_ps_overview/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>[What]Linux下进程和线程的基本概念及操作 | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=112423075-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '112423075-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2ab4cc06d0da36106a4426465d0cb00d";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2018/05/24/linux_ps_overview/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="我的世界">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          [What]Linux下进程和线程的基本概念及操作
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-05-24 00:00:00" itemprop="dateCreated datePublished" datetime="2018-05-24T00:00:00+08:00">2018-05-24</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-06-28 11:58:45" itemprop="dateModified" datetime="2020-06-28T11:58:45+08:00">2020-06-28</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/ps/" itemprop="url" rel="index"><span itemprop="name">ps</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/ps/overview/" itemprop="url" rel="index"><span itemprop="name">overview</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2018/05/24/linux_ps_overview/" class="post-meta-item leancloud_visitors" data-flag-title="[What]Linux下进程和线程的基本概念及操作" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2018/05/24/linux_ps_overview/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2018/05/24/linux_ps_overview/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <div id="content">
+<p>
+&#x8BFE;&#x7A0B;: &#x5B8B;&#x5B9D;&#x534E;&#x8001;&#x5E08;&#x7684;&#x8FDB;&#x7A0B;&#x8BFE;&#x7A0B;
+</p>
+
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">kernel version</th>
+<th scope="col" class="org-left">arch</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">v4.4.0</td>
+<td class="org-left">arm32</td>
+</tr>
+</tbody>
+</table>
+
+<a id="more"></a>
+
+<div id="outline-container-org03d8e83" class="outline-2">
+<h2 id="org03d8e83">&#x8FDB;&#x7A0B;</h2>
+<div class="outline-text-2" id="text-org03d8e83">
+<p>
+&#x9996;&#x5148;&#x9700;&#x8981;&#x660E;&#x786E;&#x7684;&#x662F;&#xFF1A;&#x8FDB;&#x7A0B;&#x662F;&#x8D44;&#x6E90;&#x5206;&#x914D;&#x7684;&#x57FA;&#x672C;&#x5355;&#x4F4D;&#xFF0C;&#x7EBF;&#x7A0B;&#x662F;&#x8C03;&#x5EA6;&#x7684;&#x57FA;&#x672C;&#x5355;&#x4F4D;&#x3002;&#x540C;&#x4E00;&#x8FDB;&#x7A0B;&#x91CC;&#x7684;&#x7EBF;&#x7A0B;&#x4E4B;&#x95F4;&#x5171;&#x4EAB;&#x8FDB;&#x7A0B;&#x7684;&#x8D44;&#x6E90;&#x3002;
+</p>
+</div>
+<div id="outline-container-org148243e" class="outline-3">
+<h3 id="org148243e">&#x8FDB;&#x7A0B;&#x7684;&#x8868;&#x793A;</h3>
+<div class="outline-text-3" id="text-org148243e">
+<p>
+&#x5728;Linux&#x5185;&#x6838;&#x4E2D;&#xFF0C;&#x4F7F;&#x7528;&#x7ED3;&#x6784;&#x4F53;(PCB) <code>task_struct</code> &#xFF08;&#x4F4D;&#x4E8E; include/linux/sched.h&#xFF09;&#x6765;&#x8868;&#x660E;&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#xFF0C;&#x5176;&#x4E2D;&#x4E0D;&#x4EC5;&#x5305;&#x62EC;&#x4E86;&#x6B64;&#x8FDB;&#x7A0B;&#x7684;&#x8D44;&#x6E90;&#xFF0C;&#x8FD8;&#x6709;&#x5176;&#x72B6;&#x6001;&#x3001;&#x4F18;&#x5148;&#x7EA7;&#x7B49;&#x53C2;&#x6570;&#x3002;
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> task_struct {</span><br><span class="line">  <span class="keyword">volatile</span> <span class="keyword">long</span> state;	<span class="comment">/* -1 unrunnable, 0 runnable, &gt;0 stopped */</span></span><br><span class="line">  <span class="comment">//...</span></span><br><span class="line">  <span class="keyword">int</span> prio, static_prio, normal_prio;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span> rt_priority;</span><br><span class="line">  <span class="comment">//...</span></span><br><span class="line">  <span class="keyword">struct</span> list_head tasks;</span><br><span class="line">  <span class="comment">//...</span></span><br><span class="line">  <span class="keyword">struct</span> mm_struct *mm, *active_mm;</span><br><span class="line">  <span class="comment">//...</span></span><br><span class="line">  <span class="comment">/* task state */</span></span><br><span class="line">  <span class="keyword">int</span> exit_state;</span><br><span class="line">  <span class="keyword">int</span> exit_code, exit_signal;</span><br><span class="line">  <span class="keyword">int</span> pdeath_signal;  <span class="comment">/*  The signal sent when the parent dies  */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> jobctl;	<span class="comment">/* JOBCTL_*, siglock protected */</span></span><br><span class="line">  <span class="comment">//...</span></span><br><span class="line">  <span class="keyword">pid_t</span> pid;</span><br><span class="line">  <span class="keyword">pid_t</span> tgid;</span><br><span class="line">  <span class="comment">//...</span></span><br><span class="line">  <span class="comment">/*</span><br><span class="line">   * pointers to (original) parent process, youngest child, younger sibling,</span><br><span class="line">   * older sibling, respectively.  (p-&gt;father can be replaced with</span><br><span class="line">   * p-&gt;real_parent-&gt;pid)</span><br><span class="line">   */</span></span><br><span class="line">  <span class="keyword">struct</span> task_struct __rcu *real_parent; <span class="comment">/* real parent process */</span></span><br><span class="line">  <span class="keyword">struct</span> task_struct __rcu *parent; <span class="comment">/* recipient of SIGCHLD, wait4() reports */</span></span><br><span class="line">  <span class="comment">/*</span><br><span class="line">   * children/sibling forms the list of my natural children</span><br><span class="line">   */</span></span><br><span class="line">  <span class="keyword">struct</span> list_head children;	<span class="comment">/* list of my children */</span></span><br><span class="line">  <span class="keyword">struct</span> list_head sibling;	<span class="comment">/* linkage in my parent&apos;s children list */</span></span><br><span class="line">  <span class="keyword">struct</span> task_struct *group_leader;	<span class="comment">/* threadgroup leader */</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">//...</span></span><br><span class="line">  <span class="comment">/* PID/PID hash table linkage. */</span></span><br><span class="line">  <span class="keyword">struct</span> pid_link pids[PIDTYPE_MAX];</span><br><span class="line">  <span class="keyword">struct</span> list_head thread_group;</span><br><span class="line">  <span class="keyword">struct</span> list_head thread_node;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">struct</span> completion *vfork_done;		<span class="comment">/* for vfork() */</span></span><br><span class="line">  <span class="comment">//...</span></span><br><span class="line">  <span class="keyword">cputime_t</span> utime, stime, utimescaled, stimescaled;</span><br><span class="line">  <span class="keyword">cputime_t</span> gtime;</span><br><span class="line">  <span class="keyword">struct</span> prev_cputime prev_cputime;</span><br><span class="line">  <span class="comment">//...</span></span><br><span class="line"><span class="comment">/* filesystem information */</span></span><br><span class="line">  <span class="keyword">struct</span> fs_struct *fs;</span><br><span class="line"><span class="comment">/* open file information */</span></span><br><span class="line">  <span class="keyword">struct</span> files_struct *files;</span><br><span class="line">  <span class="comment">//...</span></span><br><span class="line"><span class="comment">/* signal handlers */</span></span><br><span class="line">  <span class="keyword">struct</span> signal_struct *signal;</span><br><span class="line">  <span class="keyword">struct</span> sighand_struct *sighand;</span><br><span class="line">  <span class="comment">//...</span></span><br><span class="line">};</span><br></pre></td></tr></table></figure>
+</div>
+<p>
+&#x6B64;&#x7ED3;&#x6784;&#x4F53;&#x4E2D;&#x5C31;&#x5305;&#x542B;&#x4E86;&#x5185;&#x5B58;&#x8D44;&#x6E90;&#x3001;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x8DEF;&#x5F84;&#x3001;&#x6253;&#x5F00;&#x7684;&#x6587;&#x4EF6;&#x8D44;&#x6E90;&#x7B49;&#xFF1A;
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> fs_struct {</span><br><span class="line">  <span class="keyword">int</span> users;</span><br><span class="line">  <span class="comment">//...</span></span><br><span class="line">  <span class="comment">//&#x6307;&#x5B9A;&#x4E86;&#x6839;&#x8DEF;&#x5F84;&#x4EE5;&#x53CA;&#x5F53;&#x524D;&#x8DEF;&#x5F84;</span></span><br><span class="line">  <span class="keyword">struct</span> path root, pwd;</span><br><span class="line">};</span><br><span class="line"><span class="comment">/*</span><br><span class="line"> * Open file table structure</span><br><span class="line"> */</span></span><br><span class="line"><span class="keyword">struct</span> files_struct {</span><br><span class="line">  <span class="comment">/*</span><br><span class="line">   * read mostly part</span><br><span class="line">   */</span></span><br><span class="line">  <span class="keyword">atomic_t</span> count;</span><br><span class="line">  <span class="keyword">bool</span> resize_in_progress;</span><br><span class="line">  <span class="keyword">wait_queue_head_t</span> resize_wait;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">struct</span> fdtable __rcu *fdt;</span><br><span class="line">  <span class="keyword">struct</span> fdtable fdtab;</span><br><span class="line">  <span class="comment">/*</span><br><span class="line">   * written part on a separate cache line in SMP</span><br><span class="line">   */</span></span><br><span class="line">  <span class="keyword">spinlock_t</span> file_lock ____cacheline_aligned_in_smp;</span><br><span class="line">  <span class="keyword">int</span> next_fd;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> close_on_exec_init[<span class="number">1</span>];</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> open_fds_init[<span class="number">1</span>];</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> full_fds_bits_init[<span class="number">1</span>];</span><br><span class="line">  <span class="comment">//&#x5B58;&#x50A8;&#x6253;&#x5F00;&#x7684;&#x6587;&#x4EF6;</span></span><br><span class="line">  <span class="keyword">struct</span> file __rcu * fd_array[NR_OPEN_DEFAULT];</span><br><span class="line">};</span><br></pre></td></tr></table></figure>
+</div>
+</div>
+</div>
+<div id="outline-container-org3e0dd5b" class="outline-3">
+<h3 id="org3e0dd5b">&#x8FDB;&#x7A0B;&#x7684;&#x9650;&#x5236;</h3>
+<div class="outline-text-3" id="text-org3e0dd5b">
+<p>
+&#x7CFB;&#x7EDF;&#x4E2D;&#x53EF;&#x4EE5;&#x521B;&#x5EFA;&#x7684;&#x8FDB;&#x7A0B;&#x603B;&#x6570;&#x662F;&#x6709;&#x9650;&#x7684;&#xFF0C;&#x540C;&#x7406;&#x5355;&#x4E2A;&#x7528;&#x6237;&#x53EF;&#x4EE5;&#x521B;&#x5EFA;&#x7684;&#x8FDB;&#x7A0B;&#x6570;&#x4E5F;&#x662F;&#x6709;&#x9650;&#x7684;&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x7528;&#x6237;&#x53EF;&#x4EE5;&#x4F7F;&#x7528; <code>ulimit -u</code> &#x67E5;&#x770B;&#x9650;&#x5236;&#x7684;&#x8FDB;&#x7A0B;&#x6570;&#xFF0C;&#x4E5F;&#x53EF;&#x4EE5;&#x4F7F;&#x7528; <code>getrlimit(),setrlimit()</code> &#x6765;&#x5F97;&#x5230;&#x6216;&#x8BBE;&#x7F6E;&#x8D44;&#x6E90;</li>
+</ul>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;sys/time.h&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;sys/resource.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span><br><span class="line"></span>{</span><br><span class="line">  <span class="keyword">struct</span> rlimit rl;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span>(getrlimit(RLIMIT_NPROC, &amp;rl) != <span class="number">0</span>)</span><br><span class="line">    {</span><br><span class="line">      perror(<span class="string">&quot;can not get the limit of process!&quot;</span>);</span><br><span class="line">    }</span><br><span class="line">  <span class="keyword">if</span>(rl.rlim_cur == RLIM_INFINITY)</span><br><span class="line">    {</span><br><span class="line">      <span class="built_in">printf</span>(<span class="string">&quot;the maximum number of process is unlimit!\n&quot;</span>);</span><br><span class="line">      <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    }</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;The limit number of process is %lu, and the hardware maxinum number of process is %lu\n&quot;</span>,</span><br><span class="line">	 rl.rlim_cur, rl.rlim_max);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+</div>
+</div>
+<div id="outline-container-orge838320" class="outline-4">
+<h4 id="orge838320">fork bomb</h4>
+<div class="outline-text-4" id="text-orge838320">
+<p>
+&#x7531;&#x4E8E;&#x7CFB;&#x7EDF;&#x7684;&#x8FDB;&#x7A0B;&#x662F;&#x6709;&#x9650;&#x7684;&#xFF0C;&#x5982;&#x679C;&#x65E0;&#x9650;&#x5236;&#x7684;&#x521B;&#x5EFA;&#x8FDB;&#x7A0B;&#xFF0C;&#x90A3;&#x6700;&#x7EC8;&#x5C06;&#x5BFC;&#x81F4;&#x8FDB;&#x7A0B;&#x88AB;&#x8017;&#x5149;&#xFF0C;&#x4E5F;&#x5C31;&#x76F8;&#x5F53;&#x4E8E;&#x7CFB;&#x7EDF;&#x8D44;&#x6E90;&#x88AB;&#x6D88;&#x8017;&#x5B8C;&#x800C;&#x51FA;&#x73B0;&#x7CFB;&#x7EDF;&#x6B7B;&#x6389;&#x7684;&#x73B0;&#x8C61;&#x3002;
+</p>
+
+<p>
+<a href="https://en.wikipedia.org/wiki/Fork_bomb" target="_blank" rel="noopener">fork bomb</a> &#x5C31;&#x662F;&#x57FA;&#x4E8E;&#x8FD9;&#x4E2A;&#x539F;&#x7406;&#x505A;&#x51FA;&#x6765;&#x7684;&#x3002;
+</p>
+</div>
+</div>
+<div id="outline-container-org1bcbe21" class="outline-4">
+<h4 id="org1bcbe21">android &#x63D0;&#x6743;&#x6F0F;&#x6D1E;</h4>
+<div class="outline-text-4" id="text-org1bcbe21">
+<p>
+<a href="https://blog.csdn.net/feglass/article/details/46403501" target="_blank" rel="noopener">&#x63D0;&#x6743;&#x6F0F;&#x6D1E;</a> &#x5C31;&#x662F;&#x56E0;&#x4E3A;pid&#x4F1A;&#x88AB;&#x6076;&#x610F;&#x6D88;&#x8017;&#x5B8C;&#xFF0C;&#x800C;&#x4EE3;&#x7801;&#x6CA1;&#x6709;&#x68C0;&#x67E5;&#x81EA;&#x5DF1;&#x964D;&#x6743;&#x6210;&#x529F;&#x800C;&#x5BFC;&#x81F4;&#x7684;root&#x6743;&#x9650;&#x95EE;&#x9898;&#x3002;
+</p>
+</div>
+</div>
+</div>
+<div id="outline-container-org63e2e25" class="outline-3">
+<h3 id="org63e2e25">&#x8FDB;&#x7A0B;&#x7684;&#x94FE;&#x63A5;</h3>
+<div class="outline-text-3" id="text-org63e2e25">
+<p>
+Linux&#x5185;&#x6838;&#x4EE5;&#x4E09;&#x79CD;&#x6570;&#x636E;&#x7ED3;&#x6784;&#x6765;&#x94FE;&#x63A5;&#x8FDB;&#x7A0B;PCB&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>&#x94FE;&#x8868; &#xFF1A; &#x7528;&#x4E8E;&#x904D;&#x5386;&#x6240;&#x6709;&#x8FDB;&#x7A0B;</li>
+<li>&#x6811; &#xFF1A; &#x7528;&#x4E8E;&#x67E5;&#x770B;&#x8FDB;&#x7A0B;&#x7684;&#x7EE7;&#x627F;&#x5173;&#x7CFB;
+<ul class="org-ul">
+<li>&#x4F7F;&#x7528;&#x547D;&#x4EE4; <code>pstree</code> &#x53EF;&#x4EE5;&#x67E5;&#x770B;&#x8FDB;&#x7A0B;&#x7684;&#x6811;&#x5F62;&#x7ED3;&#x6784;</li>
+</ul></li>
+<li>&#x54C8;&#x5E0C;&#x8868; &#xFF1A; &#x7528;&#x4E8E;&#x5FEB;&#x901F;&#x67E5;&#x627E;&#x51FA;&#x8FDB;&#x7A0B;</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-orga513dca" class="outline-3">
+<h3 id="orga513dca">&#x8FDB;&#x7A0B;&#x7684;&#x6811;&#x5F62;&#x7ED3;&#x6784;</h3>
+<div class="outline-text-3" id="text-orga513dca">
+<p>
+&#x8FDB;&#x7A0B;&#x662F;&#x4EE5;&#x6811;&#x7684;&#x5F62;&#x5F0F;&#x521B;&#x5EFA;&#x7684;&#xFF0C;&#x4E5F;&#x662F;&#x57FA;&#x4E8E;&#x8FD9;&#x4E2A;&#x5173;&#x7CFB;&#x4F7F;&#x5F97;&#x7236;&#x8FDB;&#x7A0B;&#x53EF;&#x4EE5;&#x76D1;&#x63A7;&#x5B50;&#x8FDB;&#x7A0B;&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x5F53;&#x5B50;&#x8FDB;&#x7A0B;&#x610F;&#x5916;&#x9000;&#x51FA;&#x540E;&#xFF0C;&#x7236;&#x8FDB;&#x7A0B;&#x53EF;&#x4EE5;&#x83B7;&#x53D6;&#x5176;&#x9000;&#x51FA;&#x7684;&#x539F;&#x56E0;&#x5E76;&#x4E14;&#x91CD;&#x65B0;&#x542F;&#x52A8;&#x5B83;&#x3002;</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-org60473d1" class="outline-3">
+<h3 id="org60473d1">&#x8FDB;&#x7A0B;&#x7684;&#x72B6;&#x6001;</h3>
+<div class="outline-text-3" id="text-org60473d1">
+<img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[PS]/[What]ps--basic/linux_process_life_cycle.jpg?raw=true" alt="linux_process_life_cycle.jpg">
+<p>
+<b>&#x6CE8;&#x610F;&#xFF1A;</b> 
+</p>
+<ol class="org-ol">
+<li>Linux&#x7684;&#x8C03;&#x5EA6;&#x7B97;&#x6CD5;&#x4EC5;&#x9488;&#x5BF9;&#x5C31;&#x7EEA;&#x6001;&#x548C;&#x8FD0;&#x884C;&#x6001;&#x7684;&#x8C03;&#x5EA6;!</li>
+<li>&#x5185;&#x6838;&#x4EE5; <code>task_struct</code> &#x4E3A;&#x5355;&#x4F4D;&#x8FDB;&#x884C;&#x8C03;&#x5EA6;!</li>
+</ol>
+</div>
+<div id="outline-container-orgd831f8d" class="outline-4">
+<h4 id="orgd831f8d">&#x7406;&#x89E3;&#x50F5;&#x6B7B;&#x6001;</h4>
+<div class="outline-text-4" id="text-orgd831f8d">
+<p>
+&#x50F5;&#x6B7B;&#x6001;&#x5C31;&#x662F;&#x8FDB;&#x7A0B;&#x5DF2;&#x7ECF;&#x9000;&#x51FA;&#xFF0C; <b>&#x5176;&#x5360;&#x6709;&#x7684;&#x8D44;&#x6E90;&#x5DF2;&#x7ECF;&#x88AB;&#x91CA;&#x653E;&#xFF0C;&#x4F46;&#x7236;&#x8FDB;&#x7A0B;&#x8FD8;&#x6CA1;&#x6709;&#x6E05;&#x7406;&#x5176;PCB&#x65F6;&#x7684;&#x4E00;&#x4E2A;&#x72B6;&#x6001;</b> &#x3002;
+&#x5F53;&#x7236;&#x8FDB;&#x7A0B;&#x6E05;&#x7406;&#x5B50;&#x8FDB;&#x7A0B;PCB&#x540E;(&#x901A;&#x8FC7; <code>waitpid</code> &#x5B9E;&#x73B0;)&#xFF0C;&#x90A3;&#x4E48;&#x5BF9;&#x4E8E;&#x8BE5;&#x8FDB;&#x7A0B;&#x7684;&#x6240;&#x6709;&#x75D5;&#x8FF9;&#x90FD;&#x88AB;&#x6E05;&#x9664;&#x4E86;&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x53EA;&#x8981;&#x8FDB;&#x7A0B;&#x4E00;&#x9000;&#x51FA;&#xFF0C;&#x5176;&#x6240;&#x5360;&#x6709;&#x7684;&#x6240;&#x6709;&#x8D44;&#x6E90;&#x90FD;&#x88AB;&#x91CA;&#x653E;&#x4E86;&#xFF0C;&#x6240;&#x4EE5;&#x4E0D;&#x7528;&#x62C5;&#x5FC3;&#x4EE3;&#x7801;&#x91CC;&#x9762;&#x52A8;&#x6001;&#x7533;&#x8BF7;&#x7684;&#x5185;&#x5B58;&#x8FD8;&#x672A;&#x6765;&#x5F97;&#x53CA;&#x91CA;&#x653E;</li>
+<li>&#x5982;&#x679C;&#x7236;&#x8FDB;&#x7A0B;&#x6CA1;&#x6709;&#x6E05;&#x7406;&#x5B50;&#x8FDB;&#x7A0B;&#xFF0C;&#x90A3;&#x4E48;&#x5176;&#x6700;&#x540E;&#x7684;PCB&#x5C31;&#x4EE3;&#x8868;&#x5B83;&#x7684;&#x5C38;&#x4F53;&#x5B58;&#x5728;&#x3002;
+<ul class="org-ul">
+<li>&#x53EF;&#x4EE5;&#x901A;&#x8FC7; <code>ps -aux</code> &#x547D;&#x4EE4;&#x6765;&#x67E5;&#x770B;&#x5176;&#x72B6;&#x6001;&#x3002;</li>
+</ul></li>
+</ul>
+
+<p>
+&#x53EF;&#x4EE5;&#x901A;&#x8FC7;&#x4EE5;&#x4E0B;&#x4EE3;&#x7801;&#x6765;&#x7406;&#x89E3;&#xFF1A;
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;sys/wait.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> CLEAR_CHILD_PID <span class="number">1</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span><br><span class="line"></span>{</span><br><span class="line">    <span class="keyword">int</span> status = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">pid_t</span> child_pid = fork();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(child_pid == -<span class="number">1</span>)</span><br><span class="line">    {</span><br><span class="line">	perror(<span class="string">&quot;can not fork process:&quot;</span>);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span>(child_pid == <span class="number">0</span>)</span><br><span class="line">    {</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;This is child process, my pid is %d\n&quot;</span>, getpid());</span><br><span class="line">	<span class="keyword">while</span>(<span class="number">1</span>);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    {</span><br><span class="line"><span class="preprocessor">#<span class="keyword">if</span> CLEAR_CHILD_PID</span></span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;This is parent process, i get child pid is %d\n&quot;</span>, child_pid);</span><br><span class="line">	<span class="keyword">if</span>(waitpid(child_pid, &amp;status, <span class="number">0</span>))</span><br><span class="line">	{</span><br><span class="line"></span><br><span class="line">	}</span><br><span class="line">	<span class="keyword">if</span>(WIFEXITED(status))</span><br><span class="line">	{</span><br><span class="line">	    <span class="built_in">printf</span>(<span class="string">&quot;The child was terminated normally!&quot;</span>);</span><br><span class="line">	    <span class="built_in">printf</span>(<span class="string">&quot;exit status = %d\n&quot;</span>, WEXITSTATUS(status));</span><br><span class="line">	}</span><br><span class="line">	<span class="keyword">if</span>(WIFSIGNALED(status))</span><br><span class="line">	{</span><br><span class="line">	    <span class="built_in">printf</span>(<span class="string">&quot;The child was terminated by signal %d\n&quot;</span>, WTERMSIG(status));</span><br><span class="line"><span class="preprocessor">#<span class="keyword">ifdef</span> WCOREDUMP</span></span><br><span class="line">	    <span class="keyword">if</span>(WCOREDUMP(status))</span><br><span class="line">	    {</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;The child produced a core dump!\n&quot;</span>);</span><br><span class="line">	    }</span><br><span class="line"><span class="preprocessor">#<span class="keyword">endif</span></span></span><br><span class="line">	}</span><br><span class="line">	<span class="keyword">if</span>(WIFSTOPPED(status))</span><br><span class="line">	{</span><br><span class="line">	    <span class="built_in">printf</span>(<span class="string">&quot;The chiild process was stopped by delivery of a signal %d\n&quot;</span>,</span><br><span class="line">		    WSTOPSIG(status));</span><br><span class="line">	}</span><br><span class="line">	<span class="keyword">if</span>(WIFCONTINUED(status))</span><br><span class="line">	{</span><br><span class="line">	    <span class="built_in">printf</span>(<span class="string">&quot;The child process was resumed by delivery of SIGCONT\n&quot;</span>);</span><br><span class="line">	}</span><br><span class="line"><span class="preprocessor">#<span class="keyword">else</span></span></span><br><span class="line">	<span class="keyword">while</span>(<span class="number">1</span>);</span><br><span class="line"><span class="preprocessor">#<span class="keyword">endif</span></span></span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+</div>
+<p>
+&#x53EF;&#x4EE5;&#x770B;&#x5230;:
+</p>
+<ul class="org-ul">
+<li>&#x5F53;&#x7236;&#x8FDB;&#x7A0B;&#x4F7F;&#x7528; <code>waitpid()</code> &#x65F6;&#xFF0C;&#x5916;&#x90E8;&#x4F7F;&#x7528; <code>kill</code> &#x547D;&#x4EE4;&#x540E;&#xFF0C;&#x4F7F;&#x7528; <code>ps -aux</code> &#x770B;&#x4E0D;&#x5230;&#x5B50;&#x8FDB;&#x7A0B;&#x7684;&#x4EFB;&#x4F55;&#x75D5;&#x8FF9;</li>
+<li>&#x5F53;&#x7236;&#x8FDB;&#x7A0B;&#x6CA1;&#x6709;&#x4F7F;&#x7528; <code>waitpid()</code> &#x6765;&#x6E05;&#x9664;&#x5B50;&#x8FDB;&#x7A0B;&#x7684;&#x50F5;&#x6B7B;&#x6001;&#x65F6;&#xFF0C;&#x4F7F;&#x7528; <code>ps -aux</code> &#x770B;&#x5230;&#x5176;&#x72B6;&#x6001;&#x662F; <code>Z+</code> &#x3002;
+<ul class="org-ul">
+<li>&#x5F53;&#x7236;&#x8FDB;&#x7A0B;&#x88AB;&#x7EC8;&#x6B62;&#x540E;&#xFF0C;&#x5176;&#x50F5;&#x6B7B;&#x6001;&#x4E5F;&#x6D88;&#x5931;&#x4E86;&#x3002;</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div id="outline-container-org16a97b0" class="outline-4">
+<h4 id="org16a97b0">&#x7406;&#x89E3;&#x5185;&#x5B58;&#x6CC4;&#x9732;</h4>
+<div class="outline-text-4" id="text-org16a97b0">
+<p>
+&#x6839;&#x636E;&#x4E0A;&#x9762;&#x5BF9;&#x50F5;&#x6B7B;&#x6001;&#x7684;&#x7406;&#x89E3;&#xFF0C;&#x53EF;&#x4EE5;&#x77E5;&#x9053; <b>&#x53EA;&#x8981;&#x8FDB;&#x7A0B;&#x9000;&#x51FA;&#xFF0C;&#x5C31;&#x4F1A;&#x91CA;&#x653E;&#x5176;&#x6240;&#x5360;&#x7684;&#x8D44;&#x6E90;&#xFF0C;&#x4E5F;&#x5C31;&#x6CA1;&#x6709;&#x6240;&#x8C13;&#x7684;&#x5185;&#x5B58;&#x6CC4;&#x9732;</b>
+</p>
+
+<p>
+&#x5185;&#x5B58;&#x6CC4;&#x9732;&#x6307;&#x7684;&#x662F;&#xFF1A; <b>&#x5728;&#x8FDB;&#x7A0B;&#x8FD0;&#x884C;&#x65F6;</b> &#x5176;&#x6240;&#x5360;&#x7528;&#x7684;&#x5185;&#x5B58;&#x968F;&#x7740;&#x65F6;&#x95F4;&#x7684;&#x63A8;&#x79FB;&#x5728;&#x9707;&#x8361;&#x7684;&#x4E0A;&#x5347;&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x6B63;&#x5E38;&#x7684;&#x8FDB;&#x7A0B;&#x6240;&#x5360;&#x7528;&#x7684;&#x5185;&#x5B58;&#x5E94;&#x8BE5;&#x662F;&#x5728;&#x4E00;&#x4E2A;&#x5E73;&#x5747;&#x503C;&#x5468;&#x56F4;&#x9707;&#x8361;&#x3002;</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-orgf0dbc61" class="outline-4">
+<h4 id="orgf0dbc61">&#x7406;&#x89E3;&#x505C;&#x6B62;&#x6001;</h4>
+<div class="outline-text-4" id="text-orgf0dbc61">
+<p>
+&#x505C;&#x6B62;&#x6001;&#x7528;&#x4E8E; <b>&#x4E3B;&#x52A8;&#x6682;&#x505C;&#x8FDB;&#x7A0B;</b> &#xFF0C;&#x6709;&#x70B9;&#x7C7B;&#x4F3C;&#x4E8E;&#x7ED9;&#x8FD9;&#x4E2A;&#x8FDB;&#x7A0B;&#x6253;&#x4E86;&#x4E00;&#x4E2A;&#x65AD;&#x70B9;&#xFF08;&#x6B64;&#x8FDB;&#x7A0B;&#x5DF2;&#x7ECF;&#x4E0D;&#x5360;&#x7528;CPU&#x8D44;&#x6E90;&#xFF09;&#x3002;&#x5728;&#x9700;&#x8981;&#x5176;&#x8FD0;&#x884C;&#x7684;&#x65F6;&#x5019;&#xFF0C;&#x53C8;&#x53EF;&#x4EE5;&#x8BA9;&#x5176;&#x7EE7;&#x7EED;&#x8FD0;&#x884C;&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x7761;&#x7720;&#x662F;&#x8FDB;&#x7A0B;&#x6CA1;&#x6709;&#x83B7;&#x53D6;&#x5230;&#x8D44;&#x6E90;&#x800C; <b>&#x4E3B;&#x52A8;&#x8BA9;&#x51FA;CPU</b></li>
+
+<li>&#x5728;shell&#x4E2D;&#x53EF;&#x4EE5;&#x4F7F;&#x7528; <code>Ctrl + Z</code> &#x6765;&#x8BA9;&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x8FDB;&#x5165;&#x505C;&#x6B62;&#x72B6;&#x6001;&#xFF0C;&#x4F7F;&#x7528; <code>fg</code> &#x6765;&#x8BA9;&#x5176;&#x518D;&#x6B21;&#x524D;&#x53F0;&#x8FD0;&#x884C;&#xFF0C; <code>bg</code> &#x8FDB;&#x5165;&#x540E;&#x53F0;&#x8FD0;&#x884C;
+<ul class="org-ul">
+<li>&#x4E5F;&#x53EF;&#x4EE5;&#x4F7F;&#x7528; <code>cpulimit</code> &#x547D;&#x4EE4;&#x6765;&#x9650;&#x5236;&#x67D0;&#x4E2A;&#x8FDB;&#x7A0B;&#x7684;&#x5229;&#x7528;&#x7387;&#xFF0C;&#x5176;&#x5185;&#x90E8;&#x5C31;&#x662F;&#x5728;&#x8BA9;&#x8FDB;&#x7A0B;&#x95F4;&#x6B47;&#x6027;&#x7684;&#x8FDB;&#x5165;&#x505C;&#x6B62;&#x6001;&#x4EE5;&#x63A7;&#x5236;&#x5176;CPU&#x5229;&#x7528;&#x7387;</li>
+</ul></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-org726a823" class="outline-4">
+<h4 id="org726a823">&#x7406;&#x89E3;&#x7761;&#x7720;</h4>
+<div class="outline-text-4" id="text-org726a823">
+<p>
+&#x5F53;&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x5728;&#x7B49;&#x5F85;&#x8D44;&#x6E90;&#x65F6;&#x4FBF;&#x4F1A;&#x8FDB;&#x5165;&#x7761;&#x7720;&#x6001;&#xFF0C;&#x4E00;&#x822C;&#x60C5;&#x51B5;&#x4E0B;&#x90FD;&#x4F1A;&#x8BBE;&#x7F6E;&#x4E3A;&#x6D45;&#x5EA6;&#x7761;&#x7720;&#xFF0C;&#x53EA;&#x6709;&#x5728;&#x8BFB;&#x5199;&#x5757;&#x8BBE;&#x5907;&#x8FD9;&#x79CD;&#x60C5;&#x51B5;&#x624D;&#x4F1A;&#x6DF1;&#x5EA6;&#x7761;&#x7720;&#x3002;
+</p>
+
+<p>
+&#x7761;&#x7720;&#x7684;&#x5E95;&#x5C42;&#x5B9E;&#x73B0;&#xFF0C;&#x662F;&#x5C06; <code>task_struct</code> <a href="https://kcmetercec.github.io/2018/04/13/linux_IO_overview_block/" target="_blank" rel="noopener">&#x653E;&#x5165;&#x7B49;&#x5F85;&#x961F;&#x5217;&#x4E2D;</a>&#xFF0C;&#x7136;&#x540E;&#x5728;&#x63A5;&#x6536;&#x5230;&#x4FE1;&#x53F7;&#x6216;&#x8D44;&#x6E90;&#x53EF;&#x7528;&#x6765;&#x5524;&#x9192;&#x6B64;&#x961F;&#x5217;&#x4E2D;&#x7684;&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x3002;
+</p>
+</div>
+</div>
+</div>
+<div id="outline-container-org4c1b4ff" class="outline-3">
+<h3 id="org4c1b4ff">fork()</h3>
+<div class="outline-text-3" id="text-org4c1b4ff">
+<p>
+fork()&#x7684;&#x4F5C;&#x7528;&#x662F;&#x5728;&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x7684;&#x57FA;&#x7840;&#x4E0A;&#x4E3A;&#x5176;&#x5206;&#x88C2;&#x51FA;&#x4E00;&#x4E2A;&#x5B50;&#x8FDB;&#x7A0B;&#xFF0C;&#x5176;&#x5185;&#x90E8;&#x662F;&#x4E3A;&#x5B50;&#x8FDB;&#x7A0B;&#x5355;&#x72EC;&#x5206;&#x914D;&#x4E86;&#x4E00;&#x4E2A; <code>task_struct</code> &#x7684;PCB&#x3002;
+</p>
+
+<p>
+&#x6B64;&#x65F6;&#x4E24;&#x4E2A;&#x8FDB;&#x7A0B;&#x5206;&#x522B;&#x901A;&#x8FC7;fork()&#x6765;&#x8FD4;&#x56DE;&#xFF0C;&#x7236;&#x8FDB;&#x7A0B;&#x4E2D;fork()&#x8FD4;&#x56DE;&#x5B50;&#x8FDB;&#x7A0B;&#x7684;pid&#xFF0C;&#x5B50;&#x8FDB;&#x7A0B;&#x4E2D;&#x7684;fork()&#x8FD4;&#x56DE;0&#x3002;
+</p>
+</div>
+<div id="outline-container-orgf61da1d" class="outline-4">
+<h4 id="orgf61da1d">&#x7236;&#x8FDB;&#x7A0B;&#x4E0E;&#x5B50;&#x8FDB;&#x7A0B;&#x8D44;&#x6E90;-&gt;fork()</h4>
+<div class="outline-text-4" id="text-orgf61da1d">
+<p>
+&#x5F53;&#x7236;&#x8FDB;&#x7A0B;&#x901A;&#x8FC7; fork() &#x521B;&#x5EFA;&#x5B50;&#x8FDB;&#x7A0B;&#x65F6;&#xFF0C;&#x5B50;&#x8FDB;&#x7A0B;&#x9664;&#x4E86;&#x62E5;&#x6709;&#x4E00;&#x4E2A;PCB&#x5916;&#xFF0C;&#x4E5F;&#x5177;&#x6709;&#x4E0E;&#x7236;&#x8FDB;&#x7A0B; <b>&#x4E00;&#x6837;&#x7684;&#x8D44;&#x6E90;</b> &#xFF08;&#x5185;&#x5B58;&#x3001;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x3001;&#x6587;&#x4EF6;&#x3001;&#x4FE1;&#x53F7;&#x7B49;&#xFF09;&#x3002;
+</p>
+
+<p>
+&#x5728;&#x63A5;&#x4E0B;&#x6765;&#x7684;&#x8FC7;&#x7A0B;&#x4E2D;&#xFF0C;&#x7236;&#x5B50;&#x8FDB;&#x7A0B;&#x53EF;&#x4EE5;&#x5206;&#x522B;&#x5355;&#x72EC;&#x7684;&#x4FEE;&#x6539;&#x81EA;&#x5DF1;&#x7684;&#x8D44;&#x6E90;&#xFF0C;&#x4E8C;&#x8005;&#x5E76;&#x4E0D;&#x4F1A;&#x51B2;&#x7A81;&#x3002; 
+</p>
+
+<p>
+&#x5728;&#x5B9E;&#x73B0;&#x903B;&#x8F91;&#x7684;&#x8FC7;&#x7A0B;&#x4E2D;&#xFF0C;&#x5185;&#x5B58;&#x8D44;&#x6E90;&#x7684;&#x5206;&#x79BB;&#x662F;&#x57FA;&#x4E8E; <b>&#x5177;&#x6709;MMU&#x652F;&#x6301;&#x7684;COW&#x6280;&#x672F;</b> &#x6765;&#x5B9E;&#x73B0;&#x7684;&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x5728; fork() &#x524D;&#xFF0C;&#x5185;&#x5B58;&#x8D44;&#x6E90;&#x662F;&#x53EF;&#x8BFB;&#x53EF;&#x5199;&#x7684;</li>
+<li>&#x5728; fork() &#x540E;&#x4E8C;&#x8005;&#x7684;&#x5185;&#x5B58;&#x8D44;&#x6E90;&#x90FD; <b>&#x53D8;&#x4E3A;&#x53EA;&#x8BFB;</b> &#x7684;&#xFF0C;&#x6B64;&#x65F6;&#x7236;&#x5B50;&#x8FDB;&#x7A0B;&#x5BF9;&#x5E94;&#x5185;&#x5B58;&#x7684;&#x865A;&#x62DF;&#x5730;&#x5740;&#x548C;&#x7269;&#x7406;&#x5730;&#x5740;&#x90FD;&#x662F;&#x4E00;&#x81F4;&#x7684;</li>
+<li>&#x7236;&#x6216;&#x5B50;&#x8FDB;&#x7A0B;&#x7684;&#x5176;&#x4E2D;&#x4E00;&#x4E2A;&#x4FEE;&#x6539;&#x5185;&#x5B58;&#x65F6;&#xFF0C;&#x4FBF;&#x4F1A;&#x89E6;&#x53D1;MMU&#x7684; pagefault</li>
+<li>&#x7136;&#x540E;&#x5185;&#x6838;&#x4F1A;&#x4E3A;&#x6B64;&#x8FDB;&#x7A0B;&#x8BBF;&#x95EE;&#x7684;&#x5185;&#x5B58;&#x91CD;&#x65B0;&#x7533;&#x8BF7;&#x9875;&#x8868;&#xFF0C;&#x8BA9;&#x5176;&#x5BF9;&#x5E94;&#x5230;&#x53E6;&#x4E00;&#x4E2A;&#x7269;&#x7406;&#x5730;&#x5740;</li>
+<li>&#x6700;&#x540E;&#x7236;&#x5B50;&#x8FDB;&#x7A0B;&#x867D;&#x7136;&#x865A;&#x62DF;&#x5730;&#x5740;&#x4E00;&#x6837;&#xFF0C;&#x4F46;&#x5B83;&#x4EEC;&#x5BF9;&#x5E94;&#x7684;&#x7269;&#x7406;&#x5730;&#x5740;&#x5C31;&#x4E0D;&#x4E00;&#x6837;&#x4E86;&#xFF0C;&#x5E76;&#x4E14;&#x5B83;&#x4EEC;&#x7684;&#x5185;&#x5B58;&#x8D44;&#x6E90;&#x6743;&#x9650;&#x53C8;&#x6062;&#x590D;&#x4E3A;&#x53EF;&#x8BFB;&#x53EF;&#x5199;&#x4E86;</li>
+<li>&#x6700;&#x7EC8;&#x6B64;&#x8FDB;&#x7A0B;&#x7684;&#x5185;&#x5B58;&#x4FEE;&#x6539;&#x624D;&#x6B63;&#x5F0F;&#x751F;&#x6548;</li>
+</ul>
+
+<p>
+&#x6240;&#x6709;&#x5728;&#x5185;&#x5B58;&#x5206;&#x79BB;&#x65F6;&#xFF0C;&#x6700;&#x5F00;&#x59CB;&#x7684;&#x64CD;&#x4F5C;&#x662F;&#x6BD4;&#x8F83;&#x8017;&#x65F6;&#x7684;&#xFF01;
+</p>
+
+<p>
+&#x9A8C;&#x8BC1;&#x5185;&#x5B58;&#x5206;&#x79BB;&#x7684;&#x4EE3;&#x7801;&#x5982;&#x4E0B;&#xFF1A;
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">int</span> val = <span class="number">123</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span><br><span class="line"></span>{</span><br><span class="line">  <span class="keyword">pid_t</span> child_pid = fork();</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span>(child_pid == -<span class="number">1</span>)</span><br><span class="line">    {</span><br><span class="line">      perror(<span class="string">&quot;fork() failed!&quot;</span>);</span><br><span class="line">    }</span><br><span class="line">  <span class="keyword">else</span> <span class="keyword">if</span>(child_pid == <span class="number">0</span>)</span><br><span class="line">    {</span><br><span class="line">      <span class="built_in">printf</span>(<span class="string">&quot;This is child process, my pid is %d\n&quot;</span>, getpid());</span><br><span class="line">      <span class="built_in">printf</span>(<span class="string">&quot;child: val = %d\n&quot;</span>, val);</span><br><span class="line">      val *= <span class="number">2</span>;</span><br><span class="line">      <span class="built_in">printf</span>(<span class="string">&quot;child: val = %d\n&quot;</span>, val);</span><br><span class="line">    }</span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">    {</span><br><span class="line">      sleep(<span class="number">1</span>);</span><br><span class="line">      <span class="built_in">printf</span>(<span class="string">&quot;This is parent process, val  = %d\n&quot;</span>, val);</span><br><span class="line">    }</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+</div>
+</div>
+</div>
+<div id="outline-container-orgbf98f9a" class="outline-4">
+<h4 id="orgbf98f9a">&#x7236;&#x8FDB;&#x7A0B;&#x4E0E;&#x5B50;&#x8FDB;&#x7A0B;&#x8D44;&#x6E90; -&gt; vfork()</h4>
+<div class="outline-text-4" id="text-orgbf98f9a">
+<p>
+&#x5F53;&#x786C;&#x4EF6;&#x4E2D;&#x6CA1;&#x6709;MMU&#x652F;&#x6301;&#x65F6;&#xFF0C;&#x7236;&#x8FDB;&#x7A0B;&#x901A;&#x8FC7;vfork()&#x6765;&#x521B;&#x5EFA;&#x5B50;&#x8FDB;&#x7A0B;&#xFF0C;&#x5B50;&#x8FDB;&#x7A0B;&#x62E5;&#x6709;&#x4E00;&#x4E2A;&#x65B0;&#x7684;PCB&#xFF0C;&#x6B64;&#x65F6;&#x4E8C;&#x8005;&#x662F;&#x5177;&#x6709; <b>&#x5B8C;&#x5168;&#x4E00;&#x6837;&#x7684;&#x5185;&#x5B58;&#x8D44;&#x6E90;&#xFF08;&#x4F46;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x3001;&#x6587;&#x4EF6;&#x3001;&#x4FE1;&#x53F7;&#x7B49;&#x8D44;&#x6E90;&#x662F;&#x5206;&#x79BB;&#x7684;&#xFF09;</b> &#xFF0C;&#x4E14; <b>&#x65E0;&#x6CD5;&#x5B8C;&#x6210;&#x5185;&#x5B58;&#x5206;&#x79BB;</b> &#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x6240;&#x4EE5;&#xFF0C;&#x65E0;&#x8BBA;&#x662F;&#x7236;&#x8FD8;&#x662F;&#x5B50;&#x4FEE;&#x6539;&#x4E86;&#x5185;&#x5B58;&#xFF0C;&#x8FD9;&#x4E9B;&#x4FEE;&#x6539;&#x5BF9;&#x4E8E;&#x53E6;&#x4E00;&#x65B9;&#x662F;&#x53EF;&#x89C1;&#x7684;</li>
+<li>&#x5982;&#x679C;&#x5B50;&#x8FDB;&#x7A0B;&#x6CA1;&#x6709;&#x9000;&#x51FA;&#xFF0C;&#x7236;&#x8FDB;&#x7A0B;&#x662F;&#x65E0;&#x6CD5;&#x8FD0;&#x884C;&#x7684;&#x3002;</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-orgc1c1db8" class="outline-4">
+<h4 id="orgc1c1db8">&#x7236;&#x8FDB;&#x7A0B;&#x4E0E;&#x5B50;&#x8FDB;&#x7A0B;&#x8D44;&#x6E90; -&gt; clone()</h4>
+<div class="outline-text-4" id="text-orgc1c1db8">
+<p>
+&#x7236;&#x8FDB;&#x7A0B;&#x901A;&#x8FC7;clone()&#x6765;&#x521B;&#x5EFA;&#x5B50;&#x8FDB;&#x7A0B;&#xFF0C;&#x5B50;&#x8FDB;&#x7A0B;&#x62E5;&#x6709;&#x4E00;&#x4E2A;&#x65B0;PCB&#xFF0C;&#x6B64;&#x65F6;&#x4E8C;&#x8005;&#x662F;&#x5177;&#x6709; <b>&#x5B8C;&#x5168;&#x4E00;&#x6837;&#x7684;&#x6240;&#x6709;&#x8D44;&#x6E90;&#xFF0C;&#x4E5F;&#x5C31;&#x662F;&#x5171;&#x4EAB;&#x6240;&#x6709;&#x8D44;&#x6E90;</b> &#xFF0C; &#x90A3;&#x5C31;&#x662F;&#x4E00;&#x4E2A;&#x7EBF;&#x7A0B;&#x4E86;!
+</p>
+<ul class="org-ul">
+<li>&#x5B50;&#x8FDB;&#x7A0B;&#x7684;&#x8D44;&#x6E90;&#x6307;&#x9488;&#x76F4;&#x63A5;&#x6307;&#x5411;&#x7236;&#x8FDB;&#x7A0B;&#x7684;&#x8D44;&#x6E90;</li>
+<li>pthread_create()&#x7684;&#x5E95;&#x5C42;&#x5C31;&#x662F;&#x7531;clone()&#x6240;&#x652F;&#x6301;&#x7684;</li>
+</ul>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org9e5c4f5" class="outline-3">
+<h3 id="org9e5c4f5">&#x5B64;&#x513F;</h3>
+<div class="outline-text-3" id="text-org9e5c4f5">
+</div>
+<div id="outline-container-org45df349" class="outline-4">
+<h4 id="org45df349">&#x5B9E;&#x4F8B;&#x5C55;&#x793A;</h4>
+<div class="outline-text-4" id="text-org45df349">
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br></pre></td><td class="code"><pre><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;sys/wait.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> CLEAR_CHILD_PID <span class="number">0</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span><br><span class="line"></span>{</span><br><span class="line">    <span class="keyword">int</span> status = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">pid_t</span> child_pid = fork();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(child_pid == -<span class="number">1</span>)</span><br><span class="line">    {</span><br><span class="line">	perror(<span class="string">&quot;can not fork process:&quot;</span>);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span>(child_pid == <span class="number">0</span>)</span><br><span class="line">    {</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;This is child process, my pid is %d\n&quot;</span>, getpid());</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;check parent pid...\n&quot;</span>);</span><br><span class="line">	<span class="keyword">while</span>(<span class="number">1</span>)</span><br><span class="line">	{</span><br><span class="line">	    <span class="built_in">printf</span>(<span class="string">&quot;My parent pid is %d\n&quot;</span>, getppid());</span><br><span class="line">	    sleep(<span class="number">1</span>);</span><br><span class="line">	}</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    {</span><br><span class="line"><span class="preprocessor">#<span class="keyword">if</span> CLEAR_CHILD_PID</span></span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;This is parent process, i get child pid is %d\n&quot;</span>, child_pid);</span><br><span class="line">	<span class="keyword">if</span>(waitpid(child_pid, &amp;status, <span class="number">0</span>))</span><br><span class="line">	{</span><br><span class="line"></span><br><span class="line">	}</span><br><span class="line">	<span class="keyword">if</span>(WIFEXITED(status))</span><br><span class="line">	{</span><br><span class="line">	    <span class="built_in">printf</span>(<span class="string">&quot;The child was terminated normally!&quot;</span>);</span><br><span class="line">	    <span class="built_in">printf</span>(<span class="string">&quot;exit status = %d\n&quot;</span>, WEXITSTATUS(status));</span><br><span class="line">	}</span><br><span class="line">	<span class="keyword">if</span>(WIFSIGNALED(status))</span><br><span class="line">	{</span><br><span class="line">	    <span class="built_in">printf</span>(<span class="string">&quot;The child was terminated by signal %d\n&quot;</span>, WTERMSIG(status));</span><br><span class="line"><span class="preprocessor">#<span class="keyword">ifdef</span> WCOREDUMP</span></span><br><span class="line">	    <span class="keyword">if</span>(WCOREDUMP(status))</span><br><span class="line">	    {</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;The child produced a core dump!\n&quot;</span>);</span><br><span class="line">	    }</span><br><span class="line"><span class="preprocessor">#<span class="keyword">endif</span></span></span><br><span class="line">	}</span><br><span class="line">	<span class="keyword">if</span>(WIFSTOPPED(status))</span><br><span class="line">	{</span><br><span class="line">	    <span class="built_in">printf</span>(<span class="string">&quot;The chiild process was stopped by delivery of a signal %d\n&quot;</span>,</span><br><span class="line">		    WSTOPSIG(status));</span><br><span class="line">	}</span><br><span class="line">	<span class="keyword">if</span>(WIFCONTINUED(status))</span><br><span class="line">	{</span><br><span class="line">	    <span class="built_in">printf</span>(<span class="string">&quot;The child process was resumed by delivery of SIGCONT\n&quot;</span>);</span><br><span class="line">	}</span><br><span class="line"><span class="preprocessor">#<span class="keyword">else</span></span></span><br><span class="line">	<span class="keyword">while</span>(<span class="number">1</span>)</span><br><span class="line">	{</span><br><span class="line">	    sleep(<span class="number">1</span>);</span><br><span class="line">	}</span><br><span class="line"><span class="preprocessor">#<span class="keyword">endif</span></span></span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+</div>
+<p>
+&#x901A;&#x8FC7;&#x4E0A;&#x9762;&#x7684;&#x4EE3;&#x7801;&#x67E5;&#x770B;&#xFF0C;&#x5F53;kill&#x6389;&#x7236;&#x8FDB;&#x7A0B;&#x4EE5;&#x540E;&#xFF0C;&#x5B50;&#x8FDB;&#x7A0B;&#x7684; parent pid &#x4F1A;&#x53D8;&#x4E3A;&#x53E6;&#x5916;&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x7684;pid&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x6B64;&#x7236;&#x8FDB;&#x7A0B;&#x6709;&#x53EF;&#x80FD;&#x662F;init&#x8FDB;&#x7A0B;&#xFF0C;&#x4E5F;&#x53EF;&#x80FD;&#x662F;&#x5177;&#x6709;subreaper&#x5C5E;&#x6027;&#x7684;&#x8FDB;&#x7A0B;&#x3002;
+<ul class="org-ul">
+<li>&#x8FD9;&#x8981;&#x6839;&#x636E;&#x5B50;&#x8FDB;&#x7A0B;&#x662F;&#x5426;&#x6302;&#x63A5;&#x5728;&#x5404;&#x81EA;&#x7684;&#x94FE;&#x8868;&#x4E2D;</li>
+</ul></li>
+</ul>
+<img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[PS]/[What]ps--basic/orphan.jpg?raw=true" alt="orphan.jpg">
+</div>
+</div>
+<div id="outline-container-orgdf16371" class="outline-4">
+<h4 id="orgdf16371">subreaper</h4>
+<div class="outline-text-4" id="text-orgdf16371">
+<p>
+subrepaer &#x662F;&#x5728;3.4&#x540E;&#x5F15;&#x5165;&#x7684;&#xFF0C;&#x5F53;&#x5C06;&#x8FDB;&#x7A0B;&#x8BBE;&#x7F6E;&#x4E3A; repaer &#x65F6;&#x9700;&#x8981;&#x6CE8;&#x610F;wait&#x5B50;&#x8FDB;&#x7A0B;&#xFF0C;&#x4EE5;&#x56DE;&#x6536;&#x5B83;&#x7684;PCB&#x3002;
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br></pre></td><td class="code"><pre><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;sys/wait.h&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;sys/prctl.h&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;signal.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">sig_handler</span><span class="params">(<span class="keyword">int</span> num)</span></span><br><span class="line"></span>{</span><br><span class="line">    <span class="keyword">int</span> status = <span class="number">0</span>;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;get sig_handler = %d\n&quot;</span>, num);</span><br><span class="line">    <span class="keyword">if</span>(waitpid(-<span class="number">1</span>, &amp;status, <span class="number">0</span>) == -<span class="number">1</span>)</span><br><span class="line">    {</span><br><span class="line">	perror(<span class="string">&quot;wait signal failed!&quot;</span>);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">if</span>(WIFEXITED(status))</span><br><span class="line">    {</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;The child was terminated normally!&quot;</span>);</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;exit status = %d\n&quot;</span>, WEXITSTATUS(status));</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">if</span>(WIFSIGNALED(status))</span><br><span class="line">    {</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;The child was terminated by signal %d\n&quot;</span>, WTERMSIG(status));</span><br><span class="line"><span class="preprocessor">#<span class="keyword">ifdef</span> WCOREDUMP</span></span><br><span class="line">	<span class="keyword">if</span>(WCOREDUMP(status))</span><br><span class="line">	{</span><br><span class="line">	    <span class="built_in">printf</span>(<span class="string">&quot;The child produced a core dump!\n&quot;</span>);</span><br><span class="line">	}</span><br><span class="line"><span class="preprocessor">#<span class="keyword">endif</span></span></span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">if</span>(WIFSTOPPED(status))</span><br><span class="line">    {</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;The chiild process was stopped by delivery of a signal %d\n&quot;</span>,</span><br><span class="line">		WSTOPSIG(status));</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">if</span>(WIFCONTINUED(status))</span><br><span class="line">    {</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;The child process was resumed by delivery of SIGCONT\n&quot;</span>);</span><br><span class="line">    }</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span><br><span class="line"></span>{</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(prctl(PR_SET_CHILD_SUBREAPER, <span class="number">1</span>) &lt; <span class="number">0</span>)</span><br><span class="line">    {</span><br><span class="line">	perror(<span class="string">&quot;can not to be a subreaper!&quot;</span>);</span><br><span class="line">	<span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="keyword">pid_t</span> child_pid = fork();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(child_pid == -<span class="number">1</span>)</span><br><span class="line">    {</span><br><span class="line">	perror(<span class="string">&quot;can not fork process:&quot;</span>);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span>(child_pid == <span class="number">0</span>)</span><br><span class="line">    {</span><br><span class="line">	<span class="keyword">if</span>(fork() == -<span class="number">1</span>)</span><br><span class="line">	{</span><br><span class="line">	    perror(<span class="string">&quot;can not fork process:&quot;</span>);</span><br><span class="line">	}</span><br><span class="line">	<span class="keyword">while</span>(<span class="number">1</span>)</span><br><span class="line">	{</span><br><span class="line">	    <span class="built_in">printf</span>(<span class="string">&quot;childl-&gt; %d parent pid is %d\n&quot;</span>,getpid(), getppid());</span><br><span class="line">	    sleep(<span class="number">1</span>);</span><br><span class="line">	}</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    {</span><br><span class="line">	<span class="keyword">while</span>(<span class="number">1</span>)</span><br><span class="line">	{</span><br><span class="line">	    <span class="keyword">if</span>(signal(SIGCHLD,sig_handler) == SIG_ERR)</span><br><span class="line">	    {</span><br><span class="line">		perror(<span class="string">&quot;wait signal error:&quot;</span>);</span><br><span class="line">	    }</span><br><span class="line">	}</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+</div>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgf13c177" class="outline-3">
+<h3 id="orgf13c177">&#x6839;&#x8FDB;&#x7A0B;</h3>
+<div class="outline-text-3" id="text-orgf13c177">
+<p>
+Linux&#x5728;&#x542F;&#x52A8;&#x7684;&#x8FC7;&#x7A0B;&#x4F1A;&#x521B;&#x5EFA;&#x8FDB;&#x7A0B;0&#xFF0C;&#x6B64;&#x8FDB;&#x7A0B;0&#x4F1A;&#x521B;&#x5EFA;init&#x8FDB;&#x7A0B;1&#xFF0C;&#x6B64;&#x540E;&#x6240;&#x6709;&#x7684;&#x8FDB;&#x7A0B;&#x90FD;&#x662F;&#x6302;&#x63A5;&#x5728;init&#x8FDB;&#x7A0B;&#x4E0B;&#x7684;&#x3002;
+</p>
+
+<p>
+&#x8FDB;&#x7A0B;0&#x5728;&#x5B8C;&#x6210;&#x521B;&#x5EFA;init&#x8FDB;&#x7A0B;&#x540E;&#xFF0C;&#x4F1A;&#x8BBE;&#x7F6E;&#x81EA;&#x5DF1;&#x7684;&#x4F18;&#x5148;&#x7EA7;&#x4E3A;&#x6700;&#x4F4E;&#xFF0C;&#x4E5F;&#x5C31;&#x662F;&#x5C06;&#x81EA;&#x5DF1;&#x9000;&#x5316;&#x6210;&#x4E86;idle&#x8FDB;&#x7A0B;&#x3002;
+&#x5F53;&#x5176;&#x4ED6;&#x8FDB;&#x7A0B;&#x90FD;&#x4E0D;&#x5360;&#x6709;CPU&#x65F6;&#xFF0C;idle&#x8FDB;&#x7A0B;&#x4F1A;&#x8FD0;&#x884C;&#xFF0C;&#x5E76;&#x5C06;CPU&#x7F6E;&#x4E3A;&#x4F4E;&#x529F;&#x8017;&#x6A21;&#x5F0F;&#x3002;
+&#x5F53;&#x63A5;&#x6536;&#x5230;&#x4E2D;&#x65AD;&#x540E;&#xFF0C;&#x5982;&#x679C;&#x6709;&#x5176;&#x4ED6;&#x8FDB;&#x7A0B;&#x8C03;&#x5EA6;&#x4FBF;&#x53C8;&#x4F1A;&#x5C06;CPU&#x8BA9;&#x7ED9;&#x5176;&#x4ED6;&#x8FDB;&#x7A0B;&#x3002;
+</p>
+</div>
+</div>
+</div>
+<div id="outline-container-org04e77e4" class="outline-2">
+<h2 id="org04e77e4">&#x7EBF;&#x7A0B;</h2>
+<div class="outline-text-2" id="text-org04e77e4">
+<p>
+&#x7531;&#x4E0A;&#x9762;&#x7684; <code>clone()</code> &#x53EF;&#x4EE5;&#x770B;&#x51FA;&#xFF1A;&#x5728;Linux&#x4E2D;&#x521B;&#x5EFA;&#x7EBF;&#x7A0B;&#x5B9E;&#x9645;&#x4E0A;&#x5728;&#x5185;&#x6838;&#x4E5F;&#x4F1A;&#x4F4D;&#x7F6E;&#x5206;&#x914D;&#x4E00;&#x4E2A; <code>task_struct</code> &#xFF0C;&#x4F46;&#x5B83;&#x4EEC;&#x7684;&#x8D44;&#x6E90;&#x90FD;&#x6307;&#x5411;&#x540C;&#x4E00;&#x4E2A;&#x5730;&#x5740;&#x3002;
+&#x800C; <code>task_struct</code> &#x4E2D;&#x5177;&#x6709;pid&#xFF0C;&#x8FD9;&#x6837;&#x5728;&#x521B;&#x5EFA;&#x7EBF;&#x7A0B;&#x7684;&#x540C;&#x65F6;&#x4E5F;&#x521B;&#x5EFA;&#x4E86;&#x591A;&#x4E2A;pid&#x3002;
+</p>
+</div>
+<div id="outline-container-orgdcb671f" class="outline-3">
+<h3 id="orgdcb671f">tgid</h3>
+<div class="outline-text-3" id="text-orgdcb671f">
+<p>
+&#x4E3A;&#x4E86;&#x7B26;&#x5408;&#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;&#x4E2D;&#x5173;&#x4E8E;&#x7EBF;&#x7A0B;&#x7684;&#x8981;&#x6C42;&#xFF1A;&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x4E2D;&#x7684;&#x591A;&#x4E2A;&#x7EBF;&#x7A0B;&#x6240;&#x8BBF;&#x95EE;&#x7684;pid&#x90FD;&#x662F;&#x4E00;&#x81F4;&#x7684;&#x3002;
+</p>
+
+<p>
+Linux&#x5185;&#x6838;&#x4F7F;&#x7528; TGID(thread group ID)&#xFF0C;&#x6765;&#x4F7F;&#x5F97;&#x4E0A;&#x5C42;&#x8C03;&#x7528; <code>getpid()</code> &#x65F6;&#x83B7;&#x53D6;&#x7684;pid&#xFF0C;&#x90FD;&#x662F;&#x6700;&#x521D;&#x6B64;&#x8FDB;&#x7A0B;&#x7684;pid&#xFF0C;&#x800C;&#x5176;&#x4ED6;&#x7684;pid&#x88AB;&#x63A9;&#x76D6;&#x4E86;&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x53EF;&#x4EE5;&#x5728;shell&#x4E2D;&#x8BBF;&#x95EE; <code>/proc/[pid]/task/</code> &#x4E2D;&#x770B;&#x5230;&#x51E0;&#x4E2A;&#x88AB;&#x63A9;&#x76D6;&#x7684;pid
+<ul class="org-ul">
+<li>&#x4E5F;&#x53EF;&#x4EE5;&#x4F7F;&#x7528; <code>top -H</code> &#x6765;&#x67E5;&#x770B;&#x5404;&#x4E2A;&#x7EBF;&#x7A0B;&#x5BF9;&#x5E94;&#x7684;Pid</li>
+</ul></li>
+<li>&#x5728;&#x7F16;&#x7A0B;&#x65F6;&#xFF0C;&#x4F7F;&#x7528;&#x7CFB;&#x7EDF;&#x8C03;&#x7528; <code>syscall(__NR_gettid)</code> &#x6765;&#x83B7;&#x53D6;&#x81EA;&#x5DF1;&#x771F;&#x5B9E;&#x7684;pid</li>
+</ul>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;pthread.h&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;sys/syscall.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> pid_t <span class="title">gettid</span><span class="params">(<span class="keyword">void</span>)</span></span><br><span class="line"></span>{</span><br><span class="line">  <span class="keyword">return</span> syscall(__NR_gettid);</span><br><span class="line">}</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> *<span class="title">thread_func</span><span class="params">(<span class="keyword">void</span> *param)</span></span><br><span class="line"></span>{</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;process pid = %d, thread pid = %d, thread_self = %d\n&quot;</span>,</span><br><span class="line">	 getpid(), gettid(), pthread_self());</span><br><span class="line">  <span class="keyword">while</span>(<span class="number">1</span>);</span><br><span class="line">  <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">}</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span><br><span class="line"></span>{</span><br><span class="line">  <span class="keyword">pthread_t</span> tid1, tid2;</span><br><span class="line">  <span class="comment">//pthread_self() &#x662F;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x5E93;&#x6240;&#x521B;&#x5EFA;&#x7684;ID&#xFF0C;&#x5185;&#x6838;&#x4E0D;&#x53EF;&#x89C1;</span></span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;process pid = %d, man thread pid = %d,man thread_self = %d\n&quot;</span>,</span><br><span class="line">	 getpid(), gettid(), pthread_self());</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span>(pthread_create(&amp;tid1, <span class="literal">NULL</span>, thread_func, <span class="literal">NULL</span>) == -<span class="number">1</span>)</span><br><span class="line">    {</span><br><span class="line">      perror(<span class="string">&quot;create thread failed:&quot;</span>);</span><br><span class="line">      <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">    }</span><br><span class="line">  <span class="keyword">if</span>(pthread_create(&amp;tid1, <span class="literal">NULL</span>, thread_func, <span class="literal">NULL</span>) == -<span class="number">1</span>)</span><br><span class="line">    {</span><br><span class="line">      perror(<span class="string">&quot;create thread failed:&quot;</span>);</span><br><span class="line">      <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">    }</span><br><span class="line">  <span class="keyword">if</span>(pthread_create(&amp;tid1, <span class="literal">NULL</span>, thread_func, <span class="literal">NULL</span>) == -<span class="number">1</span>)</span><br><span class="line">    {</span><br><span class="line">      perror(<span class="string">&quot;create thread failed:&quot;</span>);</span><br><span class="line">      <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">    }</span><br><span class="line">  <span class="keyword">while</span>(<span class="number">1</span>);</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+Last Updated 2020-06-28 Sun 12:00.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+</div>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/process/" rel="tag"># process</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/05/17/rf_dsp_liquid_base/" rel="prev" title="[What]liquid-dsp 体验">
+      <i class="fa fa-chevron-left"></i> [What]liquid-dsp 体验
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/05/25/linux_driver_regmap_usage/" rel="next" title="[What]linux -> regmap usage">
+      [What]linux -> regmap usage <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org03d8e83"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x8FDB;&amp;#x7A0B;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org148243e"><span class="nav-number">1.1.</span> <span class="nav-text">&amp;#x8FDB;&amp;#x7A0B;&amp;#x7684;&amp;#x8868;&amp;#x793A;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org3e0dd5b"><span class="nav-number">1.2.</span> <span class="nav-text">&amp;#x8FDB;&amp;#x7A0B;&amp;#x7684;&amp;#x9650;&amp;#x5236;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orge838320"><span class="nav-number">1.2.1.</span> <span class="nav-text">fork bomb</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org1bcbe21"><span class="nav-number">1.2.2.</span> <span class="nav-text">android &amp;#x63D0;&amp;#x6743;&amp;#x6F0F;&amp;#x6D1E;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org63e2e25"><span class="nav-number">1.3.</span> <span class="nav-text">&amp;#x8FDB;&amp;#x7A0B;&amp;#x7684;&amp;#x94FE;&amp;#x63A5;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orga513dca"><span class="nav-number">1.4.</span> <span class="nav-text">&amp;#x8FDB;&amp;#x7A0B;&amp;#x7684;&amp;#x6811;&amp;#x5F62;&amp;#x7ED3;&amp;#x6784;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org60473d1"><span class="nav-number">1.5.</span> <span class="nav-text">&amp;#x8FDB;&amp;#x7A0B;&amp;#x7684;&amp;#x72B6;&amp;#x6001;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgd831f8d"><span class="nav-number">1.5.1.</span> <span class="nav-text">&amp;#x7406;&amp;#x89E3;&amp;#x50F5;&amp;#x6B7B;&amp;#x6001;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org16a97b0"><span class="nav-number">1.5.2.</span> <span class="nav-text">&amp;#x7406;&amp;#x89E3;&amp;#x5185;&amp;#x5B58;&amp;#x6CC4;&amp;#x9732;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgf0dbc61"><span class="nav-number">1.5.3.</span> <span class="nav-text">&amp;#x7406;&amp;#x89E3;&amp;#x505C;&amp;#x6B62;&amp;#x6001;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org726a823"><span class="nav-number">1.5.4.</span> <span class="nav-text">&amp;#x7406;&amp;#x89E3;&amp;#x7761;&amp;#x7720;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org4c1b4ff"><span class="nav-number">1.6.</span> <span class="nav-text">fork()</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgf61da1d"><span class="nav-number">1.6.1.</span> <span class="nav-text">&amp;#x7236;&amp;#x8FDB;&amp;#x7A0B;&amp;#x4E0E;&amp;#x5B50;&amp;#x8FDB;&amp;#x7A0B;&amp;#x8D44;&amp;#x6E90;-&gt;fork()</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgbf98f9a"><span class="nav-number">1.6.2.</span> <span class="nav-text">&amp;#x7236;&amp;#x8FDB;&amp;#x7A0B;&amp;#x4E0E;&amp;#x5B50;&amp;#x8FDB;&amp;#x7A0B;&amp;#x8D44;&amp;#x6E90; -&gt; vfork()</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgc1c1db8"><span class="nav-number">1.6.3.</span> <span class="nav-text">&amp;#x7236;&amp;#x8FDB;&amp;#x7A0B;&amp;#x4E0E;&amp;#x5B50;&amp;#x8FDB;&amp;#x7A0B;&amp;#x8D44;&amp;#x6E90; -&gt; clone()</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org9e5c4f5"><span class="nav-number">1.7.</span> <span class="nav-text">&amp;#x5B64;&amp;#x513F;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org45df349"><span class="nav-number">1.7.1.</span> <span class="nav-text">&amp;#x5B9E;&amp;#x4F8B;&amp;#x5C55;&amp;#x793A;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgdf16371"><span class="nav-number">1.7.2.</span> <span class="nav-text">subreaper</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgf13c177"><span class="nav-number">1.8.</span> <span class="nav-text">&amp;#x6839;&amp;#x8FDB;&amp;#x7A0B;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org04e77e4"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x7EBF;&amp;#x7A0B;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgdcb671f"><span class="nav-number">2.1.</span> <span class="nav-text">tgid</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">我的世界</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">210</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">104</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">38</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+  
+  <span class="post-meta-divider">|</span>
+  <span>Hosted by <a href="https://pages.coding.me" target="_blank" rel="noopener" style="font-weight: bold">Coding Pages</a></span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+<script>
+  (function() {
+    function leancloudSelector(url) {
+      url = encodeURI(url);
+      return document.getElementById(url).querySelector('.leancloud-visitors-count');
+    }
+
+    function addCount(Counter) {
+      var visitors = document.querySelector('.leancloud_visitors');
+      var url = decodeURI(visitors.id);
+      var title = visitors.dataset.flagTitle;
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          if (results.length > 0) {
+            var counter = results[0];
+            leancloudSelector(url).innerText = counter.time + 1;
+            Counter('put', '/classes/Counter/' + counter.objectId, { time: { '__op': 'Increment', 'amount': 1 } })
+              .catch(error => {
+                console.error('Failed to save visitor count', error);
+              });
+          } else {
+              leancloudSelector(url).innerText = 'Counter not initialized! More info at console err msg.';
+              console.error('ATTENTION! LeanCloud counter has security bug, see how to solve it here: https://github.com/theme-next/hexo-leancloud-counter-security. \n However, you can still use LeanCloud without security, by setting `security` option to `false`.');
+            
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    function showTime(Counter) {
+      var visitors = document.querySelectorAll('.leancloud_visitors');
+      var entries = [...visitors].map(element => {
+        return decodeURI(element.id);
+      });
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url: { '$in': entries } })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          for (let url of entries) {
+            let target = results.find(item => item.url === url);
+            leancloudSelector(url).innerText = target ? target.time : 0;
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    let { app_id, app_key, server_url } = {"enable":true,"app_id":"ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI","app_key":"yh4vrfnscme1utPMpk65wcxn","server_url":null,"security":true};
+    function fetchData(api_server) {
+      var Counter = (method, url, data) => {
+        return fetch(`${api_server}/1.1${url}`, {
+          method,
+          headers: {
+            'X-LC-Id'     : app_id,
+            'X-LC-Key'    : app_key,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+      };
+      if (CONFIG.page.isPost) {
+        if (CONFIG.hostname !== location.hostname) return;
+        addCount(Counter);
+      } else if (document.querySelectorAll('.post-title-link').length >= 1) {
+        showTime(Counter);
+      }
+    }
+
+    let api_server = app_id.slice(-9) !== '-MdYXbMMI' ? server_url : `https://${app_id.slice(0, 8).toLowerCase()}.api.lncldglobal.com`;
+
+    if (api_server) {
+      fetchData(api_server);
+    } else {
+      fetch('https://app-router.leancloud.cn/2/route?appId=' + app_id)
+        .then(response => response.json())
+        .then(({ api_server }) => {
+          fetchData('https://' + api_server);
+        });
+    }
+  })();
+</script>
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+  <script defer src="/lib/three/three.min.js"></script>
+    <script defer src="/lib/three/three-waves.min.js"></script>
+    <script defer src="/lib/three/canvas_lines.min.js"></script>
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI',
+      appKey     : 'yh4vrfnscme1utPMpk65wcxn',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="zLSyD2CN1AkyJqei3qKraT6372nBgMFKWe6kAj5JDeY">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="&amp;#x5728;&amp;#x9605;&amp;#x8BFB; &lt;&lt;&amp;#x56FE;&amp;#x89E3;TCPIP&gt;&gt; &amp;#x65F6;&amp;#xFF0C;&amp;#x53EA;&amp;#x7B80;&amp;#x5355;&amp;#x63D0;&amp;#x4E86;&amp;#x4E00;&amp;#x4E0B; arp &amp;#x4E0E; dns&amp;#xFF0C;&amp;#x73B0;&amp;#x5728;&amp;#x5C06;&amp;#x5B83;&amp;#x4EE">
+<meta property="og:type" content="article">
+<meta property="og:title" content="[What]tcp&#x2F;ip 协议族 --&gt; arp 与 dns">
+<meta property="og:url" content="http://kcmetercec.top/2019/10/15/book_linux_server_chapter_1/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="&amp;#x5728;&amp;#x9605;&amp;#x8BFB; &lt;&lt;&amp;#x56FE;&amp;#x89E3;TCPIP&gt;&gt; &amp;#x65F6;&amp;#xFF0C;&amp;#x53EA;&amp;#x7B80;&amp;#x5355;&amp;#x63D0;&amp;#x4E86;&amp;#x4E00;&amp;#x4E0B; arp &amp;#x4E0E; dns&amp;#xFF0C;&amp;#x73B0;&amp;#x5728;&amp;#x5C06;&amp;#x5B83;&amp;#x4EE">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--Linux&#x9AD8;&#x6027;&#x80FD;&#x670D;&#x52A1;&#x5668;&#x7F16;&#x7A0B;/chapter1/arp_format.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--Linux&#x9AD8;&#x6027;&#x80FD;&#x670D;&#x52A1;&#x5668;&#x7F16;&#x7A0B;/chapter1/dns_format.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--Linux&#x9AD8;&#x6027;&#x80FD;&#x670D;&#x52A1;&#x5668;&#x7F16;&#x7A0B;/chapter1/dns_request.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--Linux&#x9AD8;&#x6027;&#x80FD;&#x670D;&#x52A1;&#x5668;&#x7F16;&#x7A0B;/chapter1/dns_rr.jpg?raw=true">
+<meta property="article:published_time" content="2019-10-14T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-06-28T03:58:45.381Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="CS">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--Linux&#x9AD8;&#x6027;&#x80FD;&#x670D;&#x52A1;&#x5668;&#x7F16;&#x7A0B;/chapter1/arp_format.jpg?raw=true">
+
+<link rel="canonical" href="http://kcmetercec.top/2019/10/15/book_linux_server_chapter_1/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>[What]tcp/ip 协议族 --> arp 与 dns | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=112423075-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '112423075-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2ab4cc06d0da36106a4426465d0cb00d";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2019/10/15/book_linux_server_chapter_1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="我的世界">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          [What]tcp/ip 协议族 --> arp 与 dns
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-10-15 00:00:00" itemprop="dateCreated datePublished" datetime="2019-10-15T00:00:00+08:00">2019-10-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-06-28 11:58:45" itemprop="dateModified" datetime="2020-06-28T11:58:45+08:00">2020-06-28</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/book/" itemprop="url" rel="index"><span itemprop="name">book</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/book/Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/" itemprop="url" rel="index"><span itemprop="name">Linux高性能服务器编程</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2019/10/15/book_linux_server_chapter_1/" class="post-meta-item leancloud_visitors" data-flag-title="[What]tcp/ip 协议族 --> arp 与 dns" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2019/10/15/book_linux_server_chapter_1/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2019/10/15/book_linux_server_chapter_1/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <div id="content">
+<p>
+&#x5728;&#x9605;&#x8BFB; <a href="http://kcmetercec.top/categories/book/%25E5%259B%25BE%25E8%25A7%25A3TCPIP-%25E5%2585%25A5%25E9%2597%25A8/">&lt;&lt;&#x56FE;&#x89E3;TCPIP&gt;&gt;</a> &#x65F6;&#xFF0C;&#x53EA;&#x7B80;&#x5355;&#x63D0;&#x4E86;&#x4E00;&#x4E0B; arp &#x4E0E; dns&#xFF0C;&#x73B0;&#x5728;&#x5C06;&#x5B83;&#x4EEC;&#x52A0;&#x6DF1;&#x4E00;&#x4E0B;&#x7406;&#x89E3;&#x3002;
+</p>
+<a id="more"></a>
+<div id="outline-container-orgdeccfc4" class="outline-2">
+<h2 id="orgdeccfc4">ARP</h2>
+<div class="outline-text-2" id="text-orgdeccfc4">
+<p>
+ARP &#x5904;&#x4E8E;&#x7F51;&#x7EDC;&#x5C42;&#xFF0C;&#x5B9E;&#x73B0;&#x7F51;&#x7EDC;&#x5730;&#x5740;&#x5230;&#x7269;&#x7406;&#x5730;&#x5740;&#x7684;&#x8F6C;&#x6362;&#xFF0C;&#x5176;&#x539F;&#x7406;&#x662F;&#xFF1A;&#x4E3B;&#x673A;&#x5411;&#x76EE;&#x6807;&#x673A;&#x5668;&#x53D1;&#x9001; ARP &#x8BF7;&#x6C42;&#xFF0C;&#x76EE;&#x6807;&#x673A;&#x6536;&#x5230;&#x8BF7;&#x6C42;&#x540E;&#x56DE;&#x5E94;&#x5305;&#x542B;&#x81EA;&#x5DF1;&#x7269;&#x7406;&#x5730;&#x5740;&#x7684; ARP &#x5E94;&#x7B54;&#x5305;&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x5B9E;&#x9645;&#x4E0A;&#x6574;&#x4E2A;&#x5C40;&#x57DF;&#x7F51;&#x7EDC;&#x90FD;&#x4F1A;&#x63A5;&#x6536;&#x5230; ARP &#x8BF7;&#x6C42;&#x5305;&#xFF0C;&#x53EA;&#x662F;&#x5176;&#x4ED6;&#x673A;&#x5668;&#x7531;&#x4E8E;&#x76EE;&#x6807;&#x5730;&#x5740;&#x4E0D;&#x5339;&#x914D;&#x800C;&#x4E0D;&#x54CD;&#x5E94;&#x7F62;&#x4E86;&#x3002;</li>
+</ul>
+</div>
+<div id="outline-container-orgf19e289" class="outline-3">
+<h3 id="orgf19e289">&#x62A5;&#x6587;&#x683C;&#x5F0F;</h3>
+<div class="outline-text-3" id="text-orgf19e289">
+<img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--Linux&#x9AD8;&#x6027;&#x80FD;&#x670D;&#x52A1;&#x5668;&#x7F16;&#x7A0B;/chapter1/arp_format.jpg?raw=true" alt="arp_format.jpg">- &#x786C;&#x4EF6;&#x7C7B;&#x578B;&#xFF08;2 &#x5B57;&#x8282;&#xFF09;&#xFF1A;&#x5B9A;&#x4E49;&#x7269;&#x7406;&#x5730;&#x5740;&#x7684;&#x7C7B;&#x578B;&#xFF0C;1 &#x8868;&#x793A; MAC &#x5730;&#x5740;
+<ul class="org-ul">
+<li>&#x534F;&#x8BAE;&#x7C7B;&#x578B;&#xFF08;2 &#x5B57;&#x8282;&#xFF09;&#xFF1A;&#x8981;&#x6620;&#x5C04;&#x7684;&#x534F;&#x8BAE;&#x5730;&#x5740;&#x7C7B;&#x578B;&#xFF0C; 0x800 &#x8868;&#x793A; IP &#x5730;&#x5740;</li>
+<li>&#x786C;&#x4EF6;&#x548C;&#x534F;&#x8BAE;&#x5730;&#x5740;&#x957F;&#x5EA6;&#xFF08;&#x5747; 1 &#x5B57;&#x8282;&#xFF09;&#xFF1A;&#x5206;&#x522B;&#x8868;&#x793A;&#x540E;&#x9762;&#x53D1;&#x9001;&#x7684;&#x7269;&#x7406;&#x5730;&#x5740;&#x548C; IP &#x5730;&#x5740;&#x957F;&#x5EA6;
+<ul class="org-ul">
+<li>&#x5BF9;&#x4E8E; MAC &#x5730;&#x5740;&#x6765;&#x8BF4;&#x5C31;&#x662F; 6 &#x5B57;&#x8282;&#xFF0C;&#x5BF9; IPV4 &#x6765;&#x8BF4;&#x5C31;&#x662F; 4 &#x5B57;&#x8282;</li>
+</ul></li>
+<li>&#x64CD;&#x4F5C;&#xFF08;2 &#x5B57;&#x8282;&#xFF09;&#xFF1A;&#x6307;&#x51FA; ARP &#x7C7B;&#x62A5;&#x6587;&#x7C7B;&#x578B;
+<ul class="org-ul">
+<li>ARP &#x8BF7;&#x6C42;&#xFF1A;1</li>
+<li>ARP &#x5E94;&#x7B54;&#xFF1A;2</li>
+<li>RARP &#x8BF7;&#x6C42;&#xFF1A;3</li>
+<li>RARP &#x5E94;&#x7B54;&#xFF1A;4</li>
+</ul></li>
+<li>&#x53D1;&#x9001;&#x7AEF;&#x53CA;&#x63A5;&#x6536;&#x7AEF;&#x7684;&#x7269;&#x7406;&#x5730;&#x5740;&#x548C; IP &#x5730;&#x5740;&#xFF1A;&#x5BF9;&#x4E8E;&#x6700;&#x5F00;&#x59CB; ARP &#x8BF7;&#x6C42;&#x6765;&#x8BF4;&#xFF0C;&#x4E3B;&#x673A;&#x5E76;&#x4E0D;&#x77E5;&#x9053;&#x76EE;&#x6807;&#x673A;&#x7684;&#x7269;&#x7406;&#x5730;&#x5740;
+<ul class="org-ul">
+<li>&#x76EE;&#x6807;&#x673A;&#x5728;&#x5339;&#x914D; IP &#x5730;&#x5740;&#x4E0E;&#x81EA;&#x5DF1;&#x76F8;&#x7B26;&#x540E;&#xFF0C;&#x4F1A;&#x5C06;&#x81EA;&#x5DF1;&#x7684;&#x7269;&#x7406;&#x5730;&#x5740;&#x586B;&#x5145;&#x5230; ARP &#x5E94;&#x7B54;&#x5305;&#x540E;&#x8FD4;&#x56DE;</li>
+</ul></li>
+</ul>
+
+<p>
+ARP &#x5305;&#x7684;&#x957F;&#x5EA6;&#x4E3A; 28 &#x5B57;&#x8282;&#xFF0C;&#x8FD9;&#x5BF9;&#x4E8E;&#x6570;&#x636E;&#x94FE;&#x8DEF;&#x5C42;&#x6765;&#x8BF4;&#x662F;&#x5C5E;&#x4E8E;&#x6570;&#x636E;&#x90E8;&#x5206;&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x6709;&#x65F6;&#x5019;&#x4F1A;&#x8981;&#x6C42;&#x8BE5;&#x90E8;&#x5206;&#x6700;&#x5C0F;&#x4E3A; 46 &#x5B57;&#x8282;&#xFF0C;&#x6240;&#x4EE5;&#x4F1A;&#x589E;&#x52A0;&#x586B;&#x5145;&#x5B57;&#x8282;&#x3002;</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-org57cd78e" class="outline-3">
+<h3 id="org57cd78e">ARP &#x7684;&#x7F13;&#x5B58;</h3>
+<div class="outline-text-3" id="text-org57cd78e">
+<p>
+ARP &#x7EF4;&#x62A4;&#x4E86;&#x4E00;&#x4E2A;&#x7F13;&#x5B58;&#x6765;&#x4FDD;&#x5B58;&#x6700;&#x8FD1;&#x8BBF;&#x95EE;&#x7684;&#x673A;&#x5668; IP &#x5730;&#x5740;&#x548C;&#x7269;&#x7406;&#x5730;&#x5740;&#x7684;&#x6620;&#x5C04;&#x5173;&#x7CFB;&#x3002;
+</p>
+<ul class="org-ul">
+<li>cache &#x771F;&#x662F;&#x4E2A;&#x63D0;&#x9AD8;&#x6548;&#x7387;&#x7684;&#x597D;&#x4E1C;&#x897F;</li>
+</ul>
+
+<p>
+ARP &#x5E38;&#x7528;&#x547D;&#x4EE4;&#x5982;&#x4E0B;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li><code>arp</code> : &#x67E5;&#x770B;&#x7F13;&#x5B58;&#x7684;&#x6620;&#x5C04;&#x5173;&#x7CFB;</li>
+<li><code>arp -d &lt;ip&gt;</code> : &#x5220;&#x9664;&#x5BF9;&#x5E94; ip &#x7684;&#x7F13;&#x5B58;&#x9879;</li>
+<li><code>arp -s &lt;ip&gt; &lt;mac&gt;</code> : &#x6DFB;&#x52A0; ip &#x548C;&#x7269;&#x7406;&#x5730;&#x5740;&#x6620;&#x5C04;&#x5173;&#x7CFB;</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-orgd691628" class="outline-3">
+<h3 id="orgd691628">&#x67E5;&#x770B; ARP &#x901A;&#x4FE1;&#x8FC7;&#x7A0B;</h3>
+<div class="outline-text-3" id="text-orgd691628">
+<p>
+&#x901A;&#x8FC7;&#x89C2;&#x5BDF;&#x865A;&#x62DF;&#x673A;&#xFF08;192.168.11.9&#xFF09;&#x8BBF;&#x95EE;&#x6811;&#x8393;&#x6D3E;&#xFF08;192.168.11.191&#xFF09;&#x6765;&#x67E5;&#x770B; ARP &#x901A;&#x4FE1;&#x8FC7;&#x7A0B;&#x3002;
+</p>
+
+<p>
+&#x9996;&#x5148;&#x8981;&#x5220;&#x9664;&#x5176; ARP &#x7F13;&#x5B58;&#xFF0C;&#x4E0D;&#x7136;&#x65E0;&#x6CD5;&#x6293;&#x53D6;&#x5230; ARP &#x8BF7;&#x6C42;&#x62A5;&#x6587;&#xFF1A;
+</p>
+<pre class="example">
+sudo arp -d 192.168.11.191</pre>
+<p>
+&#x7136;&#x540E;&#x542F;&#x7528; tcpdump &#x6293;&#x53D6;&#x4E24;&#x8FB9;&#x7684;&#x901A;&#x4FE1;:
+</p>
+<pre class="example">
+sudo tcpdump -i enp0s3 -ent &apos;(dst 192.168.11.191 and src 192.168.11.9)or(dst 192.168.11.9 and src 192.168.11.191)&apos;</pre>
+<p>
+&#x53E6;&#x4E00;&#x4E2A;&#x7EC8;&#x7AEF;&#x542F;&#x52A8; telnet &#x8BBF;&#x95EE;&#x6811;&#x8393;&#x6D3E;&#x7684; echo &#x670D;&#x52A1;&#xFF1A;
+</p>
+<pre class="example">
+telnet 192.168.11.191 echo</pre>
+
+<p>
+&#x6700;&#x540E;&#x6293;&#x53D6;&#x5230;&#x7684; ARP &#x8BF7;&#x6C42;&#x548C;&#x8FD4;&#x56DE;&#x5982;&#x4E0B;&#xFF1A;
+</p>
+<pre class="example">
+08:00:27:a3:4b:28 &gt; ff:ff:ff:ff:ff:ff, ethertype ARP (0x0806), length 42: Request who-has 192.168.11.191 tell 192.168.11.9, length 28
+b8:27:eb:e0:d8:a2 &gt; 08:00:27:a3:4b:28, ethertype ARP (0x0806), length 60: Reply 192.168.11.191 is-at b8:27:eb:e0:d8:a2, length 46
+# &#x7701;&#x7565; ipv4 &#x62A5;&#x6587;
+...
+
+b8:27:eb:e0:d8:a2 &gt; 08:00:27:a3:4b:28, ethertype ARP (0x0806), length 60: Request who-has 192.168.11.9 tell 192.168.11.191, length 46
+08:00:27:a3:4b:28 &gt; b8:27:eb:e0:d8:a2, ethertype ARP (0x0806), length 42: Reply 192.168.11.9 is-at 08:00:27:a3:4b:28, length 28
+
+# &#x7701;&#x7565; ipv4 &#x62A5;&#x6587;
+...</pre>
+<p>
+&#x53EF;&#x4EE5;&#x770B;&#x5230;&#xFF1A;
+</p>
+<ol class="org-ol">
+<li>&#x865A;&#x62DF;&#x673A;&#x9996;&#x5148;&#x4EE5;&#x5E7F;&#x64AD;&#x7684;&#x5F62;&#x5F0F;&#x53D1;&#x9001; ARP &#x8BF7;&#x6C42;&#xFF0C;&#x6811;&#x8393;&#x6D3E;&#x5728;&#x5339;&#x914D;&#x5230; IP &#x5730;&#x5740;&#x4E0E;&#x81EA;&#x5DF1;&#x4E00;&#x81F4;&#x65F6;&#x4FBF;&#x5C06;&#x81EA;&#x5DF1;&#x7684; MAC &#x901A;&#x8FC7; ARP &#x8FD4;&#x56DE;&#x3002;
+<ul class="org-ul">
+<li>&#x5E76;&#x4E14;&#x6811;&#x8393;&#x6D3E;&#x5728;&#x968F;&#x540E;&#x4E5F;&#x53D1;&#x9001;&#x4E86;&#x4E00;&#x6B21; ARP &#x8BF7;&#x6C42;&#xFF0C;&#x4F46;&#x8FD9;&#x6B21;&#x7684;&#x76EE;&#x7684;&#x7269;&#x7406;&#x5730;&#x5740;&#x5C31;&#x662F;&#x660E;&#x786E;&#x7684;&#xFF0C;&#x4E3B;&#x8981;&#x662F;&#x4E3A;&#x4E86;&#x786E;&#x8BA4;&#x7F13;&#x5B58; ARP</li>
+</ul></li>
+<li>&#x865A;&#x62DF;&#x673A;&#x7684; ARP &#x5305;&#x5C31;&#x662F;&#x6807;&#x51C6;&#x7684; 28 &#x5B57;&#x8282;&#xFF0C;&#x800C;&#x6811;&#x8393;&#x6D3E;&#x7684; ARP &#x5305;&#x5219;&#x586B;&#x5145;&#x5230;&#x4E86; 46 &#x5B57;&#x8282;&#x3002;
+<ul class="org-ul">
+<li>&#x7531;&#x4E8E;&#x603B;&#x957F;&#x5EA6;&#x6CA1;&#x6709;&#x8BA1;&#x7B97;&#x6570;&#x636E;&#x94FE;&#x8DEF;&#x5E27;&#x7684;&#x6700;&#x540E; 4 &#x5B57;&#x8282;&#x6821;&#x9A8C;&#xFF0C;&#x6240;&#x4EE5;&#x603B;&#x957F;&#x5EA6;&#x5C31;&#x5206;&#x522B;&#x662F; 42,60 &#x5B57;&#x8282;&#x3002;</li>
+</ul></li>
+</ol>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgd85203f" class="outline-2">
+<h2 id="orgd85203f">DNS</h2>
+<div class="outline-text-2" id="text-orgd85203f">
+<p>
+DNS &#x670D;&#x52A1;&#x5668;&#x662F;&#x591A;&#x4E2A;&#x5206;&#x5E03;&#x5F0F;&#x6309;&#x5C42;&#x7EA7;&#x5206;&#x5E03;&#x7684;&#x670D;&#x52A1;&#x5668;&#x7CFB;&#x7EDF;&#xFF0C;&#x6BCF;&#x4E2A;&#x670D;&#x52A1;&#x5668;&#x8D1F;&#x8D23;&#x5BF9;&#x5E94;&#x7684;&#x57DF;&#x540D;&#x5230; IP &#x5730;&#x5740;&#x7684;&#x6620;&#x5C04;&#x5173;&#x7CFB;&#x3002;
+</p>
+</div>
+<div id="outline-container-org34f543f" class="outline-3">
+<h3 id="org34f543f">&#x62A5;&#x6587;&#x683C;&#x5F0F;</h3>
+<div class="outline-text-3" id="text-org34f543f">
+<img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--Linux&#x9AD8;&#x6027;&#x80FD;&#x670D;&#x52A1;&#x5668;&#x7F16;&#x7A0B;/chapter1/dns_format.jpg?raw=true" alt="dns_format.jpg">
+<ul class="org-ul">
+<li>16 &#x4F4D;&#x6807;&#x8BC6;&#xFF1A;&#x6807;&#x8BB0;&#x4E00;&#x5BF9; DNS &#x67E5;&#x8BE2;&#x548C;&#x5E94;&#x7B54;&#xFF0C;&#x4EE5;&#x533A;&#x5206; DNS &#x5E94;&#x7B54;&#x6240;&#x5BF9;&#x5E94;&#x7684;&#x662F;&#x54EA;&#x4E2A; DNS &#x67E5;&#x8BE2;</li>
+<li>16 &#x4F4D;&#x6807;&#x5FD7;&#xFF1A;&#x534F;&#x5546;&#x5177;&#x4F53;&#x7684;&#x901A;&#x4FE1;&#x65B9;&#x5F0F;&#x548C;&#x53CD;&#x9988;&#x901A;&#x4FE1;&#x72B6;&#x6001;&#xFF0C;16 &#x4F4D;&#x4F9D;&#x6B21;&#x662F;
+<ul class="org-ul">
+<li>QR&#xFF08;1 &#x4F4D;&#xFF09;&#xFF1A;0 &#x8868;&#x793A;&#x662F;&#x67E5;&#x8BE2;&#x62A5;&#x6587;&#xFF0C;1 &#x8868;&#x793A;&#x662F;&#x5E94;&#x7B54;&#x62A5;&#x6587;</li>
+<li>opcode&#xFF08;4 &#x4F4D;&#xFF09;&#xFF1A;&#x67E5;&#x8BE2;&#x548C;&#x5E94;&#x7B54;&#x7684;&#x7C7B;&#x578B;&#xFF0C;0 &#x8868;&#x793A;&#x6807;&#x51C6;&#x67E5;&#x8BE2;&#xFF0C;1 &#x8868;&#x793A;&#x53CD;&#x5411;&#x67E5;&#x8BE2;&#xFF08;&#x4ECE; IP &#x53CD;&#x63A8;&#x51FA;&#x57DF;&#x540D;&#xFF09;&#xFF0C;2 &#x8868;&#x793A;&#x8BF7;&#x6C42;&#x670D;&#x52A1;&#x5668;&#x72B6;&#x6001;</li>
+<li>AA&#xFF08;1 &#x4F4D;&#xFF09;&#xFF1A;&#x6388;&#x6743;&#x5E94;&#x7B54;&#xFF0C;&#x4EC5;&#x7528;&#x4E8E;&#x5E94;&#x7B54;&#x62A5;&#x6587;&#xFF0C;1 &#x8868;&#x793A;&#x57DF;&#x540D;&#x670D;&#x52A1;&#x5668;&#x662F;&#x6388;&#x6743;&#x670D;&#x52A1;&#x5668;</li>
+<li>TC&#xFF08;1 &#x4F4D;&#xFF09;&#xFF1A;&#x622A;&#x65AD;&#x6807;&#x5FD7;&#xFF0C;&#x4EC5;&#x7528;&#x4E8E; DNS &#x62A5;&#x6587;&#x4F7F;&#x7528; UDP &#x670D;&#x52A1;&#x65F6;&#x4F7F;&#x7528;&#xFF0C;1 &#x8868;&#x793A; DNS &#x62A5;&#x6587;&#x8D85;&#x8FC7; 512 &#x5B57;&#x8282;&#x5E76;&#x88AB;&#x622A;&#x65AD;</li>
+<li>RD&#xFF08;1 &#x4F4D;&#xFF09;&#xFF1A;&#x9012;&#x5F52;&#x67E5;&#x8BE2;&#x6807;&#x5FD7;&#xFF0C;1 &#x8868;&#x793A;&#x9012;&#x5F52;&#x67E5;&#x8BE2;&#xFF0C;DNS &#x670D;&#x52A1;&#x5668;&#x5411;&#x5176;&#x5B83; DNS &#x670D;&#x52A1;&#x5668;&#x67E5;&#x8BE2;&#xFF0C;&#x76F4;&#x5230;&#x627E;&#x5230;&#x7ED3;&#x679C;&#x5E76;&#x8FD4;&#x56DE;&#x7ED9;&#x5BA2;&#x6237;&#x7AEF;&#x3002;</li>
+</ul></li>
+</ul>
+<p>
+0 &#x8868;&#x793A;&#x8FED;&#x4EE3;&#x67E5;&#x8BE2;&#xFF0C;&#x76EE;&#x6807; DNS &#x65E0;&#x6CD5;&#x89E3;&#x6790;&#x67D0;&#x4E2A;&#x4E3B;&#x673A;&#x540D;&#xFF0C;&#x5219;&#x5C06;&#x5B83;&#x81EA;&#x5DF1;&#x77E5;&#x9053;&#x7684;&#x5176;&#x4ED6; DNS &#x670D;&#x52A1;&#x5668;&#x7684; IP &#x5730;&#x5740;&#x8FD4;&#x56DE;&#x7ED9;&#x5BA2;&#x6237;&#x7AEF;
+</p>
+<ul class="org-ul">
+<li>RA&#xFF08;1 &#x4F4D;&#xFF09;&#xFF1A;&#x5141;&#x8BB8;&#x9012;&#x5F52;&#x6807;&#x5FD7;&#xFF0C;&#x4EC5;&#x7528;&#x4E8E;&#x5E94;&#x7B54;&#x62A5;&#x6587;&#xFF0C;1 &#x8868;&#x793A; DNS &#x670D;&#x52A1;&#x5668;&#x652F;&#x6301;&#x9012;&#x5F52;&#x67E5;&#x8BE2;</li>
+<li>zero&#xFF08;3 &#x4F4D;&#xFF09;&#xFF1A;&#x4FDD;&#x7559;&#xFF0C;&#x8BBE;&#x7F6E;&#x4E3A; 0</li>
+<li>rcode&#xFF08;4 &#x4F4D;&#xFF09;&#xFF1A;&#x5E94;&#x7B54;&#x72B6;&#x6001;&#xFF0C;0 &#x8868;&#x793A;&#x65E0;&#x9519;&#x8BEF;&#xFF0C;3 &#x8868;&#x793A;&#x57DF;&#x540D;&#x4E0D;&#x5B58;&#x5728;</li>
+</ul>
+<ul class="org-ul">
+<li>&#x63A5;&#x4E0B;&#x6765;&#x7684; 4 &#x4E2A;&#x5B57;&#x6BB5;&#x5206;&#x522B;&#x8868;&#x793A;&#x6700;&#x540E; 4 &#x4E2A;&#x5B57;&#x6BB5;&#x7684;&#x957F;&#x5EA6;&#xFF0C;&#x8FD9;&#x4E9B;&#x957F;&#x5EA6;&#x5F88;&#x636E;&#x67E5;&#x8BE2;&#x62A5;&#x6587;&#x548C;&#x5E94;&#x7B54;&#x62A5;&#x6587;&#x90FD;&#x4E0D;&#x4E00;&#x6837;</li>
+</ul>
+
+<p>
+&#x67E5;&#x8BE2;&#x62A5;&#x6587;&#x5305;&#x542B; 1 &#x4E2A;&#x67E5;&#x8BE2;&#x95EE;&#x9898;&#xFF0C;&#x800C;&#x5E94;&#x7B54;&#x3001;&#x6388;&#x6743;&#x3001;&#x989D;&#x5916;&#x4FE1;&#x606F;&#x4E3A; 0&#x3002;
+</p>
+<img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--Linux&#x9AD8;&#x6027;&#x80FD;&#x670D;&#x52A1;&#x5668;&#x7F16;&#x7A0B;/chapter1/dns_request.jpg?raw=true" alt="dns_request.jpg">
+<ul class="org-ul">
+<li>&#x67E5;&#x8BE2;&#x540D;&#x662F;&#x4EE5;&#x4E00;&#x5B9A;&#x683C;&#x5F0F;&#x5C01;&#x88C5;&#x7684;&#x8981;&#x67E5;&#x8BE2;&#x7684;&#x4E3B;&#x673A;&#x57DF;&#x540D;</li>
+<li>&#x67E5;&#x8BE2;&#x7C7B;&#x578B;&#x8868;&#x793A;&#x5982;&#x4F55;&#x6267;&#x884C;&#x67E5;&#x8BE2;&#x64CD;&#x4F5C;&#xFF1A;
+<ul class="org-ul">
+<li>&#x7C7B;&#x578B; A &#xFF1A;&#x503C;&#x4E3A; 1&#xFF0C;&#x8868;&#x793A;&#x83B7;&#x53D6;&#x76EE;&#x6807;&#x4E3B;&#x673A;&#x7684; IP &#x5730;&#x5740;</li>
+<li>&#x7C7B;&#x578B; CNAME&#xFF1A;&#x503C;&#x4E3A; 5&#xFF0C;&#x8868;&#x793A;&#x83B7;&#x53D6;&#x76EE;&#x6807;&#x4E3B;&#x673A;&#x7684;&#x522B;&#x540D;</li>
+<li>&#x7C7B;&#x578B; PTR&#xFF1A;&#x503C;&#x4E3A; 12&#xFF0C;&#x8868;&#x793A;&#x53CD;&#x5411;&#x67E5;&#x8BE2;</li>
+</ul></li>
+<li>&#x67E5;&#x8BE2;&#x7C7B;&#x503C;&#x4E3A; 1&#xFF0C;&#x8868;&#x793A;&#x83B7;&#x53D6; IP &#x5730;&#x5740;</li>
+</ul>
+
+<p>
+&#x5E94;&#x7B54;&#x62A5;&#x6587;&#x8D44;&#x6E90;&#x4E2A;&#x6570;&#x81F3;&#x5C11;&#x4E3A; 1,&#x800C;&#x6388;&#x6743;&#x3001;&#x989D;&#x5916;&#x8D44;&#x6E90;&#x4E2A;&#x6570;&#x53EF;&#x4EE5;&#x4E3A; 0&#xFF0C;&#x5E94;&#x7B54;&#x3001;&#x6388;&#x6743;&#x5B57;&#x6BB5;&#x548C;&#x989D;&#x5916;&#x4FE1;&#x606F;&#x5B57;&#x6BB5;&#x90FD;&#x4F7F;&#x7528;&#x8D44;&#x6E90;&#x8BB0;&#x5F55;&#xFF08;Resource Record&#xFF0C;RR&#xFF09;&#x683C;&#x5F0F;&#x3002;
+</p>
+
+<p>
+&#x8D44;&#x6E90;&#x8BB0;&#x5F55;&#x683C;&#x5F0F;&#x5982;&#x4E0B;&#xFF1A;
+</p>
+<img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--Linux&#x9AD8;&#x6027;&#x80FD;&#x670D;&#x52A1;&#x5668;&#x7F16;&#x7A0B;/chapter1/dns_rr.jpg?raw=true" alt="dns_rr.jpg">
+<ul class="org-ul">
+<li>32 &#x4F4D;&#x57DF;&#x540D;&#xFF1A;&#x8D44;&#x6E90;&#x7684;&#x540D;&#x5B57;&#xFF0C;&#x548C;&#x67E5;&#x8BE2;&#x62A5;&#x6587;&#x4E2D;&#x7684;&#x540D;&#x5B57;&#x4E00;&#x6837;</li>
+<li>16 &#x4F4D;&#x7C7B;&#x578B;&#x548C;&#x7C7B;&#xFF1A;&#x4E0E;&#x67E5;&#x8BE2;&#x62A5;&#x6587;&#x4E2D;&#x7684;&#x5B57;&#x6BB5;&#x4E00;&#x6837;</li>
+<li>32 &#x4F4D;&#x751F;&#x5B58;&#x65F6;&#x95F4;&#xFF1A;&#x8BE5;&#x67E5;&#x8BE2;&#x8BB0;&#x5F55;&#x7ED3;&#x679C;&#x53EF;&#x88AB;&#x672C;&#x5730;&#x5BA2;&#x6237;&#x7AEF;&#x7F13;&#x5B58;&#x591A;&#x957F;&#x65F6;&#x95F4;&#xFF0C;&#x5355;&#x4F4D;&#x4E3A;&#x79D2;</li>
+<li>16 &#x4E3A;&#x8D44;&#x6E90;&#x6570;&#x636E;&#x957F;&#x5EA6;&#x548C;&#x8D44;&#x6E90;&#x6570;&#x636E;&#xFF1A;&#x5185;&#x5BB9;&#x4E0E;&#x5B57;&#x6BB5;&#x6709;&#x5173;&#xFF0C;&#x5BF9;&#x4E8E;&#x7C7B;&#x578B; A&#xFF0C;&#x8D44;&#x6E90;&#x6570;&#x636E;&#x5C31;&#x662F; IPv4 &#x5730;&#x5740;&#xFF0C;&#x957F;&#x5EA6;&#x5C31;&#x4E3A; 4&#xFF08;&#x4EE5;&#x5B57;&#x8282;&#x4E3A;&#x5355;&#x4F4D;&#xFF09;</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-orga3ad794" class="outline-3">
+<h3 id="orga3ad794">linux &#x4E2D;&#x7684; DNS &#x914D;&#x7F6E;</h3>
+<div class="outline-text-3" id="text-orga3ad794">
+<p>
+linux &#x4F7F;&#x7528; <code>/etc/resolv.conf</code> &#x6587;&#x4EF6;&#x5B58;&#x653E; DNS &#x670D;&#x52A1;&#x5668; IP &#x5730;&#x5740;&#xFF0C;&#x53EF;&#x4EE5;&#x4F7F;&#x7528; <code>systemd-resolve --status</code> &#x547D;&#x4EE4;&#x67E5;&#x770B;&#x5F53;&#x524D;&#x6B63;&#x5728;&#x4F7F;&#x7528;&#x7684; DNS &#x670D;&#x52A1;&#x5668;&#x5730;&#x5740;&#x3002;
+</p>
+<pre class="example">
+#&#x4F7F;&#x7528;&#x4EE5;&#x4E0B;&#x547D;&#x4EE4;&#x67E5;&#x8BE2;&#x57DF;&#x540D;&#x5BF9;&#x5E94;&#x7684; IP &#x5730;&#x5740;
+host -t A &lt;url&gt;</pre>
+</div>
+</div>
+
+<div id="outline-container-org3abb612" class="outline-3">
+<h3 id="org3abb612">&#x67E5;&#x770B; DNS &#x62A5;&#x6587;</h3>
+<div class="outline-text-3" id="text-org3abb612">
+<p>
+&#x4F9D;&#x7136;&#x4F7F;&#x7528; <code>tcpdump</code> &#x6765;&#x6293;&#x53D6;&#x57DF;&#x540D;&#x5305;&#xFF1A;
+</p>
+<pre class="example">
+sudo tcpdump -i enp0s3 -nt -s 500 port domain
+
+cec@virtual:~$ host -t A www.baidu.com
+www.baidu.com is an alias for www.a.shifen.com.
+www.a.shifen.com has address 14.215.177.38
+www.a.shifen.com has address 14.215.177.39</pre>
+<p>
+&#x53EF;&#x4EE5;&#x770B;&#x51FA;&#x5185;&#x5BB9;&#xFF1A;
+</p>
+<pre class="example">
+IP 192.168.11.9.44818 &gt; 192.168.11.1.53: 29153+ A? www.baidu.com. (31)
+IP 192.168.11.1.53 &gt; 192.168.11.9.44818: 29153 3/0/0 CNAME www.a.shifen.com., A 14.215.177.38, A 14.215.177.39 (90)</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+Last Updated 2020-06-28 Sun 11:59.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+</div>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/CS/" rel="tag"># CS</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/10/14/book_linux_server_chapter_3/" rel="prev" title="[What]TCP 协议">
+      <i class="fa fa-chevron-left"></i> [What]TCP 协议
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/10/18/book_linux_server_chapter_2/" rel="next" title="[What]ip 协议">
+      [What]ip 协议 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#orgdeccfc4"><span class="nav-number">1.</span> <span class="nav-text">ARP</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgf19e289"><span class="nav-number">1.1.</span> <span class="nav-text">&amp;#x62A5;&amp;#x6587;&amp;#x683C;&amp;#x5F0F;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org57cd78e"><span class="nav-number">1.2.</span> <span class="nav-text">ARP &amp;#x7684;&amp;#x7F13;&amp;#x5B58;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgd691628"><span class="nav-number">1.3.</span> <span class="nav-text">&amp;#x67E5;&amp;#x770B; ARP &amp;#x901A;&amp;#x4FE1;&amp;#x8FC7;&amp;#x7A0B;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgd85203f"><span class="nav-number">2.</span> <span class="nav-text">DNS</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org34f543f"><span class="nav-number">2.1.</span> <span class="nav-text">&amp;#x62A5;&amp;#x6587;&amp;#x683C;&amp;#x5F0F;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orga3ad794"><span class="nav-number">2.2.</span> <span class="nav-text">linux &amp;#x4E2D;&amp;#x7684; DNS &amp;#x914D;&amp;#x7F6E;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org3abb612"><span class="nav-number">2.3.</span> <span class="nav-text">&amp;#x67E5;&amp;#x770B; DNS &amp;#x62A5;&amp;#x6587;</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">我的世界</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">210</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">104</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">38</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+  
+  <span class="post-meta-divider">|</span>
+  <span>Hosted by <a href="https://pages.coding.me" target="_blank" rel="noopener" style="font-weight: bold">Coding Pages</a></span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+<script>
+  (function() {
+    function leancloudSelector(url) {
+      url = encodeURI(url);
+      return document.getElementById(url).querySelector('.leancloud-visitors-count');
+    }
+
+    function addCount(Counter) {
+      var visitors = document.querySelector('.leancloud_visitors');
+      var url = decodeURI(visitors.id);
+      var title = visitors.dataset.flagTitle;
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          if (results.length > 0) {
+            var counter = results[0];
+            leancloudSelector(url).innerText = counter.time + 1;
+            Counter('put', '/classes/Counter/' + counter.objectId, { time: { '__op': 'Increment', 'amount': 1 } })
+              .catch(error => {
+                console.error('Failed to save visitor count', error);
+              });
+          } else {
+              leancloudSelector(url).innerText = 'Counter not initialized! More info at console err msg.';
+              console.error('ATTENTION! LeanCloud counter has security bug, see how to solve it here: https://github.com/theme-next/hexo-leancloud-counter-security. \n However, you can still use LeanCloud without security, by setting `security` option to `false`.');
+            
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    function showTime(Counter) {
+      var visitors = document.querySelectorAll('.leancloud_visitors');
+      var entries = [...visitors].map(element => {
+        return decodeURI(element.id);
+      });
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url: { '$in': entries } })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          for (let url of entries) {
+            let target = results.find(item => item.url === url);
+            leancloudSelector(url).innerText = target ? target.time : 0;
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    let { app_id, app_key, server_url } = {"enable":true,"app_id":"ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI","app_key":"yh4vrfnscme1utPMpk65wcxn","server_url":null,"security":true};
+    function fetchData(api_server) {
+      var Counter = (method, url, data) => {
+        return fetch(`${api_server}/1.1${url}`, {
+          method,
+          headers: {
+            'X-LC-Id'     : app_id,
+            'X-LC-Key'    : app_key,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+      };
+      if (CONFIG.page.isPost) {
+        if (CONFIG.hostname !== location.hostname) return;
+        addCount(Counter);
+      } else if (document.querySelectorAll('.post-title-link').length >= 1) {
+        showTime(Counter);
+      }
+    }
+
+    let api_server = app_id.slice(-9) !== '-MdYXbMMI' ? server_url : `https://${app_id.slice(0, 8).toLowerCase()}.api.lncldglobal.com`;
+
+    if (api_server) {
+      fetchData(api_server);
+    } else {
+      fetch('https://app-router.leancloud.cn/2/route?appId=' + app_id)
+        .then(response => response.json())
+        .then(({ api_server }) => {
+          fetchData('https://' + api_server);
+        });
+    }
+  })();
+</script>
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+  <script defer src="/lib/three/three.min.js"></script>
+    <script defer src="/lib/three/three-waves.min.js"></script>
+    <script defer src="/lib/three/canvas_lines.min.js"></script>
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI',
+      appKey     : 'yh4vrfnscme1utPMpk65wcxn',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

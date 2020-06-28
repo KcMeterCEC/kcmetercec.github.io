@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="zLSyD2CN1AkyJqei3qKraT6372nBgMFKWe6kAj5JDeY">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="&amp;#x5982;&amp;#x4F55;&amp;#x5728;&amp;#x4F7F;&amp;#x7528;&amp;#x9501;&amp;#x4FDD;&amp;#x8BC1;&amp;#x539F;&amp;#x5B50;&amp;#x6027;&amp;#x7684;&amp;#x540C;&amp;#x65F6;&amp;#xFF0C;&amp;#x5C3D;&amp;#x91CF;&amp;#x63D0;&amp;#x9AD8;&amp;#x7CFB;&amp;#x7EDF;&amp;#x6027;&amp;#x80FD;&amp;#xFF0C;&amp;#x800">
+<meta property="og:type" content="article">
+<meta property="og:title" content="[What]Lock-based Concurrent Data Structures">
+<meta property="og:url" content="http://kcmetercec.top/2020/05/25/book_ostep_concurrency_lock_data/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="&amp;#x5982;&amp;#x4F55;&amp;#x5728;&amp;#x4F7F;&amp;#x7528;&amp;#x9501;&amp;#x4FDD;&amp;#x8BC1;&amp;#x539F;&amp;#x5B50;&amp;#x6027;&amp;#x7684;&amp;#x540C;&amp;#x65F6;&amp;#xFF0C;&amp;#x5C3D;&amp;#x91CF;&amp;#x63D0;&amp;#x9AD8;&amp;#x7CFB;&amp;#x7EDF;&amp;#x6027;&amp;#x80FD;&amp;#xFF0C;&amp;#x800">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/concurrency/locked_data_structures/simple_count.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/concurrency/locked_data_structures/scale_count.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/concurrency/locked_data_structures/scale_count_period.jpg?raw=true">
+<meta property="article:published_time" content="2020-05-24T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-06-28T03:58:45.241Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="CS">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/concurrency/locked_data_structures/simple_count.jpg?raw=true">
+
+<link rel="canonical" href="http://kcmetercec.top/2020/05/25/book_ostep_concurrency_lock_data/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>[What]Lock-based Concurrent Data Structures | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=112423075-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '112423075-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2ab4cc06d0da36106a4426465d0cb00d";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2020/05/25/book_ostep_concurrency_lock_data/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="我的世界">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          [What]Lock-based Concurrent Data Structures
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-05-25 00:00:00" itemprop="dateCreated datePublished" datetime="2020-05-25T00:00:00+08:00">2020-05-25</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-06-28 11:58:45" itemprop="dateModified" datetime="2020-06-28T11:58:45+08:00">2020-06-28</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/book/" itemprop="url" rel="index"><span itemprop="name">book</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/book/ostep/" itemprop="url" rel="index"><span itemprop="name">ostep</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2020/05/25/book_ostep_concurrency_lock_data/" class="post-meta-item leancloud_visitors" data-flag-title="[What]Lock-based Concurrent Data Structures" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2020/05/25/book_ostep_concurrency_lock_data/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2020/05/25/book_ostep_concurrency_lock_data/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <div id="content">
+<p>
+&#x5982;&#x4F55;&#x5728;&#x4F7F;&#x7528;&#x9501;&#x4FDD;&#x8BC1;&#x539F;&#x5B50;&#x6027;&#x7684;&#x540C;&#x65F6;&#xFF0C;&#x5C3D;&#x91CF;&#x63D0;&#x9AD8;&#x7CFB;&#x7EDF;&#x6027;&#x80FD;&#xFF0C;&#x800C;&#x4E0D;&#x662F;&#x8BA9;&#x5176;&#x4ED6;&#x7684;&#x8FDB;&#x7A0B;/&#x7EBF;&#x7A0B;&#x88AB;&#x7761;&#x7720;&#x65F6;&#x95F4;&#x8FC7;&#x957F;&#x3002;
+</p>
+
+<a id="more"></a>
+<div id="outline-container-orga485d4d" class="outline-2">
+<h2 id="orga485d4d">&#x5E76;&#x53D1;&#x8BA1;&#x6570;&#x5668;</h2>
+<div class="outline-text-2" id="text-orga485d4d">
+</div>
+<div id="outline-container-org9355412" class="outline-3">
+<h3 id="org9355412">&#x7B80;&#x5355;&#x7684;&#x8BA1;&#x6570;</h3>
+<div class="outline-text-3" id="text-org9355412">
+<p>
+&#x6700;&#x7B80;&#x5355;&#x7684;&#x6570;&#x636E;&#x7ED3;&#x6784;&#x5C31;&#x662F;&#x4E00;&#x4E2A;&#x8BA1;&#x6570;&#x503C;&#xFF08;&#x4E00;&#x4E2A;&#x6574;&#x6570;&#xFF09;&#xFF0C;&#x5BF9;&#x4E8E;&#x5176;&#x64CD;&#x4F5C;&#x53EF;&#x4EE5;&#x5C01;&#x88C5;&#x4E3A;&#xFF1A;
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> <span class="keyword">__counter_t</span> {</span><br><span class="line">  <span class="keyword">int</span> value;</span><br><span class="line">} <span class="keyword">counter_t</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">init</span><span class="params">(counter_t *c)</span> </span>{</span><br><span class="line">  c-&gt;value = <span class="number">0</span>;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">increment</span><span class="params">(counter_t *c)</span> </span>{</span><br><span class="line">  c-&gt;value++;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">decrement</span><span class="params">(counter_t *c)</span> </span>{</span><br><span class="line">  c-&gt;value--;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">get</span><span class="params">(counter_t *c)</span> </span>{</span><br><span class="line">  <span class="keyword">return</span> c-&gt;value;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+</div>
+<p>
+&#x52A0;&#x4E0A;&#x9501;&#x4EE5;&#x4FDD;&#x8BC1;&#x539F;&#x5B50;&#x6027;&#xFF1A;
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> <span class="keyword">__counter_t</span> {</span><br><span class="line">  <span class="keyword">int</span> value;</span><br><span class="line">  <span class="keyword">pthread_mutex_t</span> lock;</span><br><span class="line">} <span class="keyword">counter_t</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">init</span><span class="params">(counter_t *c)</span> </span>{</span><br><span class="line">  c-&gt;value = <span class="number">0</span>;</span><br><span class="line">  Pthread_mutex_init(&amp;c-&gt;lock, <span class="literal">NULL</span>);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">increment</span><span class="params">(counter_t *c)</span> </span>{</span><br><span class="line">  Pthread_mutex_lock(&amp;c-&gt;lock);</span><br><span class="line">  c-&gt;value++;</span><br><span class="line">  Pthread_mutex_unlock(&amp;c-&gt;lock);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">decrement</span><span class="params">(counter_t *c)</span> </span>{</span><br><span class="line">  Pthread_mutex_lock(&amp;c-&gt;lock);</span><br><span class="line">  c-&gt;value--;</span><br><span class="line">  Pthread_mutex_unlock(&amp;c-&gt;lock);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">get</span><span class="params">(counter_t *c)</span> </span>{</span><br><span class="line">  Pthread_mutex_lock(&amp;c-&gt;lock);</span><br><span class="line">  <span class="keyword">int</span> rc = c-&gt;value;</span><br><span class="line">  Pthread_mutex_unlock(&amp;c-&gt;lock);</span><br><span class="line">  <span class="keyword">return</span> rc;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+</div>
+<p>
+&#x8FD9;&#x79CD;&#x65B9;&#x5F0F;&#x5B9E;&#x73B0;&#x8D77;&#x6765;&#x7B80;&#x5355;&#xFF0C;&#x4F46;&#x5F53;&#x6709;&#x591A;&#x4E2A;&#x7EBF;&#x7A0B;&#x90FD;&#x5728;&#x591A;&#x6B21;&#x6267;&#x884C;&#x6B64;&#x64CD;&#x4F5C;&#x65F6;&#xFF0C;&#x76F8;&#x4E92;&#x7684;&#x7B49;&#x5F85;&#x4F1A;&#x5BFC;&#x81F4;&#x5904;&#x7406;&#x65F6;&#x95F4;&#x88AB;&#x62C9;&#x957F;&#xFF1A;
+</p>
+<img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/concurrency/locked_data_structures/simple_count.jpg?raw=true" alt="simple_count.jpg">
+<p>
+&#x4E0A;&#x56FE; <code>Precise</code> &#x5C31;&#x4EE3;&#x8868;&#x7684;&#x662F;&#x7B80;&#x5355;&#x8BA1;&#x6570;&#x65B9;&#x5F0F;&#x968F;&#x7740; CPU &#x6570;&#x7684;&#x589E;&#x52A0;&#x800C;&#x6D88;&#x8017;&#x7684;&#x65F6;&#x95F4;&#x3002;
+</p>
+</div>
+</div>
+<div id="outline-container-orgdc70c5f" class="outline-3">
+<h3 id="orgdc70c5f">&#x7075;&#x6D3B;&#x7684;&#x8BA1;&#x6570;</h3>
+<div class="outline-text-3" id="text-orgdc70c5f">
+<p>
+&#x7075;&#x6D3B;&#x8BA1;&#x6570;&#x65B9;&#x6CD5;&#x662F;&#xFF1A;&#x4E3A;&#x6BCF;&#x4E2A; CPU &#x521B;&#x5EFA;&#x5176;&#x672C;&#x5730;&#x7684;&#x8BA1;&#x6570;&#x503C;&#xFF08;&#x6B64;&#x8BA1;&#x6570;&#x503C;&#x4E5F;&#x8981;&#x52A0;&#x9501;&#xFF09;&#x3002;&#x6BCF;&#x9694;&#x4E00;&#x6BB5;&#x65F6;&#x95F4;&#xFF0C;
+&#x5C06;&#x672C;&#x5730;&#x8BA1;&#x6570;&#x503C;&#x9644;&#x52A0;&#x5230;&#x5168;&#x5C40;&#x7684;&#x8BA1;&#x6570;&#x503C;&#x4E0A;&#xFF08;&#x4FEE;&#x6539;&#x5168;&#x5C40;&#x8BA1;&#x6570;&#x503C;&#x65F6;&#x4E5F;&#x8981;&#x52A0;&#x9501;&#xFF09;&#xFF0C;&#x7136;&#x540E;&#x672C;&#x5730;&#x8BA1;&#x6570;&#x503C;&#x8BBE;&#x7F6E;
+&#x4E3A; 0&#x3002;&#x8FD9;&#x6837;&#x5BF9;&#x4E8E;&#x5404; CPU &#x6765;
+&#x8BF4;&#xFF0C;&#x9664;&#x4E86;&#x66F4;&#x65B0;&#x5168;&#x5C40;&#x8BA1;&#x6570;&#x503C;&#x65F6;&#x53EF;&#x80FD;&#x4F1A;&#x6709;&#x76F8;&#x4E92;&#x7B49;&#x5F85;&#x7684;&#x60C5;&#x51B5;&#xFF0C;&#x5728;&#x66F4;&#x65B0;&#x672C;&#x5730;&#x8BA1;&#x6570;&#x503C;&#x65F6;&#x662F;&#x53EF;&#x4EE5;&#x505A;&#x5230;&#x5E76;&#x884C;
+&#x8BA1;&#x7B97;&#x7684;&#x3002;
+</p>
+
+<img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/concurrency/locked_data_structures/scale_count.jpg?raw=true" alt="scale_count.jpg">
+<p>
+&#x5982;&#x4E0A;&#x56FE;&#x6240;&#x793A;&#xFF0C;&#x4E00;&#x5171;&#x6709; 4 &#x4E2A; CPU &#x5BF9;&#x5E94; 4 &#x4E2A;&#x7EBF;&#x7A0B;&#xFF0C;&#x6BCF;&#x4E2A;&#x7EBF;&#x7A0B;&#x5728;&#x66F4;&#x65B0;&#x672C;&#x5730;&#x7684;&#x8BA1;&#x6570;&#x503C;&#x3002;&#x6BCF;&#x9694; 5 &#x4E2A;
+&#x5355;&#x4F4D;&#x65F6;&#x95F4;&#x5C31;&#x5C06;&#x672C;&#x5730;&#x7684;&#x8BA1;&#x6570;&#x503C;&#x9644;&#x52A0;&#x7ED9;&#x5168;&#x5C40;&#x8BA1;&#x6570;&#x503C;&#xFF0C;&#x7136;&#x540E;&#x81EA;&#x8EAB;&#x6E05;&#x96F6;&#x3002;
+</p>
+
+<p>
+&#x4E0A;&#x4E0A;&#x56FE;&#x4E2D;&#x7684; <code>Approximate</code> &#x5C31;&#x4EE3;&#x8868;&#x7075;&#x6D3B;&#x8BA1;&#x6570;&#x65B9;&#x5F0F;&#x6240;&#x6D88;&#x8017;&#x7684;&#x65F6;&#x95F4;&#xFF0C;&#x6838;&#x5FC3;&#x6570;&#x7684;&#x589E;&#x52A0;&#x5E76;&#x4E0D;&#x4F1A;&#x663E;&#x8457;
+&#x589E;&#x52A0;&#x603B;&#x6D88;&#x8017;&#x65F6;&#x95F4;&#x3002;
+</p>
+
+<p>
+&#x800C;&#x66F4;&#x65B0;&#x5468;&#x671F;&#x4F1A;&#x663E;&#x8457;&#x7684;&#x5F71;&#x54CD;&#x5904;&#x7406;&#x65F6;&#x95F4;&#xFF1A;
+</p>
+<img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/concurrency/locked_data_structures/scale_count_period.jpg?raw=true" alt="scale_count_period.jpg">
+<p>
+&#x5982;&#x679C;&#x66F4;&#x65B0;&#x5468;&#x671F;&#x8D8A;&#x77ED;&#xFF0C;&#x90A3;&#x4E48;&#x76F8;&#x4E92;&#x7B49;&#x5F85;&#x8D8A;&#x9891;&#x7E41;&#xFF0C;&#x5168;&#x5C40;&#x8BA1;&#x6570;&#x5668;&#x66F4;&#x65B0;&#x5C31;&#x8D8A;&#x53CA;&#x65F6;&#x3002;
+&#x5982;&#x679C;&#x66F4;&#x65B0;&#x5468;&#x671F;&#x8D8A;&#x957F;&#xFF0C;&#x76F8;&#x4E92;&#x7B49;&#x5F85;&#x7684;&#x6B21;&#x6570;&#x5C31;&#x8D8A;&#x5C11;&#xFF0C;&#x4F46;&#x5168;&#x5C40;&#x8BA1;&#x6570;&#x5668;&#x7684;&#x66F4;&#x65B0;&#x5EF6;&#x8FDF;&#x5C31;&#x8D8A;&#x5927;&#x3002;
+</p>
+
+<p>
+&#x7075;&#x6D3B;&#x8BA1;&#x6570;&#x65B9;&#x5F0F;&#x793A;&#x4F8B;&#x4EE3;&#x7801;&#x5982;&#x4E0B;&#xFF1A;
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> <span class="keyword">__counter_t</span> {</span><br><span class="line"><span class="keyword">int</span> global; <span class="comment">// global count</span></span><br><span class="line"><span class="keyword">pthread_mutex_t</span> glock; <span class="comment">// global lock</span></span><br><span class="line"><span class="keyword">int</span> local[NUMCPUS]; <span class="comment">// per-CPU count</span></span><br><span class="line"><span class="keyword">pthread_mutex_t</span> llock[NUMCPUS]; <span class="comment">// ... and locks</span></span><br><span class="line"><span class="keyword">int</span> threshold; <span class="comment">// update frequency</span></span><br><span class="line">} <span class="keyword">counter_t</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// init: record threshold, init locks, init values</span></span><br><span class="line"><span class="comment">// of all local counts and global count</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">init</span><span class="params">(counter_t *c, <span class="keyword">int</span> threshold)</span> </span>{</span><br><span class="line">c-&gt;threshold = threshold;</span><br><span class="line">c-&gt;global = <span class="number">0</span>;</span><br><span class="line">pthread_mutex_init(&amp;c-&gt;glock, <span class="literal">NULL</span>);</span><br><span class="line"><span class="keyword">int</span> i;</span><br><span class="line"><span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; NUMCPUS; i++) {</span><br><span class="line">c-&gt;local[i] = <span class="number">0</span>;</span><br><span class="line">pthread_mutex_init(&amp;c-&gt;llock[i], <span class="literal">NULL</span>);</span><br><span class="line">}</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="comment">// update: usually, just grab local lock and update</span></span><br><span class="line"><span class="comment">// local amount; once local count has risen &#x2019;threshold&#x2019;,</span></span><br><span class="line"><span class="comment">// grab global lock and transfer local values to it</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">update</span><span class="params">(counter_t *c, <span class="keyword">int</span> threadID, <span class="keyword">int</span> amt)</span> </span>{</span><br><span class="line"><span class="keyword">int</span> cpu = threadID % NUMCPUS;</span><br><span class="line">pthread_mutex_lock(&amp;c-&gt;llock[cpu]);</span><br><span class="line">c-&gt;local[cpu] += amt;</span><br><span class="line"><span class="keyword">if</span> (c-&gt;local[cpu] &gt;= c-&gt;threshold) {</span><br><span class="line"><span class="comment">// transfer to global (assumes amt&gt;0)</span></span><br><span class="line">pthread_mutex_lock(&amp;c-&gt;glock);</span><br><span class="line">c-&gt;global += c-&gt;local[cpu];</span><br><span class="line">pthread_mutex_unlock(&amp;c-&gt;glock);</span><br><span class="line">c-&gt;local[cpu] = <span class="number">0</span>;</span><br><span class="line">}</span><br><span class="line">pthread_mutex_unlock(&amp;c-&gt;llock[cpu]);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="comment">// get: just return global amount (approximate)</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">get</span><span class="params">(counter_t *c)</span> </span>{</span><br><span class="line">pthread_mutex_lock(&amp;c-&gt;glock);</span><br><span class="line"><span class="keyword">int</span> val = c-&gt;global;</span><br><span class="line">pthread_mutex_unlock(&amp;c-&gt;glock);</span><br><span class="line"><span class="keyword">return</span> val; <span class="comment">// only approximate!</span></span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-orgd299677" class="outline-2">
+<h2 id="orgd299677">&#x5E76;&#x53D1;&#x94FE;&#x8868;</h2>
+<div class="outline-text-2" id="text-orgd299677">
+</div>
+<div id="outline-container-org9ad7a90" class="outline-3">
+<h3 id="org9ad7a90">&#x7B80;&#x6613;&#x4E92;&#x65A5;&#x94FE;&#x8868;</h3>
+<div class="outline-text-3" id="text-org9ad7a90">
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// basic node structure</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> <span class="keyword">__node_t</span> {</span><br><span class="line">  <span class="keyword">int</span> key;</span><br><span class="line">  <span class="keyword">struct</span> <span class="keyword">__node_t</span> *next;</span><br><span class="line">} <span class="keyword">node_t</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// basic list structure (one used per list)</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> <span class="keyword">__list_t</span> {</span><br><span class="line">  <span class="keyword">node_t</span> *head;</span><br><span class="line">  <span class="keyword">pthread_mutex_t</span> lock;</span><br><span class="line">} <span class="keyword">list_t</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">List_Init</span><span class="params">(list_t *L)</span> </span>{</span><br><span class="line">  L-&gt;head = <span class="literal">NULL</span>;</span><br><span class="line">  pthread_mutex_init(&amp;L-&gt;lock, <span class="literal">NULL</span>);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">List_Insert</span><span class="params">(list_t *L, <span class="keyword">int</span> key)</span> </span>{</span><br><span class="line">  <span class="keyword">node_t</span> *<span class="keyword">new</span> = <span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="keyword">node_t</span>));</span><br><span class="line">  <span class="keyword">if</span> (<span class="keyword">new</span> == <span class="literal">NULL</span>) {</span><br><span class="line">    perror(<span class="string">&quot;malloc&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> -<span class="number">1</span>; <span class="comment">// fail</span></span><br><span class="line">  }</span><br><span class="line">  <span class="keyword">new</span>-&gt;key = key;</span><br><span class="line"></span><br><span class="line">  pthread_mutex_lock(&amp;L-&gt;lock);</span><br><span class="line">  <span class="keyword">new</span>-&gt;next = L-&gt;head;</span><br><span class="line">  L-&gt;head = <span class="keyword">new</span>;</span><br><span class="line">  pthread_mutex_unlock(&amp;L-&gt;lock);</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>; <span class="comment">// success</span></span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">List_Lookup</span><span class="params">(list_t *L, <span class="keyword">int</span> key)</span> </span>{</span><br><span class="line">  <span class="keyword">int</span> rv = -<span class="number">1</span>;</span><br><span class="line">  pthread_mutex_lock(&amp;L-&gt;lock);</span><br><span class="line">  <span class="keyword">node_t</span> *curr = L-&gt;head;</span><br><span class="line">  <span class="keyword">while</span> (curr) {</span><br><span class="line">    <span class="keyword">if</span> (curr-&gt;key == key) {</span><br><span class="line">	rv = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">break</span>;</span><br><span class="line">    }</span><br><span class="line">    curr = curr-&gt;next;</span><br><span class="line">  }</span><br><span class="line">  pthread_mutex_unlock(&amp;L-&gt;lock);</span><br><span class="line">  <span class="keyword">return</span> rv; <span class="comment">// failure</span></span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+</div>
+</div>
+</div>
+<div id="outline-container-org6c1be4e" class="outline-3">
+<h3 id="org6c1be4e">&#x7075;&#x6D3B;&#x4E92;&#x65A5;&#x94FE;&#x8868;</h3>
+<div class="outline-text-3" id="text-org6c1be4e">
+<p>
+&#x4E3A;&#x4E86;&#x5C3D;&#x91CF;&#x63D0;&#x9AD8;&#x6027;&#x80FD;&#xFF0C;&#x53EF;&#x4EE5;&#x4E3A;&#x6BCF;&#x4E2A;&#x8282;&#x70B9;&#x589E;&#x52A0;&#x4E00;&#x4E2A;&#x9501;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>&#x5F53;&#x8FDB;&#x884C;&#x904D;&#x5386;&#x65F6;&#xFF0C;&#x5148;&#x83B7;&#x53D6;&#x4E0B;&#x4E00;&#x4E2A;&#x8282;&#x70B9;&#x7684;&#x9501;&#xFF0C;&#x7136;&#x540E;&#x518D;&#x91CA;&#x653E;&#x5F53;&#x524D;&#x8282;&#x70B9;&#x7684;&#x9501;</li>
+</ul>
+</div>
+</div>
+</div>
+<div id="outline-container-org17b4682" class="outline-2">
+<h2 id="org17b4682">&#x5E76;&#x53D1;&#x961F;&#x5217;</h2>
+<div class="outline-text-2" id="text-org17b4682">
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> <span class="keyword">__node_t</span> {</span><br><span class="line">  <span class="keyword">int</span> value;</span><br><span class="line">  <span class="keyword">struct</span> <span class="keyword">__node_t</span> *next;</span><br><span class="line">} <span class="keyword">node_t</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> <span class="keyword">__queue_t</span> {</span><br><span class="line">  <span class="keyword">node_t</span> *head;</span><br><span class="line">  <span class="keyword">node_t</span> *tail;</span><br><span class="line">  <span class="keyword">pthread_mutex_t</span> head_lock, tail_lock;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Queue_Init</span><span class="params">(queue_t *q)</span> </span>{</span><br><span class="line">  <span class="keyword">node_t</span> *tmp = <span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="keyword">node_t</span>));</span><br><span class="line">  tmp-&gt;next = <span class="literal">NULL</span>;</span><br><span class="line">  q-&gt;head = q-&gt;tail = tmp;</span><br><span class="line">  pthread_mutex_init(&amp;q-&gt;head_lock, <span class="literal">NULL</span>);</span><br><span class="line">  pthread_mutex_init(&amp;q-&gt;tail_lock, <span class="literal">NULL</span>);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Queue_Enqueue</span><span class="params">(queue_t *q, <span class="keyword">int</span> value)</span> </span>{</span><br><span class="line">  <span class="keyword">node_t</span> *tmp = <span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="keyword">node_t</span>));</span><br><span class="line">  assert(tmp != <span class="literal">NULL</span>);</span><br><span class="line">  tmp-&gt;value = value;</span><br><span class="line">  tmp-&gt;next = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">  pthread_mutex_lock(&amp;q-&gt;tail_lock);</span><br><span class="line">  q-&gt;tail-&gt;next = tmp;</span><br><span class="line">  q-&gt;tail = tmp;</span><br><span class="line">  pthread_mutex_unlock(&amp;q-&gt;tail_lock);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">Queue_Dequeue</span><span class="params">(queue_t *q, <span class="keyword">int</span> *value)</span> </span>{</span><br><span class="line">  pthread_mutex_lock(&amp;q-&gt;head_lock);</span><br><span class="line">  <span class="keyword">node_t</span> *tmp = q-&gt;head;</span><br><span class="line">  <span class="keyword">node_t</span> *new_head = tmp-&gt;next;</span><br><span class="line">  <span class="keyword">if</span> (new_head == <span class="literal">NULL</span>) {</span><br><span class="line">    pthread_mutex_unlock(&amp;q-&gt;head_lock);</span><br><span class="line">    <span class="keyword">return</span> -<span class="number">1</span>; <span class="comment">// queue was empty</span></span><br><span class="line">  }</span><br><span class="line">  *value = new_head-&gt;value;</span><br><span class="line">  q-&gt;head = new_head;</span><br><span class="line">  pthread_mutex_unlock(&amp;q-&gt;head_lock);</span><br><span class="line">  <span class="built_in">free</span>(tmp);</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+</div>
+<p>
+&#x6B64;&#x961F;&#x5217;&#x7684;&#x9996;&#x4F4D;&#x90FD;&#x6DFB;&#x52A0;&#x4E86;&#x4E92;&#x65A5;&#x9501;&#xFF0C;&#x662F;&#x4E3A;&#x4E86;&#x80FD;&#x591F;&#x5E76;&#x53D1;&#x7684;&#x64CD;&#x4F5C;&#x5934;&#x5C3E;&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x4E3A;&#x4E86;&#x8FBE;&#x5230;&#x8FD9;&#x79CD;&#x6548;&#x679C;&#xFF0C;&#x5728;&#x521D;&#x59CB;&#x5316;&#x961F;&#x5217;&#x65F6;&#xFF0C;&#x5C31;&#x9700;&#x8981;&#x65B0;&#x5EFA;&#x4E00;&#x4E2A;&#x7A7A;&#x95F2;&#x7684;&#x8282;&#x70B9;&#x3002;</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-org8fd6580" class="outline-2">
+<h2 id="org8fd6580">&#x5E76;&#x53D1;&#x54C8;&#x5E0C;&#x8868;</h2>
+<div class="outline-text-2" id="text-org8fd6580">
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="preprocessor">#<span class="keyword">define</span> BUCKETS (<span class="number">101</span>)</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> <span class="keyword">__hash_t</span> {</span><br><span class="line">  <span class="keyword">list_t</span> lists[BUCKETS];</span><br><span class="line">} <span class="keyword">hash_t</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Hash_Init</span><span class="params">(hash_t *H)</span> </span>{</span><br><span class="line">  <span class="keyword">int</span> i;</span><br><span class="line">  <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; BUCKETS; i++)</span><br><span class="line">    List_Init(&amp;H-&gt;lists[i]);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">Hash_Insert</span><span class="params">(hash_t *H, <span class="keyword">int</span> key)</span> </span>{</span><br><span class="line">  <span class="keyword">return</span> List_Insert(&amp;H-&gt;lists[key % BUCKETS], key);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">Hash_Lookup</span><span class="params">(hash_t *H, <span class="keyword">int</span> key)</span> </span>{</span><br><span class="line">  <span class="keyword">return</span> List_Lookup(&amp;H-&gt;lists[key % BUCKETS], key);</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+</div>
+<p>
+&#x4E0A;&#x9762;&#x8FD9;&#x4E2A;&#x54C8;&#x5E0C;&#x8868;&#x57FA;&#x4E8E;&#x524D;&#x9762;&#x7684;&#x5E76;&#x53D1;&#x94FE;&#x8868;&#x800C;&#x5EFA;&#x7ACB;&#xFF0C;&#x7531;&#x4E8E;&#x6BCF;&#x4E2A;&#x94FE;&#x8868;&#x90FD;&#x6709;&#x81EA;&#x5DF1;&#x7684;&#x9501;&#xFF0C;&#x6240;&#x4EE5;&#x8BE5;&#x54C8;&#x5E0C;&#x8868;&#x7684;
+&#x6027;&#x80FD;&#x6BD4;&#x8F83;&#x4F18;&#x79C0;&#x3002;
+</p>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+Last Updated 2020-06-28 Sun 11:59.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+</div>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/CS/" rel="tag"># CS</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/05/15/program_docker_operation/" rel="prev" title="[What]docker -> 操作速查">
+      <i class="fa fa-chevron-left"></i> [What]docker -> 操作速查
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/05/26/book_ostep_concurrency_condition_variables/" rel="next" title="[What]Condition Variables">
+      [What]Condition Variables <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#orga485d4d"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x5E76;&amp;#x53D1;&amp;#x8BA1;&amp;#x6570;&amp;#x5668;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org9355412"><span class="nav-number">1.1.</span> <span class="nav-text">&amp;#x7B80;&amp;#x5355;&amp;#x7684;&amp;#x8BA1;&amp;#x6570;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgdc70c5f"><span class="nav-number">1.2.</span> <span class="nav-text">&amp;#x7075;&amp;#x6D3B;&amp;#x7684;&amp;#x8BA1;&amp;#x6570;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgd299677"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x5E76;&amp;#x53D1;&amp;#x94FE;&amp;#x8868;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org9ad7a90"><span class="nav-number">2.1.</span> <span class="nav-text">&amp;#x7B80;&amp;#x6613;&amp;#x4E92;&amp;#x65A5;&amp;#x94FE;&amp;#x8868;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org6c1be4e"><span class="nav-number">2.2.</span> <span class="nav-text">&amp;#x7075;&amp;#x6D3B;&amp;#x4E92;&amp;#x65A5;&amp;#x94FE;&amp;#x8868;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org17b4682"><span class="nav-number">3.</span> <span class="nav-text">&amp;#x5E76;&amp;#x53D1;&amp;#x961F;&amp;#x5217;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org8fd6580"><span class="nav-number">4.</span> <span class="nav-text">&amp;#x5E76;&amp;#x53D1;&amp;#x54C8;&amp;#x5E0C;&amp;#x8868;</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">我的世界</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">210</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">104</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">38</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+  
+  <span class="post-meta-divider">|</span>
+  <span>Hosted by <a href="https://pages.coding.me" target="_blank" rel="noopener" style="font-weight: bold">Coding Pages</a></span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+<script>
+  (function() {
+    function leancloudSelector(url) {
+      url = encodeURI(url);
+      return document.getElementById(url).querySelector('.leancloud-visitors-count');
+    }
+
+    function addCount(Counter) {
+      var visitors = document.querySelector('.leancloud_visitors');
+      var url = decodeURI(visitors.id);
+      var title = visitors.dataset.flagTitle;
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          if (results.length > 0) {
+            var counter = results[0];
+            leancloudSelector(url).innerText = counter.time + 1;
+            Counter('put', '/classes/Counter/' + counter.objectId, { time: { '__op': 'Increment', 'amount': 1 } })
+              .catch(error => {
+                console.error('Failed to save visitor count', error);
+              });
+          } else {
+              leancloudSelector(url).innerText = 'Counter not initialized! More info at console err msg.';
+              console.error('ATTENTION! LeanCloud counter has security bug, see how to solve it here: https://github.com/theme-next/hexo-leancloud-counter-security. \n However, you can still use LeanCloud without security, by setting `security` option to `false`.');
+            
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    function showTime(Counter) {
+      var visitors = document.querySelectorAll('.leancloud_visitors');
+      var entries = [...visitors].map(element => {
+        return decodeURI(element.id);
+      });
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url: { '$in': entries } })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          for (let url of entries) {
+            let target = results.find(item => item.url === url);
+            leancloudSelector(url).innerText = target ? target.time : 0;
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    let { app_id, app_key, server_url } = {"enable":true,"app_id":"ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI","app_key":"yh4vrfnscme1utPMpk65wcxn","server_url":null,"security":true};
+    function fetchData(api_server) {
+      var Counter = (method, url, data) => {
+        return fetch(`${api_server}/1.1${url}`, {
+          method,
+          headers: {
+            'X-LC-Id'     : app_id,
+            'X-LC-Key'    : app_key,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+      };
+      if (CONFIG.page.isPost) {
+        if (CONFIG.hostname !== location.hostname) return;
+        addCount(Counter);
+      } else if (document.querySelectorAll('.post-title-link').length >= 1) {
+        showTime(Counter);
+      }
+    }
+
+    let api_server = app_id.slice(-9) !== '-MdYXbMMI' ? server_url : `https://${app_id.slice(0, 8).toLowerCase()}.api.lncldglobal.com`;
+
+    if (api_server) {
+      fetchData(api_server);
+    } else {
+      fetch('https://app-router.leancloud.cn/2/route?appId=' + app_id)
+        .then(response => response.json())
+        .then(({ api_server }) => {
+          fetchData('https://' + api_server);
+        });
+    }
+  })();
+</script>
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+  <script defer src="/lib/three/three.min.js"></script>
+    <script defer src="/lib/three/three-waves.min.js"></script>
+    <script defer src="/lib/three/canvas_lines.min.js"></script>
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI',
+      appKey     : 'yh4vrfnscme1utPMpk65wcxn',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
