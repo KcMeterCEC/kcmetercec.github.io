@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="zLSyD2CN1AkyJqei3qKraT6372nBgMFKWe6kAj5JDeY">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="&amp;#x53C2;&amp;#x8003;:    &amp;#x300A;Linux &amp;#x5185;&amp;#x6838;&amp;#x8BBE;&amp;#x8BA1;&amp;#x4E0E;&amp;#x5B9E;&amp;#x73B0;&amp;#x300B;              kernel version arch     v5.4.x lts arm32      &amp;#x518D;&amp;#x6765;&amp;#x5F80;&amp;#x7EC6;&amp;#x8282">
+<meta property="og:type" content="article">
+<meta property="og:title" content="[What]Linux下的 task_struct">
+<meta property="og:url" content="http://kcmetercec.top/2020/07/17/linux_ps_task_struct/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="&amp;#x53C2;&amp;#x8003;:    &amp;#x300A;Linux &amp;#x5185;&amp;#x6838;&amp;#x8BBE;&amp;#x8BA1;&amp;#x4E0E;&amp;#x5B9E;&amp;#x73B0;&amp;#x300B;              kernel version arch     v5.4.x lts arm32      &amp;#x518D;&amp;#x6765;&amp;#x5F80;&amp;#x7EC6;&amp;#x8282">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-07-16T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-07-18T07:40:32.205Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="process">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://kcmetercec.top/2020/07/17/linux_ps_task_struct/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>[What]Linux下的 task_struct | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=112423075-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '112423075-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2ab4cc06d0da36106a4426465d0cb00d";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2020/07/17/linux_ps_task_struct/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="我的世界">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          [What]Linux下的 task_struct
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-07-17 00:00:00" itemprop="dateCreated datePublished" datetime="2020-07-17T00:00:00+08:00">2020-07-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-07-18 15:40:32" itemprop="dateModified" datetime="2020-07-18T15:40:32+08:00">2020-07-18</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/ps/" itemprop="url" rel="index"><span itemprop="name">ps</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/ps/detail/" itemprop="url" rel="index"><span itemprop="name">detail</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2020/07/17/linux_ps_task_struct/" class="post-meta-item leancloud_visitors" data-flag-title="[What]Linux下的 task_struct" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2020/07/17/linux_ps_task_struct/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2020/07/17/linux_ps_task_struct/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <div id="content">
+<p>
+&#x53C2;&#x8003;: 
+</p>
+<ol class="org-ol">
+<li>&#x300A;Linux &#x5185;&#x6838;&#x8BBE;&#x8BA1;&#x4E0E;&#x5B9E;&#x73B0;&#x300B;</li>
+</ol>
+
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">kernel version</th>
+<th scope="col" class="org-left">arch</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">v5.4.x lts</td>
+<td class="org-left">arm32</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+&#x518D;&#x6765;&#x5F80;&#x7EC6;&#x8282;&#x6DF1;&#x5165;&#x4E00;&#x4E0B; task_struct&#x3002;
+</p>
+
+<a id="more"></a>
+
+<div id="outline-container-org9ce5d2b" class="outline-2">
+<h2 id="org9ce5d2b">&#x5206;&#x914D; task_struct&#xFF08;&#x8FDB;&#x7A0B;&#x63CF;&#x8FF0;&#x7B26;&#xFF09;</h2>
+<div class="outline-text-2" id="text-org9ce5d2b">
+<p>
+&#x7531;&#x4E8E; task_struct&#xFF08;&#x58F0;&#x660E;&#x4E8E; <code>include/linux/sched.h</code> &#xFF0C;&#x4EE3;&#x7801;&#x4F7F;&#x7528;&#x5305;&#x542B; &lt;linux/sched.h&gt;&#xFF09; &#x662F;&#x5C5E;&#x4E8E;&#x4F1A;&#x9891;&#x7E41;&#x4F7F;&#x7528;&#x5230;&#x7684;&#x6570;&#x636E;&#x7ED3;&#x6784;&#xFF08;&#x6BCF;&#x521B;&#x5EFA;&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x6216;&#x7EBF;&#x7A0B;&#xFF0C;&#x90FD;&#x4F1A;&#x4E3A;&#x5176;&#x5206;&#x914D;&#x4E00;&#x4E2A; task_struct&#xFF09;&#xFF0C;
+&#x6240;&#x4EE5;&#x5185;&#x6838;&#x4F7F;&#x7528; slab &#x5206;&#x914D;&#x5668;&#x9884;&#x5148;&#x5206;&#x914D;&#x591A;&#x4E2A; task_struct&#xFF0C;&#x8FD9;&#x6837;&#x505A;&#x6709;&#x4EE5;&#x4E0B;&#x597D;&#x5904;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li>&#x7531;&#x4E8E;&#x9884;&#x5148;&#x5206;&#x914D;&#x4E86;&#x5F88;&#x591A; task_struct&#xFF0C;&#x5185;&#x6838;&#x5C31;&#x5728;&#x8FD9;&#x7247;&#x5185;&#x5B58;&#x4E2D;&#x4F7F;&#x7528;&#x548C;&#x91CA;&#x653E;&#xFF0C;&#x907F;&#x514D;&#x4E86;&#x5185;&#x5B58;&#x788E;&#x7247;</li>
+<li>&#x7531;&#x4E8E; task_struct &#x662F;&#x9884;&#x5148;&#x5206;&#x914D;&#x7684;&#xFF0C;&#x6240;&#x4EE5;&#x5185;&#x6838;&#x7533;&#x8BF7;&#x8BE5;&#x6570;&#x636E;&#x7ED3;&#x6784;&#x7684;&#x901F;&#x5EA6;&#x5F88;&#x5FEB;</li>
+</ul>
+
+<p>
+&#x5173;&#x4E8E; slab &#x9884;&#x5206;&#x914D;&#x7684; task_struct &#x4F7F;&#x7528;&#x8BE6;&#x60C5;&#xFF0C;&#x53EF;&#x4EE5;&#x901A;&#x8FC7; <code>/proc/slabinfo</code> &#x6587;&#x4EF6;&#x67E5;&#x770B;
+</p>
+
+<p>
+&#x5185;&#x6838;&#x5728;&#x521B;&#x5EFA;&#x4E00;&#x4E2A;&#x65B0;&#x7684;&#x8FDB;&#x7A0B;&#x65F6;&#xFF0C;&#x4F1A;&#x5728;&#x6808;&#x5E95;&#xFF08;&#x6808;&#x5411;&#x4E0B;&#x589E;&#x957F;&#xFF09;&#x521B;&#x5EFA;&#x4E00;&#x4E2A;&#x65B0;&#x7684;&#x7ED3;&#x6784; <code>struct thread_info</code> &#xFF08;&#x58F0;&#x660E;&#x4E8E; <code>arch/xxx/include/asm/thread_info.h</code> &#xFF0C;&#x4EE3;&#x7801;&#x4F7F;&#x7528;&#x5305;&#x542B; &lt;asm/thread_info.h&gt;&#xFF09;&#xFF0C;
+&#x5728; thread_info &#x7ED3;&#x6784;&#x4E2D;&#x5305;&#x542B;&#x4E86;&#x6307;&#x5411; task_struct &#x7684;&#x6307;&#x9488; task&#xFF0C;&#x8BE5;&#x53D8;&#x91CF;&#x6307;&#x5411;&#x4E86;&#x8BE5;&#x8FDB;&#x7A0B;&#x7684; task_struct &#x5934;&#x3002;
+</p>
+<ul class="org-ul">
+<li>&#x4E4B;&#x6240;&#x4EE5;&#x653E;&#x5728;&#x6808;&#x5E95;&#xFF0C;&#x662F;&#x56E0;&#x4E3A;&#x4EE3;&#x7801;&#x53EF;&#x4EE5;&#x76F4;&#x63A5;&#x6839;&#x636E;&#x504F;&#x79FB;&#x65B9;&#x4FBF;&#x7684;&#x5F97;&#x51FA; thread_info</li>
+<li>task_struct &#x662F;&#x901A;&#x8FC7;&#x53CC;&#x5411;&#x5FAA;&#x73AF;&#x94FE;&#x8868;&#x94FE;&#x63A5;&#x8D77;&#x6765;&#x7684;&#xFF0C;&#x6240;&#x4EE5;&#x53EA;&#x8981;&#x627E;&#x5230;&#x4E86;&#x5934;&#xFF0C;&#x4FBF;&#x53EF;&#x4EE5;&#x904D;&#x5386;&#x8BE5;&#x8FDB;&#x7A0B;&#x76F8;&#x5173;&#x7684;&#x6240;&#x6709;&#x7EBF;&#x7A0B;</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-org573edff" class="outline-2">
+<h2 id="org573edff">&#x8FDB;&#x7A0B;&#x63CF;&#x8FF0;&#x7B26;&#x7684;&#x5B58;&#x653E;</h2>
+<div class="outline-text-2" id="text-org573edff">
+<p>
+PID(process identification value) &#x4E5F;&#x662F;&#x5B58;&#x653E;&#x4E8E; task_struct &#x4E2D;&#xFF0C;&#x7C7B;&#x578B;&#x4E3A; pid_t&#xFF08;&#x5B9E;&#x9645;&#x4E0A;&#x662F; int &#x7C7B;&#x578B;&#xFF09;&#x3002;
+</p>
+
+<p>
+PID &#x7684;&#x6700;&#x5927;&#x503C;&#x9650;&#x5236;&#x4F4D;&#x4E8E; &lt;linux/threads.h&gt; &#x4E2D;&#xFF1A;
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span><br><span class="line"> * The default limit for the nr of threads is now in</span><br><span class="line"> * /proc/sys/kernel/threads-max.</span><br><span class="line"> */</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span><br><span class="line"> * Maximum supported processors.  Setting this smaller saves quite a</span><br><span class="line"> * bit of memory.  Use nr_cpu_ids instead of this except for static bitmaps.</span><br><span class="line"> */</span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">ifndef</span> CONFIG_NR_CPUS</span></span><br><span class="line"><span class="comment">/* <span class="doctag">FIXME:</span> This should be fixed in the arch&apos;s Kconfig */</span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> CONFIG_NR_CPUS	<span class="number">1</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* Places which use this should consider cpumask_var_t. */</span></span><br><span class="line"><span class="comment">//! &#x901A;&#x8FC7;&#x6B64;&#x5B8F;&#x53EF;&#x4EE5;&#x5F97;&#x5230;&#x5F53;&#x524D;&#x903B;&#x8F91; CPU &#x7684;&#x6570;&#x91CF;</span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> NR_CPUS		CONFIG_NR_CPUS</span></span><br><span class="line"></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> MIN_THREADS_LEFT_FOR_ROOT <span class="number">4</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span><br><span class="line"> * This controls the default maximum pid allocated to a process</span><br><span class="line"> */</span></span><br><span class="line"><span class="comment">//! &#x5982;&#x679C;&#x6CA1;&#x6709;&#x914D;&#x7F6E; CONFIG_BASE_SMALL&#xFF0C;&#x90A3;&#x4E48;&#x9ED8;&#x8BA4;&#x6700;&#x5927;&#x503C;&#x5C31;&#x662F; 4096&#xFF0C;&#x5426;&#x5219;&#x662F; 32768</span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> PID_MAX_DEFAULT (CONFIG_BASE_SMALL ? <span class="number">0x1000</span> : <span class="number">0x8000</span>)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span><br><span class="line"> * A maximum of 4 million PIDs should be enough for a while.</span><br><span class="line"> * [<span class="doctag">NOTE:</span> PID/TIDs are limited to 2^29 ~= 500+ million, see futex.h.]</span><br><span class="line"> */</span></span><br><span class="line"><span class="comment">//! &#x5F53;&#x6CA1;&#x6709;&#x914D;&#x7F6E; CONFIG_BASE_SMALL &#x7684;&#x60C5;&#x51B5;&#x4E0B;&#xFF0C;&#x5982;&#x679C; long &#x7684;&#x957F;&#x5EA6;&#x5927;&#x4E8E; 4&#xFF0C;&#x90A3;&#x4E48;&#x6781;&#x9650; PID &#x53EF;&#x4EE5;&#x5230; 400 &#x591A;&#x4E07;&#x4E2A;</span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> PID_MAX_LIMIT (CONFIG_BASE_SMALL ? PAGE_SIZE * <span class="number">8</span> : \</span><br><span class="line">  (sizeof(long) &gt; <span class="number">4</span> ? <span class="number">4</span> * <span class="number">1024</span> * <span class="number">1024</span> : PID_MAX_DEFAULT))</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//! &#x6BCF;&#x4E2A;&#x6838;&#x4E0A;&#x53EF;&#x4EE5;&#x8DD1;&#x7684;&#x8FDB;&#x7A0B;&#x6570;</span></span><br><span class="line"><span class="comment">/*</span><br><span class="line"> * Define a minimum number of pids per cpu.  Heuristically based</span><br><span class="line"> * on original pid max of 32k for 32 cpus.  Also, increase the</span><br><span class="line"> * minimum settable value for pid_max on the running system based</span><br><span class="line"> * on similar defaults.  See kernel/pid.c:pidmap_init() for details.</span><br><span class="line"> */</span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> PIDS_PER_CPU_DEFAULT	<span class="number">1024</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> PIDS_PER_CPU_MIN	<span class="number">8</span></span></span><br></pre></td></tr></table></figure>
+</div>
+<p>
+&#x4E4B;&#x524D;&#x5DF2;&#x7ECF;&#x5B66;&#x4E60;&#x8FC7;&#xFF1A;&#x5BF9;&#x4E8E; linux &#x6765;&#x8BB2;&#xFF0C;&#x65E0;&#x8BBA;&#x8FDB;&#x7A0B;&#x8FD8;&#x662F;&#x7EBF;&#x7A0B;&#x5BF9;&#x4E8E; kernel &#x90FD;&#x662F;&#x4E00;&#x4E2A; task_struct&#xFF0C;&#x53EA;&#x4E0D;&#x8FC7;&#x7EBF;&#x7A0B;&#x7684; task_struct &#x76F8;&#x5173;&#x5185;&#x5B58;&#x3001;&#x6587;&#x4EF6;&#x7B49;&#x8D44;&#x6E90;&#x662F;&#x5171;&#x4EAB;&#x7684;&#x3002;
+&#x5728;&#x65B0;&#x5EFA;&#x4E00;&#x4E2A;&#x7EBF;&#x7A0B;&#x7684;&#x65F6;&#x5019;&#xFF0C;&#x5176;&#x5B9E;&#x5185;&#x6838;&#x4E5F;&#x4F1A;&#x4E3A;&#x7EBF;&#x7A0B;&#x5206;&#x914D;&#x4E00;&#x4E2A; pid&#xFF0C;&#x53EA;&#x4E0D;&#x8FC7;&#x901A;&#x8FC7; tgid &#x6765;&#x62BD;&#x8C61;&#x5316;&#x7ED9;&#x4E86;&#x7528;&#x6237;&#xFF0C;&#x8BA9;&#x7528;&#x6237;&#x5728;&#x4E0D;&#x540C;&#x7EBF;&#x7A0B;&#x4E0B;&#x5F97;&#x5230;&#x7684; pid &#x90FD;&#x76F8;&#x540C;&#x3002;
+</p>
+
+<p>
+&#x57FA;&#x4E8E;&#x4EE5;&#x4E0A;&#x57FA;&#x7840;&#xFF0C;&#x518D;&#x6765;&#x770B; proc &#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x4E0B;&#x7684;&#x9650;&#x5236;&#x5C31;&#x660E;&#x4E86;&#x4E86;&#xFF1A;
+</p>
+<ul class="org-ul">
+<li><code>/proc/sys/kernel/pid_max</code> : &#x6574;&#x4E2A;&#x7CFB;&#x7EDF;&#xFF08;&#x5185;&#x6838;&#x7A7A;&#x95F4;&#x548C;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#xFF09;&#x53EF;&#x4EE5;&#x540C;&#x65F6;&#x5B58;&#x5728;&#x7684;&#x6700;&#x591A;&#x7684; pid &#x6570;&#x91CF;
+<ul class="org-ul">
+<li>&#x5BF9;&#x4E8E;&#x5185;&#x6838;&#x6765;&#x8BB2;&#xFF0C;&#x5C31;&#x662F;&#x7CFB;&#x7EDF;&#x6700;&#x591A;&#x53EF;&#x4EE5;&#x521B;&#x5EFA;&#x7684; task_struct &#x7684;&#x6570;&#x91CF;</li>
+</ul></li>
+<li><code>/proc/sys/kernel/threads-max</code> : &#x5355;&#x4E2A;&#x8FDB;&#x7A0B;&#x53EF;&#x4EE5;&#x521B;&#x5EFA;&#x7684;&#x6700;&#x591A;&#x7EBF;&#x7A0B;&#x7684;&#x6570;&#x91CF;
+<ul class="org-ul">
+<li>&#x5BF9;&#x4E8E;&#x5185;&#x6838;&#x6765;&#x8BB2;&#xFF0C;&#x5C31;&#x662F;&#x4E00;&#x4E2A; task_struct &#x94FE;&#x8868;&#x4E0A;&#x6700;&#x591A;&#x53EF;&#x4EE5;&#x94FE;&#x63A5;&#x7684; task_struct &#x8282;&#x70B9;&#x7684;&#x4E2A;&#x6570;</li>
+</ul></li>
+<li><code>ulimit -u</code> &#xFF1A;&#x5355;&#x4E2A;&#x7528;&#x6237;&#x53EF;&#x4EE5;&#x540C;&#x65F6;&#x521B;&#x5EFA;&#x7684;&#x6700;&#x591A;&#x8FDB;&#x7A0B;&#x7684;&#x6570;&#x91CF;
+<ul class="org-ul">
+<li>&#x5BF9;&#x4E8E;&#x5185;&#x6838;&#x6765;&#x8BB2;&#xFF0C;&#x5C31;&#x662F;&#x4E00;&#x4E2A; uid &#x53EF;&#x4EE5;&#x5BF9;&#x5E94;&#x6700;&#x591A;&#x591A;&#x5C11;&#x4E2A; task_struct</li>
+</ul></li>
+</ul>
+
+<p>
+&#x5185;&#x6838;&#x5BF9;&#x4E8E;&#x4EFB;&#x52A1;&#x7684;&#x64CD;&#x4F5C;&#x57FA;&#x672C;&#x4E0A;&#x90FD;&#x662F;&#x901A;&#x8FC7; task_struct &#x6765;&#x6267;&#x884C;&#x7684;&#xFF0C;&#x4E3A;&#x6B64;&#x5185;&#x6838;&#x63D0;&#x4F9B;&#x4E86; <code>current</code> &#x5B8F;&#xFF0C;&#x8BE5;&#x5B8F;&#x8FD4;&#x56DE;&#x7684;&#x4FBF;&#x662F;&#x5F53;&#x524D;&#x88AB;&#x8C03;&#x5EA6;&#x5230;&#x7684; task_struct &#x6307;&#x9488;&#x3002;
+</p>
+
+<p>
+&#x5BF9;&#x4E8E; ARM32 &#x83B7;&#x53D6; thread_info &#x7684;&#x64CD;&#x4F5C;&#x5982;&#x4E0B;&#xFF1A;
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//&#xFF01;&#x4E00;&#x822C;&#x60C5;&#x51B5;&#x4E0B;&#xFF0C;&#x5F53; PAGE_SIZE &#x4E3A; 4096 &#x65F6;&#xFF0C;&#x6808;&#x7684;&#x5927;&#x5C0F;&#x5219;&#x662F; 8K</span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> THREAD_SIZE_ORDER	<span class="number">1</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> THREAD_SIZE		(PAGE_SIZE &lt;&lt; THREAD_SIZE_ORDER)</span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> THREAD_START_SP		(THREAD_SIZE - <span class="number">8</span>)</span></span><br><span class="line"><span class="comment">/*</span><br><span class="line"> * how to get the current stack pointer in C</span><br><span class="line"> */</span></span><br><span class="line"><span class="function"><span class="keyword">register</span> <span class="keyword">unsigned</span> <span class="keyword">long</span> current_stack_pointer <span class="title">asm</span> <span class="params">(<span class="string">&quot;sp&quot;</span>)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span><br><span class="line"> * how to get the thread information struct from C</span><br><span class="line"> */</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//! &#x6808;&#x662F;&#x7531;&#x9AD8;&#x5730;&#x5740;&#x5411;&#x4F4E;&#x5730;&#x5740;&#x65B9;&#x5411;&#x589E;&#x957F;&#x7684;&#xFF0C;&#x90A3;&#x4E48;&#x5F53;&#x524D;&#x7684;&#x6808;&#x6307;&#x9488;&#x5C06;&#x4F4E;&#x4F4D;&#x6E05;&#x96F6;&#x540E;&#xFF0C;&#x4FBF;&#x5F97;&#x5230;&#x4E86;&#x6808;&#x5E95;&#x7684;&#x5730;&#x5740;</span></span><br><span class="line"><span class="comment">//! &#x8FD9;&#x4E2A;&#x5730;&#x5740;&#x5C31;&#x6B63;&#x597D;&#x662F; thread_info &#x7684;&#x5730;&#x5740;</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">struct</span> thread_info *<span class="title">current_thread_info</span><span class="params">(<span class="keyword">void</span>)</span></span><br><span class="line"></span>{</span><br><span class="line">  <span class="keyword">return</span> (<span class="keyword">struct</span> thread_info *)</span><br><span class="line">    (current_stack_pointer &amp; ~(THREAD_SIZE - <span class="number">1</span>));</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+</div>
+<p>
+&#x83B7;&#x53D6;&#x5230; thread_info &#x540E;&#xFF0C;&#x4FBF;&#x53EF;&#x4EE5;&#x83B7;&#x53D6;&#x5176; task &#x6307;&#x9488;&#x4E86;&#xFF1A;
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//! file: include/asm-generic/current.h</span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> get_current() (current_thread_info()-&gt;task)</span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> current get_current()</span></span><br></pre></td></tr></table></figure>
+</div>
+</div>
+</div>
+<div id="outline-container-orgc63d9ab" class="outline-2">
+<h2 id="orgc63d9ab">&#x4EFB;&#x52A1;&#x72B6;&#x6001;</h2>
+<div class="outline-text-2" id="text-orgc63d9ab">
+<p>
+&#x4E3A;&#x4E86;&#x4E0D;&#x4EE5;&#x8FDB;&#x7A0B;&#x548C;&#x7EBF;&#x7A0B;&#x505A;&#x533A;&#x5206;&#xFF0C;&#x4E0B;&#x9762;&#x7EDF;&#x4E00;&#x4EE5;&#x4EFB;&#x52A1;&#x4EE3;&#x8868;&#x4E00;&#x4E2A; task_struct&#x3002;
+</p>
+
+<p>
+task_struct &#x4E2D;&#x7684; state &#x63CF;&#x8FF0;&#x4E86;&#x5F53;&#x524D; task &#x7684;&#x72B6;&#x6001;&#x3002;
+</p>
+
+<p>
+state &#x7684;&#x503C;&#x6709;&#x4EE5;&#x4E0B;&#x51E0;&#x79CD;&#x72B6;&#x6001;&#xFF1A;
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Used in tsk-&gt;state: */</span></span><br><span class="line"><span class="comment">//! &#x8FD0;&#x884C;&#xFF0C;&#x8FDB;&#x7A0B;&#x6B63;&#x5728;&#x88AB;&#x6267;&#x884C;&#x6216;&#x5728;&#x8FD0;&#x884C;&#x961F;&#x5217;&#x4E2D;&#x7B49;&#x5F85;&#x88AB;&#x6267;&#x884C;</span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> TASK_RUNNING			<span class="number">0x0000</span></span></span><br><span class="line"><span class="comment">//! &#x53EF;&#x4E2D;&#x65AD;&#xFF0C;&#x8FDB;&#x7A0B;&#x5904;&#x4E8E;&#x7761;&#x7720;&#x72B6;&#x6001;&#xFF0C;&#x5B83;&#x53EF;&#x4EE5;&#x88AB;&#x7B49;&#x5F85;&#x7684;&#x6761;&#x4EF6;&#x5524;&#x9192;&#xFF0C;&#x4E5F;&#x53EF;&#x4EE5;&#x88AB;&#x4FE1;&#x53F7;&#x5524;&#x9192;</span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> TASK_INTERRUPTIBLE		<span class="number">0x0001</span></span></span><br><span class="line"><span class="comment">//&#xFF01; &#x4E0D;&#x53EF;&#x4E2D;&#x65AD;&#xFF0C;&#x76F8;&#x6BD4;&#x53EF;&#x4E2D;&#x65AD;&#x72B6;&#x6001;&#xFF0C;&#x5B83;&#x4E0D;&#x80FD;&#x88AB;&#x4FE1;&#x53F7;&#x5524;&#x9192;</span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> TASK_UNINTERRUPTIBLE		<span class="number">0x0002</span></span></span><br><span class="line"><span class="comment">//! &#x8FDB;&#x7A0B;&#x6CA1;&#x6709;&#x8FD0;&#x884C;&#xFF0C;&#x4E5F;&#x4E0D;&#x80FD;&#x6295;&#x5165;&#x8FD0;&#x884C;</span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> __TASK_STOPPED			<span class="number">0x0004</span></span></span><br><span class="line"><span class="comment">//! &#x88AB;&#x5176;&#x4ED6;&#x8FDB;&#x7A0B;&#x8DDF;&#x8E2A;&#x7684;&#x8FDB;&#x7A0B;</span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> __TASK_TRACED			<span class="number">0x0008</span></span></span><br></pre></td></tr></table></figure>
+</div>
+
+<p>
+&#x5728;&#x8FDB;&#x884C;&#x9A71;&#x52A8;&#x7F16;&#x7A0B;&#x65F6;&#xFF0C;&#x5982;&#x679C;&#x9700;&#x8981;&#x652F;&#x6301;&#x963B;&#x585E;&#x64CD;&#x4F5C;&#xFF0C;&#x90A3;&#x4E48;&#x5C31;&#x9700;&#x8981;&#x8BBE;&#x7F6E;&#x548C;&#x83B7;&#x53D6;&#x5F53;&#x524D;&#x7EBF;&#x7A0B;&#x7684;&#x72B6;&#x6001;&#xFF1A;
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="preprocessor">#<span class="keyword">define</span> task_is_traced(task)		((task-&gt;state &amp; __TASK_TRACED) != <span class="number">0</span>)</span></span><br><span class="line"></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> task_is_stopped(task)		((task-&gt;state &amp; __TASK_STOPPED) != <span class="number">0</span>)</span></span><br><span class="line"></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> task_is_stopped_or_traced(task)	((task-&gt;state &amp; (__TASK_STOPPED | __TASK_TRACED)) != <span class="number">0</span>)</span></span><br><span class="line"></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> task_contributes_to_load(task)	((task-&gt;state &amp; TASK_UNINTERRUPTIBLE) != <span class="number">0</span> &amp;&amp; \</span><br><span class="line">					 (task-&gt;flags &amp; PF_FROZEN) == <span class="number">0</span> &amp;&amp; \</span><br><span class="line">					 (task-&gt;state &amp; TASK_NOLOAD) == <span class="number">0</span>)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//! &#x4E0D;&#x5E26;&#x5185;&#x5B58;&#x5C4F;&#x969C;&#xFF0C;&#x5C06;&#x4EFB;&#x52A1;&#x7531;&#x7761;&#x7720;&#x8BBE;&#x7F6E;&#x4E3A;&#x8FD0;&#x884C;&#x4E00;&#x822C;&#x4F7F;&#x7528;&#x6B64;&#x5B8F;</span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> __set_current_state(state_value)				\</span><br><span class="line">  current-&gt;state = (state_value)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//! &#x5E26;&#x5185;&#x5B58;&#x5C4F;&#x969C;&#xFF0C;&#x5C06;&#x4EFB;&#x52A1;&#x7531;&#x8FD0;&#x884C;&#x8BBE;&#x7F6E;&#x4E3A;&#x7761;&#x7720;&#xFF0C;&#x4E00;&#x822C;&#x4F7F;&#x7528;&#x6B64;&#x5B8F;&#x4EE5;&#x4FDD;&#x8BC1;&#x4E92;&#x65A5;</span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> set_current_state(state_value)					\</span><br><span class="line">  smp_store_mb(current-&gt;state, (state_value))</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//! &#x8BBE;&#x7F6E;&#x4E3A;&#x7761;&#x7720;</span></span><br><span class="line"><span class="keyword">for</span> (;;) {</span><br><span class="line">  <span class="comment">//! &#x5207;&#x6362;&#x72B6;&#x6001;</span></span><br><span class="line">    set_current_state(TASK_UNINTERRUPTIBLE);</span><br><span class="line">    <span class="comment">//! &#x786E;&#x8BA4;&#x9700;&#x8981;&#x7761;&#x7720;</span></span><br><span class="line">    <span class="keyword">if</span> (!need_sleep)</span><br><span class="line">	<span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//! &#x5F00;&#x59CB;&#x8C03;&#x5EA6;&#x5176;&#x4ED6;&#x4EFB;&#x52A1;</span></span><br><span class="line">    schedule();</span><br><span class="line">}</span><br><span class="line"><span class="comment">//! &#x4EFB;&#x52A1;&#x5DF2;&#x7ECF;&#x88AB;&#x5524;&#x9192;&#xFF0C;&#x8BBE;&#x7F6E;&#x4E3A;&#x8FD0;&#x884C;&#x72B6;&#x6001;</span></span><br><span class="line">__set_current_state(TASK_RUNNING);</span><br></pre></td></tr></table></figure>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-org46ec90a" class="outline-2">
+<h2 id="org46ec90a">&#x4EFB;&#x52A1;&#x7684;&#x4E0A;&#x4E0B;&#x6587;</h2>
+<div class="outline-text-2" id="text-org46ec90a">
+<p>
+&#x5F53;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x8C03;&#x7528;&#x4E86;&#x7CFB;&#x7EDF;&#x8C03;&#x7528;&#x6216;&#x8005;&#x89E6;&#x53D1;&#x4E86;&#x67D0;&#x4E2A;&#x5F02;&#x5E38;&#x9677;&#x5165;&#x5185;&#x6838;&#x7A7A;&#x95F4;&#xFF0C;&#x6B64;&#x65F6;&#x8BE5;&#x4EFB;&#x52A1;&#x5C31;&#x5904;&#x4E8E;&#x4EFB;&#x52A1;&#x4E0A;&#x4E0B;&#x6587;&#x4E2D;&#xFF0C; <b>&#x8FD9;&#x79CD;&#x60C5;&#x51B5;&#x4E0B;&#xFF0C;current &#x5B8F;&#x624D;&#x662F;&#x6709;&#x6548;&#x7684;&#x3002;</b>
+</p>
+<ul class="org-ul">
+<li>&#x5982;&#x679C;&#x662F;&#x4E2D;&#x65AD;&#x9677;&#x5165;&#x4E86;&#x5185;&#x6838;&#xFF0C;&#x6B64;&#x65F6;&#x5185;&#x6838;&#x5E76;&#x6CA1;&#x6709;&#x5BF9;&#x5E94;&#x76F8;&#x5173;&#x7684;&#x4EFB;&#x52A1;&#xFF0C;&#x8FD9;&#x79CD;&#x60C5;&#x51B5;&#x4E0B; current &#x5B8F;&#x5C31;&#x662F;&#x65E0;&#x610F;&#x4E49;&#x7684;&#x3002;</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-org1abfe15" class="outline-2">
+<h2 id="org1abfe15">&#x8FDB;&#x7A0B;&#x7684;&#x5BB6;&#x65CF;&#x6811;</h2>
+<div class="outline-text-2" id="text-org1abfe15">
+<p>
+&#x6BCF;&#x4E2A; task_struct &#x90FD;&#x5305;&#x542B;&#x4E00;&#x4E2A;&#x6307;&#x5411;&#x5176;&#x7236;&#x8FDB;&#x7A0B;&#x7684; parent &#x6307;&#x9488;&#xFF0C;&#x8FD8;&#x5305;&#x542B;&#x4E00;&#x4E2A;&#x6307;&#x5411;&#x5B50;&#x8FDB;&#x7A0B;&#x7684; children &#x94FE;&#x8868;&#x3002;
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span><br><span class="line"> * Pointers to the (original) parent process, youngest child, younger sibling,</span><br><span class="line"> * older sibling, respectively.  (p-&gt;father can be replaced with</span><br><span class="line"> * p-&gt;real_parent-&gt;pid)</span><br><span class="line"> */</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* Real parent process: */</span></span><br><span class="line"><span class="keyword">struct</span> task_struct __rcu	*real_parent;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* Recipient of SIGCHLD, wait4() reports: */</span></span><br><span class="line"><span class="keyword">struct</span> task_struct __rcu	*parent;</span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span><br><span class="line"> * Children/sibling form the list of natural children:</span><br><span class="line"> */</span></span><br><span class="line"><span class="keyword">struct</span> list_head		children;</span><br><span class="line"><span class="keyword">struct</span> list_head		sibling;</span><br><span class="line"><span class="keyword">struct</span> task_struct		*group_leader;</span><br></pre></td></tr></table></figure>
+</div>
+
+<p>
+&#x901A;&#x8FC7;&#x4EE5;&#x4E0B;&#x65B9;&#x5F0F;&#x4FBF;&#x53EF;&#x4EE5;&#x904D;&#x5386;&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x7684;&#x5B50;&#x8FDB;&#x7A0B;&#xFF1A;
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> task_struct *task;</span><br><span class="line"><span class="keyword">struct</span> list_head *<span class="built_in">list</span>;</span><br><span class="line"></span><br><span class="line">list_for_each(<span class="built_in">list</span>, &amp;current-&gt;children)</span><br><span class="line">{</span><br><span class="line">  <span class="comment">//&#x5F97;&#x5230;&#x7684; task &#x5373;&#x4E3A;&#x5F53;&#x524D;&#x8FDB;&#x7A0B;&#x7684;&#x4E00;&#x4E2A;&#x5B50;&#x8FDB;&#x7A0B;</span></span><br><span class="line">  task = list_entry(<span class="built_in">list</span>, <span class="keyword">struct</span> task_struct, sibling);</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+</div>
+
+<p>
+&#x5BF9;&#x4E8E;&#x521D;&#x59CB;&#x8FDB;&#x7A0B;&#xFF08;1 &#x53F7;&#x8FDB;&#x7A0B;&#xFF09;&#xFF0C;&#x5728; <code>init/init_task.c</code> &#x4E2D;&#x5DF2;&#x7ECF;&#x521D;&#x59CB;&#x5316;&#x597D;&#x4E86; 1 &#x53F7;&#x8FDB;&#x7A0B;&#xFF0C;&#x4E5F;&#x5C31;&#x662F; <code>init_task</code> &#x3002;
+</p>
+
+<p>
+&#x4F7F;&#x7528;&#x4E0B;&#x9762;&#x7684;&#x4EE3;&#x7801;&#xFF0C;&#x53EF;&#x4EE5;&#x641C;&#x5BFB;&#x5230;&#x5F53;&#x524D;&#x8FDB;&#x7A0B;&#x7684;&#x7236;&#x8FDB;&#x7A0B;&#x6811;&#xFF1A;
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> task_struct *task;</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span>(task = current; task != &amp;init_task; task = task-&gt;parent)</span><br><span class="line">  {</span><br><span class="line">    <span class="comment">//...</span></span><br><span class="line">  }</span><br></pre></td></tr></table></figure>
+</div>
+
+<p>
+&#x5728; <code>task_struct</code> &#x4E2D;&#x5177;&#x6709;&#x4E00;&#x4E2A; <code>tasks</code> &#x5143;&#x7D20;&#xFF0C;&#x8FD9;&#x662F;&#x4E00;&#x4E2A;&#x53CC;&#x5411;&#x94FE;&#x8868;&#xFF0C;&#x5C06;&#x6240;&#x6709;&#x7684; task_struct &#x90FD;&#x94FE;&#x63A5;&#x4E86;&#x8D77;&#x6765;&#xFF0C;&#x6240;&#x4EE5;&#x53EF;&#x4EE5;&#x901A;&#x8FC7;&#x4E0B;&#x9762;&#x7684;&#x65B9;&#x5F0F;&#x904D;&#x5386;&#x6240;&#x6709;&#x7684; task_struct:
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="preprocessor">#<span class="keyword">define</span> next_task(p)                                          \</span><br><span class="line">  list_entry_rcu((p)-&gt;tasks.next, struct task_struct, tasks)</span></span><br><span class="line"></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> for_each_process(p)                                   \</span><br><span class="line">  for (p = &amp;init_task ; (p = next_task(p)) != &amp;init_task ; )</span></span><br></pre></td></tr></table></figure>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+Last Updated 2020-07-18 Sat 15:41.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+</div>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/process/" rel="tag"># process</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/07/02/book_ostep_RAIDs/" rel="prev" title="[What]RAIDs">
+      <i class="fa fa-chevron-left"></i> [What]RAIDs
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org9ce5d2b"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x5206;&amp;#x914D; task_struct&amp;#xFF08;&amp;#x8FDB;&amp;#x7A0B;&amp;#x63CF;&amp;#x8FF0;&amp;#x7B26;&amp;#xFF09;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org573edff"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x8FDB;&amp;#x7A0B;&amp;#x63CF;&amp;#x8FF0;&amp;#x7B26;&amp;#x7684;&amp;#x5B58;&amp;#x653E;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgc63d9ab"><span class="nav-number">3.</span> <span class="nav-text">&amp;#x4EFB;&amp;#x52A1;&amp;#x72B6;&amp;#x6001;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org46ec90a"><span class="nav-number">4.</span> <span class="nav-text">&amp;#x4EFB;&amp;#x52A1;&amp;#x7684;&amp;#x4E0A;&amp;#x4E0B;&amp;#x6587;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org1abfe15"><span class="nav-number">5.</span> <span class="nav-text">&amp;#x8FDB;&amp;#x7A0B;&amp;#x7684;&amp;#x5BB6;&amp;#x65CF;&amp;#x6811;</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">我的世界</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">213</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">38</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+  
+  <span class="post-meta-divider">|</span>
+  <span>Hosted by <a href="https://pages.coding.me" target="_blank" rel="noopener" style="font-weight: bold">Coding Pages</a></span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+<script>
+  (function() {
+    function leancloudSelector(url) {
+      url = encodeURI(url);
+      return document.getElementById(url).querySelector('.leancloud-visitors-count');
+    }
+
+    function addCount(Counter) {
+      var visitors = document.querySelector('.leancloud_visitors');
+      var url = decodeURI(visitors.id);
+      var title = visitors.dataset.flagTitle;
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          if (results.length > 0) {
+            var counter = results[0];
+            leancloudSelector(url).innerText = counter.time + 1;
+            Counter('put', '/classes/Counter/' + counter.objectId, { time: { '__op': 'Increment', 'amount': 1 } })
+              .catch(error => {
+                console.error('Failed to save visitor count', error);
+              });
+          } else {
+              Counter('post', '/classes/Counter', { title, url, time: 1 })
+                .then(response => response.json())
+                .then(() => {
+                  leancloudSelector(url).innerText = 1;
+                })
+                .catch(error => {
+                  console.error('Failed to create', error);
+                });
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    function showTime(Counter) {
+      var visitors = document.querySelectorAll('.leancloud_visitors');
+      var entries = [...visitors].map(element => {
+        return decodeURI(element.id);
+      });
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url: { '$in': entries } })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          for (let url of entries) {
+            let target = results.find(item => item.url === url);
+            leancloudSelector(url).innerText = target ? target.time : 0;
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    let { app_id, app_key, server_url } = {"enable":true,"app_id":"ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI","app_key":"yh4vrfnscme1utPMpk65wcxn","server_url":null,"security":false};
+    function fetchData(api_server) {
+      var Counter = (method, url, data) => {
+        return fetch(`${api_server}/1.1${url}`, {
+          method,
+          headers: {
+            'X-LC-Id'     : app_id,
+            'X-LC-Key'    : app_key,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+      };
+      if (CONFIG.page.isPost) {
+        if (CONFIG.hostname !== location.hostname) return;
+        addCount(Counter);
+      } else if (document.querySelectorAll('.post-title-link').length >= 1) {
+        showTime(Counter);
+      }
+    }
+
+    let api_server = app_id.slice(-9) !== '-MdYXbMMI' ? server_url : `https://${app_id.slice(0, 8).toLowerCase()}.api.lncldglobal.com`;
+
+    if (api_server) {
+      fetchData(api_server);
+    } else {
+      fetch('https://app-router.leancloud.cn/2/route?appId=' + app_id)
+        .then(response => response.json())
+        .then(({ api_server }) => {
+          fetchData('https://' + api_server);
+        });
+    }
+  })();
+</script>
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+  <script defer src="/lib/three/three.min.js"></script>
+    <script defer src="/lib/three/three-waves.min.js"></script>
+    <script defer src="/lib/three/canvas_lines.min.js"></script>
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI',
+      appKey     : 'yh4vrfnscme1utPMpk65wcxn',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
