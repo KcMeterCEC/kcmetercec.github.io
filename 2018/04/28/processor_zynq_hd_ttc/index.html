@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="&amp;#x7531;&amp;#x4E8E;xilinx&amp;#x5B98;&amp;#x65B9;&amp;#x63D0;&amp;#x4F9B;&amp;#x7684;TTC&amp;#x7684;linux&amp;#x9A71;&amp;#x52A8;&amp;#x5E76;&amp;#x6CA1;&amp;#x6709;&amp;#x63D0;&amp;#x4F9B;PWM&amp;#x529F;&amp;#x80FD;&amp;#xFF0C;&amp;#x6240;&amp;#x4EE5;&amp;#x6B64;&amp;#x90E8;&amp;#x52">
+  <meta name="description" content="由于xilinx官方提供的TTC的linux驱动并没有提供PWM功能，所以此部分需要自己来实现，当然就要来了解一下硬件咯。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="zynq hardware -&gt; ttc">
 <meta property="og:url" content="http://kcmetercec.top/2018/04/28/processor_zynq_hd_ttc/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="&amp;#x7531;&amp;#x4E8E;xilinx&amp;#x5B98;&amp;#x65B9;&amp;#x63D0;&amp;#x4F9B;&amp;#x7684;TTC&amp;#x7684;linux&amp;#x9A71;&amp;#x52A8;&amp;#x5E76;&amp;#x6CA1;&amp;#x6709;&amp;#x63D0;&amp;#x4F9B;PWM&amp;#x529F;&amp;#x80FD;&amp;#xFF0C;&amp;#x6240;&amp;#x4EE5;&amp;#x6B64;&amp;#x90E8;&amp;#x52">
+<meta property="og:description" content="由于xilinx官方提供的TTC的linux驱动并没有提供PWM功能，所以此部分需要自己来实现，当然就要来了解一下硬件咯。">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[processor]/[Zynq]/[What]Zynq--hardware/ttc/ttc_block_diagram.jpg?raw=true">
 <meta property="article:published_time" content="2018-04-27T16:00:00.000Z">
@@ -301,139 +301,139 @@
       
         <div id="content">
 <p>
-&#x7531;&#x4E8E;xilinx&#x5B98;&#x65B9;&#x63D0;&#x4F9B;&#x7684;TTC&#x7684;linux&#x9A71;&#x52A8;&#x5E76;&#x6CA1;&#x6709;&#x63D0;&#x4F9B;PWM&#x529F;&#x80FD;&#xFF0C;&#x6240;&#x4EE5;&#x6B64;&#x90E8;&#x5206;&#x9700;&#x8981;&#x81EA;&#x5DF1;&#x6765;&#x5B9E;&#x73B0;&#xFF0C;&#x5F53;&#x7136;&#x5C31;&#x8981;&#x6765;&#x4E86;&#x89E3;&#x4E00;&#x4E0B;&#x786C;&#x4EF6;&#x54AF;&#x3002;
+由于xilinx官方提供的TTC的linux驱动并没有提供PWM功能，所以此部分需要自己来实现，当然就要来了解一下硬件咯。
 </p>
 
 <a id="more"></a>
 
-<div id="outline-container-org95a1dec" class="outline-2">
-<h2 id="org95a1dec">&#x6982;&#x89C8;</h2>
-<div class="outline-text-2" id="text-org95a1dec">
+<div id="outline-container-org36bffda" class="outline-2">
+<h2 id="org36bffda">概览</h2>
+<div class="outline-text-2" id="text-org36bffda">
 <p>
-TTC(Triple Timer Counters, &#x4E09;&#x91CD;&#x5B9A;&#x65F6;&#x5668;) &#x5177;&#x5907;&#x5982;&#x4E0B;&#x7279;&#x6027;&#xFF1A;
+TTC(Triple Timer Counters, 三重定时器) 具备如下特性：
 </p>
 <ol class="org-ol">
-<li>&#x6BCF;&#x4E2A;TTC&#x5305;&#x542B;3&#x4E2A;&#x72EC;&#x7ACB;&#x7684;&#x5B9A;&#x65F6;&#x5668;&#xFF0C; <b>PS&#x7AEF;&#x5177;&#x6709;&#x4E24;&#x4E2A;TTC</b> &#xFF0C; &#x6240;&#x4EE5;&#x4E00;&#x5171;&#x5177;&#x6709;6&#x4E2A;&#x72EC;&#x7ACB;&#x7684;&#x5B9A;&#x65F6;&#x5668;</li>
-<li>TTC1&#x53EF;&#x4EE5;&#x88AB;&#x914D;&#x7F6E;&#x4E3A;&#x5B89;&#x5168;&#x8BBF;&#x95EE;&#x6A21;&#x5F0F;&#x6216;&#x975E;&#x5B89;&#x5168;&#x8BBF;&#x95EE;&#x6A21;&#x5F0F;</li>
-<li>&#x6BCF;&#x4E2A;&#x5B9A;&#x65F6;&#x5668;&#x5177;&#x6709;16&#x4F4D;&#x5206;&#x9891;&#x5668;&#x548C;16&#x4F4D;&#x7684;&#x8BA1;&#x6570;&#x5668;</li>
-<li>&#x6BCF;&#x4E2A;TTC&#x7684; <b>&#x5B9A;&#x65F6;&#x5668;0&#x53EF;&#x4EE5;&#x9009;&#x62E9;</b> &#x5B9A;&#x65F6;&#x5668;&#x7684;&#x8F93;&#x5165;&#x6E90;&#x548C;&#x8F93;&#x51FA;&#x6E90;
+<li>每个TTC包含3个独立的定时器， <b>PS端具有两个TTC</b> ， 所以一共具有6个独立的定时器</li>
+<li>TTC1可以被配置为安全访问模式或非安全访问模式</li>
+<li>每个定时器具有16位分频器和16位的计数器</li>
+<li>每个TTC的 <b>定时器0可以选择</b> 定时器的输入源和输出源
 <ul class="org-ul">
-<li>CPU&#x603B;&#x7EBF;&#x65F6;&#x949F;</li>
-<li>PL&#x7AEF;&#x65F6;&#x949F;</li>
-<li>&#x5916;&#x90E8;&#x8F93;&#x5165;&#x65F6;&#x949F;(&#x901A;&#x8FC7;MIO&#x8F93;&#x5165;)</li>
+<li>CPU总线时钟</li>
+<li>PL端时钟</li>
+<li>外部输入时钟(通过MIO输入)</li>
 </ul></li>
-<li>&#x6BCF;&#x4E2A;&#x5B9A;&#x65F6;&#x5668;&#x90FD;&#x6709;&#x5176;&#x4E2D;&#x65AD;
+<li>每个定时器都有其中断
 <ul class="org-ul">
-<li>&#x5468;&#x671F;&#x5B9A;&#x65F6;&#x89E6;&#x53D1;</li>
-<li>&#x8BA1;&#x6570;&#x5668;&#x5339;&#x914D;&#x89E6;&#x53D1;</li>
-<li>&#x8BA1;&#x6570;&#x5668;&#x6EA2;&#x51FA;&#x89E6;&#x53D1;</li>
-<li>&#x5B9A;&#x65F6;&#x5668;&#x4E8B;&#x4EF6;&#x6EA2;&#x51FA;&#x89E6;&#x53D1;</li>
+<li>周期定时触发</li>
+<li>计数器匹配触发</li>
+<li>计数器溢出触发</li>
+<li>定时器事件溢出触发</li>
 </ul></li>
-<li>&#x6BCF;&#x4E2A;&#x5B9A;&#x65F6;&#x5668;&#x90FD;&#x5177;&#x6709;&#x6CE2;&#x5F62;&#x8F93;&#x51FA;&#x529F;&#x80FD;</li>
+<li>每个定时器都具有波形输出功能</li>
 </ol>
 
 <p>
-<b>&#x9700;&#x8981;&#x6CE8;&#x610F;&#x7684;&#x662F;&#xFF1A;</b> &#x5B9A;&#x65F6;&#x5668;0&#x9ED8;&#x8BA4;&#x7684;&#x8F93;&#x5165;&#x65F6;&#x949F;&#x548C;&#x8F93;&#x51FA;&#x65B9;&#x5F0F;&#x90FD;&#x662F;EMIO
+<b>需要注意的是：</b> 定时器0默认的输入时钟和输出方式都是EMIO
 </p>
 
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[processor]/[Zynq]/[What]Zynq--hardware/ttc/ttc_block_diagram.jpg?raw=true" alt="ttc_block_diagram.jpg">
 </div>
-<div id="outline-container-org24d4883" class="outline-3">
-<h3 id="org24d4883">&#x5206;&#x914D;&#x4E0E;&#x8BA1;&#x6570;</h3>
-<div class="outline-text-3" id="text-org24d4883">
+<div id="outline-container-org5ae74c2" class="outline-3">
+<h3 id="org5ae74c2">分配与计数</h3>
+<div class="outline-text-3" id="text-org5ae74c2">
 <ul class="org-ul">
-<li>&#x5206;&#x9891;&#x5668;&#x7684;&#x503C;&#x53EF;&#x8BBE;&#x8303;&#x56F4;&#x4E3A; 2 ~ 65536</li>
-<li>&#x8BA1;&#x6570;&#x5668;&#x53EF;&#x4EE5;&#x914D;&#x7F6E;&#x5411;&#x4E0A;&#x8BA1;&#x6570;&#x6216;&#x5411;&#x4E0B;&#x8BA1;&#x6570;</li>
+<li>分频器的值可设范围为 2 ~ 65536</li>
+<li>计数器可以配置向上计数或向下计数</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-org8f4aa24" class="outline-3">
-<h3 id="org8f4aa24">&#x64CD;&#x4F5C;&#x6A21;&#x5F0F;</h3>
-<div class="outline-text-3" id="text-org8f4aa24">
+<div id="outline-container-org9e2fc7d" class="outline-3">
+<h3 id="org9e2fc7d">操作模式</h3>
+<div class="outline-text-3" id="text-org9e2fc7d">
 <ul class="org-ul">
-<li>&#x5468;&#x671F;&#x6A21;&#x5F0F;&#xFF1A;&#x5B9A;&#x65F6;&#x5668;&#x6839;&#x636E;&#x8BBE;&#x7F6E;&#x503C;&#x5468;&#x671F;&#x6027;&#x7684;&#x5FAA;&#x73AF;&#x8BA1;&#x6570;&#xFF0C;&#x90FD;&#x8BA1;&#x6570;&#x503C;&#x5230;0&#x65F6;&#x53EF;&#x4EE5;&#x4EA7;&#x751F;&#x4E00;&#x6B21;&#x4E2D;&#x65AD;&#xFF0C;&#x90FD;&#x8BA1;&#x6570;&#x5668;&#x4E0E;&#x5339;&#x914D;&#x503C;&#x76F8;&#x7B49;&#x65F6;&#x4E5F;&#x53EF;&#x4EE5;&#x4EA7;&#x751F;&#x4E00;&#x6B21;&#x4E2D;&#x65AD;</li>
-<li>&#x6EA2;&#x51FA;&#x6A21;&#x5F0F;&#xFF1A;&#x5B9A;&#x65F6;&#x5668;&#x5728; 0 ~ 0xffff &#x4E2D;&#x5FAA;&#x73AF;&#x589E;&#x52A0;&#x6216;&#x51CF;&#x5C0F;&#xFF0C; &#x5F53;&#x8BA1;&#x6570;&#x503C;&#x5230;0&#x6216;&#x4E0E;&#x5339;&#x914D;&#x503C;&#x76F8;&#x7B49;&#x65F6;&#x90FD;&#x53EF;&#x4EE5;&#x4EA7;&#x751F;&#x4E00;&#x6B21;&#x4E2D;&#x65AD;</li>
+<li>周期模式：定时器根据设置值周期性的循环计数，都计数值到0时可以产生一次中断，都计数器与匹配值相等时也可以产生一次中断</li>
+<li>溢出模式：定时器在 0 ~ 0xffff 中循环增加或减小， 当计数值到0或与匹配值相等时都可以产生一次中断</li>
 </ul>
 </div>
 </div>
 </div>
-<div id="outline-container-org70ec11d" class="outline-2">
-<h2 id="org70ec11d">&#x4F7F;&#x7528;&#x6D41;&#x7A0B;</h2>
-<div class="outline-text-2" id="text-org70ec11d">
+<div id="outline-container-org65e76ee" class="outline-2">
+<h2 id="org65e76ee">使用流程</h2>
+<div class="outline-text-2" id="text-org65e76ee">
 </div>
-<div id="outline-container-orga27b035" class="outline-3">
-<h3 id="orga27b035">&#x4EA7;&#x751F;PWM</h3>
-<div class="outline-text-3" id="text-orga27b035">
+<div id="outline-container-orgf1626d2" class="outline-3">
+<h3 id="orgf1626d2">产生PWM</h3>
+<div class="outline-text-3" id="text-orgf1626d2">
 </div>
-<div id="outline-container-orgf509c41" class="outline-4">
-<h4 id="orgf509c41">&#x57FA;&#x672C;&#x6D41;&#x7A0B;</h4>
-<div class="outline-text-4" id="text-orgf509c41">
+<div id="outline-container-org108505d" class="outline-4">
+<h4 id="org108505d">基本流程</h4>
+<div class="outline-text-4" id="text-org108505d">
 <p>
-&#x5F53;&#x4EC5;&#x4EC5;&#x4F7F;&#x7528;TTC&#x4EA7;&#x751F;PWM&#x800C;&#x4E0D;&#x4F7F;&#x7528;&#x4E2D;&#x65AD;&#x65F6;&#xFF0C;&#x4EE5;&#x4E0B;&#x51E0;&#x90E8;&#x5206;&#x5BC4;&#x5B58;&#x5668;&#x9700;&#x8981;&#x4F7F;&#x7528;&#xFF1A;
+当仅仅使用TTC产生PWM而不使用中断时，以下几部分寄存器需要使用：
 </p>
 <ol class="org-ol">
-<li>&#x65F6;&#x949F;&#x914D;&#x7F6E;&#x5BC4;&#x5B58;&#x5668;&#xFF1A;&#x914D;&#x7F6E;&#x5206;&#x9891;&#x6BD4;&#xFF0C;&#x65F6;&#x949F;&#x8F93;&#x5165;&#x6E90;</li>
-<li>&#x8BA1;&#x6570;&#x5668;&#x914D;&#x7F6E;&#x5BC4;&#x5B58;&#x5668;&#xFF1A;&#x914D;&#x7F6E;&#x8BA1;&#x6570;&#x6A21;&#x5F0F;&#xFF0C;&#x65B9;&#x5411;&#xFF0C;&#x5339;&#x914D;&#x503C;&#xFF0C;&#x6CE2;&#x5F62;&#x8F93;&#x51FA;</li>
-<li>&#x8BA1;&#x6570;&#x503C;&#x8BBE;&#x7F6E;&#x5BC4;&#x5B58;&#x5668;&#xFF1A;&#x8BBE;&#x7F6E;&#x8BA1;&#x6570;&#x503C;&#xFF0C;&#x5BF9;&#x6BD4;&#x503C;&#x7B49;</li>
+<li>时钟配置寄存器：配置分频比，时钟输入源</li>
+<li>计数器配置寄存器：配置计数模式，方向，匹配值，波形输出</li>
+<li>计数值设置寄存器：设置计数值，对比值等</li>
 </ol>
 
 <p>
-&#x542F;&#x52A8;&#x6D41;&#x7A0B;&#xFF1A;
+启动流程：
 </p>
 <ol class="org-ol">
-<li>&#x9009;&#x62E9;&#x8F93;&#x5165;&#x65F6;&#x949F;&#xFF0C;&#x8BBE;&#x7F6E;&#x5206;&#x9891;&#x503C;(slcr.MIO_MUX_SEL &#x548C; Clock Control &#x5BC4;&#x5B58;&#x5668;)</li>
-<li>&#x5982;&#x679C;&#x8981;&#x8BBE;&#x7F6E;&#x5468;&#x671F;&#x6A21;&#x5F0F;&#x5219;&#x4F7F;&#x7528; Interval &#x5BC4;&#x5B58;&#x5668;</li>
-<li>&#x5982;&#x679C;&#x8981;&#x8BBE;&#x7F6E;&#x5339;&#x914D;&#x503C;&#x5219;&#x4F7F;&#x7528; Match &#x5BC4;&#x5B58;&#x5668;</li>
-<li>&#x4F7F;&#x80FD;&#x6CE2;&#x5F62;&#x8F93;&#x51FA;&#xFF0C;&#x4F7F;&#x80FD;&#x5339;&#x914D;&#xFF0C;&#x8BBE;&#x7F6E;&#x8BA1;&#x6570;&#x65B9;&#x5411;&#xFF0C;&#x8BBE;&#x7F6E;&#x6A21;&#x5F0F;&#xFF0C;&#x6700;&#x540E;&#x542F;&#x52A8;&#x8BA1;&#x6570;&#x5668;(TTC Counter Control &#x5BC4;&#x5B58;&#x5668;)</li>
+<li>选择输入时钟，设置分频值(slcr.MIO_MUX_SEL 和 Clock Control 寄存器)</li>
+<li>如果要设置周期模式则使用 Interval 寄存器</li>
+<li>如果要设置匹配值则使用 Match 寄存器</li>
+<li>使能波形输出，使能匹配，设置计数方向，设置模式，最后启动计数器(TTC Counter Control 寄存器)</li>
 </ol>
 
 <p>
-&#x505C;&#x6B62;&#x6D41;&#x7A0B;&#xFF1A;
+停止流程：
 </p>
 <ol class="org-ol">
-<li>&#x56DE;&#x8BFB; Counter Control &#x5BC4;&#x5B58;&#x5668;&#x7684;&#x503C;</li>
-<li>&#x4EC5;&#x4EC5;&#x4FEE;&#x6539; DIS &#x4F4D;&#x4E3A;1</li>
-<li>&#x56DE;&#x5199; Counter Control &#x5BC4;&#x5B58;&#x5668;</li>
+<li>回读 Counter Control 寄存器的值</li>
+<li>仅仅修改 DIS 位为1</li>
+<li>回写 Counter Control 寄存器</li>
 </ol>
 
 <p>
-&#x91CD;&#x65B0;&#x542F;&#x52A8;&#x6D41;&#x7A0B;:
+重新启动流程:
 </p>
 <ol class="org-ol">
-<li>&#x56DE;&#x8BFB; Counter Control &#x5BC4;&#x5B58;&#x5668;&#x7684;&#x503C;</li>
-<li>&#x4EC5;&#x4EC5;&#x4FEE;&#x6539; RST &#x4F4D;&#x4E3A;1</li>
-<li>&#x56DE;&#x5199; Counter Control &#x5BC4;&#x5B58;&#x5668;</li>
+<li>回读 Counter Control 寄存器的值</li>
+<li>仅仅修改 RST 位为1</li>
+<li>回写 Counter Control 寄存器</li>
 </ol>
 </div>
 </div>
-<div id="outline-container-org06d84ab" class="outline-4">
-<h4 id="org06d84ab">&#x7F16;&#x5199;&#x5BC4;&#x5B58;&#x5668;&#x4EE5;&#x542F;&#x52A8;PWM</h4>
-<div class="outline-text-4" id="text-org06d84ab">
+<div id="outline-container-orgb3118aa" class="outline-4">
+<h4 id="orgb3118aa">编写寄存器以启动PWM</h4>
+<div class="outline-text-4" id="text-orgb3118aa">
 <ul class="org-ul">
-<li>&#x57FA;&#x5730;&#x5740;&#x5BC4;&#x5B58;&#x5668;
+<li>基地址寄存器
 <ul class="org-ul">
-<li>ttc0 : 0xf8001000(&#x4EE5;&#x6B64;ttc&#x7684;clock1&#x4E3A;&#x4F8B;, &#x9009;&#x7528;&#x5185;&#x90E8;&#x65F6;&#x949F;)</li>
+<li>ttc0 : 0xf8001000(以此ttc的clock1为例, 选用内部时钟)</li>
 <li>ttc1 : 0xf8002000</li>
 </ul></li>
-<li>&#x8BBE;&#x7F6E;&#x5BF9;&#x5E94;&#x7684; MIO_PIN &#x5BC4;&#x5B58;&#x5668;&#xFF0C;&#x6BD4;&#x5982; MIO_PIN_18&#x4F5C;&#x4E3A;PWM&#x8F93;&#x51FA;
+<li>设置对应的 MIO_PIN 寄存器，比如 MIO_PIN_18作为PWM输出
 <ul class="org-ul">
-<li>&#x6700;&#x7EC8;&#x4E3A;:  MIO_PIN_18 | (6 &lt;&lt; 5) = 0x16c1</li>
+<li>最终为:  MIO_PIN_18 | (6 << 5) = 0x16c1</li>
 </ul></li>
-<li>&#x8BBE;&#x7F6E; Clock Control &#xFF1A; &#x9009;&#x7528;&#x5185;&#x90E8;&#x65F6;&#x949F;&#xFF0C;&#x5206;&#x9891;&#x6BD4;&#x4E3A; 4&#xFF0C;&#x5E76;&#x4F7F;&#x80FD;&#x5206;&#x9891;&#x5668;
+<li>设置 Clock Control ： 选用内部时钟，分频比为 4，并使能分频器
 <ul class="org-ul">
-<li>&#x6700;&#x7EC8;&#x4E3A;&#xFF1A; (0 &lt;&lt; 6) | (0 &lt;&lt; 5) | (1 &lt;&lt; 1) | ( 1 &lt;&lt; 0) = 0x03</li>
+<li>最终为： (0 << 6) | (0 << 5) | (1 << 1) | ( 1 << 0) = 0x03</li>
 </ul></li>
-<li>&#x8BBE;&#x7F6E; Interval : &#x8BBE;&#x7F6E;&#x8BA1;&#x6570;&#x503C;&#x4E0A;&#x9650;&#x4E3A; 65535
+<li>设置 Interval : 设置计数值上限为 65535
 <ul class="org-ul">
-<li>&#x6700;&#x7EC8;&#x4E3A;&#xFF1A; 0xffff</li>
+<li>最终为： 0xffff</li>
 </ul></li>
-<li>&#x8BBE;&#x7F6E; Match : &#x8BBE;&#x7F6E;&#x5360;&#x7A7A;&#x6BD4;&#x4E3A; 50%&#xFF0C;&#x4E5F;&#x5C31;&#x662F; 32768
+<li>设置 Match : 设置占空比为 50%，也就是 32768
 <ul class="org-ul">
-<li>&#x6700;&#x7EC8;&#x4E3A;&#xFF1A;0x8000</li>
+<li>最终为：0x8000</li>
 </ul></li>
-<li>&#x8BBE;&#x7F6E;Counter Control : &#x6B63;&#x6781;&#x6027;&#x8F93;&#x51FA;&#xFF0C;&#x4F7F;&#x80FD;&#x6CE2;&#x5F62;&#x8F93;&#x51FA;&#xFF0C;&#x4F7F;&#x80FD;&#x5B9A;&#x65F6;&#x5668;
+<li>设置Counter Control : 正极性输出，使能波形输出，使能定时器
 <ul class="org-ul">
-<li>&#x6700;&#x7EC8;&#x4E3A;&#xFF1A;( 1 &lt;&lt; 6) | (0 &lt;&lt; 5) | ( 0 &lt;&lt; 0) = 0x40</li>
+<li>最终为：( 1 << 6) | (0 << 5) | ( 0 << 0) = 0x40</li>
 </ul></li>
 </ul>
 </div>
@@ -442,7 +442,7 @@ TTC(Triple Timer Counters, &#x4E09;&#x91CD;&#x5B9A;&#x65F6;&#x5668;) &#x5177;&#x
 </div>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
 </div>
 
     </div>
@@ -528,7 +528,7 @@ Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org95a1dec"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x6982;&amp;#x89C8;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org24d4883"><span class="nav-number">1.1.</span> <span class="nav-text">&amp;#x5206;&amp;#x914D;&amp;#x4E0E;&amp;#x8BA1;&amp;#x6570;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org8f4aa24"><span class="nav-number">1.2.</span> <span class="nav-text">&amp;#x64CD;&amp;#x4F5C;&amp;#x6A21;&amp;#x5F0F;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org70ec11d"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x4F7F;&amp;#x7528;&amp;#x6D41;&amp;#x7A0B;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orga27b035"><span class="nav-number">2.1.</span> <span class="nav-text">&amp;#x4EA7;&amp;#x751F;PWM</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgf509c41"><span class="nav-number">2.1.1.</span> <span class="nav-text">&amp;#x57FA;&amp;#x672C;&amp;#x6D41;&amp;#x7A0B;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org06d84ab"><span class="nav-number">2.1.2.</span> <span class="nav-text">&amp;#x7F16;&amp;#x5199;&amp;#x5BC4;&amp;#x5B58;&amp;#x5668;&amp;#x4EE5;&amp;#x542F;&amp;#x52A8;PWM</span></a></li></ol></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org36bffda"><span class="nav-number">1.</span> <span class="nav-text">概览</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org5ae74c2"><span class="nav-number">1.1.</span> <span class="nav-text">分配与计数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org9e2fc7d"><span class="nav-number">1.2.</span> <span class="nav-text">操作模式</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org65e76ee"><span class="nav-number">2.</span> <span class="nav-text">使用流程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgf1626d2"><span class="nav-number">2.1.</span> <span class="nav-text">产生PWM</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org108505d"><span class="nav-number">2.1.1.</span> <span class="nav-text">基本流程</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgb3118aa"><span class="nav-number">2.1.2.</span> <span class="nav-text">编写寄存器以启动PWM</span></a></li></ol></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 

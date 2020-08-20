@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="&amp;#x6574;&amp;#x7406;&amp;#x5D4C;&amp;#x5165;&amp;#x5F0F;Linux&amp;#x8FDC;&amp;#x7A0B;&amp;#x5347;&amp;#x7EA7;&amp;#x7684;&amp;#x601D;&amp;#x8DEF;&amp;#x3002;">
+  <meta name="description" content="整理嵌入式Linux远程升级的思路。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[What]嵌入式Linux的远程升级">
 <meta property="og:url" content="http://kcmetercec.top/2018/03/30/linux_operations_remote_update/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="&amp;#x6574;&amp;#x7406;&amp;#x5D4C;&amp;#x5165;&amp;#x5F0F;Linux&amp;#x8FDC;&amp;#x7A0B;&amp;#x5347;&amp;#x7EA7;&amp;#x7684;&amp;#x601D;&amp;#x8DEF;&amp;#x3002;">
+<meta property="og:description" content="整理嵌入式Linux远程升级的思路。">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[operations]/[What]Linux--usageExperiences/linux_remote_update.jpg?raw=true">
 <meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[operations]/[What]Linux--usageExperiences/device_update_overview.jpg?raw=true">
@@ -305,119 +305,119 @@
       
         <div id="content">
 <p>
-&#x6574;&#x7406;&#x5D4C;&#x5165;&#x5F0F;Linux&#x8FDC;&#x7A0B;&#x5347;&#x7EA7;&#x7684;&#x601D;&#x8DEF;&#x3002;
+整理嵌入式Linux远程升级的思路。
 </p>
 
 <a id="more"></a>
 
-<div id="outline-container-org2818277" class="outline-2">
-<h2 id="org2818277">&#x603B;&#x4F53;&#x6D41;&#x7A0B;</h2>
-<div class="outline-text-2" id="text-org2818277">
+<div id="outline-container-org771be75" class="outline-2">
+<h2 id="org771be75">总体流程</h2>
+<div class="outline-text-2" id="text-org771be75">
 <p>
-&#x603B;&#x4F53;&#x6D41;&#x7A0B;&#x5982;&#x4E0B;&#x56FE;&#xFF1A;
+总体流程如下图：
 </p>
 
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[operations]/[What]Linux--usageExperiences/linux_remote_update.jpg?raw=true" alt="linux_remote_update.jpg">
 </div>
 </div>
-<div id="outline-container-orgd639991" class="outline-2">
-<h2 id="orgd639991">&#x5BA2;&#x6237;&#x673A;&#x5347;&#x7EA7;&#x6D41;&#x7A0B;</h2>
-<div class="outline-text-2" id="text-orgd639991">
+<div id="outline-container-org33a0be9" class="outline-2">
+<h2 id="org33a0be9">客户机升级流程</h2>
+<div class="outline-text-2" id="text-org33a0be9">
 <p>
-&#x5BA2;&#x6237;&#x673A;&#x5728;&#x83B7;&#x53D6;&#x5230;&#x5347;&#x7EA7;&#x5305;&#x540E;&#x7684;&#x6D41;&#x7A0B;&#x6982;&#x89C8;&#x4E3A;&#xFF1A;
+客户机在获取到升级包后的流程概览为：
 </p>
 
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[operations]/[What]Linux--usageExperiences/device_update_overview.jpg?raw=true" alt="device_update_overview.jpg">
 </div>
-<div id="outline-container-org301f204" class="outline-3">
-<h3 id="org301f204">&#x542F;&#x52A8;&#x6D41;&#x7A0B;</h3>
-<div class="outline-text-3" id="text-org301f204">
+<div id="outline-container-org3d6127c" class="outline-3">
+<h3 id="org3d6127c">启动流程</h3>
+<div class="outline-text-3" id="text-org3d6127c">
 <p>
-&#x5BF9;&#x4E8E;&#x5D4C;&#x5165;&#x5F0F;Linux&#x800C;&#x8A00;&#xFF0C;&#x5176;&#x5347;&#x7EA7;&#x4EE3;&#x7801;&#x4E00;&#x822C;&#x4F4D;&#x4E8E;&#x7CFB;&#x7EDF;&#x4E4B;&#x4E0A;&#x800C;&#x4E0D;&#x662F;&#x5728;u-boot&#x4E2D;&#xFF0C;&#x56E0;&#x4E3A;&#x8FD9;&#x5728;&#x540E;&#x671F;&#x7684;&#x5347;&#x7EA7;&#x66F4;&#x4E3A;&#x7B80;&#x4FBF;&#x3002;
+对于嵌入式Linux而言，其升级代码一般位于系统之上而不是在u-boot中，因为这在后期的升级更为简便。
 </p>
 
 <p>
-&#x4F46;&#x9700;&#x8981;&#x6CE8;&#x610F;&#x7684;&#x662F;&#xFF1A;
+但需要注意的是：
 </p>
 <pre class="example">
-&#x5982;&#x679C;&#x5728;&#x5347;&#x7EA7;&#x7CFB;&#x7EDF;&#x7684;&#x8FC7;&#x7A0B;&#x4E2D;Linux&#x786C;&#x76D8;&#x6570;&#x636E;&#x88AB;&#x610F;&#x5916;&#x635F;&#x574F;(&#x6BD4;&#x5982;&#x5F02;&#x5E38;&#x6389;&#x7535;)&#xFF0C;&#x8FD9;&#x5C06;&#x5BFC;&#x81F4;&#x7CFB;&#x7EDF;&#x65E0;&#x6CD5;&#x91CD;&#x542F;&#x8FDB;&#x800C;&#x4E0D;&#x518D;&#x5177;&#x5907;&#x5347;&#x7EA7;&#x7684;&#x80FD;&#x529B;&#xFF0C;
-&#x5E76;&#x4E14;&#x5BA2;&#x6237;&#x4E5F;&#x65E0;&#x6CD5;&#x518D;&#x4F7F;&#x7528;&#x8BBE;&#x5907;&#x4E86;, &#x53EA;&#x6709;&#x8FD4;&#x5382;......</pre>
+如果在升级系统的过程中Linux硬盘数据被意外损坏(比如异常掉电)，这将导致系统无法重启进而不再具备升级的能力，
+并且客户也无法再使用设备了, 只有返厂......</pre>
 
 <p>
-&#x4E3A;&#x4E86;&#x89E3;&#x51B3;&#x8FD9;&#x4E2A;&#x95EE;&#x9898;&#xFF0C;&#x5C31;&#x9700;&#x8981;:
+为了解决这个问题，就需要:
 </p>
 <ol class="org-ol">
-<li>&#x4E00;&#x4E2A;&#x5907;&#x4EFD;&#x7CFB;&#x7EDF;&#xFF0C;&#x6B64;&#x7CFB;&#x7EDF;&#x7684;&#x529F;&#x80FD;&#x4EC5;&#x505A;&#x5347;&#x7EA7;&#x4F7F;&#x7528;&#xFF1A;
+<li>一个备份系统，此系统的功能仅做升级使用：
 <ul class="org-ul">
-<li>u-boot &#x5224;&#x65AD;&#x7CFB;&#x7EDF;&#x6821;&#x9A8C;&#x9519;&#x8BEF;&#xFF0C;&#x4FBF;&#x4ECE;&#x5907;&#x4EFD;&#x533A;&#x4ECE;&#x542F;&#x52A8;&#x5907;&#x4EFD;&#x7CFB;&#x7EDF;</li>
-<li>&#x5907;&#x4EFD;&#x7CFB;&#x7EDF;&#x4E3A;&#x4E3B;&#x5206;&#x533A;&#x70E7;&#x5199;&#x7CFB;&#x7EDF;</li>
-<li>&#x5907;&#x4EFD;&#x7CFB;&#x7EDF;&#x81EA;&#x52A8;&#x91CD;&#x542F;</li>
+<li>u-boot 判断系统校验错误，便从备份区从启动备份系统</li>
+<li>备份系统为主分区烧写系统</li>
+<li>备份系统自动重启</li>
 </ul></li>
-<li>&#x4E00;&#x4E2A;&#x5355;&#x72EC;&#x7684;&#x5206;&#x533A;&#x5B58;&#x653E;&#x7CFB;&#x7EDF;&#x65E5;&#x5FD7;&#x548C;&#x7528;&#x6237;&#x6570;&#x636E;</li>
+<li>一个单独的分区存放系统日志和用户数据</li>
 </ol>
 
 <p>
-&#x4E00;&#x822C;&#x6765;&#x8BB2;u-boot&#x7684;&#x529F;&#x80FD;&#x8981;&#x505A;&#x5F97;&#x8DB3;&#x591F;&#x7B80;&#x5355;&#xFF0C;&#x4EE5;&#x4FDD;&#x8BC1;&#x5176;&#x7A33;&#x5B9A;&#x6027;&#xFF0C;&#x4F46;&#x5982;&#x679C;u-boot&#x4E5F;&#x6709;&#x8FDC;&#x7A0B;&#x5347;&#x7EA7;&#x9700;&#x6C42;&#x7684;&#x8BDD;&#x90A3;&#x5C31;&#x9700;&#x8981;&#x4E3A;u-boot&#x518D;&#x5EFA;&#x7ACB;&#x5907;&#x4EFD;&#x533A;&#x3002;
+一般来讲u-boot的功能要做得足够简单，以保证其稳定性，但如果u-boot也有远程升级需求的话那就需要为u-boot再建立备份区。
 </p>
 
 <p>
-&#x4E0B;&#x9762;&#x4FBF;&#x662F;&#x4E00;&#x4E2A;&#x8BE6;&#x7EC6;&#x7684;&#x542F;&#x52A8;&#x6D41;&#x7A0B;&#xFF1A;
+下面便是一个详细的启动流程：
 </p>
 
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[operations]/[What]Linux--usageExperiences/linux_boot.jpg?raw=true" alt="linux_boot.jpg">
 </div>
 </div>
-<div id="outline-container-org1d961d1" class="outline-3">
-<h3 id="org1d961d1">&#x5347;&#x7EA7;</h3>
-<div class="outline-text-3" id="text-org1d961d1">
+<div id="outline-container-org5173c38" class="outline-3">
+<h3 id="org5173c38">升级</h3>
+<div class="outline-text-3" id="text-org5173c38">
 <p>
-&#x7CFB;&#x7EDF;&#x5347;&#x7EA7;&#x7684;&#x601D;&#x8DEF;&#x5982;&#x4E0B;&#x56FE;:
+系统升级的思路如下图:
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[operations]/[What]Linux--usageExperiences/linux_sysupdate.jpg?raw=true" alt="linux_sysupdate.jpg">
 <p>
-&#x5BF9;&#x5E94;&#x7684;emmc&#x7684;&#x5206;&#x533A;&#x65B9;&#x5F0F;&#x5982;&#x4E0B;&#x56FE;:
+对应的emmc的分区方式如下图:
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[operations]/[What]Linux--usageExperiences/linux_emmc_format.jpg?raw=true" alt="linux_emmc_format.jpg">
 <ul class="org-ul">
-<li>1&#x5206;&#x533A;&#x662F;uboot&#x9ED8;&#x8BA4;&#x5F15;&#x5BFC;&#x7684;&#x5206;&#x533A;&#xFF0C;&#x5F53;1&#x5206;&#x533A;&#x7CFB;&#x7EDF;&#x88AB;&#x7834;&#x574F;&#x65F6;&#xFF0C;uboot&#x4FBF;&#x4F1A;&#x4ECE;2&#x5206;&#x533A;&#x542F;&#x52A8;&#x5907;&#x4EFD;&#x6062;&#x590D;&#x7CFB;&#x7EDF;</li>
-<li>2&#x5206;&#x533A;&#x9664;&#x4E86;&#x5907;&#x4EFD;&#x6062;&#x590D;&#x7CFB;&#x7EDF;&#x8FD8;&#x5177;&#x6709;&#x5347;&#x7EA7;&#x7CFB;&#x7EDF;&#x6587;&#x4EF6;&#x548C;&#x5E94;&#x7528;&#x6587;&#x4EF6;&#x7B49;
+<li>1分区是uboot默认引导的分区，当1分区系统被破坏时，uboot便会从2分区启动备份恢复系统</li>
+<li>2分区除了备份恢复系统还具有升级系统文件和应用文件等
 <ul class="org-ul">
-<li>&#x542F;&#x52A8;&#x540E;&#x7684;&#x7CFB;&#x7EDF;initramfs&#x6765;&#x68C0;&#x6D4B;2&#x5206;&#x533A;&#x7684;&#x5347;&#x7EA7;&#x6587;&#x4EF6;&#xFF0C;&#x800C;&#x5BF9;&#x5E94;&#x7684;&#x66F4;&#x65B0;&#x7CFB;&#x7EDF;</li>
+<li>启动后的系统initramfs来检测2分区的升级文件，而对应的更新系统</li>
 </ul></li>
-<li>3&#x5206;&#x533A;&#x662F;initramfs&#x5728;&#x5B8C;&#x6210;&#x7CFB;&#x7EDF;&#x57FA;&#x672C;&#x914D;&#x7F6E;&#x540E;&#xFF0C;&#x4F1A;&#x8DF3;&#x8F6C;&#x5230;&#x7684;&#x771F;&#x5B9E;&#x5E94;&#x7528;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;</li>
-<li>4&#x5206;&#x533A;&#x4E3B;&#x8981;&#x7528;&#x6237;&#x5B58;&#x50A8;&#x7528;&#x6237;&#x6570;&#x636E;&#x548C;&#x65E5;&#x5FD7;&#x6587;&#x4EF6;</li>
+<li>3分区是initramfs在完成系统基本配置后，会跳转到的真实应用文件系统</li>
+<li>4分区主要用户存储用户数据和日志文件</li>
 </ul>
 </div>
 
-<div id="outline-container-orgd0c0dc0" class="outline-4">
-<h4 id="orgd0c0dc0">initramfs&#x5230;rootfs</h4>
-<div class="outline-text-4" id="text-orgd0c0dc0">
+<div id="outline-container-org0d42214" class="outline-4">
+<h4 id="org0d42214">initramfs到rootfs</h4>
+<div class="outline-text-4" id="text-org0d42214">
 <p>
-initramfs&#x9700;&#x8981;&#x8FBE;&#x5230;&#x4EE5;&#x4E0B;&#x51E0;&#x70B9;&#x8981;&#x6C42;:
+initramfs需要达到以下几点要求:
 </p>
 <ol class="org-ol">
-<li>&#x4F53;&#x79EF;&#x8981;&#x8DB3;&#x591F;&#x7684;&#x5C0F;&#xFF0C;&#x4EE5;&#x8FBE;&#x5230;&#x5FEB;&#x901F;&#x542F;&#x52A8;
+<li>体积要足够的小，以达到快速启动
 <ul class="org-ul">
-<li>&#x56E0;&#x4E3A;kernel&#x4F1A;&#x5C06;&#x6574;&#x4E2A;ramfs&#x62F7;&#x8D1D;&#x5230;&#x5185;&#x5B58;&#xFF0C;&#x5982;&#x679C;ramfs&#x4F53;&#x79EF;&#x592A;&#x5927;&#x8FD9;&#x4F1A;&#x6D88;&#x8017;&#x4E0D;&#x5C11;&#x65F6;&#x95F4;</li>
+<li>因为kernel会将整个ramfs拷贝到内存，如果ramfs体积太大这会消耗不少时间</li>
 </ul></li>
-<li>&#x5177;&#x5907;&#x66F4;&#x65B0;&#x7CFB;&#x7EDF;&#x6587;&#x4EF6;&#x548C;&#x6839;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x7684;&#x529F;&#x80FD;</li>
+<li>具备更新系统文件和根文件系统的功能</li>
 </ol>
 
 <p>
-&#x4E3B;&#x8981;&#x96BE;&#x70B9;&#x5728;&#x66F4;&#x65B0;&#x6839;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#xFF0C;&#x6839;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x683C;&#x5F0F;&#x4E3A;cpio&#x683C;&#x5F0F;&#xFF0C;&#x8FD9;&#x9700;&#x8981;ramfs&#x4E2D;&#x5177;&#x6709;cpio&#x547D;&#x4EE4;&#xFF0C;&#x5177;&#x4F53;&#x6D41;&#x7A0B;&#x5982;&#x4E0B;:
+主要难点在更新根文件系统，根文件系统格式为cpio格式，这需要ramfs中具有cpio命令，具体流程如下:
 </p>
 <ol class="org-ol">
-<li>&#x5F53;&#x6839;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x8981;&#x66F4;&#x65B0;&#x65F6;&#xFF0C;&#x5219;&#x89E3;&#x538B;&#x7F29;&#x5305;&#x5E76;&#x8986;&#x76D6;</li>
+<li>当根文件系统要更新时，则解压缩包并覆盖</li>
 </ol>
 <pre class="example">
-cpio -idmv &lt; xxx.cpio</pre>
+cpio -idmv < xxx.cpio</pre>
 <ol class="org-ol">
-<li>&#x8DF3;&#x8F6C;&#x81F3;&#x6839;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;</li>
+<li>跳转至根文件系统</li>
 </ol>
 <pre class="example">
 mount /dev/mmcblk1p3 /mnt/
 
-#&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x7684;&#x7ED1;&#x5B9A;&#xFF0C;&#x9700;&#x8981;&#x6839;&#x636E; cat /proc/mounts &#x6765;&#x5B9E;&#x9645;&#x8C03;&#x6574;
+#文件系统的绑定，需要根据 cat /proc/mounts 来实际调整
 mount -o bind /proc /mnt/proc/
 mount -o bind /sys /mnt/sys/
 mount -o bind /sys/kernel/debug /mnt/sys/kernel/debug/
@@ -427,7 +427,7 @@ mount -o bind /var/volatile /mnt/var/volatile/
 mount -o bind /dev/pts /mnt/dev/pts/
 mount -o bind /sys/kernel/config/ /mnt/sys/kernel/config/
 
-#&#x8FDB;&#x5165;&#x6839;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;
+#进入根文件系统
 chroot /mnt/</pre>
 </div>
 </div>
@@ -435,7 +435,7 @@ chroot /mnt/</pre>
 </div>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
 </div>
 
     </div>
@@ -521,7 +521,7 @@ Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org2818277"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x603B;&amp;#x4F53;&amp;#x6D41;&amp;#x7A0B;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgd639991"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x5BA2;&amp;#x6237;&amp;#x673A;&amp;#x5347;&amp;#x7EA7;&amp;#x6D41;&amp;#x7A0B;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org301f204"><span class="nav-number">2.1.</span> <span class="nav-text">&amp;#x542F;&amp;#x52A8;&amp;#x6D41;&amp;#x7A0B;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org1d961d1"><span class="nav-number">2.2.</span> <span class="nav-text">&amp;#x5347;&amp;#x7EA7;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgd0c0dc0"><span class="nav-number">2.2.1.</span> <span class="nav-text">initramfs&amp;#x5230;rootfs</span></a></li></ol></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org771be75"><span class="nav-number">1.</span> <span class="nav-text">总体流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org33a0be9"><span class="nav-number">2.</span> <span class="nav-text">客户机升级流程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org3d6127c"><span class="nav-number">2.1.</span> <span class="nav-text">启动流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org5173c38"><span class="nav-number">2.2.</span> <span class="nav-text">升级</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org0d42214"><span class="nav-number">2.2.1.</span> <span class="nav-text">initramfs到rootfs</span></a></li></ol></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 

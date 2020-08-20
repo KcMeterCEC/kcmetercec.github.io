@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="&amp;#x53C2;&amp;#x8003;&amp;#x5B8B;&amp;#x5B9D;&amp;#x534E;&amp;#x8001;&amp;#x5E08;&amp;#x7684;&amp;#x4E66; Linux&amp;#x8BBE;&amp;#x5907;&amp;#x9A71;&amp;#x52A8;&amp;#x5F00;&amp;#x53D1;&amp;#x8BE6;&amp;#x89E3; &amp;#xFF0C;&amp;#x6765;&amp;#x7406;&amp;#x89E3;Linux&amp;#x5185;&amp;#x5B58;&amp;#">
+  <meta name="description" content="参考宋宝华老师的书 Linux设备驱动开发详解 ，来理解Linux内存使用。             kernel version arch     v4.4.0 arm32">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[What]Linux内存与I&#x2F;O访问">
 <meta property="og:url" content="http://kcmetercec.top/2018/03/07/linux_memory_overview_usage/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="&amp;#x53C2;&amp;#x8003;&amp;#x5B8B;&amp;#x5B9D;&amp;#x534E;&amp;#x8001;&amp;#x5E08;&amp;#x7684;&amp;#x4E66; Linux&amp;#x8BBE;&amp;#x5907;&amp;#x9A71;&amp;#x52A8;&amp;#x5F00;&amp;#x53D1;&amp;#x8BE6;&amp;#x89E3; &amp;#xFF0C;&amp;#x6765;&amp;#x7406;&amp;#x89E3;Linux&amp;#x5185;&amp;#x5B58;&amp;#">
+<meta property="og:description" content="参考宋宝华老师的书 Linux设备驱动开发详解 ，来理解Linux内存使用。             kernel version arch     v4.4.0 arm32">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[driver]/[What]Linux--mem_IO/mem_area.jpg?raw=true">
 <meta property="article:published_time" content="2018-03-06T16:00:00.000Z">
@@ -301,7 +301,7 @@
       
         <div id="content">
 <p>
-&#x53C2;&#x8003;&#x5B8B;&#x5B9D;&#x534E;&#x8001;&#x5E08;&#x7684;&#x4E66; <code>Linux&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#x5F00;&#x53D1;&#x8BE6;&#x89E3;</code> &#xFF0C;&#x6765;&#x7406;&#x89E3;Linux&#x5185;&#x5B58;&#x4F7F;&#x7528;&#x3002;
+参考宋宝华老师的书 <code>Linux设备驱动开发详解</code> ，来理解Linux内存使用。
 </p>
 
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
@@ -328,34 +328,34 @@
 
 <a id="more"></a>
 
-<div id="outline-container-orgc60e0ad" class="outline-2">
-<h2 id="orgc60e0ad">CPU &#x4E0E;&#x5185;&#x5B58;,I/O</h2>
-<div class="outline-text-2" id="text-orgc60e0ad">
+<div id="outline-container-org9ff828a" class="outline-2">
+<h2 id="org9ff828a">CPU 与内存,I/O</h2>
+<div class="outline-text-2" id="text-org9ff828a">
 </div>
-<div id="outline-container-orgb72f17c" class="outline-3">
-<h3 id="orgb72f17c">&#x5185;&#x5B58;&#x7A7A;&#x95F4;&#x4E0E;I/O&#x7A7A;&#x95F4;&#x7684;&#x533A;&#x522B;</h3>
-<div class="outline-text-3" id="text-orgb72f17c">
+<div id="outline-container-org3974307" class="outline-3">
+<h3 id="org3974307">内存空间与I/O空间的区别</h3>
+<div class="outline-text-3" id="text-org3974307">
 <p>
-I/O&#x7A7A;&#x95F4;&#x7684;&#x6982;&#x5FF5;&#x662F;&#x5B58;&#x5728;&#x4E8E;X86&#x67B6;&#x6784;&#x4E2D;&#x7684;, &#x4E0E;&#x5185;&#x5B58;&#x7A7A;&#x95F4;&#x505A;&#x533A;&#x5206;&#xFF0C;&#x5B83;&#x901A;&#x8FC7;&#x7279;&#x5B9A;&#x7684;&#x6307;&#x4EE4;in,out&#x6765;&#x8BBF;&#x95EE;&#x5916;&#x8BBE;&#x5BC4;&#x5B58;&#x5668;&#x7684;&#x5730;&#x5740;&#x3002;
+I/O空间的概念是存在于X86架构中的, 与内存空间做区分，它通过特定的指令in,out来访问外设寄存器的地址。
 </p>
 <ul class="org-ul">
-<li>&#x53C2;&#x8003; <a href="https://kcmetercec.github.io/2018/05/31/book_csapp_chapter_1_1/" target="_blank" rel="noopener">CSAPP &#x8BFB;&#x4E66;&#x7B14;&#x8BB0;</a> &#x4E2D;&#x7684;&#x56FE;</li>
+<li>参考 <a href="https://kcmetercec.github.io/2018/05/31/book_csapp_chapter_1_1/" target="_blank" rel="noopener">CSAPP 读书笔记</a> 中的图</li>
 </ul>
 
 <p>
-&#x4F46;&#x662F;&#x5728;&#x5B9E;&#x9645;&#x4F7F;&#x7528;&#x65F6;&#xFF0C;&#x6211;&#x4EEC;&#x4E5F;&#x53EF;&#x4EE5;&#x5C06;&#x5916;&#x8BBE;&#x8BBE;&#x8BA1;&#x5728;X86&#x67B6;&#x6784;&#x7684;&#x5185;&#x5B58;&#x7A7A;&#x95F4;&#x4E2D;&#xFF0C;&#x76F4;&#x63A5;&#x8BBF;&#x95EE;&#x5BC4;&#x5B58;&#x5668;&#x5730;&#x5740;&#xFF0C;&#x6240;&#x4EE5; <b>I/O&#x7A7A;&#x95F4;&#x662F;&#x53EF;&#x9009;&#x7684;</b> &#x3002;
+但是在实际使用时，我们也可以将外设设计在X86架构的内存空间中，直接访问寄存器地址，所以 <b>I/O空间是可选的</b> 。
 </p>
 
 <p>
-&#x5728;&#x5927;&#x591A;&#x6570;&#x5D4C;&#x5165;&#x5F0F;&#x5FAE;&#x63A7;&#x5236;&#x5668;&#x4E2D;&#x6CA1;&#x6709;I/O&#x7A7A;&#x95F4;,&#x4EC5;&#x6709;&#x5185;&#x5B58;&#x7A7A;&#x95F4;.&#x5185;&#x5B58;&#x7A7A;&#x95F4;&#x53EF;&#x4EE5;&#x76F4;&#x63A5;&#x901A;&#x8FC7;&#x5730;&#x5740;,&#x6307;&#x9488;&#x6765;&#x8BBF;&#x95EE;,&#x7A0B;&#x5E8F;&#x4EE5;&#x53CA;&#x5176;&#x4ED6;&#x6570;&#x636E;&#x90FD;&#x662F;&#x5B58;&#x5728;&#x4E8E;&#x5185;&#x5B58;&#x7A7A;&#x95F4;&#x4E2D;&#x7684;.
+在大多数嵌入式微控制器中没有I/O空间,仅有内存空间.内存空间可以直接通过地址,指针来访问,程序以及其他数据都是存在于内存空间中的.
 </p>
 <pre class="example">
-&#x518D;&#x6B21;&#x5F3A;&#x8C03;&#xFF1A;&#x65E0;&#x8BBA;&#x662F;&#x5728;&#x5185;&#x6838;&#x6001;&#x8FD8;&#x662F;&#x5728;&#x7528;&#x6237;&#x6001;&#xFF0C;CPU&#x770B;&#x5230;&#x7684;&#x90FD;&#x662F;&#x865A;&#x62DF;&#x5730;&#x5740;&#xFF01;
+再次强调：无论是在内核态还是在用户态，CPU看到的都是虚拟地址！
 
-&#x65E0;&#x8BBA;&#x662F;&#x5185;&#x5B58;&#x6761;&#x8FD8;&#x662F;&#x5BC4;&#x5B58;&#x5668;&#x7684;&#x8BBF;&#x95EE;&#xFF0C;&#x5185;&#x6838;&#x90FD;&#x662F;&#x901A;&#x8FC7;&#x865A;&#x62DF;&#x5730;&#x5740;&#x53BB;&#x8BBF;&#x95EE;&#x7684;&#xFF0C;&#x5185;&#x6838;&#x4E2D;&#x6240;&#x6709;&#x7684;&#x6307;&#x9488;&#x64CD;&#x4F5C;
-&#x90FD;&#x662F;&#x865A;&#x62DF;&#x5730;&#x5740;&#x3002;
+无论是内存条还是寄存器的访问，内核都是通过虚拟地址去访问的，内核中所有的指针操作
+都是虚拟地址。
 
-&#x5728;&#x5185;&#x6838;&#x4E2D;&#xFF0C;&#x7269;&#x7406;&#x5730;&#x5740;&#x5BF9;&#x4E8E;Linux&#x6765;&#x8BF4;&#x5C31;&#x662F;&#x4E00;&#x4E2A;&#x6574;&#x6570;&#xFF0C;&#x5982;&#x4E0B;&#x7269;&#x7406;&#x5730;&#x5740;&#x5728;&#x5185;&#x6838;&#x4E2D;&#x7684;&#x5B9A;&#x4E49;&#xFF1A;
+在内核中，物理地址对于Linux来说就是一个整数，如下物理地址在内核中的定义：
 //file: include/linux/types.h
 #ifdef CONFIG_PHYS_ADDR_T_64BIT
 typedef u64 phys_addr_t;
@@ -364,152 +364,152 @@ typedef u32 phys_addr_t;
 #endif</pre>
 </div>
 </div>
-<div id="outline-container-org0b49bc3" class="outline-3">
-<h3 id="org0b49bc3">&#x5185;&#x5B58;&#x7BA1;&#x7406;&#x5355;&#x5143;MMU</h3>
-<div class="outline-text-3" id="text-org0b49bc3">
+<div id="outline-container-orgf45832b" class="outline-3">
+<h3 id="orgf45832b">内存管理单元MMU</h3>
+<div class="outline-text-3" id="text-orgf45832b">
 <p>
-MMU&#x63D0;&#x4F9B;&#x865A;&#x62DF;&#x5730;&#x5740;&#x548C;&#x7269;&#x7406;&#x5730;&#x5740;&#x7684;&#x6620;&#x5C04;,&#x5185;&#x5B58;&#x8BBF;&#x95EE;&#x6743;&#x9650;&#x4FDD;&#x62A4;&#x548C;Cache&#x7F13;&#x5B58;&#x63A7;&#x5236;&#x7B49;&#x786C;&#x4EF6;&#x652F;&#x6301;&#xFF0C;
-&#x7528;&#x6237;&#x5728;&#x7F16;&#x5199;&#x5B9E;&#x9645;&#x7A0B;&#x5E8F;&#x65F6;&#x4E0D;&#x7528;&#x8003;&#x8651;&#x5B9E;&#x9645;&#x7269;&#x7406;&#x5730;&#x5740;&#x6709;&#x591A;&#x5927;&#xFF0C;&#x4EE5;&#x53CA;&#x662F;&#x5426;&#x4F1A;&#x4E0E;&#x5176;&#x4ED6;&#x7A0B;&#x5E8F;&#x5730;&#x5740;&#x51B2;&#x7A81;&#x7B49;&#x7B49;&#x3002;
+MMU提供虚拟地址和物理地址的映射,内存访问权限保护和Cache缓存控制等硬件支持，
+用户在编写实际程序时不用考虑实际物理地址有多大，以及是否会与其他程序地址冲突等等。
 </p>
 <ul class="org-ul">
-<li>&#x5177;&#x4F53;MMU&#x5DE5;&#x4F5C;&#x53C2;&#x8003; <a href="https://kcmetercec.github.io/2018/03/26/hardware_basic_mmu/" target="_blank" rel="noopener">MMU&#x603B;&#x7ED3;</a></li>
+<li>具体MMU工作参考 <a href="https://kcmetercec.github.io/2018/03/26/hardware_basic_mmu/" target="_blank" rel="noopener">MMU总结</a></li>
 </ul>
 </div>
-<div id="outline-container-org4b1c0c8" class="outline-4">
-<h4 id="org4b1c0c8">MMU&#x64CD;&#x4F5C;&#x539F;&#x7406;</h4>
-<div class="outline-text-4" id="text-org4b1c0c8">
+<div id="outline-container-org567b0c4" class="outline-4">
+<h4 id="org567b0c4">MMU操作原理</h4>
+<div class="outline-text-4" id="text-org567b0c4">
 <p>
-MMU&#x4E2D;&#x6BD4;&#x8F83;&#x91CD;&#x8981;&#x7684;&#x4E24;&#x4E2A;&#x6982;&#x5FF5;&#xFF1A;
+MMU中比较重要的两个概念：
 </p>
 <ul class="org-ul">
 <li>TLB(Translation Lookaside Buffer)
 <ul class="org-ul">
-<li>&#x8F6C;&#x6362;&#x65C1;&#x8DEF;&#x7F13;&#x5B58;,TLB&#x662F;MMU&#x7684;&#x6838;&#x5FC3;&#x90E8;&#x4EF6;,&#x5B83;&#x7F13;&#x5B58;&#x5C11;&#x91CF;&#x7684;&#x865A;&#x62DF;&#x5730;&#x5740;&#x4E0E;&#x7269;&#x7406;&#x5730;&#x5740;&#x7684;&#x8F6C;&#x6362;&#x5173;&#x7CFB;,&#x662F;&#x8F6C;&#x6362;&#x8868;&#x7684;Cache,&#x56E0;&#x6B64;&#x4E5F;&#x7ECF;&#x5E38;&#x88AB;&#x79F0;&#x4E3A;&quot;&#x5FEB;&#x8868;&quot;.</li>
+<li>转换旁路缓存,TLB是MMU的核心部件,它缓存少量的虚拟地址与物理地址的转换关系,是转换表的Cache,因此也经常被称为"快表".</li>
 </ul></li>
 <li>TTW(Translation Table wale)
 <ul class="org-ul">
-<li>&#x8F6C;&#x6362;&#x8868;&#x6F2B;&#x6E38;,&#x5F53;TLB&#x4E2D;&#x6CA1;&#x6709;&#x7F13;&#x51B2;&#x5BF9;&#x5E94;&#x7684;&#x5730;&#x5740;&#x8F6C;&#x6362;&#x5BF9;&#x5E94;&#x5173;&#x7CFB;&#x65F6;,&#x9700;&#x8981;&#x901A;&#x8FC7;&#x5BF9;&#x5185;&#x5B58;&#x4E2D;&#x8F6C;&#x6362;&#x8868;&#x7684;&#x8BBF;&#x95EE;&#x6765;&#x83B7;&#x5F97;&#x865A;&#x62DF;&#x5730;&#x5740;&#x548C;&#x7269;&#x7406;&#x5730;&#x5740;&#x7684;&#x5BF9;&#x5E94;&#x5173;&#x7CFB;.TTW&#x6210;&#x529F;&#x540E;,&#x7ED3;&#x679C;&#x5E94;&#x5199;&#x5165;TLB&#x4E2D;.</li>
+<li>转换表漫游,当TLB中没有缓冲对应的地址转换对应关系时,需要通过对内存中转换表的访问来获得虚拟地址和物理地址的对应关系.TTW成功后,结果应写入TLB中.</li>
 </ul></li>
 </ul>
 
 <p>
-MMU&#x64CD;&#x4F5C;&#x7684;&#x539F;&#x5219;&#x90FD;&#x662F;&#x4EE5;&#x6700;&#x5FEB;&#x7684;&#x901F;&#x5EA6;&#x6765;&#x8BFB;&#x5199;CPU&#x6240;&#x9700;&#x8981;&#x7684;&#x6570;&#x636E;&#x6216;&#x6307;&#x4EE4;:
+MMU操作的原则都是以最快的速度来读写CPU所需要的数据或指令:
 </p>
 <ol class="org-ol">
-<li>&#x6240;&#x4EE5;&#x5B83;&#x4F1A;&#x9996;&#x5148;&#x8BBF;&#x95EE; TLB &#x4EE5;&#x4FDD;&#x8BC1;&#x6700;&#x5FEB;&#x7684;&#x901F;&#x5EA6;&#x627E;&#x5230;&#x6620;&#x5C04;&#x5173;&#x7CFB;&#x7136;&#x540E;&#x8FDB;&#x884C;&#x5B58;&#x53D6;&#xFF0C;&#x5982;&#x679C;&#x6B64;&#x65F6;&#x6253;&#x5F00;&#x4E86;Cache&#x5E76;&#x4E14;Cache&#x547D;&#x4E2D;&#xFF0C;&#x90A3;&#x4E5F;&#x4F1A;&#x76F4;&#x63A5;&#x53D6;Cache&#x7684;&#x6570;&#x636E;&#x5426;&#x5219;&#x53D6;&#x5185;&#x5B58;&#x7684;&#x6570;&#x636E;&#x5E76;&#x4E14;&#x66F4;&#x65B0;Cache</li>
-<li>&#x5982;&#x679C;TLB&#x6CA1;&#x6709;&#x547D;&#x4E2D;&#x90A3;&#x4E48;&#x5C31;&#x4F1A;&#x8BBF;&#x95EE; TTW&#x627E;&#x5230;&#x6620;&#x5C04;&#x5173;&#x7CFB;&#x5E76;&#x53CD;&#x8FC7;&#x6765;&#x66F4;&#x65B0;TLB&#x3002;</li>
+<li>所以它会首先访问 TLB 以保证最快的速度找到映射关系然后进行存取，如果此时打开了Cache并且Cache命中，那也会直接取Cache的数据否则取内存的数据并且更新Cache</li>
+<li>如果TLB没有命中那么就会访问 TTW找到映射关系并反过来更新TLB。</li>
 </ol>
 </div>
 </div>
-<div id="outline-container-org70be4ab" class="outline-4">
-<h4 id="org70be4ab">MMU&#x7684;&#x6743;&#x9650;&#x7BA1;&#x7406;</h4>
-<div class="outline-text-4" id="text-org70be4ab">
+<div id="outline-container-org835e53c" class="outline-4">
+<h4 id="org835e53c">MMU的权限管理</h4>
+<div class="outline-text-4" id="text-org835e53c">
 <p>
-MMU&#x7684;&#x6743;&#x9650;&#x7BA1;&#x7406;&#x4E3B;&#x8981;&#x5305;&#x542B;&#x4EE5;&#x4E0B;&#x4E24;&#x4E2A;&#x65B9;&#x9762;&#xFF1A;
+MMU的权限管理主要包含以下两个方面：
 </p>
 <ol class="org-ol">
-<li>&#x8FD9;&#x6BB5;&#x5185;&#x5B58;&#x662F;&#x5426;&#x5177;&#x6709;RWX&#x6743;&#x9650;(&#x6BD4;&#x5982;&#x4EE3;&#x7801;&#x6BB5;&#x53EA;&#x6709;RX&#x6743;&#x9650;&#xFF0C;&#x907F;&#x514D;&#x88AB;&#x6539;&#x5199;)</li>
-<li>&#x8FD9;&#x6BB5;&#x5185;&#x5B58;&#x662F;&#x4EC5;&#x6709;&#x5185;&#x6838;&#x624D;&#x53EF;&#x8BBF;&#x95EE;&#xFF0C;&#x8FD8;&#x662F;&#x5185;&#x6838;&#x548C;&#x7528;&#x6237;&#x90FD;&#x53EF;&#x8BBF;&#x95EE;
+<li>这段内存是否具有RWX权限(比如代码段只有RX权限，避免被改写)</li>
+<li>这段内存是仅有内核才可访问，还是内核和用户都可访问
 <ul class="org-ul">
-<li>&#x4EC5;&#x6709;&#x5185;&#x6838;&#x53EF;&#x8BBF;&#x95EE;&#x7684;&#x5185;&#x5B58;&#xFF0C;&#x907F;&#x514D;&#x7528;&#x6237;&#x83B7;&#x53D6;&#x5230;&#x5185;&#x6838;&#x7684;&#x6570;&#x636E;</li>
+<li>仅有内核可访问的内存，避免用户获取到内核的数据</li>
 </ul></li>
 </ol>
 
 <p>
-&#x6743;&#x9650;&#x7BA1;&#x7406;&#x4F7F;&#x7528;&#x4E0B;&#x9762;&#x7A0B;&#x5E8F;&#x8FDB;&#x884C;&#x4F53;&#x9A8C;&#xFF1A;
+权限管理使用下面程序进行体验：
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//main.c</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> a = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">void</span> <span class="title">access</span><span class="params">(<span class="keyword">void</span>)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;the value of a is %d\n&quot;</span>, a);</span><br><span class="line"></span><br><span class="line">  access();</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;the value of a is %d\n&quot;</span>, a);</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="comment">//access.c</span></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @note : &#x6B64;&#x5904;&#x65B0;&#x5EFA;&#x4E00;&#x4E2A;&#x6587;&#x4EF6;&#xFF0C;&#x5C31;&#x662F;&#x8BA9;&#x7F16;&#x8BD1;&#x5668;&#x5728;&#x9884;&#x7F16;&#x8BD1;&#x3001;&#x7F16;&#x8BD1;&#x3001;&#x6C47;&#x7F16;&#x7684;&#x8FC7;&#x7A0B;&#x4E2D;&#xFF0C;&#x65E0;&#x6CD5;&#x5BDF;&#x89C9;&#x53D8;&#x91CF; a&#x7684;&#x7C7B;&#x578B;&#xFF0C;</span></span><br><span class="line"><span class="comment"> * &#x4EE5;&#x4FDD;&#x8BC1;&#x7F16;&#x8BD1;&#x901A;&#x8FC7;&#x3002;</span></span><br><span class="line"><span class="comment"> * &#x4F46;&#x5B9E;&#x9645;&#x4E0A; a &#x7684;&#x5185;&#x5B58;&#x6743;&#x9650;&#x4E3A;&#x53EF;&#x8BFB;&#xFF0C;&#x6240;&#x4EE5;&#x5F53;&#x6267;&#x884C;&#x5199;&#x65F6;&#xFF0C;&#x5C31;&#x4F1A;&#x89E6;&#x53D1;page fault</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">extern</span> <span class="keyword">int</span> a ;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">access</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  a = <span class="number">2</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//main.c</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><stdio.h></span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> a = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">void</span> <span class="title">access</span><span class="params">(<span class="keyword">void</span>)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"the value of a is %d\n"</span>, a);</span><br><span class="line"></span><br><span class="line">  access();</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"the value of a is %d\n"</span>, a);</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="comment">//access.c</span></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @note : 此处新建一个文件，就是让编译器在预编译、编译、汇编的过程中，无法察觉变量 a的类型，</span></span><br><span class="line"><span class="comment"> * 以保证编译通过。</span></span><br><span class="line"><span class="comment"> * 但实际上 a 的内存权限为可读，所以当执行写时，就会触发page fault</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">extern</span> <span class="keyword">int</span> a ;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">access</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  a = <span class="number">2</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </div>
-<div id="outline-container-orgf3c4b87" class="outline-4">
-<h4 id="orgf3c4b87">meltdown&#x6F0F;&#x6D1E;</h4>
-<div class="outline-text-4" id="text-orgf3c4b87">
+<div id="outline-container-org5ccacaf" class="outline-4">
+<h4 id="org5ccacaf">meltdown漏洞</h4>
+<div class="outline-text-4" id="text-org5ccacaf">
 <p>
-meltdown&#x6F0F;&#x6D1E;&#x4F7F;&#x5F97;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x53EF;&#x4EE5;&#x8BBF;&#x95EE;&#x5185;&#x6838;&#x7A7A;&#x95F4;&#x4E2D;&#x7684;&#x5185;&#x5BB9;&#xFF0C;&#x8BE6;&#x7EC6;&#x89E3;&#x91CA;&#x53C2;&#x8003; <a href="https://mp.weixin.qq.com/s/YjKoay39rtKQXGbWN6qfug" target="_blank" rel="noopener">&#x683C;&#x53CB;</a> &#x3002;
+meltdown漏洞使得用户空间可以访问内核空间中的内容，详细解释参考 <a href="https://mp.weixin.qq.com/s/YjKoay39rtKQXGbWN6qfug" target="_blank" rel="noopener">格友</a> 。
 </p>
 
 <p>
-&#x7B80;&#x5355;&#x89E3;&#x91CA;&#x5C31;&#x662F;&#xFF1A;
+简单解释就是：
 </p>
 <ol class="org-ol">
-<li>&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x5148;&#x7533;&#x8BF7;&#x4E00;&#x4E2A;&#x5927;&#x6570;&#x7EC4;&#xFF0C;&#x8FD9;&#x4E2A;&#x5927;&#x6570;&#x7EC4;&#x7684;&#x6BCF;&#x4E2A;&#x5143;&#x7D20;&#x7684;&#x5927;&#x5C0F;&#x5373;&#x4E3A;&#x5185;&#x5B58;&#x9875;&#x8868;&#x7684;&#x5927;&#x5C0F;&#xFF0C;&#x8FD9;&#x662F;&#x4E3A;&#x4E86;&#x6BCF;&#x4E2A;&#x9875;&#x53EF;&#x4EE5;&#x8986;&#x76D6;&#x6574;&#x4E2A; cache&#xFF0C;&#x4FBF;&#x4E8E;&#x540E;&#x671F;&#x6D4B;&#x901F;&#x4E0D;&#x88AB;&#x5E72;&#x6270;</li>
-<li>&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x53D1;&#x9001;&#x8BFB;&#x53D6;&#x5185;&#x6838;&#x7A7A;&#x95F4;&#x4E2D; <b>&#x4E00;&#x4E2A;&#x5B57;&#x8282;&#x7684;&#x8BF7;&#x6C42;</b> &#xFF0C;&#x4E00;&#x4E2A;&#x5B57;&#x8282;&#x7684;&#x503C;&#x4E3A; 0~255&#xFF0C;&#x5047;&#x8BBE;&#x8BE5;&#x503C;&#x4E3A; N</li>
-<li>&#x7531;&#x4E8E;CPU&#x7684;&#x5206;&#x652F;&#x9884;&#x6D4B;&#x6267;&#x884C;&#x529F;&#x80FD;&#xFF0C;&#x5C06;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x5927;&#x6570;&#x7EC4;&#x7684;&#x7B2C; N &#x4E2A;&#x5757;&#x64CD;&#x4F5C;&#x8BFB;&#x53D6;&#x64CD;&#x4F5C;&#xFF08;&#x6B64;&#x65F6; N &#x7684;&#x503C;&#x4F9D;&#x7136;&#x5B58;&#x5728;&#x4E8E;&#x5BC4;&#x5B58;&#x5668;&#x4E2D;&#xFF09;</li>
-<li>&#x867D;&#x7136;MMU&#x8FDB;&#x884C;&#x4E86;&#x6743;&#x9650;&#x68C0;&#x67E5;&#xFF0C;&#x4F46;&#x6B64;&#x65F6;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x4E2D;&#x6570;&#x7EC4;&#x7684;&#x7B2C; N &#x4E2A;&#x5757;&#x7684;&#x90E8;&#x5206;&#x6570;&#x636E;&#x5DF2;&#x7ECF;&#x5B58;&#x5728;&#x4E8E; cache &#x4E2D;&#x4E86;&#xFF0C;&#x6B64;&#x65F6; cache hit</li>
-<li>&#x7531;&#x4E8E;&#x8BFB;&#x53D6;Cache&#x7684;&#x901F;&#x5EA6;&#x8981;&#x8FDC;&#x8FDC;&#x5FEB;&#x4E8E;&#x8BFB;&#x53D6;&#x5185;&#x5B58;&#x7684;&#x901F;&#x5EA6;&#xFF0C;&#x7528;&#x6237;&#x901A;&#x8FC7;&#x4F9D;&#x6B21;&#x626B;&#x63CF; 0~255 &#x5757;&#x7684;&#x8BFB;&#x53D6;&#x901F;&#x5EA6;&#xFF0C;&#x8BC6;&#x522B;&#x51FA;&#x8BFB;&#x53D6;&#x6700;&#x5FEB;&#x7684;&#x90A3;&#x4E2A;&#x5757;&#xFF0C;&#x4FBF;&#x77E5;&#x9053;&#x8FD9;&#x7B2C; N &#x4E2A;&#x5757;&#x4EE3;&#x8868;&#x5185;&#x6838;&#x5730;&#x5740;&#x7684;&#x503C;&#x4E3A; N</li>
+<li>用户空间先申请一个大数组，这个大数组的每个元素的大小即为内存页表的大小，这是为了每个页可以覆盖整个 cache，便于后期测速不被干扰</li>
+<li>用户空间发送读取内核空间中 <b>一个字节的请求</b> ，一个字节的值为 0~255，假设该值为 N</li>
+<li>由于CPU的分支预测执行功能，将用户空间大数组的第 N 个块操作读取操作（此时 N 的值依然存在于寄存器中）</li>
+<li>虽然MMU进行了权限检查，但此时用户空间中数组的第 N 个块的部分数据已经存在于 cache 中了，此时 cache hit</li>
+<li>由于读取Cache的速度要远远快于读取内存的速度，用户通过依次扫描 0~255 块的读取速度，识别出读取最快的那个块，便知道这第 N 个块代表内核地址的值为 N</li>
 </ol>
 
 <p>
-&#x89E3;&#x51B3;&#x65B9;&#x6848;&#xFF1A;
+解决方案：
 </p>
 <pre class="example">
-  &#x7531;&#x4E8E;&#x8FD9;&#x4E2A;&#x6F0F;&#x6D1E;&#x662F;&#x7531;&#x786C;&#x4EF6;&#x9020;&#x6210;&#x7684;&#xFF0C;&#x800C;&#x6267;&#x884C;&#x7684;&#x5165;&#x53E3;&#x662F;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x548C;&#x5185;&#x6838;&#x7A7A;&#x95F4;&#x5171;&#x7528;&#x4E86;&#x4E00;&#x4E2A;&#x9875;&#x8868;&#xFF08;&#x8FD9;&#x6837;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x624D;&#x53EF;&#x4EE5;&#x901A;&#x8FC7;&#x865A;&#x62DF;&#x5730;&#x5740;&#x53BB;&#x8BBF;&#x95EE;&#x5185;&#x6838;&#xFF09;&#x3002;
-  &#x6240;&#x4EE5;&#x5982;&#x679C;&#x5C06;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x548C;&#x5185;&#x6838;&#x7A7A;&#x95F4;&#x7684;&#x9875;&#x8868;&#x8FDB;&#x884C;&#x5206;&#x79BB;&#xFF0C;&#x5927;&#x5BB6;&#x5404;&#x7528;&#x5404;&#x7684;&#x9875;&#x8868;&#x90A3;&#x4E48;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x5C31;&#x65E0;&#x6CD5;&#x901A;&#x8FC7;&#x865A;&#x62DF;&#x5730;&#x5740;&#x8BBF;&#x95EE;&#x5230;&#x5185;&#x6838;&#x4E86;&#x3002;(&#x65E0;&#x8BBA;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x5982;&#x4F55;&#x8BBF;&#x95EE;&#xFF0C;&#x5B83;&#x90FD;&#x662F;&#x8BBF;&#x95EE;&#x81EA;&#x5DF1;&#x7684;&#x9875;&#x8868;&#xFF0C;&#x5BF9;&#x5E94;&#x81EA;&#x5DF1;&#x4EE3;&#x7801;&#x7684;&#x7269;&#x7406;&#x5730;&#x5740;&#x6216;&#x8005;&#x5C31;&#x5E72;&#x8106;&#x662F;&#x6CA1;&#x6709;&#x547D;&#x4E2D;&#x7684;&#x5730;&#x5740;)
+  由于这个漏洞是由硬件造成的，而执行的入口是用户空间和内核空间共用了一个页表（这样用户空间才可以通过虚拟地址去访问内核）。
+  所以如果将用户空间和内核空间的页表进行分离，大家各用各的页表那么用户空间就无法通过虚拟地址访问到内核了。(无论用户空间如何访问，它都是访问自己的页表，对应自己代码的物理地址或者就干脆是没有命中的地址)
 
-  &#x4F46;&#x8FD9;&#x6837;&#x76F8;&#x5F53;&#x4E8E;MMU&#x5C06;&#x5185;&#x6838;&#x7A7A;&#x95F4;&#x548C;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x9694;&#x79BB;&#x4E3A;&#x4E86;&#x4E24;&#x4E2A;&#x8FDB;&#x7A0B;&#x4E00;&#x6837;&#xFF0C;&#x5F53;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x8C03;&#x7528;&#x5185;&#x6838;&#x7A7A;&#x95F4;&#x63A5;&#x53E3;&#x51FD;&#x6570;&#x65F6;&#xFF0C;&#x5728;&#x5207;&#x6362;&#x4E3A;&#x7279;&#x6743;&#x6A21;&#x5F0F;&#x7684;&#x540C;&#x65F6;&#x8FD8;&#x8981;&#x5207;&#x6362;&#x4E00;&#x6B21;&#x9875;&#x8868;&#x3002;&#x540C;&#x7406;&#xFF0C;&#x5185;&#x6838;&#x5904;&#x7406;&#x5B8C;&#x6210;&#x540E;&#x56DE;&#x5230;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x8FD8;&#x8981;&#x5207;&#x6362;&#x4E00;&#x6B21;&#x9875;&#x8868;&#x3002;&#x8FD9;&#x6837;&#x5C31;&#x4F1A;&#x6D88;&#x8017;&#x5F88;&#x591A;&#x65F6;&#x95F4;&#xFF0C;&#x6027;&#x80FD;&#x635F;&#x8017;&#x6BD4;&#x8F83;&#x5927;&#x3002;
+  但这样相当于MMU将内核空间和用户空间隔离为了两个进程一样，当用户空间调用内核空间接口函数时，在切换为特权模式的同时还要切换一次页表。同理，内核处理完成后回到用户空间还要切换一次页表。这样就会消耗很多时间，性能损耗比较大。
 
-&#x9700;&#x8981;&#x6CE8;&#x610F;&#x7684;&#x662F;&#xFF1A;
-&#x5E76;&#x4E0D;&#x662F;&#x8BF4;&#x8FDB;&#x7A0B;&#x9875;&#x8868;&#x4E00;&#x4E01;&#x70B9;&#x90FD;&#x4E0D;&#x8986;&#x76D6;&#x5185;&#x6838;&#x7A7A;&#x95F4;&#x4E86;&#xFF0C;&#x5F53;&#x8FDB;&#x7A0B;&#x8FDB;&#x884C;&#x6B63;&#x5E38;&#x5408;&#x6CD5;&#x7684;&#x7CFB;&#x7EDF;&#x8C03;&#x7528;&#x65F6;&#xFF0C;&#x8FD9;&#x90E8;&#x5206;&#x903B;&#x8F91;&#x662F;&#x5E94;&#x8BE5;&#x6B63;&#x5E38;&#x8FD0;&#x884C;&#x7684;&#x3002;
-&#x4E5F;&#x5C31;&#x662F;&#x8BF4;&#x8FDB;&#x7A0B;&#x7684;&#x9875;&#x8868;&#x8981;&#x8FDB;&#x7A0B;&#x5185;&#x6838;&#x7A7A;&#x95F4;&#x7684;&#x7CFB;&#x7EDF;&#x8C03;&#x7528;&#x63A5;&#x53E3;&#x90E8;&#x5206;&#x4EE5;&#x5B9E;&#x73B0;&#x6B63;&#x5E38;&#x7684;&#x8BBF;&#x95EE;&#x3002;
-- &#x800C;&#x8FDB;&#x5165;&#x5230;&#x5185;&#x6838;&#x8FD9;&#x90E8;&#x5206;&#x4EE3;&#x7801;&#x4E4B;&#x540E;&#xFF0C;&#x5B83;&#x4F1A;&#x5207;&#x6362;&#x5230;&#x5185;&#x6838;&#x9875;&#x8868;&#xFF0C;&#x5185;&#x6838;&#x7684;&#x9875;&#x8868;&#x4FBF;&#x662F;&#x8986;&#x76D6;&#x6240;&#x6709;&#x7A7A;&#x95F4;&#x7684;&#x3002;&#x5F53;&#x8C03;&#x7528;&#x5B8C;&#x6210;&#x540E;&#xFF0C;&#x53C8;&#x5207;&#x6362;&#x56DE;&#x7528;&#x6237;&#x6001;&#x7684;&#x9875;&#x8868;&#x3002;</pre>
+需要注意的是：
+并不是说进程页表一丁点都不覆盖内核空间了，当进程进行正常合法的系统调用时，这部分逻辑是应该正常运行的。
+也就是说进程的页表要进程内核空间的系统调用接口部分以实现正常的访问。
+- 而进入到内核这部分代码之后，它会切换到内核页表，内核的页表便是覆盖所有空间的。当调用完成后，又切换回用户态的页表。</pre>
 
 <p>
-&#x5B9E;&#x4F8B;&#x4F53;&#x9A8C;:&#x5B9E;&#x9645;&#x4EE3;&#x7801;&#x53CA;&#x64CD;&#x4F5C;&#x4F4D;&#x4E8E; <a href="https://github.com/21cnbao/meltdown-example" target="_blank" rel="noopener">&#x5B8B;&#x5B9D;&#x534E;&#x8001;&#x5E08;github</a>
+实例体验:实际代码及操作位于 <a href="https://github.com/21cnbao/meltdown-example" target="_blank" rel="noopener">宋宝华老师github</a>
 </p>
 </div>
 </div>
 </div>
 </div>
 
-<div id="outline-container-org405f039" class="outline-2">
-<h2 id="org405f039">Linux&#x5185;&#x5B58;&#x7BA1;&#x7406;</h2>
-<div class="outline-text-2" id="text-org405f039">
+<div id="outline-container-orgdd80f2f" class="outline-2">
+<h2 id="orgdd80f2f">Linux内存管理</h2>
+<div class="outline-text-2" id="text-orgdd80f2f">
 <ul class="org-ul">
-<li>&#x5728;Linux&#x7CFB;&#x7EDF;&#x4E2D;,&#x8FDB;&#x7A0B;&#x7684; <b>&#x865A;&#x62DF;4GB&#x5185;&#x5B58;&#x7A7A;&#x95F4;</b> &#x88AB;&#x5206;&#x4E3A;&#x4E24;&#x4E2A;&#x90E8;&#x5206;&#x2014;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x548C;&#x5185;&#x6838;&#x7A7A;&#x95F4;.</li>
-<li>&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x7684;&#x5730;&#x5740;&#x4E00;&#x822C;&#x5206;&#x5E03;&#x4E3A;0~3GB(&#x5373;PAGE_OFFSET),&#x5269;&#x4E0B;&#x7684;3~4GB&#x4E3A;&#x5185;&#x6838;&#x7A7A;&#x95F4;.  
+<li>在Linux系统中,进程的 <b>虚拟4GB内存空间</b> 被分为两个部分—用户空间和内核空间.</li>
+<li>用户空间的地址一般分布为0~3GB(即PAGE_OFFSET),剩下的3~4GB为内核空间.  
 <ul class="org-ul">
-<li><b>&#x7528;&#x6237;&#x8FDB;&#x7A0B;&#x53EA;&#x6709;&#x901A;&#x8FC7;&#x7CFB;&#x7EDF;&#x8C03;&#x7528;(&#x4EE3;&#x8868;&#x7528;&#x6237;&#x8FDB;&#x7A0B;&#x5728;&#x5185;&#x6838;&#x6001;&#x6267;&#x884C;)&#x7B49;&#x65B9;&#x5F0F;&#x624D;&#x53EF;&#x4EE5;&#x8BBF;&#x95EE;&#x5230;&#x5185;&#x6838;&#x7A7A;&#x95F4;</b>.</li>
-<li>&#x6BCF;&#x4E2A;&#x8FDB;&#x7A0B;&#x7684;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x90FD;&#x662F;&#x5B8C;&#x5168;&#x72EC;&#x7ACB;,&#x4E92;&#x4E0D;&#x76F8;&#x5E72;&#x7684;, <b>&#x7528;&#x6237;&#x8FDB;&#x7A0B;&#x5404;&#x81EA;&#x6709;&#x4E0D;&#x540C;&#x7684;&#x9875;&#x8868;</b>.&#x800C;&#x5185;&#x6838;&#x7A7A;&#x95F4;&#x662F;&#x7531;&#x5185;&#x6838;&#x8D1F;&#x8D23;&#x6620;&#x5C04;,&#x5B83;&#x5E76;&#x4E0D;&#x4F1A;&#x8DDF;&#x7740;&#x8FDB;&#x7A0B;&#x6539;&#x53D8;,&#x662F;&#x56FA;&#x5B9A;&#x7684;.</li>
-<li><b>&#x5185;&#x6838;&#x7A7A;&#x95F4;&#x7684;&#x865A;&#x62DF;&#x5730;&#x5740;&#x5230;&#x7269;&#x7406;&#x5730;&#x5740;&#x7684;&#x6620;&#x5C04;&#x662F;&#x88AB;&#x6240;&#x6709;&#x8FDB;&#x7A0B;&#x5171;&#x4EAB;&#x7684;,&#x5185;&#x6838;&#x865A;&#x62DF;&#x7A7A;&#x95F4;&#x72EC;&#x7ACB;&#x4E8E;&#x5176;&#x4ED6;&#x7A0B;&#x5E8F;</b>.</li>
+<li><b>用户进程只有通过系统调用(代表用户进程在内核态执行)等方式才可以访问到内核空间</b>.</li>
+<li>每个进程的用户空间都是完全独立,互不相干的, <b>用户进程各自有不同的页表</b>.而内核空间是由内核负责映射,它并不会跟着进程改变,是固定的.</li>
+<li><b>内核空间的虚拟地址到物理地址的映射是被所有进程共享的,内核虚拟空间独立于其他程序</b>.</li>
 </ul></li>
 </ul>
 
 <p>
-&#x5728;menuconfig&#x4E2D; <code>Kernel Features -&gt; Memory split(..)</code> &#x53EF;&#x4EE5;&#x9009;&#x62E9;&#x8BBE;&#x7F6E; <code>CONFIG_PAGE_OFFSET</code> &#xFF0C;&#x9ED8;&#x8BA4;&#x5185;&#x6838;&#x7A7A;&#x95F4;&#x5C31;&#x662F;&#x4F4D;&#x4E8E;3G~4G&#x7A7A;&#x95F4;&#x7684;&#x3002;
+在menuconfig中 <code>Kernel Features -> Memory split(..)</code> 可以选择设置 <code>CONFIG_PAGE_OFFSET</code> ，默认内核空间就是位于3G~4G空间的。
 </p>
 <div class="org-src-container">
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//file:arch/arm/include/asm/memory.h</span></span><br><span class="line"><span class="comment">/* PAGE_OFFSET - the virtual address of the start of the kernel image */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PAGE_OFFSET		UL(CONFIG_PAGE_OFFSET)</span></span><br></pre></td></tr></table></figure>
 </div>
 <ul class="org-ul">
-<li>&#x7531;&#x4E0A;&#x9762;&#x4EE3;&#x7801;&#x4E5F;&#x53EF;&#x4EE5;&#x77E5;&#x9053;&#x5185;&#x6838;&#x4E2D;&#x53EF;&#x4EE5;&#x4F7F;&#x7528; <code>PAGE_OFFSET</code> &#x5B8F;&#x6765;&#x5224;&#x65AD;&#x5185;&#x6838;&#x865A;&#x62DF;&#x7A7A;&#x95F4;&#x7684;&#x8D77;&#x59CB;&#x5730;&#x5740;</li>
+<li>由上面代码也可以知道内核中可以使用 <code>PAGE_OFFSET</code> 宏来判断内核虚拟空间的起始地址</li>
 </ul>
 </div>
-<div id="outline-container-orge78efae" class="outline-3">
-<h3 id="orge78efae">&#x5BF9;&#x7269;&#x7406;&#x5185;&#x5B58;&#x6761;&#x7684;&#x5206;&#x914D;</h3>
-<div class="outline-text-3" id="text-orge78efae">
+<div id="outline-container-org60aee8e" class="outline-3">
+<h3 id="org60aee8e">对物理内存条的分配</h3>
+<div class="outline-text-3" id="text-org60aee8e">
 <ul class="org-ul">
-<li>&#x8BF7;&#x6CE8;&#x610F;&#xFF1A; <b>&#x8FD9;&#x91CC;&#x8BF4;&#x7684;&#x662F;&#x7269;&#x7406;&#x5185;&#x5B58;&#x6761;&#xFF0C;&#x4E0D;&#x662F;&#x5185;&#x5B58;&#x7A7A;&#x95F4;</b></li>
+<li>请注意： <b>这里说的是物理内存条，不是内存空间</b></li>
 </ul>
 <p>
-Linux&#x4E00;&#x822C;&#x5C06;&#x5185;&#x5B58;&#x6761;&#x5206;&#x4E3A;DMA_ZONE, NORMAL_ZONE, HIGH_ZONE3&#x4E2A;&#x533A;, <a href="https://mp.weixin.qq.com/s/5K7rlPXo2yIcoIXXgqqLfQ" target="_blank" rel="noopener">&#x9605;&#x7801;&#x573A;</a>&#x4E0A;&#x6709;&#x6E05;&#x6670;&#x7684;&#x8BF4;&#x660E;,<a href="https://www.quora.com/In-reference-to-Linux-Kernel-what-is-the-difference-between-high-memory-and-normal-memory" target="_blank" rel="noopener">quora</a> &#x4E0A;&#x5BF9;&#x6B64;&#x4E5F;&#x6709;&#x89E3;&#x91CA;&#x3002;
+Linux一般将内存条分为DMA_ZONE, NORMAL_ZONE, HIGH_ZONE3个区, <a href="https://mp.weixin.qq.com/s/5K7rlPXo2yIcoIXXgqqLfQ" target="_blank" rel="noopener">阅码场</a>上有清晰的说明,<a href="https://www.quora.com/In-reference-to-Linux-Kernel-what-is-the-difference-between-high-memory-and-normal-memory" target="_blank" rel="noopener">quora</a> 上对此也有解释。
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[driver]/[What]Linux--mem_IO/mem_area.jpg?raw=true" alt="mem_area.jpg">
 </div>
-<div id="outline-container-orgc171e4e" class="outline-4">
-<h4 id="orgc171e4e">DMA_ZONE</h4>
-<div class="outline-text-4" id="text-orgc171e4e">
+<div id="outline-container-org8149e47" class="outline-4">
+<h4 id="org8149e47">DMA_ZONE</h4>
+<div class="outline-text-4" id="text-org8149e47">
 <p>
-DMA_ZONE &#x662F;&#x4E3A;&#x7279;&#x5B9A;DMA&#x5212;&#x5206;&#x7684;&#x533A;&#x57DF;&#xFF0C;&#x67D0;&#x4E9B;&#x82AF;&#x7247;&#x7684;DMA&#x63A7;&#x5236;&#x5668;&#x65E0;&#x6CD5;&#x8BBF;&#x95EE;&#x5168;&#x90E8;&#x5185;&#x5B58;&#x6761;(&#x6709;&#x4E9B;&#x4EC5;&#x80FD;&#x8BBF;&#x95EE;&#x6709;&#x9650;&#x7684;&#x5341;&#x51E0;&#x5146;&#x7A7A;&#x95F4;)&#xFF0C;&#x6240;&#x4EE5;Linux&#x4E3A;&#x6B64;&#x7C7B;DMA&#x89C4;&#x5212;&#x4E00;&#x7247;&#x5185;&#x5B58;.
+DMA_ZONE 是为特定DMA划分的区域，某些芯片的DMA控制器无法访问全部内存条(有些仅能访问有限的十几兆空间)，所以Linux为此类DMA规划一片内存.
 </p>
 
 <p>
-&#x5F53;&#x5B9E;&#x9645;&#x7F16;&#x5199;&#x5185;&#x6838;&#x4EE3;&#x7801;&#x65F6;&#xFF0C;&#x7533;&#x8BF7;DMA&#x7F13;&#x5B58;&#x65F6;&#x4F7F;&#x7528; <code>GFP_DMA</code> &#x6807;&#x8BB0;&#xFF0C;&#x4EE5;&#x544A;&#x77E5;Linux&#x5728;&#x90A3;&#x7247;&#x56FA;&#x5B9A;&#x533A;&#x57DF;&#x7533;&#x8BF7;&#x3002;
+当实际编写内核代码时，申请DMA缓存时使用 <code>GFP_DMA</code> 标记，以告知Linux在那片固定区域申请。
 </p>
 
 <p>
-&#x5728;&#x5185;&#x6838;&#x4EE3;&#x7801;&#x4E2D;&#x4E5F;&#x6709;&#x5173;&#x4E8E;&#x6B64;&#x6807;&#x8BB0;&#x7684;&#x6CE8;&#x91CA;(&#x63D0;&#x5230;&#x4E86;&#x8FD8;&#x53EF;&#x4EE5;&#x4F5C;&#x4E3A;&#x7D27;&#x6025;&#x540E;&#x5907;&#x5185;&#x5B58;&#x6765;&#x4F7F;&#x7528;):
+在内核代码中也有关于此标记的注释(提到了还可以作为紧急后备内存来使用):
 </p>
 <pre class="example">
 GFP_DMA exists for historical reasons and should be avoided where possible.
@@ -520,63 +520,63 @@ others use the flag to avoid lowmem reserves in ZONE_DMA and treat the
 lowest zone as a type of emergency reserve.</pre>
 
 <p>
-DMA_ZONE &#x7684;&#x8BBE;&#x7F6E;&#x4E00;&#x822C;&#x5728;&#x6784;&#x67B6;&#x76EE;&#x5F55;&#x4E0B;&#x7684;Kconfig&#x4E2D;&#x8BBE;&#x7F6E;&#xFF0C;&#x6BD4;&#x5982; <code>arch/arm/Kconfig</code> &#x5177;&#x6709;&#x5176;&#x4F7F;&#x80FD;&#x6807;&#x8BB0;&#xFF0C;&#x4F46;&#x5728;&#x8BBE;&#x7F6E;&#x524D;&#x4E00;&#x5B9A;&#x8981;&#x641E;&#x6E05;&#x695A;&#x5177;&#x4F53;&#x786C;&#x4EF6;&#xFF01;
+DMA_ZONE 的设置一般在构架目录下的Kconfig中设置，比如 <code>arch/arm/Kconfig</code> 具有其使能标记，但在设置前一定要搞清楚具体硬件！
 </p>
 </div>
 </div>
-<div id="outline-container-org3351d2b" class="outline-4">
-<h4 id="org3351d2b">NORMAL_ZONE</h4>
-<div class="outline-text-4" id="text-org3351d2b">
+<div id="outline-container-org8543e79" class="outline-4">
+<h4 id="org8543e79">NORMAL_ZONE</h4>
+<div class="outline-text-4" id="text-org8543e79">
 <p>
-&#x524D;&#x9762;&#x8BF4;&#x8FC7;&#xFF0C;&#x5728;&#x865A;&#x62DF;&#x5730;&#x5740;&#x4E2D;3~4G&#x4E3A;&#x5185;&#x6838;&#x7A7A;&#x95F4;&#x3002; <b>Linux&#x5C06;&#x7269;&#x7406;&#x5185;&#x5B58;&#x7684;0~1G&#x7EBF;&#x6027;&#x6620;&#x5C04;&#x5230;3G~4G&#x865A;&#x62DF;&#x5730;&#x5740;&#x7A7A;&#x95F4;</b> &#xFF0C;&#x800C;&#x8FD9;1G&#x7684;&#x7A7A;&#x95F4;&#x51CF;&#x53BB;DMA_ZONE&#x5269;&#x4E0B;&#x7684;&#x90E8;&#x5206;&#x5C31;&#x662F; NORMAL_ZONE&#x3002; 
+前面说过，在虚拟地址中3~4G为内核空间。 <b>Linux将物理内存的0~1G线性映射到3G~4G虚拟地址空间</b> ，而这1G的空间减去DMA_ZONE剩下的部分就是 NORMAL_ZONE。 
 </p>
 
 <p>
-&#x6240;&#x8C13;&#x7684;&#x7EBF;&#x6027;&#x6620;&#x5C04;&#x6307;&#x7684;&#x5C31;&#x662F;&#x9875;&#x8868;&#x7684;&#x7B80;&#x5355;&#x6620;&#x5C04;&#x5173;&#x7CFB;&#xFF0C;&#x4E00;&#x822C;&#x8FD9;&#x79CD;&#x60C5;&#x51B5;&#x4E0B;&#x4EC5;&#x4EC5;&#x662F;&#x4E00;&#x4E2A;&#x7B80;&#x5355;&#x7684;&#x504F;&#x79FB;&#x5373;&#x53EF;&#x8F6C;&#x6362;&#xFF0C;&#x5185;&#x6838;&#x63D0;&#x4F9B;&#x4E86;&#x51FD;&#x6570;&#x4EE5;&#x76F8;&#x4E92;&#x8F6C;&#x6362;&#xFF1A;
+所谓的线性映射指的就是页表的简单映射关系，一般这种情况下仅仅是一个简单的偏移即可转换，内核提供了函数以相互转换：
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @note &#xFF1A; &#x5728;&#x5185;&#x6838;&#x4E2D;&#x7269;&#x7406;&#x5730;&#x5740;&#x90FD;&#x662F;&#x4E00;&#x4E2A;&#x6570;&#x503C;&#xFF0C;&#x5B83;&#x80FD;&#x4EE5;&#x6307;&#x9488;&#x64CD;&#x4F5C;&#x7684;&#x53EA;&#x6709;&#x865A;&#x62DF;&#x5730;&#x5740;&#xFF0C;</span></span><br><span class="line"><span class="comment"> * &#x6240;&#x4EE5;&#x6B64;&#x5904;&#x7269;&#x7406;&#x5730;&#x5740;&#x90FD;&#x662F; unsigned long &#x578B;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="title">virt_to_phys</span><span class="params">(<span class="keyword">volatile</span> <span class="keyword">void</span> *address)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">phys_to_virt</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">long</span> address)</span></span>;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @note ： 在内核中物理地址都是一个数值，它能以指针操作的只有虚拟地址，</span></span><br><span class="line"><span class="comment"> * 所以此处物理地址都是 unsigned long 型</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="title">virt_to_phys</span><span class="params">(<span class="keyword">volatile</span> <span class="keyword">void</span> *address)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">phys_to_virt</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">long</span> address)</span></span>;</span><br></pre></td></tr></table></figure>
 </div>
 
 <p>
-&#x6CE8;&#x610F;&#xFF1A; <b>&#x7EBF;&#x6027;&#x6620;&#x5C04;&#x5E76;&#x4E0D;&#x662F;&#x5185;&#x6838;&#x5DF2;&#x7ECF;&#x5360;&#x7528;&#x4E86;&#x5185;&#x5B58;&#xFF0C;&#x800C;&#x662F;&#x63D0;&#x524D;&#x6620;&#x5C04;&#x597D;&#x4EE5;&#x4FBF;&#x540E;&#x9762;&#x64CD;&#x4F5C;,&#x800C;&#x65E0;&#x9700;&#x4F7F;&#x7528;&#x65F6;&#x518D;&#x6765;&#x6620;&#x5C04;&#x3002;</b>
+注意： <b>线性映射并不是内核已经占用了内存，而是提前映射好以便后面操作,而无需使用时再来映射。</b>
 </p>
 </div>
 </div>
-<div id="outline-container-org727d22d" class="outline-4">
-<h4 id="org727d22d">HIGH_ZONE</h4>
-<div class="outline-text-4" id="text-org727d22d">
+<div id="outline-container-org0e66eb1" class="outline-4">
+<h4 id="org0e66eb1">HIGH_ZONE</h4>
+<div class="outline-text-4" id="text-org0e66eb1">
 <p>
-&#x5F53;&#x5B9E;&#x9645;&#x7684;&#x7269;&#x7406;&#x5185;&#x5B58;&#x5927;&#x4E8E;1G&#x65F6;&#xFF0C;&#x591A;&#x4E8E;&#x7684;&#x90E8;&#x5206;&#x5C31;&#x662F;HIGH_ZONE.
+当实际的物理内存大于1G时，多于的部分就是HIGH_ZONE.
 </p>
 
 <p>
-&#x5F53;&#x5185;&#x6838;&#x7A7A;&#x95F4;&#x8981;&#x4F7F;&#x7528;&#x6B64;&#x6BB5;&#x5185;&#x5B58;&#x65F6;&#xFF0C;&#x7531;&#x4E8E;&#x6CA1;&#x6709;&#x63D0;&#x524D;&#x6620;&#x5C04;&#xFF0C;&#x5219;&#x9700;&#x8981;&#x7ECF;&#x8FC7;&#x4EE5;&#x4E0B;&#x6B65;&#x9AA4;&#x4F7F;&#x7528;&#xFF1A;
+当内核空间要使用此段内存时，由于没有提前映射，则需要经过以下步骤使用：
 </p>
 <ol class="org-ol">
-<li>&#x6620;&#x5C04;HIGH_ZONE&#x5230; &#x9AD8;&#x7AEF;&#x9875;&#x9762;&#x6620;&#x5C04;&#x533A;</li>
-<li>&#x4F7F;&#x7528;</li>
-<li>&#x91CA;&#x653E;&#x6620;&#x5C04;</li>
+<li>映射HIGH_ZONE到 高端页面映射区</li>
+<li>使用</li>
+<li>释放映射</li>
 </ol>
 <p>
-&#x6CE8;&#x610F;&#xFF1A; &#x5185;&#x6838;&#x5BF9;HIGH_ZONE &#x4E0D;&#x80FD;&#x4F7F;&#x7528; <code>virt_to_phys,phys_to_virt</code> &#x6765;&#x8F6C;&#x6362;&#xFF0C;&#x56E0;&#x4E3A;&#x5B83;&#x4EEC;&#x4E0D;&#x662F;&#x7B80;&#x5355;&#x7684;&#x7EBF;&#x6027;&#x6620;&#x5C04;!
+注意： 内核对HIGH_ZONE 不能使用 <code>virt_to_phys,phys_to_virt</code> 来转换，因为它们不是简单的线性映射!
 </p>
 
 <p>
-&#x5BF9;&#x4E8E;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x800C;&#x8A00;&#xFF0C;&#x7528;&#x6237;&#x7533;&#x8BF7;&#x5185;&#x5B58;&#x65F6;&#xFF0C;Linux&#x641C;&#x5BFB;&#x5185;&#x5B58;&#x7684;&#x8DEF;&#x5F84;&#x4E3A;&#xFF1A; HIGH_ZONE -&gt; NORMAL_ZONE -&gt; DMA_ZONE.
+对于用户空间而言，用户申请内存时，Linux搜寻内存的路径为： HIGH_ZONE -> NORMAL_ZONE -> DMA_ZONE.
 </p>
 </div>
 </div>
 </div>
-<div id="outline-container-orge004a80" class="outline-3">
-<h3 id="orge004a80">&#x5BF9;&#x5185;&#x6838;&#x865A;&#x62DF;&#x7A7A;&#x95F4;&#x7684;&#x5206;&#x914D;</h3>
-<div class="outline-text-3" id="text-orge004a80">
+<div id="outline-container-orgcc49d79" class="outline-3">
+<h3 id="orgcc49d79">对内核虚拟空间的分配</h3>
+<div class="outline-text-3" id="text-orgcc49d79">
 </div>
-<div id="outline-container-orgb1b5ad4" class="outline-4">
-<h4 id="orgb1b5ad4">x86-32 &#x67B6;&#x6784;&#x4E0B;&#x7684;&#x5206;&#x914D;</h4>
-<div class="outline-text-4" id="text-orgb1b5ad4">
+<div id="outline-container-org23ae4b2" class="outline-4">
+<h4 id="org23ae4b2">x86-32 架构下的分配</h4>
+<div class="outline-text-4" id="text-org23ae4b2">
 <p>
-Linux&#x4E2D;1GB&#x7684;&#x865A;&#x62DF;&#x5185;&#x6838;&#x5730;&#x5740;&#x7A7A;&#x95F4;&#x53C8;&#x88AB;&#x5212;&#x5206;&#x4E3A;:
+Linux中1GB的虚拟内核地址空间又被划分为:
 </p>
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
@@ -590,73 +590,73 @@ Linux&#x4E2D;1GB&#x7684;&#x865A;&#x62DF;&#x5185;&#x6838;&#x5730;&#x5740;&#x7A7A;
 </colgroup>
 <thead>
 <tr>
-<th scope="col" class="org-left">&#x533A;&#x57DF;&#x540D;&#x79F0;</th>
-<th scope="col" class="org-left">&#x865A;&#x62DF;&#x5730;&#x5740;&#x4F4D;&#x7F6E;</th>
-<th scope="col" class="org-left">&#x76F8;&#x5173;&#x4EE3;&#x7801;</th>
+<th scope="col" class="org-left">区域名称</th>
+<th scope="col" class="org-left">虚拟地址位置</th>
+<th scope="col" class="org-left">相关代码</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td class="org-left">&#x4FDD;&#x7559;&#x533A;</td>
+<td class="org-left">保留区</td>
 <td class="org-left">FIXADDR_TOP ~ 4GB</td>
-<td class="org-left">&#x641C;&#x7D22;&#x5B8F; FIXADDR_TOP</td>
+<td class="org-left">搜索宏 FIXADDR_TOP</td>
 </tr>
 
 <tr>
-<td class="org-left">&#x4E13;&#x7528;&#x9875;&#x9762;&#x6620;&#x5C04;&#x533A;</td>
+<td class="org-left">专用页面映射区</td>
 <td class="org-left">FIXADDR_START ~ FIXADDR_TOP</td>
-<td class="org-left">&#x641C;&#x7D22;&#x5B8F; FIXADDR_START</td>
+<td class="org-left">搜索宏 FIXADDR_START</td>
 </tr>
 
 <tr>
-<td class="org-left">&#x9AD8;&#x7AEF;&#x5185;&#x5B58;&#x6620;&#x5C04;&#x533A;</td>
+<td class="org-left">高端内存映射区</td>
 <td class="org-left">PKMAP_BASE ~ FIXADDR_START</td>
-<td class="org-left">&#x641C;&#x7D22;&#x5B8F; PKMAP_BASE</td>
+<td class="org-left">搜索宏 PKMAP_BASE</td>
 </tr>
 
 <tr>
-<td class="org-left">&#x9694;&#x79BB;&#x533A;</td>
-<td class="org-left">&#xA0;</td>
-<td class="org-left">&#xA0;</td>
+<td class="org-left">隔离区</td>
+<td class="org-left"> </td>
+<td class="org-left"> </td>
 </tr>
 
 <tr>
-<td class="org-left">vmalloc&#x865A;&#x62DF;&#x5185;&#x5B58;&#x5206;&#x914D;&#x533A;</td>
+<td class="org-left">vmalloc虚拟内存分配区</td>
 <td class="org-left">VMALLOC_START ~ VMALLOC_END</td>
-<td class="org-left">&#x641C;&#x7D22;&#x5B8F; VMALLOC_START</td>
+<td class="org-left">搜索宏 VMALLOC_START</td>
 </tr>
 
 <tr>
-<td class="org-left">&#x9694;&#x79BB;&#x533A;</td>
-<td class="org-left">&#xA0;</td>
-<td class="org-left">&#xA0;</td>
+<td class="org-left">隔离区</td>
+<td class="org-left"> </td>
+<td class="org-left"> </td>
 </tr>
 
 <tr>
-<td class="org-left">&#x7269;&#x7406;&#x5185;&#x5B58;&#x6620;&#x5C04;&#x533A;</td>
-<td class="org-left">3GB&#x8D77;&#x59CB;&#x6700;&#x5927;&#x957F;&#x5EA6;896M(&#x5BF9;&#x5E94;&#x7269;&#x7406;&#x5185;&#x5B58;&#x7684;896M)</td>
-<td class="org-left">&#xA0;</td>
+<td class="org-left">物理内存映射区</td>
+<td class="org-left">3GB起始最大长度896M(对应物理内存的896M)</td>
+<td class="org-left"> </td>
 </tr>
 </tbody>
 </table>
 
 <pre class="example">
-&#x76F4;&#x63A5;&#x6620;&#x5C04;&#x7684;&#x6700;&#x5927;896M&#x7269;&#x7406;&#x5185;&#x5B58;&#x5206;&#x4E3A;&#x4E24;&#x4E2A;&#x533A;&#x57DF;&#xFF1A;
-- 0 ~ 16M : ISA&#x8BBE;&#x5907;&#x7528;&#x4F5C;DMA&#x7533;&#x8BF7;
-- 16M ~ 896M : &#x5E38;&#x89C4;&#x533A;&#x57DF;</pre>
+直接映射的最大896M物理内存分为两个区域：
+- 0 ~ 16M : ISA设备用作DMA申请
+- 16M ~ 896M : 常规区域</pre>
 <ul class="org-ul">
-<li>&#x5F53;&#x7CFB;&#x7EDF;&#x7269;&#x7406;&#x5185;&#x5B58;&#x8D85;&#x8FC7;4GB&#x65F6;&#xFF0C;&#x5FC5;&#x987B;&#x4F7F;&#x7528;CPU&#x7684;&#x6269;&#x5C55;&#x5206;&#x9875;(PAE)&#x6A21;&#x5F0F;&#x6240;&#x63D0;&#x4F9B;&#x7684;64&#x4F4D;&#x9875;&#x76EE;&#x5F55;&#x624D;&#x80FD;&#x53D6;&#x5230;4GB&#x4EE5;&#x4E0A;&#x7684;&#x7269;&#x7406;&#x5185;&#x5B58;&#x3002;</li>
+<li>当系统物理内存超过4GB时，必须使用CPU的扩展分页(PAE)模式所提供的64位页目录才能取到4GB以上的物理内存。</li>
 </ul>
 
 <p>
-&#x7531;&#x4E0A;&#x8868;&#x53EF;&#x4EE5;&#x770B;&#x51FA;&#xFF1A;&#x6B64;&#x7247;&#x865A;&#x62DF;&#x533A;&#x57DF;&#x4E00;&#x5171;1G&#xFF0C;&#x4F46;&#x5B9E;&#x9645;&#x7269;&#x7406;&#x5185;&#x5B58;&#x6620;&#x5C04;&#x533A;&#x4E0D;&#x8DB3;1G(&#x8FD8;&#x6709;&#x5176;&#x4ED6;&#x533A;&#x57DF;&#x5360;&#x7528;&#x4E86;&#x5730;&#x5740;&#x7A7A;&#x95F4;)&#x3002;
-<b>&#x5982;&#x679C;&#x6211;&#x4EEC;&#x5C06;vmalloc&#x5206;&#x914D;&#x533A;&#x8BBE;&#x7F6E;&#x5F97;&#x5927;&#x4E00;&#x70B9;&#xFF0C;&#x90A3;&#x4E48;&#x5BF9;&#x5E94;&#x7269;&#x7406;&#x5185;&#x5B58;&#x6620;&#x5C04;&#x533A;&#x5C31;&#x4F1A;&#x5C0F;&#x4E00;&#x70B9;&#x3002;&#x5BF9;&#x5E94;&#x7684;&#x53CD;&#x5E94;&#x5230;&#x7269;&#x7406;&#x5185;&#x5B58;&#x4E0A;&#xFF0C;&#x90A3;&#x5C31;&#x662F;&#x53EF;&#x6620;&#x5C04;&#x7684;&#x4F4E;&#x7AEF;&#x5185;&#x5B58;&#x533A;&#x53D8;&#x5C0F;&#x4E86;&#xFF0C;&#x76F8;&#x5E94;&#x7684;&#x9AD8;&#x7AEF;&#x5185;&#x5B58;&#x533A;&#x5C31;&#x53D8;&#x5927;&#x4E86;&#x3002;</b>
+由上表可以看出：此片虚拟区域一共1G，但实际物理内存映射区不足1G(还有其他区域占用了地址空间)。
+<b>如果我们将vmalloc分配区设置得大一点，那么对应物理内存映射区就会小一点。对应的反应到物理内存上，那就是可映射的低端内存区变小了，相应的高端内存区就变大了。</b>
 </p>
 </div>
 </div>
-<div id="outline-container-orgc5eebe2" class="outline-4">
-<h4 id="orgc5eebe2">arm32 linux &#x4E0B;&#x7684;&#x5206;&#x914D;</h4>
-<div class="outline-text-4" id="text-orgc5eebe2">
+<div id="outline-container-org6631432" class="outline-4">
+<h4 id="org6631432">arm32 linux 下的分配</h4>
+<div class="outline-text-4" id="text-org6631432">
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
 
@@ -669,213 +669,213 @@ Linux&#x4E2D;1GB&#x7684;&#x865A;&#x62DF;&#x5185;&#x6838;&#x5730;&#x5740;&#x7A7A;
 </colgroup>
 <thead>
 <tr>
-<th scope="col" class="org-left">&#x533A;&#x57DF;&#x540D;&#x79F0;</th>
-<th scope="col" class="org-left">&#x865A;&#x62DF;&#x5730;&#x5740;&#x4F4D;&#x7F6E;</th>
-<th scope="col" class="org-left">&#x76F8;&#x5173;&#x4EE3;&#x7801;</th>
+<th scope="col" class="org-left">区域名称</th>
+<th scope="col" class="org-left">虚拟地址位置</th>
+<th scope="col" class="org-left">相关代码</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td class="org-left">&#x5411;&#x91CF;&#x8868;</td>
+<td class="org-left">向量表</td>
 <td class="org-left">0xfff0000~0xfff0fff</td>
-<td class="org-left">&#x6587;&#x6863; Documentation/arm/memory.txt</td>
+<td class="org-left">文档 Documentation/arm/memory.txt</td>
 </tr>
 
 <tr>
-<td class="org-left">&#x9694;&#x79BB;&#x533A;</td>
-<td class="org-left">&#xA0;</td>
-<td class="org-left">&#xA0;</td>
+<td class="org-left">隔离区</td>
+<td class="org-left"> </td>
+<td class="org-left"> </td>
 </tr>
 
 <tr>
-<td class="org-left">vmalloc&#x548C;ioremap&#x533A;&#x57DF;</td>
+<td class="org-left">vmalloc和ioremap区域</td>
 <td class="org-left">VMALLOC_START ~ VMALLOC_END -1</td>
-<td class="org-left">&#x5B8F; VMALLOC_START</td>
+<td class="org-left">宏 VMALLOC_START</td>
 </tr>
 
 <tr>
-<td class="org-left">&#x9694;&#x79BB;&#x533A;</td>
-<td class="org-left">&#xA0;</td>
-<td class="org-left">&#xA0;</td>
+<td class="org-left">隔离区</td>
+<td class="org-left"> </td>
+<td class="org-left"> </td>
 </tr>
 
 <tr>
-<td class="org-left">DMA&#x548C;&#x5E38;&#x89C4;&#x533A;&#x57DF;&#x6620;&#x5C04;&#x533A;</td>
+<td class="org-left">DMA和常规区域映射区</td>
 <td class="org-left">PAGE_OFFSET ~ high_memory -1</td>
-<td class="org-left">&#x5B8F; PAGE_OFFSET &#x4EE5;&#x53CA;&#x53D8;&#x91CF; high_memory</td>
+<td class="org-left">宏 PAGE_OFFSET 以及变量 high_memory</td>
 </tr>
 
 <tr>
-<td class="org-left">&#x9AD8;&#x7AEF;&#x5185;&#x5B58;&#x6620;&#x5C04;&#x533A;</td>
+<td class="org-left">高端内存映射区</td>
 <td class="org-left">PKMAP_BASE ~ PAGE_OFFSET -1</td>
-<td class="org-left">&#x5B8F; PKMAP_BASE</td>
+<td class="org-left">宏 PKMAP_BASE</td>
 </tr>
 
 <tr>
-<td class="org-left">&#x5185;&#x6838;&#x6A21;&#x5757;</td>
+<td class="org-left">内核模块</td>
 <td class="org-left">MODULES_VADDR ~ MODULES_END -1</td>
-<td class="org-left">&#x5B8F; MODULES_VADDR</td>
+<td class="org-left">宏 MODULES_VADDR</td>
 </tr>
 </tbody>
 </table>
 
 <p>
-&#x7531;&#x4E0A;&#x8868;&#x53EF;&#x4EE5;&#x770B;&#x51FA;: 
+由上表可以看出: 
 </p>
 <ul class="org-ul">
-<li>&#x5BF9;&#x4E8E;arm32 &#x6765;&#x8BF4;&#xFF0C; <b>&#x4ECE;&#x5185;&#x6838;&#x6A21;&#x5757;&#x5F00;&#x59CB;&#x7684;&#x5730;&#x65B9;&#x5C31;&#x5DF2;&#x7ECF;&#x662F;&#x5185;&#x6838;&#x7A7A;&#x95F4;&#x4E86;&#xFF01;</b></li>
-<li>&#x6B64;&#x7247;&#x865A;&#x62DF;&#x533A;&#x57DF;&#x4E00;&#x5171;1G&#xFF0C;&#x4F46;&#x5B9E;&#x9645;&#x7269;&#x7406;&#x5185;&#x5B58;&#x6620;&#x5C04;&#x533A;&#x4E0D;&#x8DB3;1G(&#x8FD8;&#x6709;&#x5176;&#x4ED6;&#x533A;&#x57DF;&#x5360;&#x7528;&#x4E86;&#x5730;&#x5740;&#x7A7A;&#x95F4;)&#x3002;
+<li>对于arm32 来说， <b>从内核模块开始的地方就已经是内核空间了！</b></li>
+<li>此片虚拟区域一共1G，但实际物理内存映射区不足1G(还有其他区域占用了地址空间)。
 <ul class="org-ul">
-<li><b>&#x5982;&#x679C;&#x6211;&#x4EEC;&#x5C06;vmalloc&#x5206;&#x914D;&#x533A;&#x8BBE;&#x7F6E;&#x5F97;&#x5927;&#x4E00;&#x70B9;&#xFF0C;&#x90A3;&#x4E48;&#x5BF9;&#x5E94;&#x7269;&#x7406;&#x5185;&#x5B58;&#x6620;&#x5C04;&#x533A;&#x5C31;&#x4F1A;&#x5C0F;&#x4E00;&#x70B9;&#x3002;&#x5BF9;&#x5E94;&#x7684;&#x53CD;&#x5E94;&#x5230;&#x7269;&#x7406;&#x5185;&#x5B58;&#x4E0A;&#xFF0C;&#x90A3;&#x5C31;&#x662F;&#x53EF;&#x6620;&#x5C04;&#x7684;&#x4F4E;&#x7AEF;&#x5185;&#x5B58;&#x533A;&#x53D8;&#x5C0F;&#x4E86;&#xFF0C;&#x76F8;&#x5E94;&#x7684;&#x9AD8;&#x7AEF;&#x5185;&#x5B58;&#x533A;&#x5C31;&#x53D8;&#x5927;&#x4E86;&#x3002;</b></li>
+<li><b>如果我们将vmalloc分配区设置得大一点，那么对应物理内存映射区就会小一点。对应的反应到物理内存上，那就是可映射的低端内存区变小了，相应的高端内存区就变大了。</b></li>
 </ul></li>
 </ul>
 <pre class="example">
-&#x5728;&#x7F16;&#x8BD1;&#x5185;&#x6838;&#x7684;&#x65F6;&#x5019;&#x53EF;&#x4EE5;&#x9009;&#x62E9;&#xFF1A;
-- VMSPLIT_3G : &#x7528;&#x6237;&#x7A7A;&#x95F4;3G&#xFF0C;&#x5185;&#x6838;&#x7A7A;&#x95F4;1G&#x3002;&#x5185;&#x6838;&#x6A21;&#x5757;&#x8303;&#x56F4;&#x4E3A; 3GB-16MB ~ 3GB-2MB,&#x9AD8;&#x7AEF;&#x5185;&#x5B58;&#x6620;&#x5C04; 3GB-2MB ~ 3GB
-- VMSPLIT_2G : &#x7528;&#x6237;&#x7A7A;&#x95F4;2G&#xFF0C;&#x5185;&#x6838;&#x7A7A;&#x95F4;2G&#x3002;&#x5185;&#x6838;&#x6A21;&#x5757;&#x8303;&#x56F4;&#x4E3A; 2GB-16MB ~ 2GB-2MB,&#x9AD8;&#x7AEF;&#x5185;&#x5B58;&#x6620;&#x5C04; 2GB-2MB ~ 2GB
+在编译内核的时候可以选择：
+- VMSPLIT_3G : 用户空间3G，内核空间1G。内核模块范围为 3GB-16MB ~ 3GB-2MB,高端内存映射 3GB-2MB ~ 3GB
+- VMSPLIT_2G : 用户空间2G，内核空间2G。内核模块范围为 2GB-16MB ~ 2GB-2MB,高端内存映射 2GB-2MB ~ 2GB
 
-ARM&#x7CFB;&#x7EDF;&#x7684;Linux&#x4E4B;&#x6240;&#x4EE5;&#x628A;&#x5185;&#x6838;&#x6A21;&#x5757;&#x653E;&#x5728;16MB&#x8303;&#x56F4;&#x5185;&#xFF0C;&#x662F;&#x56E0;&#x4E3A;ARM&#x6307;&#x4EE4;&#x5728;32M&#x4EE5;&#x5185;&#x662F;&#x77ED;&#x8DF3;&#x8F6C;&#x3002;
+ARM系统的Linux之所以把内核模块放在16MB范围内，是因为ARM指令在32M以内是短跳转。
 
-&#x800C;&#x5185;&#x6838;&#x4EE3;&#x7801;&#x4F4D;&#x4E8E; 3G~3G+6M &#x7684;&#x4F4D;&#x7F6E;&#xFF0C;&#x6240;&#x4EE5;&#x5C06;&#x5185;&#x6838;&#x6A21;&#x5757;&#x653E;&#x5728;3G-2M ~ 3G-16M&#x4E4B;&#x95F4;&#x7684;&#x5185;&#x5B58;&#x5DEE;&#x5F02;&#x5728;32M&#x4EE5;&#x5185;&#xFF0C;
-&#x8FD9;&#x6837;&#x5C31;&#x5B9E;&#x73B0;&#x4E86;&#x5185;&#x6838;&#x6A21;&#x5757;&#x548C;&#x5185;&#x6838;&#x672C;&#x8EAB;&#x7684;&#x4EE3;&#x7801;&#x6BB5;&#x4E4B;&#x95F4;&#x7684;&#x77ED;&#x8DF3;&#x8F6C;&#xFF0C;&#x4EE5;&#x6700;&#x5C0F;&#x7684;&#x5F00;&#x9500;&#x5B9E;&#x73B0;&#x51FD;&#x6570;&#x7684;&#x8C03;&#x7528;.</pre>
+而内核代码位于 3G~3G+6M 的位置，所以将内核模块放在3G-2M ~ 3G-16M之间的内存差异在32M以内，
+这样就实现了内核模块和内核本身的代码段之间的短跳转，以最小的开销实现函数的调用.</pre>
 </div>
 </div>
 </div>
-<div id="outline-container-orgcf73fed" class="outline-3">
-<h3 id="orgcf73fed">DMA&#x3001;&#x5E38;&#x89C4;&#x3001;&#x9AD8;&#x7AEF;&#x5185;&#x5B58;&#x5206;&#x5E03;</h3>
-<div class="outline-text-3" id="text-orgcf73fed">
+<div id="outline-container-orga1fc1f1" class="outline-3">
+<h3 id="orga1fc1f1">DMA、常规、高端内存分布</h3>
+<div class="outline-text-3" id="text-orga1fc1f1">
 <p>
-&#x6709;&#x4EE5;&#x4E0B;4&#x79CD;&#x53EF;&#x80FD;&#x7684;&#x60C5;&#x51B5;&#x5206;&#x5E03;(&#x5730;&#x5740;&#x7531;&#x4F4E;&#x5230;&#x9AD8;)&#xFF1A;
+有以下4种可能的情况分布(地址由低到高)：
 </p>
 <ul class="org-ul">
-<li>DMA&#x533A;&#x57DF; | &#x5E38;&#x89C4;&#x533A;&#x57DF; | &#x9AD8;&#x7AEF;&#x5185;&#x5B58;&#x533A;&#x57DF; 
+<li>DMA区域 | 常规区域 | 高端内存区域 
 <ul class="org-ul">
-<li>&#x5185;&#x5B58;&#x8F83;&#x5927;&#xFF0C;&#x786C;&#x4EF6;DMA&#x53EA;&#x80FD;&#x8BBF;&#x95EE;&#x4E00;&#x90E8;&#x5206;&#x5730;&#x5740;&#xFF0C;&#x5E76;&#x4E14;&#x5185;&#x6838;&#x6620;&#x5C04;&#x4E0D;&#x5B8C;&#x6240;&#x6709;&#x7684;&#x7269;&#x7406;&#x5185;&#x5B58;&#xFF0C;&#x5269;&#x4E0B;&#x7684;&#x90E8;&#x5206;&#x5C31;&#x662F;&#x9AD8;&#x7AEF;&#x5185;&#x5B58;&#x533A;&#x57DF;</li>
+<li>内存较大，硬件DMA只能访问一部分地址，并且内核映射不完所有的物理内存，剩下的部分就是高端内存区域</li>
 </ul></li>
-<li>DMA&#x533A;&#x57DF;(&#x5E38;&#x89C4;&#x533A;&#x57DF;) | &#x9AD8;&#x7AEF;&#x5185;&#x5B58;&#x533A;&#x57DF;
+<li>DMA区域(常规区域) | 高端内存区域
 <ul class="org-ul">
-<li>&#x5185;&#x5B58;&#x8F83;&#x5927;&#xFF0C;&#x786C;&#x4EF6;DMA&#x53EF;&#x4EE5;&#x8BBF;&#x95EE;&#x5168;&#x90E8;&#x5730;&#x5740;&#xFF0C;&#x4F46;&#x5185;&#x6838;&#x6620;&#x5C04;&#x4E0D;&#x5B8C;&#x6240;&#x6709;&#x7684;&#x7269;&#x7406;&#x5185;&#x5B58;&#xFF0C;&#x5269;&#x4E0B;&#x7684;&#x90E8;&#x5206;&#x5C31;&#x662F;&#x9AD8;&#x7AEF;&#x5185;&#x5B58;&#x533A;&#x57DF;</li>
+<li>内存较大，硬件DMA可以访问全部地址，但内核映射不完所有的物理内存，剩下的部分就是高端内存区域</li>
 </ul></li>
-<li>DMA&#x533A;&#x57DF; | &#x5E38;&#x89C4;&#x533A;&#x57DF;
+<li>DMA区域 | 常规区域
 <ul class="org-ul">
-<li>&#x5185;&#x5B58;&#x8F83;&#x5C0F;&#xFF0C;&#x786C;&#x4EF6;DMA&#x53EA;&#x80FD;&#x8BBF;&#x95EE;&#x4E00;&#x90E8;&#x5206;&#x5730;&#x5740;&#xFF0C;&#x4E14;&#x5185;&#x6838;&#x53EF;&#x4EE5;&#x5B8C;&#x5168;&#x6620;&#x5C04;&#x7269;&#x7406;&#x5185;&#x5B58;</li>
+<li>内存较小，硬件DMA只能访问一部分地址，且内核可以完全映射物理内存</li>
 </ul></li>
-<li>DMA&#x533A;&#x57DF;(&#x5E38;&#x89C4;&#x533A;&#x57DF;)
+<li>DMA区域(常规区域)
 <ul class="org-ul">
-<li>&#x5185;&#x5B58;&#x8F83;&#x5C0F;&#xFF0C;&#x786C;&#x4EF6;DMA&#x53EF;&#x4EE5;&#x8BBF;&#x95EE;&#x5168;&#x90E8;&#x5730;&#x5740;&#xFF0C;&#x4E14;&#x5185;&#x6838;&#x53EF;&#x4EE5;&#x5B8C;&#x5168;&#x6620;&#x5C04;&#x7269;&#x7406;&#x5185;&#x5B58;</li>
+<li>内存较小，硬件DMA可以访问全部地址，且内核可以完全映射物理内存</li>
 </ul></li>
 </ul>
 </div>
 
-<div id="outline-container-orgd92cd23" class="outline-4">
-<h4 id="orgd92cd23">buddy &#x7B97;&#x6CD5;</h4>
-<div class="outline-text-4" id="text-orgd92cd23">
+<div id="outline-container-orgbf2ad6c" class="outline-4">
+<h4 id="orgbf2ad6c">buddy 算法</h4>
+<div class="outline-text-4" id="text-orgbf2ad6c">
 <p>
-DMA&#x3001;&#x5E38;&#x89C4;&#x3001;&#x9AD8;&#x7AEF;&#x5185;&#x5B58;&#x5206;&#x5E03;&#x533A; <b>&#x6700;&#x5E95;&#x5C42;</b> &#x4F7F;&#x7528;&#x7684;&#x662F; <code>buddy</code> &#x7B97;&#x6CD5;&#x8FDB;&#x884C;&#x7BA1;&#x7406;&#xFF0C;&#x5B83;&#x5C06;&#x7A7A;&#x95F2; <b>&#x9875;</b> &#x9762;&#x4EE5; 2 &#x7684; n&#x6B21;&#x65B9;&#x8FDB;&#x884C;&#x5206;&#x914D;&#xFF0C;&#x800C;&#x5185;&#x5B58;&#x7533;&#x8BF7;&#x4E5F;&#x662F;&#x4E5F; 2 &#x7684; n &#x6B21;&#x65B9;&#x7533;&#x8BF7;&#x3002;
+DMA、常规、高端内存分布区 <b>最底层</b> 使用的是 <code>buddy</code> 算法进行管理，它将空闲 <b>页</b> 面以 2 的 n次方进行分配，而内存申请也是也 2 的 n 次方申请。
 </p>
 <ul class="org-ul">
-<li>buddy &#x5728;&#x4E0D;&#x65AD;&#x7684;&#x62C6;&#x5206;&#x548C;&#x5408;&#x5E76;&#xFF0C;&#x5176;&#x7A7A;&#x95F2;&#x9875;&#x9762;&#x4EE5; 1,2,4,8,16&#x2026; &#x8FD9;&#x79CD;&#x5F62;&#x5F0F;&#x7EC4;&#x7EC7;&#x8D77;&#x6765;
+<li>buddy 在不断的拆分和合并，其空闲页面以 1,2,4,8,16… 这种形式组织起来
 <ul class="org-ul">
-<li>&#x4ECE;16&#x4E2A;&#x9875;&#x9762;&#x4E2D;&#x53D6;&#x51FA;&#x4E00;&#x9875;&#x540E;&#xFF0C;buddy&#x4F1A;&#x62C6;&#x5206;&#x4E3A; 1,2,4,8 &#x7A7A;&#x95F2;&#x9875;</li>
-<li>&#x5982;&#x679C;&#x539F;&#x6765;&#x662F;1,2,8&#x7684;&#x7A7A;&#x95F2;&#xFF0C;&#x73B0;&#x5728;&#x53C8;&#x91CA;&#x653E;&#x4E86;2&#x9875;, <b>&#x5982;&#x679C;&#x8FD9;2&#x9875;&#x548C;&#x539F;&#x6765;&#x7A7A;&#x95F2;&#x7684;2&#x9875;&#x5185;&#x5B58;&#x8FDE;&#x7EED;</b> &#xFF0C;buddy&#x4F1A;&#x5408;&#x5E76;&#x4E3A;1,4,8&#x7A7A;&#x95F2;&#x9875;</li>
+<li>从16个页面中取出一页后，buddy会拆分为 1,2,4,8 空闲页</li>
+<li>如果原来是1,2,8的空闲，现在又释放了2页, <b>如果这2页和原来空闲的2页内存连续</b> ，buddy会合并为1,4,8空闲页</li>
 </ul></li>
-<li>&#x4E0E;&#x6B64;&#x540C;&#x65F6;&#xFF0C; <b>&#x7528;&#x6237;&#x6BCF;&#x6B21;&#x7533;&#x8BF7;&#x4E5F;&#x53EA;&#x80FD;&#x662F;2&#x7684;n&#x6B21;&#x65B9;&#xFF01;</b></li>
+<li>与此同时， <b>用户每次申请也只能是2的n次方！</b></li>
 </ul>
 <pre class="example">
-&#x5728; /proc/buddyinfo &#x4F1A;&#x663E;&#x793A;&#x8FD9;&#x4E9B;&#x533A;&#x57DF;&#x7684;&#x7A7A;&#x95F2;&#x9875;&#x9762;&#x5206;&#x5E03;&#x60C5;&#x51B5;,&#x4F9D;&#x6B21;&#x4ECE;&#x5DE6;&#x5230;&#x53F3;&#x663E;&#x793A; 1,2,4,8,16 &#x7A7A;&#x95F2;&#x9875;&#x6570;&#x91CF;</pre>
+在 /proc/buddyinfo 会显示这些区域的空闲页面分布情况,依次从左到右显示 1,2,4,8,16 空闲页数量</pre>
 
 <p>
-&#x5728;&#x5185;&#x6838;&#x7F16;&#x7A0B;&#x65F6;&#xFF0C;&#x53EF;&#x4EE5;&#x4F7F;&#x7528;&#x4EE5;&#x4E0B;&#x51FD;&#x6570;&#x6765;&#x7533;&#x8BF7;buddy&#x9875;(&#x4E00;&#x822C;&#x4E0D;&#x4F1A;&#x76F4;&#x63A5;&#x4F7F;&#x7528;)&#xFF1A;
+在内核编程时，可以使用以下函数来申请buddy页(一般不会直接使用)：
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief file: /include/linux/gfp.h</span></span><br><span class="line"><span class="comment"> * @note &#x6B64;&#x5904;&#x7684;order&#x5C31;&#x4EE3;&#x8868;2&#x7684;&#x6B21;&#x65B9;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function">struct page * <span class="title">alloc_pages</span><span class="params">(<span class="keyword">gfp_t</span> gfp_mask, <span class="keyword">unsigned</span> <span class="keyword">int</span> order)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">free_pages</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">long</span> addr, <span class="keyword">unsigned</span> <span class="keyword">int</span> order)</span></span>;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief file: /include/linux/gfp.h</span></span><br><span class="line"><span class="comment"> * @note 此处的order就代表2的次方</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function">struct page * <span class="title">alloc_pages</span><span class="params">(<span class="keyword">gfp_t</span> gfp_mask, <span class="keyword">unsigned</span> <span class="keyword">int</span> order)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">free_pages</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">long</span> addr, <span class="keyword">unsigned</span> <span class="keyword">int</span> order)</span></span>;</span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </div>
 </div>
 </div>
 
-<div id="outline-container-org4e85b72" class="outline-2">
-<h2 id="org4e85b72">&#x5185;&#x5B58;&#x7533;&#x8BF7;&#x5B9E;&#x9645;&#x64CD;&#x4F5C;</h2>
-<div class="outline-text-2" id="text-org4e85b72">
+<div id="outline-container-org5b22670" class="outline-2">
+<h2 id="org5b22670">内存申请实际操作</h2>
+<div class="outline-text-2" id="text-org5b22670">
 </div>
-<div id="outline-container-org287a711" class="outline-3">
-<h3 id="org287a711">&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x5185;&#x5B58;&#x52A8;&#x6001;&#x7533;&#x8BF7;</h3>
-<div class="outline-text-3" id="text-org287a711">
+<div id="outline-container-orgf0b0342" class="outline-3">
+<h3 id="orgf0b0342">用户空间内存动态申请</h3>
+<div class="outline-text-3" id="text-orgf0b0342">
 <p>
-&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x7684;&#x5185;&#x5B58;&#x7533;&#x8BF7;&#x548C;&#x91CA;&#x653E;&#x4F7F;&#x7528;&#x6807;&#x51C6;&#x7684;c&#x5E93;&#x5373;&#x53EF;&#xFF1A;
+用户空间的内存申请和释放使用标准的c库即可：
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="comment">//&#x7533;&#x8BF7;</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">malloc</span><span class="params">(<span class="keyword">size_t</span> size)</span></span>;</span><br><span class="line"><span class="comment">//&#x91CA;&#x653E;</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">free</span><span class="params">(<span class="keyword">void</span> *ptr)</span></span>;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><stdlib.h></span></span></span><br><span class="line"><span class="comment">//申请</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">malloc</span><span class="params">(<span class="keyword">size_t</span> size)</span></span>;</span><br><span class="line"><span class="comment">//释放</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">free</span><span class="params">(<span class="keyword">void</span> *ptr)</span></span>;</span><br></pre></td></tr></table></figure>
 </div>
 
 <p>
-<b>Linux&#x5185;&#x6838;&#x603B;&#x662F;&#x91C7;&#x7528;&#x6309;&#x9700;&#x8C03;&#x9875;(Demand Paging),&#x56E0;&#x6B64;&#x5F53;malloc()&#x8FD4;&#x56DE;&#x7684;&#x65F6;&#x5019;,&#x867D;&#x7136;&#x662F;&#x6210;&#x529F;&#x8FD4;&#x56DE;,&#x4F46;&#x662F;&#x5185;&#x6838;&#x5E76;&#x6CA1;&#x6709;&#x771F;&#x6B63;&#x7ED9;&#x8FD9;&#x4E2A;&#x8FDB;&#x7A0B;&#x5185;&#x5B58;.&#x8FD9;&#x4E2A;&#x65F6;&#x5019;&#x5982;&#x679C;&#x53BB;&#x8BFB;&#x7533;&#x8BF7;&#x7684;&#x5185;&#x5B58;,&#x5185;&#x5BB9;&#x5168;&#x90E8;&#x662F;0,&#x8FD9;&#x4E2A;&#x9875;&#x9762;&#x7684;&#x6620;&#x5C04;&#x662F;&#x53EA;&#x8BFB;&#x7684;.&#x53EA;&#x6709;&#x5F53;&#x5199;&#x5230;&#x67D0;&#x4E2A;&#x9875;&#x9762;&#x7684;&#x65F6;&#x5019;,&#x5185;&#x6838;&#x624D;&#x5728;&#x9875;&#x9519;&#x8BEF;&#x540E;,&#x771F;&#x6B63;&#x628A;&#x8FD9;&#x4E2A;&#x9875;&#x9762;&#x7ED9;&#x8FD9;&#x4E2A;&#x8FDB;&#x7A0B;.</b>
+<b>Linux内核总是采用按需调页(Demand Paging),因此当malloc()返回的时候,虽然是成功返回,但是内核并没有真正给这个进程内存.这个时候如果去读申请的内存,内容全部是0,这个页面的映射是只读的.只有当写到某个页面的时候,内核才在页错误后,真正把这个页面给这个进程.</b>
 </p>
 </div>
 </div>
-<div id="outline-container-orgeb37445" class="outline-3">
-<h3 id="orgeb37445">&#x5185;&#x6838;&#x7A7A;&#x95F4;&#x5185;&#x5B58;&#x52A8;&#x6001;&#x7533;&#x8BF7;</h3>
-<div class="outline-text-3" id="text-orgeb37445">
+<div id="outline-container-org50d8a1d" class="outline-3">
+<h3 id="org50d8a1d">内核空间内存动态申请</h3>
+<div class="outline-text-3" id="text-org50d8a1d">
 </div>
-<div id="outline-container-org97eae8b" class="outline-4">
-<h4 id="org97eae8b">&#x7269;&#x7406;&#x5185;&#x5B58;&#x8FDE;&#x7EED;&#x7533;&#x8BF7;</h4>
-<div class="outline-text-4" id="text-org97eae8b">
+<div id="outline-container-orgb939ad0" class="outline-4">
+<h4 id="orgb939ad0">物理内存连续申请</h4>
+<div class="outline-text-4" id="text-orgb939ad0">
 <p>
-&#x51FD;&#x6570; <code>kmalloc() &#x548C; __get_free_pages()&#x4EE5;&#x53CA;&#x7C7B;&#x4F3C;&#x51FD;&#x6570;</code> &#x7533;&#x8BF7;&#x7684;&#x533A;&#x57DF;&#x4F4D;&#x4E8E; <code>DMA&#x548C;&#x5E38;&#x89C4;&#x533A;&#x57DF;&#x7684;&#x6620;&#x5C04;&#x533A;</code> &#xFF0C;
-&#x5728;&#x7269;&#x7406;&#x4E0A;&#x662F;&#x8FDE;&#x7EED;&#x7684;&#xFF0C;&#x4E0E;&#x771F;&#x5B9E;&#x7269;&#x7406;&#x5730;&#x5740;&#x53EA;&#x6709;&#x4E00;&#x4E2A;&#x56FA;&#x5B9A;&#x7684;&#x504F;&#x79FB;&#x3002;
+函数 <code>kmalloc() 和 __get_free_pages()以及类似函数</code> 申请的区域位于 <code>DMA和常规区域的映射区</code> ，
+在物理上是连续的，与真实物理地址只有一个固定的偏移。
 </p>
 <ul class="org-ul">
-<li>kmalloc() &#x5E95;&#x5C42;&#x4F9D;&#x8D56;&#x4E8E; __get_free_pages()</li>
+<li>kmalloc() 底层依赖于 __get_free_pages()</li>
 </ul>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief &#x7533;&#x8BF7;&#x5185;&#x5B58;&#x5730;&#x5740;</span></span><br><span class="line"><span class="comment"> * @param size: &#x8981;&#x7533;&#x8BF7;&#x7684;&#x5B57;&#x8282;&#x6570;</span></span><br><span class="line"><span class="comment"> * @param flags: &#x7533;&#x8BF7;&#x7684;&#x5185;&#x5B58;&#x7C7B;&#x578B;</span></span><br><span class="line"><span class="comment"> * @note flags &#x4E00;&#x822C;&#x6709;&#x4EE5;&#x4E0B;&#x53D6;&#x503C;&#xFF1A;</span></span><br><span class="line"><span class="comment"> * GFP_USER -&gt; &#x4E3A;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x9875;&#x5206;&#x914D;&#x5185;&#x5B58;&#xFF0C;&#x53EF;&#x80FD;&#x7531;&#x4E8E;&#x963B;&#x585E;&#x800C;&#x5BFC;&#x81F4;&#x7761;&#x7720;</span></span><br><span class="line"><span class="comment"> * GFP_KERNEL -&gt; &#x4E3A;&#x5185;&#x6838;&#x7A7A;&#x95F4;&#x7533;&#x8BF7;&#x5185;&#x5B58;&#xFF0C;&#x53EF;&#x80FD;&#x7531;&#x4E8E;&#x963B;&#x585E;&#x800C;&#x5BFC;&#x81F4;&#x7761;&#x7720;</span></span><br><span class="line"><span class="comment"> * GFP_ATOMIC -&gt; &#x539F;&#x5B50;&#x65B9;&#x5F0F;&#x7533;&#x8BF7;&#x5185;&#x5B58;&#xFF0C;&#x82E5;&#x4E0D;&#x5B58;&#x5728;&#x5219;&#x76F4;&#x63A5;&#x8FD4;&#x56DE;&#x800C;&#x4E0D;&#x963B;&#x585E;(&#x7528;&#x4E8E;&#x4E2D;&#x65AD;&#x3001;tasklet&#x3001;&#x5185;&#x6838;&#x5B9A;&#x65F6;&#x5668;&#x7B49;&#x975E;&#x8FDB;&#x7A0B;&#x4E0A;&#x4E0B;&#x6587;&#x73AF;&#x5883;&#x4E2D;)</span></span><br><span class="line"><span class="comment"> * GFP_HIGHUSER -&gt; &#x4ECE;&#x9AD8;&#x7AEF;&#x533A;&#x57DF;&#x4E2D;&#x4E3A;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x5206;&#x914D;</span></span><br><span class="line"><span class="comment"> * GFP_NOIO -&gt; &#x7533;&#x8BF7;&#x671F;&#x95F4;&#xFF0C;&#x4E0D;&#x5141;&#x8BB8;&#x4EFB;&#x4F55; I/O &#x521D;&#x59CB;&#x5316;</span></span><br><span class="line"><span class="comment"> * GFP_NOFS -&gt; &#x7533;&#x8BF7;&#x671F;&#x95F4;&#xFF0C;&#x4E0D;&#x5141;&#x8BB8;&#x4EFB;&#x4F55;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x8C03;&#x7528;</span></span><br><span class="line"><span class="comment"> * GFP_NOWAIT -&gt; &#x82E5;&#x4E0D;&#x5B58;&#x5728;&#x7A7A;&#x95F2;&#x9875;&#x5219;&#x4E0D;&#x7B49;&#x5F85;</span></span><br><span class="line"><span class="comment"> * GFP_DMA -&gt; &#x4ECE;DMA&#x533A;&#x57DF;&#x5206;&#x914D;&#x5185;&#x5B58;</span></span><br><span class="line"><span class="comment"> * &#x8FD8;&#x6709;&#x5176;&#x4ED6;&#x53D6;&#x503C;&#x8BF7;&#x53C2;&#x8003;&#x6587;&#x4EF6; include/linux/slab.h</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">kmalloc</span><span class="params">(<span class="keyword">size_t</span> size, <span class="keyword">gfp_t</span> flags)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief &#x5728;kmalloc &#x7684;&#x57FA;&#x7840;&#x4E0A;&#x7533;&#x8BF7;&#x5185;&#x5B58;&#x5E76;&#x6E05;&#x96F6;&#x5185;&#x5B58;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">kzalloc</span><span class="params">(<span class="keyword">size_t</span> size, <span class="keyword">gfp_t</span> flags)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief &#x91CA;&#x653E;kmalloc&#x5BF9;&#x5E94;&#x7533;&#x8BF7;&#x7684;&#x5185;&#x5B58;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">kfree</span><span class="params">(<span class="keyword">const</span> <span class="keyword">void</span> *)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief &#x5185;&#x5B58;&#x7684;&#x7533;&#x8BF7;&#x7BA1;&#x7406;&#x8BBE;&#x5907;&#xFF0C;&#x5F53;&#x8BBE;&#x5907;&#x88AB;&#x91CA;&#x653E;&#x65F6;&#x5185;&#x5B58;&#x4E5F;&#x8DDF;&#x7740;&#x81EA;&#x52A8;&#x91CA;&#x653E;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">devm_kmalloc</span><span class="params">(struct device *dev, <span class="keyword">size_t</span> size, <span class="keyword">gfp_t</span> gfp)</span></span>;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief &#x5728; devm_kmalloc &#x7684;&#x57FA;&#x7840;&#x4E0A;&#x7533;&#x8BF7;&#x5185;&#x5B58;&#x5E76;&#x6E05;&#x96F6;&#x5185;&#x5B58;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">devm_kzalloc</span><span class="params">(struct device *dev, <span class="keyword">size_t</span> size, <span class="keyword">gfp_t</span> gfp)</span></span>;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 申请内存地址</span></span><br><span class="line"><span class="comment"> * @param size: 要申请的字节数</span></span><br><span class="line"><span class="comment"> * @param flags: 申请的内存类型</span></span><br><span class="line"><span class="comment"> * @note flags 一般有以下取值：</span></span><br><span class="line"><span class="comment"> * GFP_USER -> 为用户空间页分配内存，可能由于阻塞而导致睡眠</span></span><br><span class="line"><span class="comment"> * GFP_KERNEL -> 为内核空间申请内存，可能由于阻塞而导致睡眠</span></span><br><span class="line"><span class="comment"> * GFP_ATOMIC -> 原子方式申请内存，若不存在则直接返回而不阻塞(用于中断、tasklet、内核定时器等非进程上下文环境中)</span></span><br><span class="line"><span class="comment"> * GFP_HIGHUSER -> 从高端区域中为用户空间分配</span></span><br><span class="line"><span class="comment"> * GFP_NOIO -> 申请期间，不允许任何 I/O 初始化</span></span><br><span class="line"><span class="comment"> * GFP_NOFS -> 申请期间，不允许任何文件系统调用</span></span><br><span class="line"><span class="comment"> * GFP_NOWAIT -> 若不存在空闲页则不等待</span></span><br><span class="line"><span class="comment"> * GFP_DMA -> 从DMA区域分配内存</span></span><br><span class="line"><span class="comment"> * 还有其他取值请参考文件 include/linux/slab.h</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">kmalloc</span><span class="params">(<span class="keyword">size_t</span> size, <span class="keyword">gfp_t</span> flags)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 在kmalloc 的基础上申请内存并清零内存</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">kzalloc</span><span class="params">(<span class="keyword">size_t</span> size, <span class="keyword">gfp_t</span> flags)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 释放kmalloc对应申请的内存</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">kfree</span><span class="params">(<span class="keyword">const</span> <span class="keyword">void</span> *)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 内存的申请管理设备，当设备被释放时内存也跟着自动释放</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">devm_kmalloc</span><span class="params">(struct device *dev, <span class="keyword">size_t</span> size, <span class="keyword">gfp_t</span> gfp)</span></span>;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 在 devm_kmalloc 的基础上申请内存并清零内存</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">devm_kzalloc</span><span class="params">(struct device *dev, <span class="keyword">size_t</span> size, <span class="keyword">gfp_t</span> gfp)</span></span>;</span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </div>
-<div id="outline-container-org899ff60" class="outline-4">
-<h4 id="org899ff60">&#x7269;&#x7406;&#x5185;&#x5B58;&#x4E0D;&#x4E00;&#x5B9A;&#x8FDE;&#x7EED;&#x7533;&#x8BF7;</h4>
-<div class="outline-text-4" id="text-org899ff60">
+<div id="outline-container-org03b6a83" class="outline-4">
+<h4 id="org03b6a83">物理内存不一定连续申请</h4>
+<div class="outline-text-4" id="text-org03b6a83">
 <p>
-&#x51FD;&#x6570; <code>vmalloc()</code> &#x7533;&#x8BF7;&#x533A;&#x57DF;&#x4F4D;&#x4E8E; <code>vmalloc&#x533A;&#x57DF;</code> &#xFF0C;&#x5728;&#x7269;&#x7406;&#x4E0A;&#x4E0D;&#x4E00;&#x5B9A;&#x662F;&#x8FDE;&#x7EED;&#x7684;&#xFF0C;&#x4E0E;&#x771F;&#x5B9E;&#x7269;&#x7406;&#x5730;&#x5740;&#x8F6C;&#x6362;&#x5173;&#x7CFB;&#x4E5F;&#x4E0D;&#x7B80;&#x5355;&#x3002;
+函数 <code>vmalloc()</code> 申请区域位于 <code>vmalloc区域</code> ，在物理上不一定是连续的，与真实物理地址转换关系也不简单。
 </p>
 <ul class="org-ul">
-<li>vmalloc() &#x4E00;&#x822C;&#x53EA;&#x4E3A;&#x5B58;&#x5728;&#x4E8E;&#x8F6F;&#x4EF6;&#x4E2D;&#x7684;(&#x6CA1;&#x6709;&#x5BF9;&#x5E94;&#x786C;&#x4EF6;&#x8BBF;&#x95EE;)&#x8F83;&#x5927;&#x7684;&#x5185;&#x5B58;&#x5206;&#x914D;</li>
-<li>vmalloc() &#x6548;&#x7387;&#x6CA1;&#x6709; kmalloc() &#x9AD8;&#xFF0C;&#x4E0D;&#x9002;&#x5408;&#x7528;&#x6765;&#x5206;&#x914D;&#x5C0F;&#x5185;&#x5B58;
+<li>vmalloc() 一般只为存在于软件中的(没有对应硬件访问)较大的内存分配</li>
+<li>vmalloc() 效率没有 kmalloc() 高，不适合用来分配小内存
 <ul class="org-ul">
-<li>&#x5728;&#x7533;&#x8BF7;&#x65F6;&#x4F1A;&#x5185;&#x5B58;&#x6620;&#x5C04;&#x5E76;&#x4FEE;&#x6539;&#x9875;&#x8868;</li>
+<li>在申请时会内存映射并修改页表</li>
 </ul></li>
-<li>vmalloc() <b>&#x4E0D;&#x80FD;&#x7528;&#x5728;&#x539F;&#x5B50;&#x4E0A;&#x4E0B;&#x6587;&#x4E2D;</b> &#xFF0C;&#x56E0;&#x4E3A;&#x5B83;&#x5185;&#x5B58;&#x5B9E;&#x73B0;&#x4F7F;&#x7528;&#x4E86;&#x6807;&#x5FD7;&#x4E3A; <code>GFP_KERNEL</code> &#x7684; kmalloc&#xFF0C;&#x53EF;&#x80FD;&#x4F1A;&#x5BFC;&#x81F4;&#x7761;&#x7720;</li>
+<li>vmalloc() <b>不能用在原子上下文中</b> ，因为它内存实现使用了标志为 <code>GFP_KERNEL</code> 的 kmalloc，可能会导致睡眠</li>
 </ul>
 <div class="org-src-container">
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">vmalloc</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">long</span> size)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">vfree</span><span class="params">(<span class="keyword">const</span> <span class="keyword">void</span> *addr)</span></span>;</span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </div>
-<div id="outline-container-org71bb46a" class="outline-4">
-<h4 id="org71bb46a">slab&#x673A;&#x5236;&#x63D0;&#x9AD8;&#x5C11;&#x91CF;&#x5B57;&#x8282;&#x7533;&#x8BF7;&#x6548;&#x7387;</h4>
-<div class="outline-text-4" id="text-org71bb46a">
+<div id="outline-container-orgebd07f9" class="outline-4">
+<h4 id="orgebd07f9">slab机制提高少量字节申请效率</h4>
+<div class="outline-text-4" id="text-orgebd07f9">
 <p>
-slab&#x673A;&#x5236;&#x4F7F;&#x5F97;&#x5185;&#x6838;&#x4E2D;&#x7684;&#x5C0F;&#x5BF9;&#x8C61;&#x5728;&#x524D;&#x540E;&#x4E24;&#x6B21;&#x88AB;&#x4F7F;&#x7528;&#x65F6;&#x5206;&#x914D;&#x5728;&#x540C;&#x4E00;&#x5757;&#x5185;&#x5B58;&#x6216;&#x540C;&#x4E00;&#x7C7B;&#x5185;&#x5B58;&#x7A7A;&#x95F4;&#x4E14;&#x4FDD;&#x7559;&#x4E86;&#x57FA;&#x672C;&#x7684;&#x6570;&#x636E;&#x7ED3;&#x6784;&#xFF0C;&#x5927;&#x5927;&#x63D0;&#x9AD8;&#x5206;&#x914D;&#x6548;&#x7387;&#x3002;
+slab机制使得内核中的小对象在前后两次被使用时分配在同一块内存或同一类内存空间且保留了基本的数据结构，大大提高分配效率。
 </p>
 <ul class="org-ul">
-<li>kmalloc() &#x5C31;&#x662F;&#x4F7F;&#x7528; slab &#x673A;&#x5236;&#x5B9E;&#x73B0;&#x7684;</li>
-<li>&#x4F7F;&#x7528; slab&#x673A;&#x5236;&#x7533;&#x8BF7;&#x7684;&#x5185;&#x5B58;&#x4E0E;&#x7269;&#x7406;&#x5185;&#x5B58;&#x4E4B;&#x95F4;&#x4E5F;&#x662F;&#x7B80;&#x5355;&#x7684;&#x7EBF;&#x6027;&#x504F;&#x79FB;&#x5173;&#x7CFB;</li>
-<li>&#x67E5;&#x770B; <code>/proc/slabinfo</code> &#x53EF;&#x4EE5;&#x5F97;&#x5230;&#x5F53;&#x524D; slab &#x5206;&#x914D;&#x548C;&#x4F7F;&#x7528;&#x60C5;&#x51B5;</li>
+<li>kmalloc() 就是使用 slab 机制实现的</li>
+<li>使用 slab机制申请的内存与物理内存之间也是简单的线性偏移关系</li>
+<li>查看 <code>/proc/slabinfo</code> 可以得到当前 slab 分配和使用情况</li>
 </ul>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief &#x521B;&#x5EFA;&#x4E00;&#x4E2A;slab&#x7F13;&#x5B58;&#xFF0C;&#x4FDD;&#x7559;&#x4EFB;&#x610F;&#x6570;&#x636E;&#x4E14;&#x5168;&#x90E8;&#x5927;&#x5C0F;&#x76F8;&#x540C;&#x7684;&#x540E;&#x5907;&#x7F13;&#x5B58;</span></span><br><span class="line"><span class="comment"> * @param name: &#x7F13;&#x5B58;&#x540D;&#x79F0;&#xFF0C;&#x6700;&#x7EC8;&#x4F1A;&#x6620;&#x5C04;&#x5728; /proc/slabinfo &#x4E2D;</span></span><br><span class="line"><span class="comment"> * @param size: &#x6BCF;&#x4E2A;&#x6570;&#x636E;&#x7ED3;&#x6784;&#x7684;&#x5927;&#x5C0F;</span></span><br><span class="line"><span class="comment"> * @param aligh: &#x6570;&#x636E;&#x7684;&#x5BF9;&#x9F50;&#x65B9;&#x5F0F;</span></span><br><span class="line"><span class="comment"> * @param flags: &#x7533;&#x8BF7;&#x6807;&#x8BB0;&#xFF1A;</span></span><br><span class="line"><span class="comment"> * - SLAB_POISON</span></span><br><span class="line"><span class="comment"> * - SLAB_RED_ZONE : </span></span><br><span class="line"><span class="comment"> * - SLAB_HWCACHE_ALIGH : &#x6BCF;&#x4E2A;&#x6570;&#x636E;&#x5BF9;&#x8C61;&#x88AB;&#x5BF9;&#x9F50;&#x5230;&#x4E00;&#x4E2A;&#x7F13;&#x5B58;&#x884C;</span></span><br><span class="line"><span class="comment"> * @param ctor: &#x5BF9;&#x8C61;&#x7684;&#x6784;&#x9020;&#x51FD;&#x6570;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function">struct kmem_cache *<span class="title">kmem_cache_create</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *name, <span class="keyword">size_t</span> size,</span></span></span><br><span class="line"><span class="function"><span class="params">				     <span class="keyword">size_t</span> align, <span class="keyword">unsigned</span> <span class="keyword">long</span> flags,</span></span></span><br><span class="line"><span class="function"><span class="params">				     <span class="keyword">void</span> (*ctor)(<span class="keyword">void</span> *))</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">kmem_cache_alloc</span><span class="params">(struct kmem_cache *cache, <span class="keyword">gfp_t</span> flags)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">kmem_cache_free</span><span class="params">(struct kmem_cache *cache,<span class="keyword">void</span> *objp)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief &#x91CA;&#x653E; slab &#x7F13;&#x5B58;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">kmem_cache_destroy</span><span class="params">(struct kmem_cache *s)</span></span>;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 创建一个slab缓存，保留任意数据且全部大小相同的后备缓存</span></span><br><span class="line"><span class="comment"> * @param name: 缓存名称，最终会映射在 /proc/slabinfo 中</span></span><br><span class="line"><span class="comment"> * @param size: 每个数据结构的大小</span></span><br><span class="line"><span class="comment"> * @param aligh: 数据的对齐方式</span></span><br><span class="line"><span class="comment"> * @param flags: 申请标记：</span></span><br><span class="line"><span class="comment"> * - SLAB_POISON</span></span><br><span class="line"><span class="comment"> * - SLAB_RED_ZONE : </span></span><br><span class="line"><span class="comment"> * - SLAB_HWCACHE_ALIGH : 每个数据对象被对齐到一个缓存行</span></span><br><span class="line"><span class="comment"> * @param ctor: 对象的构造函数</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function">struct kmem_cache *<span class="title">kmem_cache_create</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *name, <span class="keyword">size_t</span> size,</span></span></span><br><span class="line"><span class="function"><span class="params">				     <span class="keyword">size_t</span> align, <span class="keyword">unsigned</span> <span class="keyword">long</span> flags,</span></span></span><br><span class="line"><span class="function"><span class="params">				     <span class="keyword">void</span> (*ctor)(<span class="keyword">void</span> *))</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">kmem_cache_alloc</span><span class="params">(struct kmem_cache *cache, <span class="keyword">gfp_t</span> flags)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">kmem_cache_free</span><span class="params">(struct kmem_cache *cache,<span class="keyword">void</span> *objp)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 释放 slab 缓存</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">kmem_cache_destroy</span><span class="params">(struct kmem_cache *s)</span></span>;</span><br></pre></td></tr></table></figure>
 </div>
 
 <p>
-&#x4F7F;&#x7528;&#x4F8B;&#x5B50;&#xFF1A;
+使用例子：
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">kmem_cache_t</span> *xxx_cachep;</span><br><span class="line"></span><br><span class="line"><span class="comment">//! &#x7533;&#x8BF7;slab&#x7F13;&#x5B58;&#x6C60;</span></span><br><span class="line">xxx_cachep = kmem_cache_create(<span class="string">&quot;xxx&quot;</span>, <span class="keyword">sizeof</span>(struct xxx), <span class="number">0</span>, SLAB_HWCACHE_ALIGH | SLAB_PANIC,</span><br><span class="line">			       <span class="literal">NULL</span>);</span><br><span class="line"><span class="comment">//! &#x5206;&#x914D;&#x5BF9;&#x8C61;&#x5185;&#x5B58;</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">xxx</span> *<span class="title">ctx</span>;</span></span><br><span class="line">ctx = kmem_cache_alloc(xxx_cachep, GFP_KERNEL);</span><br><span class="line"><span class="comment">//! &#x4F7F;&#x7528;&#x5BF9;&#x8C61;&#x5185;&#x5B58;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//! &#x91CA;&#x653E;&#x5BF9;&#x8C61;&#x5185;&#x5B58;</span></span><br><span class="line">kmem_cache_free(xxx_cachep, ctx);</span><br><span class="line"></span><br><span class="line"><span class="comment">//! &#x91CA;&#x653E;slab&#x7F13;&#x5B58;&#x6C60;</span></span><br><span class="line">kmem_cache_destroy(xxx_cachep);</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">kmem_cache_t</span> *xxx_cachep;</span><br><span class="line"></span><br><span class="line"><span class="comment">//! 申请slab缓存池</span></span><br><span class="line">xxx_cachep = kmem_cache_create(<span class="string">"xxx"</span>, <span class="keyword">sizeof</span>(struct xxx), <span class="number">0</span>, SLAB_HWCACHE_ALIGH | SLAB_PANIC,</span><br><span class="line">			       <span class="literal">NULL</span>);</span><br><span class="line"><span class="comment">//! 分配对象内存</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">xxx</span> *<span class="title">ctx</span>;</span></span><br><span class="line">ctx = kmem_cache_alloc(xxx_cachep, GFP_KERNEL);</span><br><span class="line"><span class="comment">//! 使用对象内存</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//! 释放对象内存</span></span><br><span class="line">kmem_cache_free(xxx_cachep, ctx);</span><br><span class="line"></span><br><span class="line"><span class="comment">//! 释放slab缓存池</span></span><br><span class="line">kmem_cache_destroy(xxx_cachep);</span><br></pre></td></tr></table></figure>
 </div>
 
 <p>
-&#x5185;&#x5B58;&#x6C60;&#x6280;&#x672F;&#x4E5F;&#x662F;&#x7528;&#x4E8E;&#x5206;&#x914D;&#x5927;&#x91CF;&#x5C0F;&#x5BF9;&#x8C61;&#x7684;&#x540E;&#x5907;&#x7F13;&#x5B58;&#x6280;&#x672F;&#x3002;
+内存池技术也是用于分配大量小对象的后备缓存技术。
 </p>
 <div class="org-src-container">
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">mempool_t</span> *<span class="title">mempool_create</span><span class="params">(<span class="keyword">int</span> min_nr, <span class="keyword">mempool_alloc_t</span> *alloc_fn,</span></span></span><br><span class="line"><span class="function"><span class="params">			  <span class="keyword">mempool_free_t</span> *free_fn, <span class="keyword">void</span> *pool_data)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">mempool_alloc</span><span class="params">(<span class="keyword">mempool_t</span> *pool, <span class="keyword">gfp_t</span> gfp_mask)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">mempool_free</span><span class="params">(<span class="keyword">void</span> *element, <span class="keyword">mempool_t</span> *pool)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">mempool_destroy</span><span class="params">(<span class="keyword">mempool_t</span> *pool)</span></span>;</span><br></pre></td></tr></table></figure>
@@ -884,275 +884,275 @@ slab&#x673A;&#x5236;&#x4F7F;&#x5F97;&#x5185;&#x6838;&#x4E2D;&#x7684;&#x5C0F;&#x5
 </div>
 </div>
 </div>
-<div id="outline-container-org47b227a" class="outline-2">
-<h2 id="org47b227a">&#x8BBE;&#x5907; I/O &#x7AEF;&#x53E3;&#x548C; I/O &#x5185;&#x5B58;&#x7684;&#x8BBF;&#x95EE;</h2>
-<div class="outline-text-2" id="text-org47b227a">
+<div id="outline-container-orgfb41aea" class="outline-2">
+<h2 id="orgfb41aea">设备 I/O 端口和 I/O 内存的访问</h2>
+<div class="outline-text-2" id="text-orgfb41aea">
 <p>
-&#x8BBE;&#x5907;&#x901A;&#x5E38;&#x4F1A;&#x63D0;&#x4F9B;&#x4E00;&#x7EC4;&#x5BC4;&#x5B58;&#x5668;&#x6765;&#x63A7;&#x5236;&#x8BBE;&#x5907;,&#x8BFB;&#x5199;&#x8BBE;&#x5907;&#x548C;&#x83B7;&#x53D6;&#x8BBE;&#x5907;&#x72B6;&#x6001;,&#x8FD9;&#x4E9B;&#x5BC4;&#x5B58;&#x5668;&#x53EF;&#x80FD;&#x4F4D;&#x4E8E; I/O &#x7A7A;&#x95F4;&#x4E2D;,&#x4E5F;&#x53EF;&#x80FD;&#x4F4D;&#x4E8E;&#x5185;&#x5B58;&#x7A7A;&#x95F4;&#x4E2D;.
+设备通常会提供一组寄存器来控制设备,读写设备和获取设备状态,这些寄存器可能位于 I/O 空间中,也可能位于内存空间中.
 </p>
 <ul class="org-ul">
-<li>&#x5F53;&#x4F4D;&#x4E8E;I/O &#x7A7A;&#x95F4;&#x65F6;,&#x901A;&#x5E38;&#x88AB;&#x79F0;&#x4E3A; <b>I/O&#x7AEF;&#x53E3;</b>;</li>
-<li>&#x5F53;&#x4F4D;&#x4E8E;&#x5185;&#x5B58;&#x7A7A;&#x95F4;&#x65F6;,&#x5BF9;&#x5E94;&#x7684;&#x5185;&#x5B58;&#x7A7A;&#x95F4;&#x88AB;&#x79F0;&#x4E3A; <b>I/O&#x5185;&#x5B58;</b>.</li>
-<li>&#x5728;&#x4F7F;&#x7528;I/O&#x533A;&#x57DF;&#x65F6;,&#x9700;&#x8981; <b>&#x7533;&#x8BF7;&#x8BE5;&#x533A;&#x57DF;</b> ,&#x4EE5;&#x8868;&#x660E;&#x9A71;&#x52A8;&#x8981;&#x8BBF;&#x95EE;&#x8FD9;&#x7247;&#x533A;&#x57DF;.</li>
+<li>当位于I/O 空间时,通常被称为 <b>I/O端口</b>;</li>
+<li>当位于内存空间时,对应的内存空间被称为 <b>I/O内存</b>.</li>
+<li>在使用I/O区域时,需要 <b>申请该区域</b> ,以表明驱动要访问这片区域.</li>
 </ul>
 </div>
-<div id="outline-container-org335da32" class="outline-3">
-<h3 id="org335da32">I/O &#x7AEF;&#x53E3;</h3>
-<div class="outline-text-3" id="text-org335da32">
+<div id="outline-container-org42f0ccf" class="outline-3">
+<h3 id="org42f0ccf">I/O 端口</h3>
+<div class="outline-text-3" id="text-org42f0ccf">
 <p>
-I/O &#x7AEF;&#x53E3;&#x7684;&#x5177;&#x4F53;&#x64CD;&#x4F5C;&#x6D41;&#x7A0B;&#x4E3A;&#xFF1A;
+I/O 端口的具体操作流程为：
 </p>
 <ol class="org-ol">
-<li>&#x7533;&#x8BF7;I/O&#x7AEF;&#x53E3;&#x8D44;&#x6E90;</li>
-<li>&#x4F7F;&#x7528;&#x8BFB;&#x5199;&#x51FD;&#x6570;&#x64CD;&#x4F5C;I/O&#x7AEF;&#x53E3;</li>
-<li>&#x91CA;&#x653E;I/O&#x7AEF;&#x53E3;&#x8D44;&#x6E90;</li>
+<li>申请I/O端口资源</li>
+<li>使用读写函数操作I/O端口</li>
+<li>释放I/O端口资源</li>
 </ol>
 </div>
-<div id="outline-container-org4b82039" class="outline-4">
-<h4 id="org4b82039">&#x7533;&#x8BF7;&#x4E0E;&#x91CA;&#x653E;</h4>
-<div class="outline-text-4" id="text-org4b82039">
+<div id="outline-container-orgfa4d77d" class="outline-4">
+<h4 id="orgfa4d77d">申请与释放</h4>
+<div class="outline-text-4" id="text-orgfa4d77d">
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//! &#x5411;&#x5185;&#x6838;&#x7533;&#x8BF7; n &#x4E2A;&#x7AEF;&#x53E3;,&#x8FD9;&#x4E9B;&#x7AEF;&#x53E3;&#x4ECE; start&#x5F00;&#x59CB;,name &#x53C2;&#x6570;&#x4E3A;&#x8BBE;&#x5907;&#x7684;&#x540D;&#x79F0;</span></span><br><span class="line"><span class="comment">//! &#x83B7;&#x5F97;&#x7684;&#x5730;&#x5740;&#x4E3A;&#x7ED3;&#x6784;&#x4F53;&#x7C7B;&#x578B; struct resource</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> request_region(start,n,name) __request_region(&amp;ioport_resource,(start),(n),(name),0)</span></span><br><span class="line"><span class="comment">//! &#x91CA;&#x653E;&#x7AEF;&#x53E3;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> release_region(start,n) __release_region(&amp;ioport_resource, (start), (n))</span></span><br><span class="line"><span class="comment">//! &#x8BBE;&#x5907;&#x8D44;&#x6E90;&#x91CA;&#x653E;&#x540E;&#x81EA;&#x52A8;&#x91CA;&#x653E;&#x7AEF;&#x53E3;&#x8D44;&#x6E90;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> devm_request_region(dev,start,n,name) __devm_request_region(dev,&amp;ioport_resource,(start),(n),(name))</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//! 向内核申请 n 个端口,这些端口从 start开始,name 参数为设备的名称</span></span><br><span class="line"><span class="comment">//! 获得的地址为结构体类型 struct resource</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> request_region(start,n,name) __request_region(&ioport_resource,(start),(n),(name),0)</span></span><br><span class="line"><span class="comment">//! 释放端口</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> release_region(start,n) __release_region(&ioport_resource, (start), (n))</span></span><br><span class="line"><span class="comment">//! 设备资源释放后自动释放端口资源</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> devm_request_region(dev,start,n,name) __devm_request_region(dev,&ioport_resource,(start),(n),(name))</span></span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </div>
-<div id="outline-container-orgcb823b6" class="outline-4">
-<h4 id="orgcb823b6">&#x8BFB;&#x5199;&#x64CD;&#x4F5C;</h4>
-<div class="outline-text-4" id="text-orgcb823b6">
+<div id="outline-container-orgb526f3a" class="outline-4">
+<h4 id="orgb526f3a">读写操作</h4>
+<div class="outline-text-4" id="text-orgb526f3a">
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//!&#x8BFB;&#x5199;&#x4E00;&#x5B57;&#x8282;&#x7AEF;&#x53E3;</span></span><br><span class="line"><span class="function"><span class="keyword">unsigned</span> <span class="title">inb</span><span class="params">(<span class="keyword">unsigned</span> port)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">outb</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">char</span> byte, <span class="keyword">unsigned</span> port)</span></span>;</span><br><span class="line"><span class="comment">//!&#x8BFB;&#x5199;16&#x4F4D;&#x7AEF;&#x53E3;</span></span><br><span class="line"><span class="function"><span class="keyword">unsigned</span> <span class="title">inw</span><span class="params">(<span class="keyword">unsigned</span> port)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">outw</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">short</span> word, <span class="keyword">unsigned</span> port)</span></span>;</span><br><span class="line"><span class="comment">//!&#x8BFB;&#x5199;32&#x4F4D;&#x7AEF;&#x53E3;</span></span><br><span class="line"><span class="function"><span class="keyword">unsigned</span> <span class="title">inl</span><span class="params">(<span class="keyword">unsigned</span> port)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">outl</span><span class="params">(<span class="keyword">unsigned</span> longword, <span class="keyword">unsigned</span> port)</span></span>;</span><br><span class="line"><span class="comment">//!&#x8BFB;&#x5199;&#x4E00;&#x4E32;&#x5B57;&#x8282;</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">insb</span><span class="params">(<span class="keyword">unsigned</span> port, <span class="keyword">void</span> *addr, <span class="keyword">unsigned</span> <span class="keyword">long</span> count)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">outsb</span><span class="params">(<span class="keyword">unsigned</span> port, <span class="keyword">void</span> *addr, <span class="keyword">unsigned</span> <span class="keyword">long</span> count)</span></span>;</span><br><span class="line"><span class="comment">//!&#x8BFB;&#x5199;&#x4E00;&#x4E32;16&#x4F4D;</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">insw</span><span class="params">(<span class="keyword">unsigned</span> port, <span class="keyword">void</span> *addr, <span class="keyword">unsigned</span> <span class="keyword">long</span> count)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">outsw</span><span class="params">(<span class="keyword">unsigned</span> port, <span class="keyword">void</span> *addr, <span class="keyword">unsigned</span> <span class="keyword">long</span> count)</span></span>;</span><br><span class="line"><span class="comment">//!&#x8BFB;&#x5199;&#x4E00;&#x4E32;32&#x4F4D;</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">insl</span><span class="params">(<span class="keyword">unsigned</span> port, <span class="keyword">void</span> *addr, <span class="keyword">unsigned</span> <span class="keyword">long</span> count)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">outsl</span><span class="params">(<span class="keyword">unsigned</span> port, <span class="keyword">void</span> *addr, <span class="keyword">unsigned</span> <span class="keyword">long</span> count)</span></span>;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//!读写一字节端口</span></span><br><span class="line"><span class="function"><span class="keyword">unsigned</span> <span class="title">inb</span><span class="params">(<span class="keyword">unsigned</span> port)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">outb</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">char</span> byte, <span class="keyword">unsigned</span> port)</span></span>;</span><br><span class="line"><span class="comment">//!读写16位端口</span></span><br><span class="line"><span class="function"><span class="keyword">unsigned</span> <span class="title">inw</span><span class="params">(<span class="keyword">unsigned</span> port)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">outw</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">short</span> word, <span class="keyword">unsigned</span> port)</span></span>;</span><br><span class="line"><span class="comment">//!读写32位端口</span></span><br><span class="line"><span class="function"><span class="keyword">unsigned</span> <span class="title">inl</span><span class="params">(<span class="keyword">unsigned</span> port)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">outl</span><span class="params">(<span class="keyword">unsigned</span> longword, <span class="keyword">unsigned</span> port)</span></span>;</span><br><span class="line"><span class="comment">//!读写一串字节</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">insb</span><span class="params">(<span class="keyword">unsigned</span> port, <span class="keyword">void</span> *addr, <span class="keyword">unsigned</span> <span class="keyword">long</span> count)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">outsb</span><span class="params">(<span class="keyword">unsigned</span> port, <span class="keyword">void</span> *addr, <span class="keyword">unsigned</span> <span class="keyword">long</span> count)</span></span>;</span><br><span class="line"><span class="comment">//!读写一串16位</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">insw</span><span class="params">(<span class="keyword">unsigned</span> port, <span class="keyword">void</span> *addr, <span class="keyword">unsigned</span> <span class="keyword">long</span> count)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">outsw</span><span class="params">(<span class="keyword">unsigned</span> port, <span class="keyword">void</span> *addr, <span class="keyword">unsigned</span> <span class="keyword">long</span> count)</span></span>;</span><br><span class="line"><span class="comment">//!读写一串32位</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">insl</span><span class="params">(<span class="keyword">unsigned</span> port, <span class="keyword">void</span> *addr, <span class="keyword">unsigned</span> <span class="keyword">long</span> count)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">outsl</span><span class="params">(<span class="keyword">unsigned</span> port, <span class="keyword">void</span> *addr, <span class="keyword">unsigned</span> <span class="keyword">long</span> count)</span></span>;</span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </div>
 </div>
-<div id="outline-container-org5c0d07b" class="outline-3">
-<h3 id="org5c0d07b">I/O &#x5185;&#x5B58;</h3>
-<div class="outline-text-3" id="text-org5c0d07b">
+<div id="outline-container-org1bd6db9" class="outline-3">
+<h3 id="org1bd6db9">I/O 内存</h3>
+<div class="outline-text-3" id="text-org1bd6db9">
 <p>
-I/O&#x5185;&#x5B58;&#x7684;&#x64CD;&#x4F5C;&#x6D41;&#x7A0B;&#x4E3A;&#xFF1A;
+I/O内存的操作流程为：
 </p>
 <ol class="org-ol">
-<li>&#x7533;&#x8BF7;I/O&#x5185;&#x5B58;&#x8D44;&#x6E90;</li>
-<li>&#x5C06;&#x8D44;&#x6E90;&#x5730;&#x5740;&#x6620;&#x5C04;&#x5230;&#x5185;&#x6838;&#x865A;&#x62DF;&#x7A7A;&#x95F4;</li>
-<li>&#x4F7F;&#x7528;&#x8BFB;&#x5199;&#x51FD;&#x6570;&#x64CD;&#x4F5C;</li>
-<li>&#x91CA;&#x653E;I/O&#x5185;&#x5B58;&#x8D44;&#x6E90;</li>
+<li>申请I/O内存资源</li>
+<li>将资源地址映射到内核虚拟空间</li>
+<li>使用读写函数操作</li>
+<li>释放I/O内存资源</li>
 </ol>
 </div>
-<div id="outline-container-org5ffe38a" class="outline-4">
-<h4 id="org5ffe38a">&#x7533;&#x8BF7;&#x4E0E;&#x91CA;&#x653E;</h4>
-<div class="outline-text-4" id="text-org5ffe38a">
+<div id="outline-container-org41b64c7" class="outline-4">
+<h4 id="org41b64c7">申请与释放</h4>
+<div class="outline-text-4" id="text-org41b64c7">
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//! &#x7533;&#x8BF7;&#x4EE5;start&#x4E3A;&#x5F00;&#x59CB;&#x7684;,n&#x5B57;&#x8282;&#x7684;I/O&#x5185;&#x5B58;&#x533A;&#x57DF;&#xFF0C;&#x540D;&#x5B57;&#x4E3A;name</span></span><br><span class="line"><span class="comment">//! &#x83B7;&#x5F97;&#x7684;&#x5730;&#x5740;&#x4E3A;&#x7ED3;&#x6784;&#x4F53;&#x7C7B;&#x578B; struct resource</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> request_mem_region(start,n,name) __request_region(&amp;iomem_resource, (start),(n),(name),0)</span></span><br><span class="line"><span class="comment">//! &#x91CA;&#x653E;&#x7533;&#x8BF7;&#x7684;&#x5185;&#x5B58;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> release_mem_region(start,n) __release_region(&amp;iomem_resource, (start),(n))</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//! &#x8BBE;&#x5907;&#x8D44;&#x6E90;&#x91CA;&#x653E;&#x540E;&#x81EA;&#x52A8;&#x91CA;&#x653E;&#x7AEF;&#x53E3;&#x8D44;&#x6E90;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> devm_request_mem_region(dev,start,n,name) __devm_request_region(dev,&amp;iomem_resource,(start),(n),(name))</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//! 申请以start为开始的,n字节的I/O内存区域，名字为name</span></span><br><span class="line"><span class="comment">//! 获得的地址为结构体类型 struct resource</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> request_mem_region(start,n,name) __request_region(&iomem_resource, (start),(n),(name),0)</span></span><br><span class="line"><span class="comment">//! 释放申请的内存</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> release_mem_region(start,n) __release_region(&iomem_resource, (start),(n))</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//! 设备资源释放后自动释放端口资源</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> devm_request_mem_region(dev,start,n,name) __devm_request_region(dev,&iomem_resource,(start),(n),(name))</span></span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </div>
-<div id="outline-container-org0bc2e1f" class="outline-4">
-<h4 id="org0bc2e1f">&#x6620;&#x5C04;</h4>
-<div class="outline-text-4" id="text-org0bc2e1f">
+<div id="outline-container-org7c30a7e" class="outline-4">
+<h4 id="org7c30a7e">映射</h4>
+<div class="outline-text-4" id="text-org7c30a7e">
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief &#x4ECE;&#x7269;&#x7406;&#x5730;&#x5740; offset&#x5904;&#x6620;&#x5C04;size&#x5B57;&#x8282;&#x5185;&#x5B58;&#x5230;&#x5185;&#x6838;&#x865A;&#x62DF;&#x5185;&#x5B58;</span></span><br><span class="line"><span class="comment"> * @note ioremap() &#x4E0E; vmalloc() &#x7C7B;&#x4F3C;&#xFF0C;&#x4E5F;&#x9700;&#x8981;&#x65B0;&#x5EFA;&#x9875;&#x8868;&#xFF0C;&#x4F46;&#x4E0D;&#x8FDB;&#x884C;&#x5185;&#x5B58;&#x5206;&#x914D;&#x884C;&#x4E3A;&#x3002;</span></span><br><span class="line"><span class="comment"> * &#x6240;&#x6620;&#x5C04;&#x7684;&#x865A;&#x62DF;&#x5730;&#x5740;&#x533A;&#x4E3A; vmalloc &#x6620;&#x5C04;&#x533A;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> __iomem *<span class="title">ioremap</span><span class="params">(<span class="keyword">phys_addr_t</span> offset, <span class="keyword">size_t</span> size)</span></span>;</span><br><span class="line"><span class="comment">//! &#x53D6;&#x6D88;&#x6620;&#x5C04;&#x5173;&#x7CFB;</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">iounmap</span><span class="params">(<span class="keyword">void</span> __iomem *addr)</span></span>;</span><br><span class="line"><span class="comment">//! &#x5F53;&#x8BBE;&#x5907;&#x8D44;&#x6E90;&#x91CA;&#x653E;&#x540E;&#x81EA;&#x52A8;&#x53D6;&#x6D88;&#x6620;&#x5C04;&#x5173;&#x7CFB;</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> __iomem *<span class="title">devm_ioremap</span><span class="params">(struct device *dev, <span class="keyword">resource_size_t</span> offset, <span class="keyword">resource_size_t</span> size)</span></span>;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 从物理地址 offset处映射size字节内存到内核虚拟内存</span></span><br><span class="line"><span class="comment"> * @note ioremap() 与 vmalloc() 类似，也需要新建页表，但不进行内存分配行为。</span></span><br><span class="line"><span class="comment"> * 所映射的虚拟地址区为 vmalloc 映射区</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> __iomem *<span class="title">ioremap</span><span class="params">(<span class="keyword">phys_addr_t</span> offset, <span class="keyword">size_t</span> size)</span></span>;</span><br><span class="line"><span class="comment">//! 取消映射关系</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">iounmap</span><span class="params">(<span class="keyword">void</span> __iomem *addr)</span></span>;</span><br><span class="line"><span class="comment">//! 当设备资源释放后自动取消映射关系</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> __iomem *<span class="title">devm_ioremap</span><span class="params">(struct device *dev, <span class="keyword">resource_size_t</span> offset, <span class="keyword">resource_size_t</span> size)</span></span>;</span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </div>
-<div id="outline-container-org032cfb5" class="outline-4">
-<h4 id="org032cfb5">&#x8BFB;&#x5199;&#x64CD;&#x4F5C;&#x51FD;&#x6570;</h4>
-<div class="outline-text-4" id="text-org032cfb5">
+<div id="outline-container-org33aae3a" class="outline-4">
+<h4 id="org33aae3a">读写操作函数</h4>
+<div class="outline-text-4" id="text-org33aae3a">
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief &#x5206;&#x522B;&#x8BFB;&#x5199; 8,16,32,64 &#x4F4D;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function">u8  <span class="title">readb</span><span class="params">(<span class="keyword">const</span> <span class="keyword">volatile</span> <span class="keyword">void</span> _iomem *addr)</span></span>;</span><br><span class="line"><span class="function">u16 <span class="title">readw</span><span class="params">(<span class="keyword">const</span> <span class="keyword">volatile</span> <span class="keyword">void</span> _iomem *addr)</span></span>;</span><br><span class="line"><span class="function">u32 <span class="title">readl</span><span class="params">(<span class="keyword">const</span> <span class="keyword">volatile</span> <span class="keyword">void</span> _iomem *addr)</span></span>;</span><br><span class="line"><span class="function">u64 <span class="title">readq</span><span class="params">(<span class="keyword">const</span> <span class="keyword">volatile</span> <span class="keyword">void</span> _iomem *addr)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">writeb</span><span class="params">(u8  value, <span class="keyword">volatile</span> <span class="keyword">void</span> __iomem *addr)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">writew</span><span class="params">(u16 value, <span class="keyword">volatile</span> <span class="keyword">void</span> __iomem *addr)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">writel</span><span class="params">(u32 value, <span class="keyword">volatile</span> <span class="keyword">void</span> __iomem *addr)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">writeq</span><span class="params">(u64 value, <span class="keyword">volatile</span> <span class="keyword">void</span> __iomem *addr)</span></span>;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 分别读写 8,16,32,64 位</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function">u8  <span class="title">readb</span><span class="params">(<span class="keyword">const</span> <span class="keyword">volatile</span> <span class="keyword">void</span> _iomem *addr)</span></span>;</span><br><span class="line"><span class="function">u16 <span class="title">readw</span><span class="params">(<span class="keyword">const</span> <span class="keyword">volatile</span> <span class="keyword">void</span> _iomem *addr)</span></span>;</span><br><span class="line"><span class="function">u32 <span class="title">readl</span><span class="params">(<span class="keyword">const</span> <span class="keyword">volatile</span> <span class="keyword">void</span> _iomem *addr)</span></span>;</span><br><span class="line"><span class="function">u64 <span class="title">readq</span><span class="params">(<span class="keyword">const</span> <span class="keyword">volatile</span> <span class="keyword">void</span> _iomem *addr)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">writeb</span><span class="params">(u8  value, <span class="keyword">volatile</span> <span class="keyword">void</span> __iomem *addr)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">writew</span><span class="params">(u16 value, <span class="keyword">volatile</span> <span class="keyword">void</span> __iomem *addr)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">writel</span><span class="params">(u32 value, <span class="keyword">volatile</span> <span class="keyword">void</span> __iomem *addr)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">writeq</span><span class="params">(u64 value, <span class="keyword">volatile</span> <span class="keyword">void</span> __iomem *addr)</span></span>;</span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </div>
 </div>
-<div id="outline-container-org19852a5" class="outline-3">
-<h3 id="org19852a5">&#x5C06;&#x8BBE;&#x5907;&#x5730;&#x5740;&#x6620;&#x5C04;&#x5230;&#x7528;&#x6237;&#x7A7A;&#x95F4;</h3>
-<div class="outline-text-3" id="text-org19852a5">
+<div id="outline-container-orgcc348b6" class="outline-3">
+<h3 id="orgcc348b6">将设备地址映射到用户空间</h3>
+<div class="outline-text-3" id="text-orgcc348b6">
 <p>
-&#x9A71;&#x52A8;&#x53EF;&#x4EE5;&#x901A;&#x8FC7;mmap()&#x51FD;&#x6570;&#x6765;&#x7ED9;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x63D0;&#x4F9B;&#x8BBE;&#x5907;&#x7684;&#x865A;&#x62DF;&#x5730;&#x5740;&#xFF0C;&#x4EE5;&#x8FBE;&#x5230;&#x95F4;&#x63A5;&#x8BBF;&#x95EE;&#x7684;&#x76EE;&#x7684;&#x3002;
+驱动可以通过mmap()函数来给用户空间提供设备的虚拟地址，以达到间接访问的目的。
 </p>
 
 <p>
-mmap()&#x5B9E;&#x73B0;&#x8FD9;&#x6837;&#x4E00;&#x4E2A;&#x6620;&#x5C04;&#x7684;&#x8FC7;&#x7A0B;&#xFF1A;&#x5C06;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x7684;&#x4E00;&#x6BB5;&#x5185;&#x5B58;&#x4E0E;&#x8BBE;&#x5907;&#x5185;&#x5B58;&#x5173;&#x8054;&#xFF0C;&#x5F53;&#x7528;&#x6237;&#x8BBF;&#x95EE;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x7684;&#x8FD9;&#x6BB5;&#x5730;&#x5740;&#x8303;&#x56F4;&#x65F6;&#xFF0C;
-&#x5B9E;&#x9645;&#x4E0A;&#x4F1A;&#x8F6C;&#x5316;&#x4E3A;&#x5BF9;&#x8BBE;&#x5907;&#x7684;&#x8BBF;&#x95EE;&#x3002;
+mmap()实现这样一个映射的过程：将用户空间的一段内存与设备内存关联，当用户访问用户空间的这段地址范围时，
+实际上会转化为对设备的访问。
 </p>
 <pre class="example">
-&#x4E00;&#x822C;&#x8FD9;&#x6837;&#x505A;&#x7684;&#x76EE;&#x7684;&#x5E76;&#x4E0D;&#x662F;&#x4E3A;&#x4E86;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x6765;&#x76F4;&#x63A5;&#x63A7;&#x5236;&#x5BC4;&#x5B58;&#x5668;&#xFF0C;&#x56E0;&#x4E3A;&#x8FD9;&#x5C31;&#x7834;&#x574F;&#x4E86;&#x5206;&#x5C42;&#x7684;&#x539F;&#x5219;&#x3002;
+一般这样做的目的并不是为了用户空间来直接控制寄存器，因为这就破坏了分层的原则。
 
-&#x4E00;&#x822C;&#x5C31;&#x7528;&#x4E8E;&#x5C06;&#x5185;&#x6838;&#x7A7A;&#x95F4;&#x7533;&#x8BF7;&#x7684;&#x5185;&#x5B58;&#x6620;&#x5C04;&#x5230;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#xFF0C;&#x8FD9;&#x6837;&#x7528;&#x6237;&#x53EF;&#x4EE5;&#x76F4;&#x63A5;&#x9AD8;&#x6548;&#x7684;&#x53C2;&#x4E0E;&#x5185;&#x5B58;&#x8BFB;&#x5199;&#xFF0C;&#x907F;&#x514D;&#x518D;&#x8FDB;&#x884C;&#x4E00;&#x6B21;&#x6570;&#x636E;&#x642C;&#x79FB;&#x3002;
-&#x6BD4;&#x5982;&#xFF1A;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x76F4;&#x63A5;&#x8BFB;&#x5199;DMA&#x6536;&#x53D1;&#x7684;&#x6570;&#x636E;&#x3002;</pre>
+一般就用于将内核空间申请的内存映射到用户空间，这样用户可以直接高效的参与内存读写，避免再进行一次数据搬移。
+比如：用户空间直接读写DMA收发的数据。</pre>
 </div>
-<div id="outline-container-org65b1026" class="outline-4">
-<h4 id="org65b1026">&#x5185;&#x5B58;&#x6620;&#x5C04;&#x4E0E;VMA</h4>
-<div class="outline-text-4" id="text-org65b1026">
+<div id="outline-container-org2239fa1" class="outline-4">
+<h4 id="org2239fa1">内存映射与VMA</h4>
+<div class="outline-text-4" id="text-org2239fa1">
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//! &#x5185;&#x6838; file_operatoins &#x4E2D;&#x7684; mmap()</span></span><br><span class="line"><span class="keyword">int</span> (*mmap)(struct file *, struct vm_area_struct *);</span><br><span class="line"></span><br><span class="line"><span class="comment">//! &#x7528;&#x6237;&#x7A7A;&#x95F4;&#x7684; mmap()</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief &#x4ECE;&#x5185;&#x6838;&#x7A7A;&#x95F4;&#x6620;&#x5C04;&#x4E00;&#x6BB5;&#x5185;&#x5B58;&#x5230;&#x7528;&#x6237;&#x7A7A;&#x95F4;</span></span><br><span class="line"><span class="comment"> * @param addr : &#x6620;&#x5C04;&#x5230;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x4EE5; addr &#x4E3A;&#x8D77;&#x59CB;&#xFF0C;&#x4E3A;NULL&#x5219;&#x81EA;&#x52A8;&#x5206;&#x914D;</span></span><br><span class="line"><span class="comment"> * @param length: &#x6620;&#x5C04;&#x7684;&#x5B57;&#x8282;&#x6570;</span></span><br><span class="line"><span class="comment"> * @param prot: &#x5185;&#x5B58;&#x8BBF;&#x95EE;&#x6743;&#x9650;</span></span><br><span class="line"><span class="comment"> * - PROT_NONE : &#x4E0D;&#x53EF;&#x8BBF;&#x95EE;</span></span><br><span class="line"><span class="comment"> * - PROT_EXEC : &#x53EF;&#x4EE5;&#x6267;&#x884C;</span></span><br><span class="line"><span class="comment"> * - PROT_READ : &#x53EF;&#x8BFB;</span></span><br><span class="line"><span class="comment"> * - PROT_WRITE: &#x53EF;&#x5199;</span></span><br><span class="line"><span class="comment"> * @param flags : &#x5185;&#x5B58;&#x72B6;&#x6001;</span></span><br><span class="line"><span class="comment"> * - MAP_SHARED : &#x53EF;&#x88AB;&#x8FDB;&#x7A0B;&#x5171;&#x4EAB;</span></span><br><span class="line"><span class="comment"> * - MAP_PRIVATE: &#x975E;&#x5171;&#x4EAB;</span></span><br><span class="line"><span class="comment"> * @param fd: &#x6253;&#x5F00;&#x7684;&#x6587;&#x4EF6;&#x7D22;&#x5F15;</span></span><br><span class="line"><span class="comment"> * @param offset: &#x4ECE;&#x5185;&#x6838;&#x7684; offset &#x504F;&#x79FB;&#x5904;&#x5F00;&#x59CB;&#x6620;&#x5C04;</span></span><br><span class="line"><span class="comment"> * @return &#x7533;&#x8BF7;&#x7684;&#x5730;&#x5740;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">mmap</span><span class="params">(<span class="keyword">void</span> *addr, <span class="keyword">size_t</span> length, <span class="keyword">int</span> prot, <span class="keyword">int</span> flags, <span class="keyword">int</span> fd, <span class="keyword">off_t</span> offset)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief &#x53D6;&#x6D88;&#x6620;&#x5C04;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">munmap</span><span class="params">(<span class="keyword">void</span> *addr, <span class="keyword">size_t</span> length)</span></span>;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//! 内核 file_operatoins 中的 mmap()</span></span><br><span class="line"><span class="keyword">int</span> (*mmap)(struct file *, struct vm_area_struct *);</span><br><span class="line"></span><br><span class="line"><span class="comment">//! 用户空间的 mmap()</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 从内核空间映射一段内存到用户空间</span></span><br><span class="line"><span class="comment"> * @param addr : 映射到用户空间以 addr 为起始，为NULL则自动分配</span></span><br><span class="line"><span class="comment"> * @param length: 映射的字节数</span></span><br><span class="line"><span class="comment"> * @param prot: 内存访问权限</span></span><br><span class="line"><span class="comment"> * - PROT_NONE : 不可访问</span></span><br><span class="line"><span class="comment"> * - PROT_EXEC : 可以执行</span></span><br><span class="line"><span class="comment"> * - PROT_READ : 可读</span></span><br><span class="line"><span class="comment"> * - PROT_WRITE: 可写</span></span><br><span class="line"><span class="comment"> * @param flags : 内存状态</span></span><br><span class="line"><span class="comment"> * - MAP_SHARED : 可被进程共享</span></span><br><span class="line"><span class="comment"> * - MAP_PRIVATE: 非共享</span></span><br><span class="line"><span class="comment"> * @param fd: 打开的文件索引</span></span><br><span class="line"><span class="comment"> * @param offset: 从内核的 offset 偏移处开始映射</span></span><br><span class="line"><span class="comment"> * @return 申请的地址</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">mmap</span><span class="params">(<span class="keyword">void</span> *addr, <span class="keyword">size_t</span> length, <span class="keyword">int</span> prot, <span class="keyword">int</span> flags, <span class="keyword">int</span> fd, <span class="keyword">off_t</span> offset)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 取消映射</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">munmap</span><span class="params">(<span class="keyword">void</span> *addr, <span class="keyword">size_t</span> length)</span></span>;</span><br></pre></td></tr></table></figure>
 </div>
 <p>
-&#x5F53;&#x7528;&#x6237;&#x8C03;&#x7528; mmap()&#x7684;&#x65F6;&#x5019;,&#x5185;&#x6838;&#x4F1A;&#x8FDB;&#x884C;&#x5982;&#x4E0B;&#x5904;&#x7406;.
+当用户调用 mmap()的时候,内核会进行如下处理.
 </p>
 <ol class="org-ol">
-<li>&#x5728;&#x8FDB;&#x7A0B;&#x7684;&#x865A;&#x62DF;&#x7A7A;&#x95F4;&#x67E5;&#x627E;&#x4E00;&#x5757; VMA</li>
-<li>&#x5C06;&#x8FD9;&#x5757;VMA&#x8FDB;&#x884C;&#x6620;&#x5C04;</li>
-<li>&#x5982;&#x679C;&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#x7A0B;&#x5E8F;&#x6216;&#x8005;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x7684;file_operations&#x5B9A;&#x4E49;&#x4E86;mmap()&#x64CD;&#x4F5C;,&#x5219;&#x8C03;&#x7528;&#x5B83;</li>
-<li>&#x5C06;&#x8FD9;&#x4E2A;VMA&#x63D2;&#x5165;&#x8FDB;&#x7A0B;&#x7684;VMA&#x94FE;&#x8868;&#x4E2D;</li>
+<li>在进程的虚拟空间查找一块 VMA</li>
+<li>将这块VMA进行映射</li>
+<li>如果设备驱动程序或者文件系统的file_operations定义了mmap()操作,则调用它</li>
+<li>将这个VMA插入进程的VMA链表中</li>
 </ol>
 
 <p>
-&#x9A71;&#x52A8;&#x4E2D;&#x7684;mmap()&#x7684;&#x5B9E;&#x73B0;&#x673A;&#x5236;&#x662F;&#x5EFA;&#x7ACB;&#x9875;&#x8868;,&#x5E76;&#x586B;&#x5145;VMA&#x7ED3;&#x6784;&#x4F53;&#x4E2D; <code>vm_operations_struct</code> &#x6307;&#x9488;.
+驱动中的mmap()的实现机制是建立页表,并填充VMA结构体中 <code>vm_operations_struct</code> 指针.
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//! &#x7528;&#x4E8E;&#x63CF;&#x8FF0;&#x4E00;&#x4E2A;&#x865A;&#x62DF;&#x5185;&#x5B58;&#x533A;&#x57DF;</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">vm_area_struct</span></span></span><br><span class="line"><span class="class">{</span></span><br><span class="line">	<span class="comment">/*The first cache line has the info for VMA tree walking.*/</span></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">long</span> vm_start;<span class="comment">/*Our start address within vm_mm.*/</span></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">long</span> vm_end;<span class="comment">/*The first byte after our end address within vm_mm*/</span></span><br><span class="line">	<span class="comment">/* lnked list of VM areas per task, sorted by address*/</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">vm_area_struct</span> *<span class="title">vm_next</span>,*<span class="title">vm_prev</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">rb_node</span> <span class="title">vm_rb</span>;</span></span><br><span class="line">	...</span><br><span class="line">};</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//! 用于描述一个虚拟内存区域</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">vm_area_struct</span></span></span><br><span class="line"><span class="class">{</span></span><br><span class="line">	<span class="comment">/*The first cache line has the info for VMA tree walking.*/</span></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">long</span> vm_start;<span class="comment">/*Our start address within vm_mm.*/</span></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">long</span> vm_end;<span class="comment">/*The first byte after our end address within vm_mm*/</span></span><br><span class="line">	<span class="comment">/* lnked list of VM areas per task, sorted by address*/</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">vm_area_struct</span> *<span class="title">vm_next</span>,*<span class="title">vm_prev</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">rb_node</span> <span class="title">vm_rb</span>;</span></span><br><span class="line">	...</span><br><span class="line">};</span><br></pre></td></tr></table></figure>
 </div>
 <p>
-VMA&#x7ED3;&#x6784;&#x4F53;&#x63CF;&#x8FF0;&#x7684;&#x865A;&#x62DF;&#x5730;&#x5740;&#x4ECB;&#x4E8E; vm_start &#x548C; vm_end&#x4E4B;&#x95F4;,&#x5176; vm_ops &#x6210;&#x5458;&#x6307;&#x5411;&#x8FD9;&#x4E2A;VMA&#x7684;&#x64CD;&#x4F5C;&#x96C6;, &#x9488;&#x5BF9;VMA&#x7684;&#x64CD;&#x4F5C;&#x90FD;&#x88AB;&#x5305;&#x542B;&#x5728; vm_operations_struct &#x7ED3;&#x6784;&#x4F53;&#x4E2D;.
+VMA结构体描述的虚拟地址介于 vm_start 和 vm_end之间,其 vm_ops 成员指向这个VMA的操作集, 针对VMA的操作都被包含在 vm_operations_struct 结构体中.
 </p>
 
 <p>
-&#x64CD;&#x4F5C;&#x8303;&#x4F8B;:
+操作范例:
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">xxx_mmap</span><span class="params">(stuct file *filp, struct vm_area_struct *vma)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line"><span class="comment">// &#x521B;&#x5EFA;&#x9875;&#x8868;&#x9879;</span></span><br><span class="line">	<span class="keyword">if</span>(remap_pfn_range(vma, vma-&gt;vm_start, vm-&gt;vm_pgoff, vma-&gt;vm_end -</span><br><span class="line">			   vma-&gt;vm_start, vma-&gt;vm_page_prot))</span><br><span class="line">		<span class="keyword">return</span> -EAGAIN;</span><br><span class="line">	vma-&gt;vm_ops = &amp;xxx_remap_vm_ops;</span><br><span class="line">	xxx_vma_open(vma);</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="comment">// &#x5728;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x4F7F;&#x7528; mmap()&#x7684;&#x65F6;&#x5019;&#x88AB;&#x7528;&#x5230;</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">xxx_vma_open</span><span class="params">(struct vm_area_struct *vma)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	...</span><br><span class="line">	printk(KERN_NOTICE <span class="string">&quot;xxx VMA open, virt %lx, phys %lx\n&quot;</span>, vma-&gt;vm_start, vma-&gt;vm_pgoff &lt;&lt; PAGE_SHIFT);</span><br><span class="line">}</span><br><span class="line"><span class="comment">// &#x5728;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x4F7F;&#x7528; munmap()&#x7684;&#x65F6;&#x5019;&#x88AB;&#x7528;&#x5230;</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">xxx_vma_close</span><span class="params">(struct vm_area_struct *vma)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	...</span><br><span class="line">	printk(KERN_NOTICE <span class="string">&quot;xxx VMA close.\n&quot;</span>);</span><br><span class="line">}</span><br><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">vm_operations_struct</span> <span class="title">xxx_remap_vm_ops</span> =</span></span><br><span class="line"><span class="class">{</span></span><br><span class="line">	.open = xxx_vma_open,</span><br><span class="line">	.close = xxx_vma_close,</span><br><span class="line">	...</span><br><span class="line">};</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">xxx_mmap</span><span class="params">(stuct file *filp, struct vm_area_struct *vma)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line"><span class="comment">// 创建页表项</span></span><br><span class="line">	<span class="keyword">if</span>(remap_pfn_range(vma, vma->vm_start, vm->vm_pgoff, vma->vm_end -</span><br><span class="line">			   vma->vm_start, vma->vm_page_prot))</span><br><span class="line">		<span class="keyword">return</span> -EAGAIN;</span><br><span class="line">	vma->vm_ops = &xxx_remap_vm_ops;</span><br><span class="line">	xxx_vma_open(vma);</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="comment">// 在用户空间使用 mmap()的时候被用到</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">xxx_vma_open</span><span class="params">(struct vm_area_struct *vma)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	...</span><br><span class="line">	printk(KERN_NOTICE <span class="string">"xxx VMA open, virt %lx, phys %lx\n"</span>, vma->vm_start, vma->vm_pgoff << PAGE_SHIFT);</span><br><span class="line">}</span><br><span class="line"><span class="comment">// 在用户空间使用 munmap()的时候被用到</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">xxx_vma_close</span><span class="params">(struct vm_area_struct *vma)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	...</span><br><span class="line">	printk(KERN_NOTICE <span class="string">"xxx VMA close.\n"</span>);</span><br><span class="line">}</span><br><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">vm_operations_struct</span> <span class="title">xxx_remap_vm_ops</span> =</span></span><br><span class="line"><span class="class">{</span></span><br><span class="line">	.open = xxx_vma_open,</span><br><span class="line">	.close = xxx_vma_close,</span><br><span class="line">	...</span><br><span class="line">};</span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </div>
-<div id="outline-container-org78ff9c1" class="outline-4">
-<h4 id="org78ff9c1">fault() &#x51FD;&#x6570;</h4>
-<div class="outline-text-4" id="text-org78ff9c1">
+<div id="outline-container-org74cbce2" class="outline-4">
+<h4 id="org74cbce2">fault() 函数</h4>
+<div class="outline-text-4" id="text-org74cbce2">
 <p>
-fault() &#x51FD;&#x6570;&#x53EF;&#x4EE5;&#x4E3A;&#x8BBE;&#x5907;&#x63D0;&#x4F9B;&#x66F4;&#x52A0;&#x7075;&#x6D3B;&#x7684;&#x5185;&#x5B58;&#x6620;&#x5C04;&#x9014;&#x5F84;&#x3002;
-&#x5F53;&#x8BBF;&#x95EE;&#x7684;&#x9875;&#x4E0D;&#x5728;&#x5185;&#x5B58;&#x65F6;&#xFF0C;fault()&#x4F1A;&#x88AB;&#x5185;&#x6838;&#x81EA;&#x52A8;&#x8C03;&#x7528;&#x3002;
+fault() 函数可以为设备提供更加灵活的内存映射途径。
+当访问的页不在内存时，fault()会被内核自动调用。
 </p>
 
 <p>
-&#x5F53;&#x53D1;&#x751F;&#x7F3A;&#x9875;&#x65F6;&#xFF0C;&#x6D41;&#x7A0B;&#x4E3A;&#xFF1A;
+当发生缺页时，流程为：
 </p>
 <ol class="org-ol">
-<li>&#x627E;&#x5230;&#x7F3A;&#x9875;&#x7684;&#x865A;&#x62DF;&#x5730;&#x5740;&#x6240;&#x5728;&#x7684;VMA</li>
-<li>&#x5982;&#x679C;&#x5FC5;&#x8981;&#x5206;&#x914D;&#x4E2D;&#x95F4;&#x9875;&#x76EE;&#x5F55;&#x8868;&#x548C;&#x9875;&#x8868;</li>
-<li>&#x5982;&#x679C;&#x9875;&#x8868;&#x9879;&#x5BF9;&#x5E94;&#x7684;&#x7269;&#x7406;&#x9875;&#x9762;&#x4E0D;&#x5B58;&#x5728;&#xFF0C;&#x5219;&#x8C03;&#x7528; fault() &#x51FD;&#x6570;&#xFF0C;&#x5B83;&#x8FD4;&#x56DE;&#x7269;&#x7406;&#x9875;&#x9762;&#x7684;&#x9875;&#x63CF;&#x8FF0;&#x7B26;</li>
-<li>&#x5C06;&#x7269;&#x7406;&#x9875;&#x9762;&#x5730;&#x5740;&#x586B;&#x5145;&#x5230;&#x9875;&#x8868;&#x4E2D;</li>
+<li>找到缺页的虚拟地址所在的VMA</li>
+<li>如果必要分配中间页目录表和页表</li>
+<li>如果页表项对应的物理页面不存在，则调用 fault() 函数，它返回物理页面的页描述符</li>
+<li>将物理页面地址填充到页表中</li>
 </ol>
 </div>
 </div>
 </div>
 </div>
-<div id="outline-container-orgceea6bb" class="outline-2">
-<h2 id="orgceea6bb">I/O&#x5185;&#x5B58;&#x9759;&#x6001;&#x6620;&#x5C04;</h2>
-<div class="outline-text-2" id="text-orgceea6bb">
+<div id="outline-container-orgc7bf286" class="outline-2">
+<h2 id="orgc7bf286">I/O内存静态映射</h2>
+<div class="outline-text-2" id="text-orgc7bf286">
 <p>
-&#x5728;&#x5C06;linux&#x79FB;&#x690D;&#x5230;&#x76EE;&#x6807;&#x7535;&#x8DEF;&#x677F;&#x7684;&#x8FC7;&#x7A0B;&#x4E2D;,&#x6709;&#x7684;&#x4F1A;&#x5EFA;&#x7ACB;&#x5916;&#x8BBE;I/O&#x5185;&#x5B58;&#x7269;&#x7406;&#x5730;&#x5740;&#x5230;&#x865A;&#x62DF;&#x5730;&#x5740;&#x7684;&#x9759;&#x6001;&#x6620;&#x5C04;,&#x8FD9;&#x4E2A;&#x6620;&#x5C04;&#x901A;&#x8FC7;&#x5728;&#x4E0E;&#x7535;&#x8DEF;&#x677F;&#x5BF9;&#x5E94;&#x7684; map_desc &#x7ED3;&#x6784;&#x4F53;&#x6570;&#x7EC4;&#x4E2D;&#x6DFB;&#x52A0;&#x65B0;&#x7684;&#x6210;&#x5458;&#x5B8C;&#x6210;.
+在将linux移植到目标电路板的过程中,有的会建立外设I/O内存物理地址到虚拟地址的静态映射,这个映射通过在与电路板对应的 map_desc 结构体数组中添加新的成员完成.
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">map_desc</span>{</span></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">virtual</span>;  <span class="comment">//&#x865A;&#x62DF;&#x5730;&#x5740;</span></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">long</span> pfn;     <span class="comment">//__phys_to_pfn(phy_addr)</span></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">long</span> length;  <span class="comment">//&#x5185;&#x5B58;&#x5927;&#x5C0F;</span></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">int</span> type;     <span class="comment">//&#x5185;&#x5B58;&#x7C7B;&#x578B;</span></span><br><span class="line">};</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">map_desc</span>{</span></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">virtual</span>;  <span class="comment">//虚拟地址</span></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">long</span> pfn;     <span class="comment">//__phys_to_pfn(phy_addr)</span></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">long</span> length;  <span class="comment">//内存大小</span></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">int</span> type;     <span class="comment">//内存类型</span></span><br><span class="line">};</span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </div>
-<div id="outline-container-org0bca2b6" class="outline-2">
-<h2 id="org0bca2b6">DMA&#x5185;&#x5B58;</h2>
-<div class="outline-text-2" id="text-org0bca2b6">
+<div id="outline-container-org6c394f1" class="outline-2">
+<h2 id="org6c394f1">DMA内存</h2>
+<div class="outline-text-2" id="text-org6c394f1">
 </div>
-<div id="outline-container-org4809496" class="outline-3">
-<h3 id="org4809496">DMA&#x4E0E;&#x786C;&#x4EF6;Cache&#x4E00;&#x81F4;&#x6027;</h3>
-<div class="outline-text-3" id="text-org4809496">
+<div id="outline-container-org521b76a" class="outline-3">
+<h3 id="org521b76a">DMA与硬件Cache一致性</h3>
+<div class="outline-text-3" id="text-org521b76a">
 <ol class="org-ol">
-<li>&#x5728;DMA&#x4E0D;&#x5DE5;&#x4F5C;&#x7684;&#x60C5;&#x51B5;&#x4E0B;&#x6216;&#x8005;DMA&#x4E0E;Cache&#x76F8;&#x5BF9;&#x5E94;&#x7684;&#x4E3B;&#x5B58;&#x6CA1;&#x6709;&#x91CD;&#x53E0;&#x533A;, &#x90A3;&#x4E48;Cache &#x4E0E;&#x4E3B;&#x5B58;&#x4E2D;&#x7684;&#x6570;&#x636E;&#x5177;&#x6709;&#x4E00;&#x81F4;&#x6027;&#x7279;&#x70B9;.&#x4E8C;&#x8005;&#x5E76;&#x4E0D;&#x4F1A;&#x8D77;&#x51B2;&#x7A81;.</li>
-<li><b>&#x5F53;DMA&#x4E0E;Cache&#x76F8;&#x5BF9;&#x5E94;&#x7684;&#x4E3B;&#x5B58;&#x6709;&#x91CD;&#x53E0;&#x533A;&#x65F6;,&#x5F53;DMA&#x66F4;&#x65B0;&#x4E86;&#x91CD;&#x53E0;&#x533A;&#x7684;&#x5185;&#x5BB9;,&#x800C;Cache&#x5E76;&#x6CA1;&#x6709;&#x5BF9;&#x5E94;&#x7684;&#x66F4;&#x65B0;.&#x6B64;&#x65F6;CPU&#x4ECD;&#x7136;&#x4F7F;&#x7528;&#x7684;&#x662F;&#x9648;&#x65E7;&#x7684;cache&#x7684;&#x6570;&#x636E;,&#x5C31;&#x4F1A;&#x53D1;&#x751F;Cache&#x4E0E;&#x5185;&#x5B58;&#x4E4B;&#x95F4;&#x6570;&#x636E;&quot;&#x4E0D;&#x4E00;&#x81F4;&#x6027;&quot;&#x7684;&#x9519;&#x8BEF;!</b>
+<li>在DMA不工作的情况下或者DMA与Cache相对应的主存没有重叠区, 那么Cache 与主存中的数据具有一致性特点.二者并不会起冲突.</li>
+<li><b>当DMA与Cache相对应的主存有重叠区时,当DMA更新了重叠区的内容,而Cache并没有对应的更新.此时CPU仍然使用的是陈旧的cache的数据,就会发生Cache与内存之间数据"不一致性"的错误!</b>
 <ul class="org-ul">
-<li>&#x5F53;CPU&#x5411;&#x5185;&#x5B58;&#x5199;&#x6570;&#x636E;&#x65F6;&#xFF0C;&#x6B64;&#x65F6;&#x4E5F;&#x662F;&#x5148;&#x5199;&#x5230;&#x4E86;cache&#xFF0C;DMA&#x4F20;&#x8F93;&#x6570;&#x636E;&#x5230;&#x5916;&#x8BBE;&#x4F9D;&#x7136;&#x662F;&#x539F;&#x6765;&#x9648;&#x65E7;&#x7684;&#x6570;&#x636E;</li>
-<li>&#x5728;&#x53D1;&#x751F;Cache&#x4E0E;&#x5185;&#x5B58;&#x4E0D;&#x4E00;&#x81F4;&#x6027;&#x9519;&#x8BEF;&#x540E;,&#x9A71;&#x52A8;&#x5C06;&#x65E0;&#x6CD5;&#x6B63;&#x5E38;&#x8FD0;&#x884C;.</li>
+<li>当CPU向内存写数据时，此时也是先写到了cache，DMA传输数据到外设依然是原来陈旧的数据</li>
+<li>在发生Cache与内存不一致性错误后,驱动将无法正常运行.</li>
 </ul></li>
-<li>Cache&#x7684;&#x4E0D;&#x4E00;&#x81F4;&#x95EE;&#x9898;&#x5E76;&#x4E0D;&#x662F;&#x53EA;&#x53D1;&#x751F;&#x5728;DMA&#x7684;&#x60C5;&#x51B5;&#x4E0B;,&#x5B9E;&#x9645;&#x4E0A;,&#x5B83;&#x8FD8;&#x5B58;&#x5728;&#x4E8E;Cache&#x4F7F;&#x80FD;&#x548C;&#x5173;&#x95ED;&#x7684;&#x65F6;&#x523B;.&#x4F8B;&#x5982;,&#x5BF9;&#x4E8E;&#x5E26;MMU&#x529F;&#x80FD;&#x7684;ARM&#x5904;&#x7406;&#x5668;,&#x5728;&#x5F00;&#x542F; <b>MMU&#x4E4B;&#x524D;&#x9700;&#x8981;&#x5148;&#x7F6E;Cache&#x65E0;&#x6548;,&#x5426;&#x5219;&#x5728;&#x5F00;&#x542F;MMU&#x4E4B;&#x540E;,Cache&#x91CC;&#x9762;&#x6709;&#x53EF;&#x80FD;&#x4FDD;&#x5B58;&#x7684;&#x8FD8;&#x662F;&#x4E4B;&#x524D;&#x7684;&#x7269;&#x7406;&#x5730;&#x5740;,&#x8FD9;&#x4E5F;&#x4F1A;&#x9020;&#x6210;&#x4E0D;&#x4E00;&#x81F4;&#x6027;&#x7684;&#x9519;&#x8BEF;!</b>.</li>
+<li>Cache的不一致问题并不是只发生在DMA的情况下,实际上,它还存在于Cache使能和关闭的时刻.例如,对于带MMU功能的ARM处理器,在开启 <b>MMU之前需要先置Cache无效,否则在开启MMU之后,Cache里面有可能保存的还是之前的物理地址,这也会造成不一致性的错误!</b>.</li>
 </ol>
 </div>
 </div>
-<div id="outline-container-orgc0a3907" class="outline-3">
-<h3 id="orgc0a3907">Linux &#x4E0B;&#x7684;DMA&#x7F16;&#x7A0B;(<b>DMA&#x53EA;&#x662F;&#x4E00;&#x79CD;&#x5916;&#x8BBE;&#x4E0E;&#x5185;&#x5B58;&#x7684;&#x4EA4;&#x4E92;&#x65B9;&#x5F0F;</b>)</h3>
-<div class="outline-text-3" id="text-orgc0a3907">
+<div id="outline-container-orgc5f28d3" class="outline-3">
+<h3 id="orgc5f28d3">Linux 下的DMA编程(<b>DMA只是一种外设与内存的交互方式</b>)</h3>
+<div class="outline-text-3" id="text-orgc5f28d3">
 <p>
-&#x5185;&#x5B58;&#x4E2D;&#x7528;&#x4E8E;&#x5916;&#x8BBE;&#x4EA4;&#x4E92;&#x6570;&#x636E;&#x7684;&#x4E00;&#x5757;&#x533A;&#x57DF;&#x79F0;&#x4E3A; DMA &#x7F13;&#x51B2;&#x533A;, <b>&#x5728;&#x8BBE;&#x5907;&#x4E0D;&#x652F;&#x6301;scatter/gather&#x64CD;&#x4F5C;&#x7684;&#x60C5;&#x51B5;&#x4E0B;,DMA&#x7F13;&#x51B2;&#x533A;&#x5728;&#x7269;&#x7406;&#x4E0A;&#x5FC5;&#x987B;&#x4E0A;&#x8FDE;&#x7EED;&#x7684;.</b>
+内存中用于外设交互数据的一块区域称为 DMA 缓冲区, <b>在设备不支持scatter/gather操作的情况下,DMA缓冲区在物理上必须上连续的.</b>
 </p>
 <ul class="org-ul">
-<li>&#x5F53;&#x786C;&#x4EF6;&#x652F;&#x6301; <code>IOMMU</code> &#x65F6;&#xFF0C;&#x7F13;&#x51B2;&#x533A;&#x4E5F;&#x53EF;&#x4EE5;&#x4E0D;&#x8FDE;&#x7EED;</li>
+<li>当硬件支持 <code>IOMMU</code> 时，缓冲区也可以不连续</li>
 </ul>
 </div>
-<div id="outline-container-org67398a5" class="outline-4">
-<h4 id="org67398a5">DMA&#x533A;&#x57DF;</h4>
-<div class="outline-text-4" id="text-org67398a5">
+<div id="outline-container-org59cf539" class="outline-4">
+<h4 id="org59cf539">DMA区域</h4>
+<div class="outline-text-4" id="text-org59cf539">
 <p>
-&#x5BF9;&#x4E8E;&#x5927;&#x591A;&#x6570;&#x73B0;&#x4EE3;&#x5D4C;&#x5165;&#x5F0F;&#x5904;&#x7406;&#x5668;&#x800C;&#x8A00;,DMA&#x64CD;&#x4F5C;&#x53EF;&#x4EE5;&#x5728;&#x6574;&#x4E2A;&#x5E38;&#x89C4;&#x5185;&#x5B58;&#x533A;&#x57DF;&#x8FDB;&#x884C;,&#x56E0;&#x6B64;DMA&#x533A;&#x57DF;&#x5C31;&#x76F4;&#x63A5;&#x8986;&#x76D6;&#x4E86;&#x5E38;&#x89C4;&#x5185;&#x5B58;.
+对于大多数现代嵌入式处理器而言,DMA操作可以在整个常规内存区域进行,因此DMA区域就直接覆盖了常规内存.
 </p>
 </div>
 </div>
-<div id="outline-container-orgade477a" class="outline-4">
-<h4 id="orgade477a">&#x865A;&#x62DF;&#x5730;&#x5740;,&#x7269;&#x7406;&#x5730;&#x5740;,&#x603B;&#x7EBF;&#x5730;&#x5740;</h4>
-<div class="outline-text-4" id="text-orgade477a">
+<div id="outline-container-org5ad5533" class="outline-4">
+<h4 id="org5ad5533">虚拟地址,物理地址,总线地址</h4>
+<div class="outline-text-4" id="text-org5ad5533">
 <ul class="org-ul">
-<li>&#x603B;&#x7EBF;&#x5730;&#x5740;&#xFF1A; &#x57FA;&#x4E8E;DMA&#x786C;&#x4EF6;&#x4F7F;&#x7528;&#x7684;&#x662F;&#x603B;&#x7EBF;&#x5730;&#x5740;&#x800C;&#x4E0D;&#x662F;&#x7269;&#x7406;&#x5730;&#x5740;&#xFF0C;&#x662F;&#x4ECE;&#x8BBE;&#x5907;&#x89D2;&#x5EA6;&#x4E0A;&#x770B;&#x5230;&#x7684;&#x5185;&#x5B58;&#x5730;&#x5740;</li>
-<li>&#x7269;&#x7406;&#x5730;&#x5740;&#xFF1A;&#x662F;&#x4ECE;CPU MMU &#x63A7;&#x5236;&#x5668;&#x5916;&#x56F4;&#x89D2;&#x5EA6;&#x4E0A;&#x770B;&#x5230;&#x7684;&#x5185;&#x5B58;&#x5730;&#x5740;</li>
-<li>&#x865A;&#x62DF;&#x5730;&#x5740;&#xFF1A;CPU&#x770B;&#x5230;&#x7684;&#x662F;MMU&#x53CD;&#x6620;&#x7ED9;&#x5B83;&#x7684;&#x5730;&#x5740;</li>
+<li>总线地址： 基于DMA硬件使用的是总线地址而不是物理地址，是从设备角度上看到的内存地址</li>
+<li>物理地址：是从CPU MMU 控制器外围角度上看到的内存地址</li>
+<li>虚拟地址：CPU看到的是MMU反映给它的地址</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-org24c46fd" class="outline-4">
-<h4 id="org24c46fd">DMA&#x5730;&#x5740;&#x63A9;&#x7801;</h4>
-<div class="outline-text-4" id="text-org24c46fd">
+<div id="outline-container-orga9e1022" class="outline-4">
+<h4 id="orga9e1022">DMA地址掩码</h4>
+<div class="outline-text-4" id="text-orga9e1022">
 <p>
-&#x8BBE;&#x5907;&#x4E0D;&#x4E00;&#x5B9A;&#x80FD;&#x5728;&#x6240;&#x6709;&#x7684;&#x5185;&#x5B58;&#x5730;&#x5740;&#x4E0A;&#x6267;&#x884C;DMA&#x64CD;&#x4F5C;,&#x5728;&#x8FD9;&#x79CD;&#x60C5;&#x51B5;&#x4E0B;&#x9700;&#x8981;&#x8BBE;&#x7F6E;DMA&#x80FD;&#x591F;&#x64CD;&#x4F5C;&#x7684;&#x5730;&#x5740;&#x603B;&#x7EBF;&#x5BBD;&#x5EA6;.
+设备不一定能在所有的内存地址上执行DMA操作,在这种情况下需要设置DMA能够操作的地址总线宽度.
 </p>
 <div class="org-src-container">
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">dma_set_mask</span><span class="params">(struct device *dev, u64 mask)</span></span></span><br></pre></td></tr></table></figure>
 </div>
 <p>
-&#x5982;&#x679C;DMA&#x53EA;&#x80FD;&#x64CD;&#x4F5C;24&#x4F4D;&#x5730;&#x5740;,&#x90A3;&#x4E48;&#x5C31;&#x5E94;&#x8BE5;&#x8C03;&#x7528; <code>dma_set_mask(dev,0xffffff)</code>
+如果DMA只能操作24位地址,那么就应该调用 <code>dma_set_mask(dev,0xffffff)</code>
 </p>
 <ul class="org-ul">
-<li>&#x6B64;&#x65F6;&#x5185;&#x6838;&#x4F1A;&#x4E3A;&#x7533;&#x8BF7;&#x589E;&#x52A0; <code>GFP_DMA</code> &#x6807;&#x8BB0;&#xFF0C;&#x4EE5;&#x4ECE; DMA_ZONE &#x4E2D;&#x7533;&#x8BF7;&#x5185;&#x5B58;</li>
+<li>此时内核会为申请增加 <code>GFP_DMA</code> 标记，以从 DMA_ZONE 中申请内存</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-org5ad3905" class="outline-4">
-<h4 id="org5ad3905">&#x4E00;&#x81F4;&#x6027;DMA&#x7F13;&#x51B2;&#x533A;</h4>
-<div class="outline-text-4" id="text-org5ad3905">
+<div id="outline-container-org031a7fc" class="outline-4">
+<h4 id="org031a7fc">一致性DMA缓冲区</h4>
+<div class="outline-text-4" id="text-org031a7fc">
 <p>
-&#x4E3A;&#x4E86;&#x80FD;&#x591F;&#x907F;&#x514D; <b>DMA&#x4E0E;Cache&#x4E00;&#x81F4;&#x6027;&#x95EE;&#x9898;</b>,&#x4F7F;&#x7528;&#x5982;&#x4E0B;&#x51FD;&#x6570;&#x5206;&#x914D;&#x4E00;&#x4E2A;DMA&#x4E00;&#x81F4;&#x6027;&#x7684;&#x5185;&#x5B58;&#x533A;&#x57DF;:
+为了能够避免 <b>DMA与Cache一致性问题</b>,使用如下函数分配一个DMA一致性的内存区域:
 </p>
 <ul class="org-ul">
-<li>&#x64CD;&#x4F5C;&#x6B64;&#x51FD;&#x6570;&#x7684;&#x8FC7;&#x7A0B;&#x662F;&#x4E0D;&#x7528;&#x5173;&#x5FC3;CMA&#x533A;&#x57DF;&#x8BBE;&#x7F6E;&#xFF0C;&#x8FD9;&#x4E2A;&#x662F;&#x5185;&#x6838;&#x5E95;&#x5C42;&#x5B8C;&#x6210;&#x7684;&#x3002;</li>
+<li>操作此函数的过程是不用关心CMA区域设置，这个是内核底层完成的。</li>
 </ul>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">  &#x7533;&#x8BF7;&#x4E00;&#x81F4;&#x6027;DMA&#x7F13;&#x51B2;&#x533A;(&#x4E00;&#x822C;&#x4E0D;&#x5E26;cache, &#x4F46;&#x5982;&#x679C;&#x6709; cache coherent interconnect &#x786C;&#x4EF6;&#x652F;&#x6301;&#xFF0C;&#x5219;&#x5C31;&#x53EF;&#x4EE5;&#x5E26;cache)</span></span><br><span class="line"><span class="comment">  note: &#x8FD9;&#x6BB5;&#x7F13;&#x5B58;&#x533A;&#x4E00;&#x822C;&#x662F;&#x8FDE;&#x7EED;&#x7684;&#xFF0C;&#x4F46;&#x5982;&#x679C;&#x786C;&#x4EF6;&#x5E26;IOMMU,&#x5219;&#x4E5F;&#x53EF;&#x4EE5;&#x662F;&#x4E0D;&#x8FDE;&#x7EED;&#x7684;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="comment">//&#x8FD4;&#x56DE;&#x7533;&#x8BF7;&#x5230;&#x7684;DMA&#x7F13;&#x51B2;&#x533A;&#x7684;&#x865A;&#x62DF;&#x5730;&#x5740;</span></span><br><span class="line"><span class="comment">//handle &#x4EE3;&#x8868;&#x603B;&#x7EBF;&#x5730;&#x5740;</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">dma_alloc_coherent</span><span class="params">(struct device *dev, <span class="keyword">size_t</span> size, <span class="keyword">dma_addr_t</span> *handle, <span class="keyword">gfp_t</span> gfp)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//&#x91CA;&#x653E;&#x7533;&#x8BF7;&#x7684;&#x5185;&#x5B58;</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">dma_free_coherent</span><span class="params">(struct device *dev,<span class="keyword">size_t</span> size, <span class="keyword">void</span> *cpu_addr, <span class="keyword">dma_addr_t</span> handle)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">  &#x5206;&#x914D;&#x4E00;&#x4E2A;&#x5199;&#x5408;&#x5E76;(writecombining)&#x7684;DMA&#x7F13;&#x51B2;&#x533A;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">dma_alloc_writecombine</span><span class="params">(struct device *dev, <span class="keyword">size_t</span> size, <span class="keyword">dma_addr_t</span> *handle, <span class="keyword">gfp_t</span> gfp)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//&#x91CA;&#x653E;</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">dma_free_writecombine</span><span class="params">(struct device *dev,<span class="keyword">size_t</span> size, <span class="keyword">void</span> *cpu_addr, <span class="keyword">dma_addr_t</span> handle)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">  PCI&#x8BBE;&#x5907;&#x7533;&#x8BF7;&#x7F13;&#x51B2;&#x533A;</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">pci_alloc_consistent</span><span class="params">(struct pci_dev *pdev, <span class="keyword">size_t</span> size, <span class="keyword">dma_addr_t</span> *dma_addrp)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//&#x91CA;&#x653E;</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">pci_free_consisten</span><span class="params">(struct pci_dev *pdev, <span class="keyword">size_t</span> size, <span class="keyword">void</span> *cpu_addr, <span class="keyword">dma_addr_t</span> dma_addr)</span></span>;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">  申请一致性DMA缓冲区(一般不带cache, 但如果有 cache coherent interconnect 硬件支持，则就可以带cache)</span></span><br><span class="line"><span class="comment">  note: 这段缓存区一般是连续的，但如果硬件带IOMMU,则也可以是不连续的</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="comment">//返回申请到的DMA缓冲区的虚拟地址</span></span><br><span class="line"><span class="comment">//handle 代表总线地址</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">dma_alloc_coherent</span><span class="params">(struct device *dev, <span class="keyword">size_t</span> size, <span class="keyword">dma_addr_t</span> *handle, <span class="keyword">gfp_t</span> gfp)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//释放申请的内存</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">dma_free_coherent</span><span class="params">(struct device *dev,<span class="keyword">size_t</span> size, <span class="keyword">void</span> *cpu_addr, <span class="keyword">dma_addr_t</span> handle)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">  分配一个写合并(writecombining)的DMA缓冲区</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">dma_alloc_writecombine</span><span class="params">(struct device *dev, <span class="keyword">size_t</span> size, <span class="keyword">dma_addr_t</span> *handle, <span class="keyword">gfp_t</span> gfp)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//释放</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">dma_free_writecombine</span><span class="params">(struct device *dev,<span class="keyword">size_t</span> size, <span class="keyword">void</span> *cpu_addr, <span class="keyword">dma_addr_t</span> handle)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">  PCI设备申请缓冲区</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">pci_alloc_consistent</span><span class="params">(struct pci_dev *pdev, <span class="keyword">size_t</span> size, <span class="keyword">dma_addr_t</span> *dma_addrp)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//释放</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">pci_free_consisten</span><span class="params">(struct pci_dev *pdev, <span class="keyword">size_t</span> size, <span class="keyword">void</span> *cpu_addr, <span class="keyword">dma_addr_t</span> dma_addr)</span></span>;</span><br></pre></td></tr></table></figure>
 </div>
 <p>
-<b>&#x6CE8;&#x610F;</b>:
-<code>dma_alloc_xxx()</code> &#x51FD;&#x6570;&#x867D;&#x7136;&#x662F;&#x4EE5; dma_alloc_&#x5F00;&#x5934;, <b>&#x4F46;&#x662F;&#x5176;&#x7533;&#x8BF7;&#x7684;&#x533A;&#x57DF;&#x4E0D;&#x4E00;&#x5B9A;&#x5728;DMA&#x533A;&#x57DF;&#x91CC;&#x9762;</b>.&#x4EE5;32&#x4F4D;ARM&#x5904;&#x7406;&#x5668;&#x4E3A;&#x4F8B;,&#x5F53;conherent_dma_mask&#x5C0F;&#x4E8E;0xffffffff&#x65F6;,&#x624D;&#x4F1A;&#x8BBE;&#x7F6E;GFP_DMA&#x6807;&#x8BB0;,&#x5E76;&#x4ECE;DMA&#x533A;&#x57DF;&#x53BB;&#x7533;&#x8BF7;&#x5185;&#x5B58;.
+<b>注意</b>:
+<code>dma_alloc_xxx()</code> 函数虽然是以 dma_alloc_开头, <b>但是其申请的区域不一定在DMA区域里面</b>.以32位ARM处理器为例,当conherent_dma_mask小于0xffffffff时,才会设置GFP_DMA标记,并从DMA区域去申请内存.
 </p>
 </div>
 </div>
-<div id="outline-container-org47db153" class="outline-4">
-<h4 id="org47db153">&#x6D41;&#x5F0F;DMA&#x6620;&#x5C04;</h4>
-<div class="outline-text-4" id="text-org47db153">
+<div id="outline-container-org57bf540" class="outline-4">
+<h4 id="org57bf540">流式DMA映射</h4>
+<div class="outline-text-4" id="text-org57bf540">
 <p>
-&#x5728;&#x8BB8;&#x591A;&#x60C5;&#x51B5;&#x4E0B;&#x7F13;&#x51B2;&#x533A;&#x6765;&#x81EA;&#x5185;&#x6838;&#x7684;&#x8F83;&#x4E0A;&#x5C42;&#xFF0C;&#x4E0A;&#x5C42;&#x5F88;&#x53EF;&#x80FD;&#x4EE5;&#x666E;&#x901A;&#x7684; kmalloc() &#x7B49;&#x65B9;&#x5F0F;&#x7533;&#x8BF7;&#x5185;&#x5B58;&#xFF0C;
-&#x4E5F;&#x5C31;&#x662F;&#x8BF4;&#x8FD9;&#x6BB5;&#x5185;&#x5B58;&#x662F;&#x5177;&#x6709;&#x786C;&#x4EF6;cache&#x7684;&#xFF0C;&#x8FD9;&#x65F6;&#x5C31;&#x9700;&#x8981;&#x4F7F;&#x7528;&#x6D41;&#x5F0F;DMA&#x3002;
+在许多情况下缓冲区来自内核的较上层，上层很可能以普通的 kmalloc() 等方式申请内存，
+也就是说这段内存是具有硬件cache的，这时就需要使用流式DMA。
 </p>
 
 <p>
-&#x6D41;&#x5F0F;DMA&#x64CD;&#x4F5C;&#x5728;&#x672C;&#x8D28;&#x4E0A;&#x5927;&#x591A;&#x5C31;&#x662F;&#x8FDB;&#x884C;flush&#x6216;invalidate Cache&#x64CD;&#x4F5C;&#xFF0C;&#x4EE5;&#x89E3;&#x51B3;&#x4E00;&#x81F4;&#x6027;&#x95EE;&#x9898;&#x3002;
+流式DMA操作在本质上大多就是进行flush或invalidate Cache操作，以解决一致性问题。
 </p>
 <ul class="org-ul">
-<li>flush &#x662F;&#x6307;&#x5C06;cache&#x5185;&#x5BB9;&#x5199;&#x5165;&#x5185;&#x5B58;&#xFF0C;invalidate&#x662F;&#x6307;&#x8BA9;CPU&#x518D;&#x6B21;&#x4ECE;&#x5185;&#x5B58;&#x8BFB;&#x53D6;&#x6570;&#x636E;&#x6765;&#x5237;&#x65B0;&#x4E00;&#x6B21;cache</li>
-<li>&#x5982;&#x679C;&#x6709; <code>cache coherent interconnect</code> &#x786C;&#x4EF6;&#xFF0C;&#x5219;&#x4E0D;&#x9700;&#x8981;&#x5173;&#x95ED;cache&#xFF0C;&#x4ECE;&#x5E94;&#x7528;&#x7F16;&#x7A0B;&#x7684;&#x89D2;&#x5EA6;&#x6765;&#x8BB2;&#xFF0C;&#x53EA;&#x8981;&#x6309;&#x7167;&#x89C4;&#x77E9;&#x6765;&#x64CD;&#x4F5C;&#x5373;&#x53EF;&#x3002;</li>
+<li>flush 是指将cache内容写入内存，invalidate是指让CPU再次从内存读取数据来刷新一次cache</li>
+<li>如果有 <code>cache coherent interconnect</code> 硬件，则不需要关闭cache，从应用编程的角度来讲，只要按照规矩来操作即可。</li>
 </ul>
 
 <p>
-&#x64CD;&#x4F5C;&#x6B65;&#x9AA4;&#x4E3A;&#xFF1A;
+操作步骤为：
 </p>
 <ol class="org-ol">
-<li>&#x8FDB;&#x884C;&#x6D41;&#x5F0F;DMA&#x6620;&#x5C04;</li>
-<li>&#x6267;&#x884C;DMA&#x64CD;&#x4F5C;</li>
-<li>&#x53D6;&#x6D88;&#x6620;&#x5C04;</li>
+<li>进行流式DMA映射</li>
+<li>执行DMA操作</li>
+<li>取消映射</li>
 </ol>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//&#x4E00;&#x7247;&#x5185;&#x5B58;&#x64CD;&#x4F5C;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> dma_map_single(d, a, s, r) dma_map_single_attrs(d, a, s, r, NULL)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> dma_unmap_single(d, a, s, r) dma_unmap_single_attrs(d, a, s, r, NULL)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//&#x591A;&#x7247;&#x975E;&#x8FDE;&#x7EED;&#x5185;&#x5B58;&#x64CD;&#x4F5C;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> dma_map_sg(d, s, n, r) dma_map_sg_attrs(d, s, n, r, NULL)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> dma_unmap_sg(d, s, n, r) dma_unmap_sg_attrs(d, s, n, r, NULL)</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//一片内存操作</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> dma_map_single(d, a, s, r) dma_map_single_attrs(d, a, s, r, NULL)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> dma_unmap_single(d, a, s, r) dma_unmap_single_attrs(d, a, s, r, NULL)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//多片非连续内存操作</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> dma_map_sg(d, s, n, r) dma_map_sg_attrs(d, s, n, r, NULL)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> dma_unmap_sg(d, s, n, r) dma_unmap_sg_attrs(d, s, n, r, NULL)</span></span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </div>
@@ -1160,7 +1160,7 @@ fault() &#x51FD;&#x6570;&#x53EF;&#x4EE5;&#x4E3A;&#x8BBE;&#x5907;&#x63D0;&#x4F9B;
 </div>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
 </div>
 
     </div>
@@ -1246,7 +1246,7 @@ Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#orgc60e0ad"><span class="nav-number">1.</span> <span class="nav-text">CPU &amp;#x4E0E;&amp;#x5185;&amp;#x5B58;,I&#x2F;O</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgb72f17c"><span class="nav-number">1.1.</span> <span class="nav-text">&amp;#x5185;&amp;#x5B58;&amp;#x7A7A;&amp;#x95F4;&amp;#x4E0E;I&#x2F;O&amp;#x7A7A;&amp;#x95F4;&amp;#x7684;&amp;#x533A;&amp;#x522B;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org0b49bc3"><span class="nav-number">1.2.</span> <span class="nav-text">&amp;#x5185;&amp;#x5B58;&amp;#x7BA1;&amp;#x7406;&amp;#x5355;&amp;#x5143;MMU</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org4b1c0c8"><span class="nav-number">1.2.1.</span> <span class="nav-text">MMU&amp;#x64CD;&amp;#x4F5C;&amp;#x539F;&amp;#x7406;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org70be4ab"><span class="nav-number">1.2.2.</span> <span class="nav-text">MMU&amp;#x7684;&amp;#x6743;&amp;#x9650;&amp;#x7BA1;&amp;#x7406;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgf3c4b87"><span class="nav-number">1.2.3.</span> <span class="nav-text">meltdown&amp;#x6F0F;&amp;#x6D1E;</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org405f039"><span class="nav-number">2.</span> <span class="nav-text">Linux&amp;#x5185;&amp;#x5B58;&amp;#x7BA1;&amp;#x7406;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orge78efae"><span class="nav-number">2.1.</span> <span class="nav-text">&amp;#x5BF9;&amp;#x7269;&amp;#x7406;&amp;#x5185;&amp;#x5B58;&amp;#x6761;&amp;#x7684;&amp;#x5206;&amp;#x914D;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgc171e4e"><span class="nav-number">2.1.1.</span> <span class="nav-text">DMA_ZONE</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org3351d2b"><span class="nav-number">2.1.2.</span> <span class="nav-text">NORMAL_ZONE</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org727d22d"><span class="nav-number">2.1.3.</span> <span class="nav-text">HIGH_ZONE</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orge004a80"><span class="nav-number">2.2.</span> <span class="nav-text">&amp;#x5BF9;&amp;#x5185;&amp;#x6838;&amp;#x865A;&amp;#x62DF;&amp;#x7A7A;&amp;#x95F4;&amp;#x7684;&amp;#x5206;&amp;#x914D;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgb1b5ad4"><span class="nav-number">2.2.1.</span> <span class="nav-text">x86-32 &amp;#x67B6;&amp;#x6784;&amp;#x4E0B;&amp;#x7684;&amp;#x5206;&amp;#x914D;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgc5eebe2"><span class="nav-number">2.2.2.</span> <span class="nav-text">arm32 linux &amp;#x4E0B;&amp;#x7684;&amp;#x5206;&amp;#x914D;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgcf73fed"><span class="nav-number">2.3.</span> <span class="nav-text">DMA&amp;#x3001;&amp;#x5E38;&amp;#x89C4;&amp;#x3001;&amp;#x9AD8;&amp;#x7AEF;&amp;#x5185;&amp;#x5B58;&amp;#x5206;&amp;#x5E03;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgd92cd23"><span class="nav-number">2.3.1.</span> <span class="nav-text">buddy &amp;#x7B97;&amp;#x6CD5;</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org4e85b72"><span class="nav-number">3.</span> <span class="nav-text">&amp;#x5185;&amp;#x5B58;&amp;#x7533;&amp;#x8BF7;&amp;#x5B9E;&amp;#x9645;&amp;#x64CD;&amp;#x4F5C;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org287a711"><span class="nav-number">3.1.</span> <span class="nav-text">&amp;#x7528;&amp;#x6237;&amp;#x7A7A;&amp;#x95F4;&amp;#x5185;&amp;#x5B58;&amp;#x52A8;&amp;#x6001;&amp;#x7533;&amp;#x8BF7;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgeb37445"><span class="nav-number">3.2.</span> <span class="nav-text">&amp;#x5185;&amp;#x6838;&amp;#x7A7A;&amp;#x95F4;&amp;#x5185;&amp;#x5B58;&amp;#x52A8;&amp;#x6001;&amp;#x7533;&amp;#x8BF7;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org97eae8b"><span class="nav-number">3.2.1.</span> <span class="nav-text">&amp;#x7269;&amp;#x7406;&amp;#x5185;&amp;#x5B58;&amp;#x8FDE;&amp;#x7EED;&amp;#x7533;&amp;#x8BF7;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org899ff60"><span class="nav-number">3.2.2.</span> <span class="nav-text">&amp;#x7269;&amp;#x7406;&amp;#x5185;&amp;#x5B58;&amp;#x4E0D;&amp;#x4E00;&amp;#x5B9A;&amp;#x8FDE;&amp;#x7EED;&amp;#x7533;&amp;#x8BF7;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org71bb46a"><span class="nav-number">3.2.3.</span> <span class="nav-text">slab&amp;#x673A;&amp;#x5236;&amp;#x63D0;&amp;#x9AD8;&amp;#x5C11;&amp;#x91CF;&amp;#x5B57;&amp;#x8282;&amp;#x7533;&amp;#x8BF7;&amp;#x6548;&amp;#x7387;</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org47b227a"><span class="nav-number">4.</span> <span class="nav-text">&amp;#x8BBE;&amp;#x5907; I&#x2F;O &amp;#x7AEF;&amp;#x53E3;&amp;#x548C; I&#x2F;O &amp;#x5185;&amp;#x5B58;&amp;#x7684;&amp;#x8BBF;&amp;#x95EE;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org335da32"><span class="nav-number">4.1.</span> <span class="nav-text">I&#x2F;O &amp;#x7AEF;&amp;#x53E3;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org4b82039"><span class="nav-number">4.1.1.</span> <span class="nav-text">&amp;#x7533;&amp;#x8BF7;&amp;#x4E0E;&amp;#x91CA;&amp;#x653E;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgcb823b6"><span class="nav-number">4.1.2.</span> <span class="nav-text">&amp;#x8BFB;&amp;#x5199;&amp;#x64CD;&amp;#x4F5C;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org5c0d07b"><span class="nav-number">4.2.</span> <span class="nav-text">I&#x2F;O &amp;#x5185;&amp;#x5B58;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org5ffe38a"><span class="nav-number">4.2.1.</span> <span class="nav-text">&amp;#x7533;&amp;#x8BF7;&amp;#x4E0E;&amp;#x91CA;&amp;#x653E;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org0bc2e1f"><span class="nav-number">4.2.2.</span> <span class="nav-text">&amp;#x6620;&amp;#x5C04;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org032cfb5"><span class="nav-number">4.2.3.</span> <span class="nav-text">&amp;#x8BFB;&amp;#x5199;&amp;#x64CD;&amp;#x4F5C;&amp;#x51FD;&amp;#x6570;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org19852a5"><span class="nav-number">4.3.</span> <span class="nav-text">&amp;#x5C06;&amp;#x8BBE;&amp;#x5907;&amp;#x5730;&amp;#x5740;&amp;#x6620;&amp;#x5C04;&amp;#x5230;&amp;#x7528;&amp;#x6237;&amp;#x7A7A;&amp;#x95F4;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org65b1026"><span class="nav-number">4.3.1.</span> <span class="nav-text">&amp;#x5185;&amp;#x5B58;&amp;#x6620;&amp;#x5C04;&amp;#x4E0E;VMA</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org78ff9c1"><span class="nav-number">4.3.2.</span> <span class="nav-text">fault() &amp;#x51FD;&amp;#x6570;</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgceea6bb"><span class="nav-number">5.</span> <span class="nav-text">I&#x2F;O&amp;#x5185;&amp;#x5B58;&amp;#x9759;&amp;#x6001;&amp;#x6620;&amp;#x5C04;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org0bca2b6"><span class="nav-number">6.</span> <span class="nav-text">DMA&amp;#x5185;&amp;#x5B58;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org4809496"><span class="nav-number">6.1.</span> <span class="nav-text">DMA&amp;#x4E0E;&amp;#x786C;&amp;#x4EF6;Cache&amp;#x4E00;&amp;#x81F4;&amp;#x6027;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgc0a3907"><span class="nav-number">6.2.</span> <span class="nav-text">Linux &amp;#x4E0B;&amp;#x7684;DMA&amp;#x7F16;&amp;#x7A0B;(DMA&amp;#x53EA;&amp;#x662F;&amp;#x4E00;&amp;#x79CD;&amp;#x5916;&amp;#x8BBE;&amp;#x4E0E;&amp;#x5185;&amp;#x5B58;&amp;#x7684;&amp;#x4EA4;&amp;#x4E92;&amp;#x65B9;&amp;#x5F0F;)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org67398a5"><span class="nav-number">6.2.1.</span> <span class="nav-text">DMA&amp;#x533A;&amp;#x57DF;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgade477a"><span class="nav-number">6.2.2.</span> <span class="nav-text">&amp;#x865A;&amp;#x62DF;&amp;#x5730;&amp;#x5740;,&amp;#x7269;&amp;#x7406;&amp;#x5730;&amp;#x5740;,&amp;#x603B;&amp;#x7EBF;&amp;#x5730;&amp;#x5740;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org24c46fd"><span class="nav-number">6.2.3.</span> <span class="nav-text">DMA&amp;#x5730;&amp;#x5740;&amp;#x63A9;&amp;#x7801;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org5ad3905"><span class="nav-number">6.2.4.</span> <span class="nav-text">&amp;#x4E00;&amp;#x81F4;&amp;#x6027;DMA&amp;#x7F13;&amp;#x51B2;&amp;#x533A;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org47db153"><span class="nav-number">6.2.5.</span> <span class="nav-text">&amp;#x6D41;&amp;#x5F0F;DMA&amp;#x6620;&amp;#x5C04;</span></a></li></ol></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org9ff828a"><span class="nav-number">1.</span> <span class="nav-text">CPU 与内存,I&#x2F;O</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org3974307"><span class="nav-number">1.1.</span> <span class="nav-text">内存空间与I&#x2F;O空间的区别</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgf45832b"><span class="nav-number">1.2.</span> <span class="nav-text">内存管理单元MMU</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org567b0c4"><span class="nav-number">1.2.1.</span> <span class="nav-text">MMU操作原理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org835e53c"><span class="nav-number">1.2.2.</span> <span class="nav-text">MMU的权限管理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org5ccacaf"><span class="nav-number">1.2.3.</span> <span class="nav-text">meltdown漏洞</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgdd80f2f"><span class="nav-number">2.</span> <span class="nav-text">Linux内存管理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org60aee8e"><span class="nav-number">2.1.</span> <span class="nav-text">对物理内存条的分配</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org8149e47"><span class="nav-number">2.1.1.</span> <span class="nav-text">DMA_ZONE</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org8543e79"><span class="nav-number">2.1.2.</span> <span class="nav-text">NORMAL_ZONE</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org0e66eb1"><span class="nav-number">2.1.3.</span> <span class="nav-text">HIGH_ZONE</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgcc49d79"><span class="nav-number">2.2.</span> <span class="nav-text">对内核虚拟空间的分配</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org23ae4b2"><span class="nav-number">2.2.1.</span> <span class="nav-text">x86-32 架构下的分配</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org6631432"><span class="nav-number">2.2.2.</span> <span class="nav-text">arm32 linux 下的分配</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orga1fc1f1"><span class="nav-number">2.3.</span> <span class="nav-text">DMA、常规、高端内存分布</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgbf2ad6c"><span class="nav-number">2.3.1.</span> <span class="nav-text">buddy 算法</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org5b22670"><span class="nav-number">3.</span> <span class="nav-text">内存申请实际操作</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgf0b0342"><span class="nav-number">3.1.</span> <span class="nav-text">用户空间内存动态申请</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org50d8a1d"><span class="nav-number">3.2.</span> <span class="nav-text">内核空间内存动态申请</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgb939ad0"><span class="nav-number">3.2.1.</span> <span class="nav-text">物理内存连续申请</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org03b6a83"><span class="nav-number">3.2.2.</span> <span class="nav-text">物理内存不一定连续申请</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgebd07f9"><span class="nav-number">3.2.3.</span> <span class="nav-text">slab机制提高少量字节申请效率</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgfb41aea"><span class="nav-number">4.</span> <span class="nav-text">设备 I&#x2F;O 端口和 I&#x2F;O 内存的访问</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org42f0ccf"><span class="nav-number">4.1.</span> <span class="nav-text">I&#x2F;O 端口</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgfa4d77d"><span class="nav-number">4.1.1.</span> <span class="nav-text">申请与释放</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgb526f3a"><span class="nav-number">4.1.2.</span> <span class="nav-text">读写操作</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org1bd6db9"><span class="nav-number">4.2.</span> <span class="nav-text">I&#x2F;O 内存</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org41b64c7"><span class="nav-number">4.2.1.</span> <span class="nav-text">申请与释放</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org7c30a7e"><span class="nav-number">4.2.2.</span> <span class="nav-text">映射</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org33aae3a"><span class="nav-number">4.2.3.</span> <span class="nav-text">读写操作函数</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgcc348b6"><span class="nav-number">4.3.</span> <span class="nav-text">将设备地址映射到用户空间</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org2239fa1"><span class="nav-number">4.3.1.</span> <span class="nav-text">内存映射与VMA</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org74cbce2"><span class="nav-number">4.3.2.</span> <span class="nav-text">fault() 函数</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgc7bf286"><span class="nav-number">5.</span> <span class="nav-text">I&#x2F;O内存静态映射</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org6c394f1"><span class="nav-number">6.</span> <span class="nav-text">DMA内存</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org521b76a"><span class="nav-number">6.1.</span> <span class="nav-text">DMA与硬件Cache一致性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgc5f28d3"><span class="nav-number">6.2.</span> <span class="nav-text">Linux 下的DMA编程(DMA只是一种外设与内存的交互方式)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org59cf539"><span class="nav-number">6.2.1.</span> <span class="nav-text">DMA区域</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org5ad5533"><span class="nav-number">6.2.2.</span> <span class="nav-text">虚拟地址,物理地址,总线地址</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orga9e1022"><span class="nav-number">6.2.3.</span> <span class="nav-text">DMA地址掩码</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org031a7fc"><span class="nav-number">6.2.4.</span> <span class="nav-text">一致性DMA缓冲区</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org57bf540"><span class="nav-number">6.2.5.</span> <span class="nav-text">流式DMA映射</span></a></li></ol></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 

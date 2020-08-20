@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="&amp;#x5B66;&amp;#x4E60;&amp;#x6BD4;&amp;#x4F8B;&amp;#x5206;&amp;#x914D;&amp;#x8C03;&amp;#x5EA6;&amp;#x5668;&amp;#xFF0C;&amp;#x5176;&amp;#x6838;&amp;#x5FC3;&amp;#x601D;&amp;#x60F3;&amp;#x662F;&amp;#xFF1A;&amp;#x4FDD;&amp;#x8BC1;&amp;#x6BCF;&amp;#x4E00;&amp;#x4E2A;&amp;#x4EFB;&amp;#x52A1;&amp;#x83B">
+  <meta name="description" content="学习比例分配调度器，其核心思想是：保证每一个任务获得 确定比例 的 CPU 使用时间。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[What]Scheduling: Proportional Share">
 <meta property="og:url" content="http://kcmetercec.top/2019/08/20/book_ostep_cpu-sched-lottery/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="&amp;#x5B66;&amp;#x4E60;&amp;#x6BD4;&amp;#x4F8B;&amp;#x5206;&amp;#x914D;&amp;#x8C03;&amp;#x5EA6;&amp;#x5668;&amp;#xFF0C;&amp;#x5176;&amp;#x6838;&amp;#x5FC3;&amp;#x601D;&amp;#x60F3;&amp;#x662F;&amp;#xFF1A;&amp;#x4FDD;&amp;#x8BC1;&amp;#x6BCF;&amp;#x4E00;&amp;#x4E2A;&amp;#x4EFB;&amp;#x52A1;&amp;#x83B">
+<meta property="og:description" content="学习比例分配调度器，其核心思想是：保证每一个任务获得 确定比例 的 CPU 使用时间。">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/cfs_time_slice.jpg?raw=true">
 <meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/cfs_vruntime.jpg?raw=true">
@@ -298,100 +298,100 @@
       
         <div id="content">
 <p>
-&#x5B66;&#x4E60;&#x6BD4;&#x4F8B;&#x5206;&#x914D;&#x8C03;&#x5EA6;&#x5668;&#xFF0C;&#x5176;&#x6838;&#x5FC3;&#x601D;&#x60F3;&#x662F;&#xFF1A;&#x4FDD;&#x8BC1;&#x6BCF;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x83B7;&#x5F97; <b>&#x786E;&#x5B9A;&#x6BD4;&#x4F8B;</b> &#x7684; CPU &#x4F7F;&#x7528;&#x65F6;&#x95F4;&#x3002;
+学习比例分配调度器，其核心思想是：保证每一个任务获得 <b>确定比例</b> 的 CPU 使用时间。
 </p>
 <a id="more"></a>
-<div id="outline-container-org699189e" class="outline-2">
-<h2 id="org699189e">tickets &#x8868;&#x793A;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x6240;&#x5360;&#x7528;&#x7684; CPU &#x767E;&#x5206;&#x6BD4;</h2>
-<div class="outline-text-2" id="text-org699189e">
+<div id="outline-container-org7cbd916" class="outline-2">
+<h2 id="org7cbd916">tickets 表示一个任务所占用的 CPU 百分比</h2>
+<div class="outline-text-2" id="text-org7cbd916">
 <p>
-&#x6BD4;&#x4F8B;&#x5206;&#x914D;&#x8C03;&#x5EA6;&#x5668;&#x968F;&#x673A;&#x7684;&#x5207;&#x6362;&#x591A;&#x4E2A;&#x4EFB;&#x52A1;&#xFF0C;&#x5728;&#x5168;&#x5C40;&#x4E0A;&#x6765;&#x770B;&#x8BA9;&#x5176;&#x7B26;&#x5408;&#x5176;&#x6240;&#x8981;&#x6C42;&#x7684;&#x767E;&#x5206;&#x6BD4;&#x3002;
+比例分配调度器随机的切换多个任务，在全局上来看让其符合其所要求的百分比。
 </p>
 <ul class="org-ul">
-<li>&#x8FD9;&#x79CD;&#x65B9;&#x5F0F;&#x4F7F;&#x5F97;&#x8C03;&#x5EA6;&#x5668;&#x7684;&#x5B9E;&#x73B0;&#x76F8;&#x5BF9;&#x8F7B;&#x91CF;&#x7EA7;</li>
+<li>这种方式使得调度器的实现相对轻量级</li>
 </ul>
 
 <p>
-&#x6BD4;&#x4F8B;&#x5206;&#x914D;&#x8C03;&#x5EA6;&#x5668;&#x5177;&#x6709;&#x5982;&#x4E0B;&#x7279;&#x70B9;&#xFF1A;
+比例分配调度器具有如下特点：
 </p>
 <ul class="org-ul">
-<li>&#x6BD4;&#x4F8B;&#x5206;&#x914D;&#x8C03;&#x5EA6;&#x5668;&#x53EF;&#x4EE5;&#x7AD9;&#x5728;&#x66F4;&#x4E3A;&#x5B8F;&#x89C2;&#x7684;&#x89D2;&#x5EA6;&#x6765;&#x5206;&#x914D;&#x5404;&#x4E2A;&#x4EFB;&#x52A1;&#x5360;&#x7528; CPU &#x7684;&#x767E;&#x5206;&#x6BD4;&#xFF0C;&#x770B;&#x5230;&#x8FD9;&#x91CC;&#x611F;&#x89C9;&#x548C; Linux &#x4E0B;&#x7684; cgroup &#x5F88;&#x50CF;&#x3002;</li>
+<li>比例分配调度器可以站在更为宏观的角度来分配各个任务占用 CPU 的百分比，看到这里感觉和 Linux 下的 cgroup 很像。</li>
 </ul>
 <pre class="example">
-&#x6BD4;&#x5982;&#x6709;&#x7528;&#x6237; A &#x548C; B&#xFF0C;&#x6BD4;&#x4F8B;&#x5206;&#x914D;&#x8C03;&#x5EA6;&#x5668;&#x4E3A;&#x4ED6;&#x4EEC;&#x5404;&#x5206;&#x914D;&#x4E86; 100 &#x4E2A; ticket&#x3002;
+比如有用户 A 和 B，比例分配调度器为他们各分配了 100 个 ticket。
 
-&#x5728;&#x7528;&#x6237; A &#x5185;&#x90E8;&#x4F7F;&#x7528;&#x4E86; 1000 &#x4E2A; ticket&#xFF0C;&#x5B83;&#x4E3A;&#x5176;&#x4EFB;&#x52A1; A1 &#x548C; A2 &#x5404;&#x5206;&#x914D; 500 &#x4E2A; ticket&#x3002;
-&#x5728;&#x7528;&#x6237; B &#x5185;&#x90E8;&#x4F7F;&#x7528;&#x4E86; 10 &#x4E2A; ticket&#xFF0C;&#x4E14;&#x53EA;&#x6709;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x3002;
+在用户 A 内部使用了 1000 个 ticket，它为其任务 A1 和 A2 各分配 500 个 ticket。
+在用户 B 内部使用了 10 个 ticket，且只有一个任务。
 
-&#x6700;&#x7EC8;&#xFF0C;&#x6BD4;&#x4F8B;&#x5206;&#x914D;&#x8C03;&#x5EA6;&#x5668;&#x4F1A;&#x7ED9;&#x4EFB;&#x52A1; A1 &#x548C; A2 &#x5404; 50 &#x4E2A; ticket&#xFF0C;&#x7ED9;&#x4EFB;&#x52A1; B 100 &#x4E2A; ticket&#xFF0C;
-&#x6240;&#x4EE5; B &#x4EFB;&#x52A1;&#x5360;&#x7528;&#x7684; CPU &#x8D44;&#x6E90;&#x66F4;&#x591A;&#x3002;</pre>
+最终，比例分配调度器会给任务 A1 和 A2 各 50 个 ticket，给任务 B 100 个 ticket，
+所以 B 任务占用的 CPU 资源更多。</pre>
 <ul class="org-ul">
-<li>&#x6BD4;&#x4F8B;&#x5206;&#x914D;&#x8C03;&#x5EA6;&#x5668;&#x53EF;&#x4EE5;&#x5C06;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x7684; tickets &#x4F20;&#x9001;&#x7ED9;&#x53E6;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#xFF0C;&#x8FD9;&#x5728; C/S &#x67B6;&#x6784;&#x4E0B;&#x5F88;&#x6709;&#x4F5C;&#x7528;&#x3002;</li>
+<li>比例分配调度器可以将一个任务的 tickets 传送给另一个任务，这在 C/S 架构下很有作用。</li>
 </ul>
 <pre class="example">
-&#x6BD4;&#x5982;&#x5BA2;&#x6237;&#x7AEF;&#x5411;&#x670D;&#x52A1;&#x7AEF;&#x53D1;&#x9001;&#x4E86;&#x4E00;&#x4E2A;&#x8BF7;&#x6C42;&#xFF0C;&#x5BA2;&#x6237;&#x7AEF;&#x5E0C;&#x671B;&#x670D;&#x52A1;&#x7AEF;&#x53EF;&#x4EE5;&#x5C3D;&#x5FEB;&#x7684;&#x5904;&#x7406;&#x5B8C;&#x6B64;&#x8BF7;&#x6C42;&#x3002;
+比如客户端向服务端发送了一个请求，客户端希望服务端可以尽快的处理完此请求。
 
-&#x90A3;&#x4E48;&#x5BA2;&#x6237;&#x7AEF;&#x53EF;&#x4EE5;&#x5C06;&#x5B83;&#x6240;&#x62E5;&#x6709;&#x7684; tickets &#x53D1;&#x9001;&#x7ED9;&#x670D;&#x52A1;&#x7AEF;&#xFF0C;&#x670D;&#x52A1;&#x7AEF;&#x4FBF;&#x53EF;&#x4EE5;&#x83B7;&#x5F97;&#x66F4;&#x591A;&#x7684; CPU &#x8D44;&#x6E90;&#x800C;&#x5B8C;&#x6210;&#x5F97;&#x66F4;&#x5FEB;&#x3002;
+那么客户端可以将它所拥有的 tickets 发送给服务端，服务端便可以获得更多的 CPU 资源而完成得更快。
 
-&#x5F53;&#x670D;&#x52A1;&#x7AEF;&#x5B8C;&#x6210;&#x6B64;&#x8BF7;&#x6C42;&#x4EE5;&#x540E;&#xFF0C;&#x518D;&#x5C06;&#x5BA2;&#x6237;&#x7AEF;&#x7684; tickets &#x5F52;&#x8FD8;&#x3002;</pre>
+当服务端完成此请求以后，再将客户端的 tickets 归还。</pre>
 <ul class="org-ul">
-<li>&#x6BCF;&#x4E2A;&#x4EFB;&#x52A1;&#x90FD;&#x53EF;&#x4EE5;&#x52A8;&#x6001;&#x7684;&#x8C03;&#x6574;&#x5176; tickets</li>
+<li>每个任务都可以动态的调整其 tickets</li>
 </ul>
 <pre class="example">
-&#x5F53;&#x4E00;&#x4E2A; group &#x7684;&#x591A;&#x4E2A;&#x4EFB;&#x52A1;&#x534F;&#x8C03;&#x5DE5;&#x4F5C;&#x65F6;&#xFF0C;&#x5176;&#x4E2D;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x9700;&#x8981;&#x77ED;&#x6682;&#x7684;&#x5360;&#x7528;&#x66F4;&#x591A;&#x7684; CPU &#x8D44;&#x6E90;&#xFF0C;
-&#x90A3;&#x4E48;&#x5B83;&#x53EF;&#x4EE5;&#x4E3B;&#x52A8;&#x63D0;&#x5347;&#x5176; tickets&#x3002;</pre>
+当一个 group 的多个任务协调工作时，其中一个任务需要短暂的占用更多的 CPU 资源，
+那么它可以主动提升其 tickets。</pre>
 </div>
 </div>
-<div id="outline-container-org3846733" class="outline-2">
-<h2 id="org3846733">&#x6267;&#x884C;&#x8FC7;&#x7A0B;</h2>
-<div class="outline-text-2" id="text-org3846733">
+<div id="outline-container-orgf0d767f" class="outline-2">
+<h2 id="orgf0d767f">执行过程</h2>
+<div class="outline-text-2" id="text-orgf0d767f">
 <p>
-&#x6BD4;&#x4F8B;&#x5206;&#x914D;&#x8C03;&#x5EA6;&#x5668;&#x7684;&#x8C03;&#x5EA6;&#x7B97;&#x6CD5;&#x6781;&#x4E3A;&#x7B80;&#x5355;&#xFF1A;
+比例分配调度器的调度算法极为简单：
 </p>
 <ol class="org-ol">
-<li>&#x5C06;&#x4EFB;&#x52A1;&#x90FD;&#x6302;&#x5728;&#x4E00;&#x4E2A;&#x94FE;&#x8868;&#x4E2D;&#xFF0C;&#x6BCF;&#x4E2A;&#x4EFB;&#x52A1;&#x90FD;&#x6709;&#x5176;&#x5BF9;&#x5E94;&#x7684; ticket&#xFF0C;&#x8FD9;&#x4E9B;&#x4EFB;&#x52A1;&#x7684; ticket &#x6C42;&#x548C;&#x5F97; A</li>
-<li>&#x4F7F;&#x7528;&#x968F;&#x673A;&#x6570;&#x53D1;&#x751F;&#x5668;&#x4F7F;&#x5F97;&#x5176;&#x4EA7;&#x751F;&#x4E00;&#x4E2A;&#x5728; A &#x5185;&#x7684;&#x503C;</li>
-<li>&#x4F7F;&#x7528;&#x8BA1;&#x6570;&#x5668;&#x4ECE; 0 &#x5F00;&#x59CB;&#x4F9D;&#x6B21;&#x4E0E;&#x6BCF;&#x4E2A;&#x4EFB;&#x52A1;&#x7684; ticket &#x76F8;&#x52A0;&#xFF0C;&#x5F53;&#x8BA1;&#x6570;&#x5668;&#x7684;&#x503C;&#x5927;&#x4E8E;&#x968F;&#x673A;&#x6570;&#x65F6;&#xFF0C;&#x4FBF;&#x8C03;&#x7528;&#x5F53;&#x524D;&#x4EFB;&#x52A1;</li>
+<li>将任务都挂在一个链表中，每个任务都有其对应的 ticket，这些任务的 ticket 求和得 A</li>
+<li>使用随机数发生器使得其产生一个在 A 内的值</li>
+<li>使用计数器从 0 开始依次与每个任务的 ticket 相加，当计数器的值大于随机数时，便调用当前任务</li>
 </ol>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// counter: used to track if we&#x2019;ve found the winner yet</span></span><br><span class="line"><span class="keyword">int</span> counter = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// winner: use some call to a random number generator to</span></span><br><span class="line"><span class="comment">// get a value, between 0 and the total # of tickets</span></span><br><span class="line"><span class="keyword">int</span> winner = getrandom(<span class="number">0</span>, totaltickets);</span><br><span class="line"></span><br><span class="line"><span class="comment">// current: use this to walk through the list of jobs</span></span><br><span class="line"><span class="keyword">node_t</span> *current = head;</span><br><span class="line"><span class="keyword">while</span> (current) {</span><br><span class="line">  counter = counter + current-&gt;tickets;</span><br><span class="line">  <span class="keyword">if</span> (counter &gt; winner)</span><br><span class="line">    <span class="keyword">break</span>; <span class="comment">// found the winner</span></span><br><span class="line">  current = current-&gt;next;</span><br><span class="line"> }</span><br><span class="line"><span class="comment">// &#x2019;current&#x2019; is the winner: schedule it...</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// counter: used to track if we’ve found the winner yet</span></span><br><span class="line"><span class="keyword">int</span> counter = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// winner: use some call to a random number generator to</span></span><br><span class="line"><span class="comment">// get a value, between 0 and the total # of tickets</span></span><br><span class="line"><span class="keyword">int</span> winner = getrandom(<span class="number">0</span>, totaltickets);</span><br><span class="line"></span><br><span class="line"><span class="comment">// current: use this to walk through the list of jobs</span></span><br><span class="line"><span class="keyword">node_t</span> *current = head;</span><br><span class="line"><span class="keyword">while</span> (current) {</span><br><span class="line">  counter = counter + current->tickets;</span><br><span class="line">  <span class="keyword">if</span> (counter > winner)</span><br><span class="line">    <span class="keyword">break</span>; <span class="comment">// found the winner</span></span><br><span class="line">  current = current->next;</span><br><span class="line"> }</span><br><span class="line"><span class="comment">// ’current’ is the winner: schedule it...</span></span><br></pre></td></tr></table></figure>
 </div>
 
 <p>
-&#x4E3A;&#x4E86;&#x63D0;&#x9AD8;&#x8C03;&#x5EA6;&#x5668;&#x7684;&#x6548;&#x7387;&#xFF0C;&#x53EF;&#x4EE5;&#x6839;&#x636E;&#x4EFB;&#x52A1;&#x7684; ticket &#x8FDB;&#x884C;&#x6392;&#x5E8F;&#xFF0C;ticket &#x503C;&#x5927;&#x7684;&#x5728;&#x524D;&#x9762;&#xFF0C;&#x8FD9;&#x662F;&#x4E3A;&#x4E86;&#x4F7F;&#x8BA1;&#x6570;&#x5668;&#x5FAA;&#x73AF;&#x5C3D;&#x91CF;&#x5C11;&#x7684;&#x6B21;&#x6570;&#x3002;
+为了提高调度器的效率，可以根据任务的 ticket 进行排序，ticket 值大的在前面，这是为了使计数器循环尽量少的次数。
 </p>
 </div>
 </div>
 
-<div id="outline-container-org9e81b53" class="outline-2">
-<h2 id="org9e81b53">&#x53E6;&#x4E00;&#x79CD;&#x601D;&#x8DEF;</h2>
-<div class="outline-text-2" id="text-org9e81b53">
+<div id="outline-container-orge1b562c" class="outline-2">
+<h2 id="orge1b562c">另一种思路</h2>
+<div class="outline-text-2" id="text-orge1b562c">
 <p>
-&#x6309;&#x7167;&#x524D;&#x9762;&#x7684;&#x8C03;&#x5EA6;&#x7B56;&#x7565;&#xFF0C;&#x5728;&#x77ED;&#x65F6;&#x95F4;&#x5185;&#x5B9E;&#x9645;&#x4E0A;&#x662F;&#x65E0;&#x6CD5;&#x8FBE;&#x5230;&#x6BCF;&#x4E2A;&#x4EFB;&#x52A1;&#x6240;&#x8981;&#x6C42;&#x7684;&#x6BD4;&#x4F8B;&#x7684;&#xFF0C;
-&#x4E3A;&#x6B64;&#x5148;&#x9A71;&#x4EEC;&#x4F7F;&#x7528; stride &#x548C; pass &#x6765;&#x5171;&#x540C;&#x51B3;&#x5B9A;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x4EC0;&#x4E48;&#x65F6;&#x5019;&#x8BE5;&#x88AB;&#x8FD0;&#x884C;&#xFF0C;&#x4EE5;&#x6C42;&#x8FBE;&#x5230;&#x516C;&#x5E73;&#x3002;
+按照前面的调度策略，在短时间内实际上是无法达到每个任务所要求的比例的，
+为此先驱们使用 stride 和 pass 来共同决定一个任务什么时候该被运行，以求达到公平。
 </p>
 <ul class="org-ul">
-<li>stride : &#x6BCF;&#x4E2A;&#x4EFB;&#x52A1;&#x6267;&#x884C;&#x7684;&#x8BA1;&#x6570;&#x6B65;&#x8FDB;</li>
-<li>pass : &#x6BCF;&#x4E2A;&#x4EFB;&#x52A1;&#x72EC;&#x6709;&#x7684;&#x603B;&#x7684;&#x8FD0;&#x884C;&#x8BA1;&#x6570;</li>
+<li>stride : 每个任务执行的计数步进</li>
+<li>pass : 每个任务独有的总的运行计数</li>
 </ul>
 
 <p>
-&#x5176;&#x8C03;&#x5EA6;&#x539F;&#x5219;&#x662F;&#xFF1A;&#x8C03;&#x5EA6; pass &#x503C;&#x6700;&#x5C0F;&#x7684;&#x90A3;&#x4E2A;&#x4EFB;&#x52A1;
+其调度原则是：调度 pass 值最小的那个任务
 </p>
 <ul class="org-ul">
-<li>&#x56E0;&#x4E3A;&#x8FD9;&#x610F;&#x5473;&#x7740;&#x90A3;&#x4E2A;&#x4EFB;&#x52A1;&#x88AB;&#x5206;&#x914D;&#x7684;&#x65F6;&#x95F4;&#x592A;&#x5C11;&#x4E86;</li>
+<li>因为这意味着那个任务被分配的时间太少了</li>
 </ul>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">curr = remove_min(<span class="built_in">queue</span>); <span class="comment">// pick client with min pass</span></span><br><span class="line">schedule(curr); <span class="comment">// run for quantum</span></span><br><span class="line">curr-&gt;pass += curr-&gt;stride; <span class="comment">// update pass using stride</span></span><br><span class="line">insert(<span class="built_in">queue</span>, curr); <span class="comment">// return curr to queue</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">curr = remove_min(<span class="built_in">queue</span>); <span class="comment">// pick client with min pass</span></span><br><span class="line">schedule(curr); <span class="comment">// run for quantum</span></span><br><span class="line">curr->pass += curr->stride; <span class="comment">// update pass using stride</span></span><br><span class="line">insert(<span class="built_in">queue</span>, curr); <span class="comment">// return curr to queue</span></span><br></pre></td></tr></table></figure>
 </div>
 
 <p>
-&#x5047;&#x8BBE;&#x4EFB;&#x52A1; A&#x3001;B&#x3001;C &#x7684; ticket &#x4F9D;&#x6B21;&#x4E3A; 100,50,250&#xFF0C;&#x4EE5; 10000 &#x9664;&#x4EE5;&#x8FD9;&#x4E9B;&#x503C;&#x5F97;&#x51FA;&#x5B83;&#x4EEC;&#x7684; stride &#x4F9D;&#x6B21;&#x4E3A;&#xFF1A;
-100&#x3001;200&#x3001;40&#x3002;
+假设任务 A、B、C 的 ticket 依次为 100,50,250，以 10000 除以这些值得出它们的 stride 依次为：
+100、200、40。
 </p>
 
 <p>
-&#x8FD9;&#x6837;&#x53EF;&#x4EE5;&#x753B;&#x51FA;&#x4E00;&#x4E2A;&#x8C03;&#x5EA6;&#x8868;&#xFF1A;
+这样可以画出一个调度表：
 </p>
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
@@ -410,7 +410,7 @@
 <th scope="col" class="org-right">Pass(A) (stride = 100)</th>
 <th scope="col" class="org-right">Pass(B)(stride = 200)</th>
 <th scope="col" class="org-right">Pass(C)(stide = 40)</th>
-<th scope="col" class="org-left">&#x5F53;&#x524D;&#x8FD0;&#x884C;</th>
+<th scope="col" class="org-left">当前运行</th>
 </tr>
 </thead>
 <tbody>
@@ -474,119 +474,119 @@
 <td class="org-right">200</td>
 <td class="org-right">200</td>
 <td class="org-right">200</td>
-<td class="org-left">&#x2026;</td>
+<td class="org-left">…</td>
 </tr>
 </tbody>
 </table>
 
 <p>
-&#x53EF;&#x4EE5;&#x770B;&#x5230; A&#x3001;B&#x3001;C &#x7684;&#x8FD0;&#x884C;&#x6B21;&#x6570;&#x4F9D;&#x6B21;&#x4E3A; 2&#x3001;1&#x3001;5,&#x8FD9;&#x5DF2;&#x7ECF;&#x5F88;&#x63A5;&#x8FD1;&#x4E4B;&#x524D;&#x5206;&#x914D;&#x7684; ticket &#x503C;&#x4E86;&#x3002;
+可以看到 A、B、C 的运行次数依次为 2、1、5,这已经很接近之前分配的 ticket 值了。
 </p>
 
 <p>
-<b>&#x9700;&#x8981;&#x6CE8;&#x610F;&#x7684;&#x662F;&#xFF1A;</b> &#x867D;&#x7136;&#x8FD9;&#x79CD;&#x8C03;&#x5EA6;&#x7B56;&#x7565;&#x770B;&#x4E0A;&#x53BB;&#x5F88;&#x516C;&#x5E73;&#xFF0C;&#x4F46;&#x5982;&#x679C;&#x4E2D;&#x9014;&#x63D2;&#x8FDB;&#x6765;&#x4E00;&#x4E2A;&#x65B0;&#x4EFB;&#x52A1;&#xFF0C;&#x90A3;&#x4E48;&#x5B83;&#x7684; pass &#x503C;&#x4E3A; 0,
-&#x5B83;&#x4F1A;&#x5360;&#x7528; CPU &#x5F88;&#x957F;&#x65F6;&#x95F4;&#x3002;
+<b>需要注意的是：</b> 虽然这种调度策略看上去很公平，但如果中途插进来一个新任务，那么它的 pass 值为 0,
+它会占用 CPU 很长时间。
 </p>
 
 <p>
-&#x6240;&#x4EE5;&#x7EFC;&#x5408;&#x6765;&#x770B;&#xFF0C;&#x8FD8;&#x662F;&#x968F;&#x673A;&#x6570;&#x7684;&#x8C03;&#x5EA6;&#x7B56;&#x7565;&#x66F4;&#x4E3A;&#x5408;&#x7406;&#xFF0C;&#x56E0;&#x4E3A;&#x5B83;&#x6BD4;&#x8F83;&#x7684;&#x662F;&#x589E;&#x91CF;&#x800C;&#x4E0D;&#x662F;&#x7EDD;&#x5BF9;&#x91CF;&#x3002;
+所以综合来看，还是随机数的调度策略更为合理，因为它比较的是增量而不是绝对量。
 </p>
 </div>
 </div>
-<div id="outline-container-org77e7a29" class="outline-2">
-<h2 id="org77e7a29">Linux &#x4E2D;&#x7684; CFS &#x8C03;&#x5EA6;&#x5668;</h2>
-<div class="outline-text-2" id="text-org77e7a29">
+<div id="outline-container-org9357295" class="outline-2">
+<h2 id="org9357295">Linux 中的 CFS 调度器</h2>
+<div class="outline-text-2" id="text-org9357295">
 <p>
-Linux &#x4E0B;&#x7684; CFS&#xFF08;Completely Fair Scheduler&#xFF0C;&#x5B8C;&#x5168;&#x516C;&#x5E73;&#x8C03;&#x5EA6;&#x5668;&#xFF09;&#x5728;<a href="http://kcmetercec.top/2018/05/26/linux_ps_schedule/#org384066f">&#x8FDB;&#x7A0B;&#x8BFE;&#x7A0B;</a>&#x4E2D;&#x6709;&#x6240;&#x4E86;&#x89E3;&#xFF0C;&#x5177;&#x6709;&#x6781;&#x9AD8;&#x7684;&#x5207;&#x6362;&#x6548;&#x7387;&#x4E14;&#x6EE1;&#x8DB3; IO &#x5BC6;&#x96C6;&#x548C; CPU &#x5BC6;&#x96C6;&#x578B;&#x7684;&#x534F;&#x8C03;&#x3002;
+Linux 下的 CFS（Completely Fair Scheduler，完全公平调度器）在<a href="http://kcmetercec.top/2018/05/26/linux_ps_schedule/#org384066f">进程课程</a>中有所了解，具有极高的切换效率且满足 IO 密集和 CPU 密集型的协调。
 </p>
 
 <p>
-Linux &#x4F7F;&#x7528;&#x865A;&#x62DF;&#x65F6;&#x95F4;&#xFF08;virtual runtime&#xFF0C;vruntime&#xFF09;&#x6765;&#x8868;&#x793A;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x6240;&#x5360;&#x6709;&#x7684; CPU &#x8D44;&#x6E90;&#xFF1A;
+Linux 使用虚拟时间（virtual runtime，vruntime）来表示一个任务所占有的 CPU 资源：
 </p>
 <ul class="org-ul">
-<li>&#x5F53;&#x4EFB;&#x52A1;&#x5728;&#x8FD0;&#x884C;&#x65F6;&#xFF0C;&#x5B83;&#x7684; vruntime &#x5C31;&#x4F1A;&#x7D2F;&#x52A0;</li>
-<li>&#x8C03;&#x5EA6;&#x5668;&#x8C03;&#x5EA6; vruntime &#x6700;&#x5C0F;&#x7684;&#x90A3;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;</li>
+<li>当任务在运行时，它的 vruntime 就会累加</li>
+<li>调度器调度 vruntime 最小的那一个任务</li>
 </ul>
 
 <p>
-CFS &#x4E0D;&#x80FD;&#x8C03;&#x5EA6;&#x5F97;&#x592A;&#x9891;&#x7E41;&#xFF0C;&#x4E0D;&#x7136;&#x4E0A;&#x4E0B;&#x6587;&#x7684;&#x5207;&#x6362;&#x65F6;&#x95F4;&#x5C06;&#x4F1A;&#x5360;&#x7528;&#x592A;&#x591A;&#x8D44;&#x6E90;&#x3002;&#x4F46;&#x4E5F;&#x4E0D;&#x80FD;&#x592A;&#x957F;&#xFF0C;&#x8FD9;&#x6837;&#x5C31;&#x65E0;&#x6CD5;&#x8FBE;&#x5230;&#x6240;&#x8C13;&#x7684;&#x516C;&#x5E73;&#x8C03;&#x5EA6;&#x3002;
+CFS 不能调度得太频繁，不然上下文的切换时间将会占用太多资源。但也不能太长，这样就无法达到所谓的公平调度。
 </p>
 
 <p>
-&#x4E3A;&#x6B64; CFS &#x8C03;&#x6574;&#x4E86;&#x4EE5;&#x4E0B;&#x53C2;&#x6570;&#xFF1A;
+为此 CFS 调整了以下参数：
 </p>
 <ul class="org-ul">
-<li>sched_latency : &#x52A8;&#x6001;&#x7684;&#x8C03;&#x6574;&#x65F6;&#x95F4;&#x7247;&#xFF08;&#x6BCF;&#x9694;&#x591A;&#x4E45;&#x8C03;&#x5EA6;&#x5668;&#x5224;&#x65AD;&#x662F;&#x5426;&#x8BE5;&#x5207;&#x6362;&#xFF09;
+<li>sched_latency : 动态的调整时间片（每隔多久调度器判断是否该切换）
 <ul class="org-ul">
-<li>&#x4E00;&#x822C;&#x6B64;&#x503C;&#x53D6; 48ms&#xFF0C;&#x7136;&#x540E;&#x7528;&#x6B64;&#x503C;&#x9664;&#x4EE5;&#x8FD0;&#x884C;&#x7684;&#x4EFB;&#x52A1;&#x6570;&#x91CF;&#xFF0C;&#x4FBF;&#x53EF;&#x4EE5;&#x5F97;&#x51FA;&#x6BCF;&#x4E2A;&#x4EFB;&#x52A1;&#x8C03;&#x5EA6;&#x7684;&#x65F6;&#x95F4;&#x7247;</li>
+<li>一般此值取 48ms，然后用此值除以运行的任务数量，便可以得出每个任务调度的时间片</li>
 </ul></li>
 </ul>
 <pre class="example">
-&#x5F53;&#x6709; 4 &#x4E2A;&#x4EFB;&#x52A1;&#x65F6;&#xFF0C;&#x90A3;&#x4E48;&#x6BCF;&#x4E2A;&#x4EFB;&#x52A1;&#x7684;&#x65F6;&#x95F4;&#x7247;&#x5C31;&#x662F; 12ms&#x3002;
-&#x5E76;&#x4E14;&#x5728;&#x8FD0;&#x884C;&#x8FC7;&#x7A0B;&#x4E2D;&#xFF0C;&#x6BCF;&#x4E2A;&#x4EFB;&#x52A1;&#x8FD0;&#x884C;&#x65F6;&#x7684; vruntime &#x90FD;&#x4F1A;&#x589E;&#x52A0;&#x3002;
-&#x90A3;&#x4E48;&#x5F53;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x7684;&#x65F6;&#x95F4;&#x7247;&#x5230;&#x4E86;&#x540E;&#xFF0C;&#x5FC5;&#x7136;&#x4F1A;&#x8C03;&#x5EA6;&#x53E6;&#x5916;&#x4E00;&#x4E2A; vruntime &#x66F4;&#x5C0F;&#x7684;&#x4EFB;&#x52A1;&#x3002;
+当有 4 个任务时，那么每个任务的时间片就是 12ms。
+并且在运行过程中，每个任务运行时的 vruntime 都会增加。
+那么当一个任务的时间片到了后，必然会调度另外一个 vruntime 更小的任务。
 
-&#x6700;&#x7EC8;&#x770B;&#x5230;&#x7684;&#x6548;&#x679C;&#x5C31;&#x662F; RR &#x7B56;&#x7565;&#x7684;&#x8F6E;&#x8BE2;&#x8C03;&#x5EA6;&#x65B9;&#x5F0F;&#x3002;</pre>
+最终看到的效果就是 RR 策略的轮询调度方式。</pre>
 <ul class="org-ul">
-<li>min_granularity : &#x6700;&#x5C0F;&#x7684;&#x8C03;&#x5EA6;&#x65F6;&#x95F4;&#x7247;&#xFF0C;&#x8FD9;&#x662F;&#x4E3A;&#x4E86;&#x907F;&#x514D;&#x4EFB;&#x52A1;&#x8FC7;&#x591A;&#x800C;&#x901A;&#x8FC7; <code>sched_latency</code> &#x8BA1;&#x7B97;&#x7684;&#x65F6;&#x95F4;&#x7247;&#x8FC7;&#x5C0F;
+<li>min_granularity : 最小的调度时间片，这是为了避免任务过多而通过 <code>sched_latency</code> 计算的时间片过小
 <ul class="org-ul">
-<li>&#x4E00;&#x822C;&#x6B64;&#x503C;&#x53D6; 6ms&#xFF0C;&#x4E5F;&#x5C31;&#x662F;&#x8C03;&#x5EA6;&#x5668;&#x6700;&#x77ED;&#x4E5F;&#x662F;&#x6BCF;&#x9694; 6ms &#x5224;&#x65AD;&#x4E00;&#x6B21;&#x4EFB;&#x52A1;&#x662F;&#x5426;&#x9700;&#x8981;&#x88AB;&#x5207;&#x6362;&#x3002;</li>
+<li>一般此值取 6ms，也就是调度器最短也是每隔 6ms 判断一次任务是否需要被切换。</li>
 </ul></li>
 </ul>
 </div>
 
-<div id="outline-container-org28c8d4d" class="outline-3">
-<h3 id="org28c8d4d">&#x4F18;&#x5148;&#x7EA7;</h3>
-<div class="outline-text-3" id="text-org28c8d4d">
+<div id="outline-container-org29e7e85" class="outline-3">
+<h3 id="org29e7e85">优先级</h3>
+<div class="outline-text-3" id="text-org29e7e85">
 <p>
-Linux &#x901A;&#x8FC7; nice &#x503C;&#xFF08;-20 &#xFF5E; +19&#xFF09;&#x6765;&#x786E;&#x8BA4;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x7684;&#x4F18;&#x5148;&#x7EA7;&#xFF0C;nice &#x503C;&#x8D8A;&#x5927;&#x4F18;&#x5148;&#x7EA7;&#x8D8A;&#x4F4E;&#xFF08;&#x9ED8;&#x8BA4;&#x4E3A; 0&#xFF09;&#x3002;
+Linux 通过 nice 值（-20 ～ +19）来确认一个任务的优先级，nice 值越大优先级越低（默认为 0）。
 </p>
 
 <p>
-nice &#x503C;&#x5BF9;&#x5E94;&#x5185;&#x6838;&#x4E2D;&#x7684; <code>weight</code> :
+nice 值对应内核中的 <code>weight</code> :
 </p>
 <div class="org-src-container">
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">const</span> <span class="keyword">int</span> prio_to_weight[<span class="number">40</span>] = {</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* -20 */</span> <span class="number">88761</span>, <span class="number">71755</span>, <span class="number">56483</span>, <span class="number">46273</span>, <span class="number">36291</span>,</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* -15 */</span> <span class="number">29154</span>, <span class="number">23254</span>, <span class="number">18705</span>, <span class="number">14949</span>, <span class="number">11916</span>,</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* -10 */</span> <span class="number">9548</span>, <span class="number">7620</span>, <span class="number">6100</span>, <span class="number">4904</span>, <span class="number">3906</span>,</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* -5  */</span> <span class="number">3121</span>, <span class="number">2501</span>, <span class="number">1991</span>, <span class="number">1586</span>, <span class="number">1277</span>,</span><br><span class="line"></span><br><span class="line">  <span class="comment">/*  0  */</span> <span class="number">1024</span>, <span class="number">820</span>, <span class="number">655</span>, <span class="number">526</span>, <span class="number">423</span>,</span><br><span class="line"></span><br><span class="line">  <span class="comment">/*  5  */</span> <span class="number">335</span>, <span class="number">272</span>, <span class="number">215</span>, <span class="number">172</span>, <span class="number">137</span>,</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* 10  */</span> <span class="number">110</span>, <span class="number">87</span>, <span class="number">70</span>, <span class="number">56</span>, <span class="number">45</span>,</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* 15  */</span> <span class="number">36</span>, <span class="number">29</span>, <span class="number">23</span>, <span class="number">18</span>, <span class="number">15</span>,</span><br><span class="line">};</span><br></pre></td></tr></table></figure>
 </div>
 
 <p>
-&#x52A0;&#x4E0A;&#x4F18;&#x5148;&#x7EA7;&#x673A;&#x5236;&#x540E;&#xFF0C;&#x6BCF;&#x4E2A;&#x4EFB;&#x52A1;&#x7684;&#x65F6;&#x95F4;&#x7247;&#x7531;&#x4E0B;&#x9762;&#x516C;&#x5F0F;&#x51B3;&#x5B9A;:
+加上优先级机制后，每个任务的时间片由下面公式决定:
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/cfs_time_slice.jpg?raw=true" alt="cfs_time_slice.jpg">
 <ul class="org-ul">
-<li>&#x5F53;&#x524D;&#x4EFB;&#x52A1;&#x7684; <code>weight</code> &#x9664;&#x4EE5;&#x603B;&#x8FD0;&#x884C;&#x4EFB;&#x52A1;&#x7684; <code>weight</code> &#x7684;&#x548C;&#xFF0C;&#x518D;&#x4E58;&#x4EE5; <code>sched_latency</code></li>
+<li>当前任务的 <code>weight</code> 除以总运行任务的 <code>weight</code> 的和，再乘以 <code>sched_latency</code></li>
 </ul>
 <pre class="example">
-&#x6BD4;&#x5982;&#x5F53;&#x524D;&#x7CFB;&#x7EDF;&#x6709;&#x4EFB;&#x52A1; A &#x548C; B&#xFF1A;
-&#x4EFB;&#x52A1; A &#x9AD8;&#x4F18;&#x5148;&#x7EA7;&#xFF0C;&#x5176; nice &#x503C;&#x4E3A; -5&#xFF0C;&#x5BF9;&#x5E94;&#x7684; weight &#x4E3A; 3121
-&#x4EFB;&#x52A1; B &#x666E;&#x901A;&#x4F18;&#x5148;&#x7EA7;&#xFF0C;&#x5176; nice &#x503C;&#x4E3A; 0&#xFF0C;&#x5BF9;&#x5E94;&#x7684; weight &#x4E3A; 1024
+比如当前系统有任务 A 和 B：
+任务 A 高优先级，其 nice 值为 -5，对应的 weight 为 3121
+任务 B 普通优先级，其 nice 值为 0，对应的 weight 为 1024
 
-&#x90A3;&#x4E48;&#xFF1A;
-&#x4EFB;&#x52A1; A &#x7684;&#x65F6;&#x95F4;&#x7247;&#x4E3A; : 3121 / (3121 + 1024) * sched_latency
-&#x4EFB;&#x52A1; B &#x7684;&#x65F6;&#x95F4;&#x7247;&#x4E3A; : 1024 / (3121 + 1024) * sched_latency</pre>
+那么：
+任务 A 的时间片为 : 3121 / (3121 + 1024) * sched_latency
+任务 B 的时间片为 : 1024 / (3121 + 1024) * sched_latency</pre>
 
 <p>
-&#x6BCF;&#x4E2A;&#x4EFB;&#x52A1;&#x7684; <code>vruntime</code> &#x7531;&#x4E0B;&#x9762;&#x516C;&#x5F0F;&#x51B3;&#x5B9A;&#xFF1A;
+每个任务的 <code>vruntime</code> 由下面公式决定：
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/cfs_vruntime.jpg?raw=true" alt="cfs_vruntime.jpg">
 <ul class="org-ul">
-<li>&#x53EF;&#x4EE5;&#x770B;&#x5230;&#xFF1A;&#x5F53; nice &#x503C;&#x8D8A;&#x5C0F;&#xFF0C; weight &#x8D8A;&#x5927;&#xFF0C;&#x5176; <code>vruntime</code> &#x589E;&#x52A0;&#x5F97;&#x5C31;&#x8D8A;&#x6162;&#xFF0C;&#x90A3;&#x4E48;&#x5B83;&#x5360;&#x7528; CPU &#x7684;&#x8D44;&#x6E90;&#x5C31;&#x8D8A;&#x591A;&#x3002;</li>
+<li>可以看到：当 nice 值越小， weight 越大，其 <code>vruntime</code> 增加得就越慢，那么它占用 CPU 的资源就越多。</li>
 </ul>
 </div>
 </div>
 
-<div id="outline-container-org089af11" class="outline-3">
-<h3 id="org089af11">&#x4F7F;&#x7528;&#x7EA2;&#x9ED1;&#x6811;&#x5B8C;&#x6210;&#x8C03;&#x5EA6;&#x7B56;&#x7565;</h3>
-<div class="outline-text-3" id="text-org089af11">
+<div id="outline-container-org10805a0" class="outline-3">
+<h3 id="org10805a0">使用红黑树完成调度策略</h3>
+<div class="outline-text-3" id="text-org10805a0">
 <p>
-&#x7EA2;&#x9ED1;&#x6811;&#x7684;&#x6392;&#x5E8F;&#x7B97;&#x6CD5;&#x4F7F;&#x5F97;&#x5C0F; vruntime &#x7684;&#x4EFB;&#x52A1;&#x59CB;&#x7EC8;&#x90FD;&#x5728;&#x5DE6;&#x5B50;&#x6811;&#xFF0C;&#x4FBF;&#x53EF;&#x4EE5;&#x76F4;&#x63A5;&#x5F97;&#x51FA;&#x4E0B;&#x4E00;&#x6B21;&#x8BE5;&#x8C03;&#x5EA6;&#x7684;&#x4EFB;&#x52A1;&#x3002;
+红黑树的排序算法使得小 vruntime 的任务始终都在左子树，便可以直接得出下一次该调度的任务。
 </p>
 <ul class="org-ul">
-<li>&#x7EA2;&#x9ED1;&#x6811;&#x4E0A;&#x6302;&#x7684;&#x90FD;&#x662F;&#x5F53;&#x524D;&#x6B63;&#x5728;&#x8FD0;&#x884C;&#x7684;&#x4EFB;&#x52A1;</li>
-<li>&#x5F53;&#x4EFB;&#x52A1;&#x4ECE;&#x7761;&#x7720;&#x8F6C;&#x53D8;&#x5230;&#x5C31;&#x7EEA;&#x6001;&#x65F6;&#xFF0C;&#x5185;&#x6838;&#x4F1A;&#x5C06;&#x5176; vruntime &#x8BBE;&#x7F6E;&#x4E3A;&#x6811;&#x4E2D;&#x7684;&#x6700;&#x5C0F;&#x503C;
+<li>红黑树上挂的都是当前正在运行的任务</li>
+<li>当任务从睡眠转变到就绪态时，内核会将其 vruntime 设置为树中的最小值
 <ul class="org-ul">
-<li>&#x907F;&#x514D;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x7761;&#x7720;&#x8FC7;&#x4E45;&#x800C; vruntime &#x592A;&#x5C0F;&#xFF0C;&#x5BFC;&#x81F4;&#x5176;&#x4ED6;&#x4EFB;&#x52A1;&#x957F;&#x65F6;&#x95F4;&#x6CA1;&#x6709;&#x673A;&#x4F1A;&#x8FD0;&#x884C;</li>
-<li>&#x4F46;&#x5F53;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x7761;&#x7720;&#x65F6;&#x95F4;&#x592A;&#x77ED;&#x4E14;&#x9891;&#x7E41;&#x7761;&#x7720;&#x65F6;&#xFF0C;&#x5B83;&#x603B;&#x662F;&#x4F1A;&#x5360;&#x7528;&#x66F4;&#x591A;&#x7684; CPU &#x8D44;&#x6E90;&#x3002;</li>
+<li>避免一个任务睡眠过久而 vruntime 太小，导致其他任务长时间没有机会运行</li>
+<li>但当一个任务睡眠时间太短且频繁睡眠时，它总是会占用更多的 CPU 资源。</li>
 </ul></li>
 </ul>
 </div>
@@ -594,7 +594,7 @@ nice &#x503C;&#x5BF9;&#x5E94;&#x5185;&#x6838;&#x4E2D;&#x7684; <code>weight</code
 </div>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
 </div>
 
     </div>
@@ -680,7 +680,7 @@ Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org699189e"><span class="nav-number">1.</span> <span class="nav-text">tickets &amp;#x8868;&amp;#x793A;&amp;#x4E00;&amp;#x4E2A;&amp;#x4EFB;&amp;#x52A1;&amp;#x6240;&amp;#x5360;&amp;#x7528;&amp;#x7684; CPU &amp;#x767E;&amp;#x5206;&amp;#x6BD4;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org3846733"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x6267;&amp;#x884C;&amp;#x8FC7;&amp;#x7A0B;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org9e81b53"><span class="nav-number">3.</span> <span class="nav-text">&amp;#x53E6;&amp;#x4E00;&amp;#x79CD;&amp;#x601D;&amp;#x8DEF;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org77e7a29"><span class="nav-number">4.</span> <span class="nav-text">Linux &amp;#x4E2D;&amp;#x7684; CFS &amp;#x8C03;&amp;#x5EA6;&amp;#x5668;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org28c8d4d"><span class="nav-number">4.1.</span> <span class="nav-text">&amp;#x4F18;&amp;#x5148;&amp;#x7EA7;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org089af11"><span class="nav-number">4.2.</span> <span class="nav-text">&amp;#x4F7F;&amp;#x7528;&amp;#x7EA2;&amp;#x9ED1;&amp;#x6811;&amp;#x5B8C;&amp;#x6210;&amp;#x8C03;&amp;#x5EA6;&amp;#x7B56;&amp;#x7565;</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org7cbd916"><span class="nav-number">1.</span> <span class="nav-text">tickets 表示一个任务所占用的 CPU 百分比</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgf0d767f"><span class="nav-number">2.</span> <span class="nav-text">执行过程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orge1b562c"><span class="nav-number">3.</span> <span class="nav-text">另一种思路</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org9357295"><span class="nav-number">4.</span> <span class="nav-text">Linux 中的 CFS 调度器</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org29e7e85"><span class="nav-number">4.1.</span> <span class="nav-text">优先级</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org10805a0"><span class="nav-number">4.2.</span> <span class="nav-text">使用红黑树完成调度策略</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 

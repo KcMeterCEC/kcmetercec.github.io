@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="&amp;#x7528;&amp;#x6237;&amp;#x7A7A;&amp;#x95F4;&amp;#x7684;udev&amp;#x53EF;&amp;#x4EE5;&amp;#x63A5;&amp;#x6536;&amp;#x5185;&amp;#x6838;&amp;#x8BBE;&amp;#x5907;&amp;#x53D1;&amp;#x9001;&amp;#x7684;netlink&amp;#x6D88;&amp;#x606F;&amp;#xFF0C;&amp;#x5E76;&amp;#x6839;&amp;#x636E;&amp;#x5F53;&amp;#x">
+  <meta name="description" content="用户空间的udev可以接收内核设备发送的netlink消息，并根据当前状态动作。    运行下面的代码即可体验:   123456789101112131415161718192021222324252627282930313233343536373839404142434445464748495051525354555657#include #include #include #includ">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[What]Linux udev基础操作">
 <meta property="og:url" content="http://kcmetercec.top/2018/11/09/linux_operations_udev_basic/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="&amp;#x7528;&amp;#x6237;&amp;#x7A7A;&amp;#x95F4;&amp;#x7684;udev&amp;#x53EF;&amp;#x4EE5;&amp;#x63A5;&amp;#x6536;&amp;#x5185;&amp;#x6838;&amp;#x8BBE;&amp;#x5907;&amp;#x53D1;&amp;#x9001;&amp;#x7684;netlink&amp;#x6D88;&amp;#x606F;&amp;#xFF0C;&amp;#x5E76;&amp;#x6839;&amp;#x636E;&amp;#x5F53;&amp;#x">
+<meta property="og:description" content="用户空间的udev可以接收内核设备发送的netlink消息，并根据当前状态动作。    运行下面的代码即可体验:   123456789101112131415161718192021222324252627282930313233343536373839404142434445464748495051525354555657#include #include #include #includ">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2018-11-08T16:00:00.000Z">
 <meta property="article:modified_time" content="2020-08-01T01:09:06.524Z">
@@ -299,96 +299,96 @@
       
         <div id="content">
 <p>
-&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x7684;udev&#x53EF;&#x4EE5;&#x63A5;&#x6536;&#x5185;&#x6838;&#x8BBE;&#x5907;&#x53D1;&#x9001;&#x7684;netlink&#x6D88;&#x606F;&#xFF0C;&#x5E76;&#x6839;&#x636E;&#x5F53;&#x524D;&#x72B6;&#x6001;&#x52A8;&#x4F5C;&#x3002;
+用户空间的udev可以接收内核设备发送的netlink消息，并根据当前状态动作。
 </p>
 
 <p>
-&#x8FD0;&#x884C;&#x4E0B;&#x9762;&#x7684;&#x4EE3;&#x7801;&#x5373;&#x53EF;&#x4F53;&#x9A8C;:
+运行下面的代码即可体验:
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/netlink.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;poll.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">die</span><span class="params">(<span class="keyword">char</span> *s)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    write(<span class="number">2</span>, s, <span class="built_in">strlen</span>(s));</span><br><span class="line">    <span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[])</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_nl</span> <span class="title">nls</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">pollfd</span>   <span class="title">pfd</span>;</span></span><br><span class="line">    <span class="keyword">char</span> buf[<span class="number">512</span>];</span><br><span class="line"></span><br><span class="line">    <span class="comment">//Open hotplug event netlink socket</span></span><br><span class="line">    <span class="built_in">memset</span>(&amp;nls, <span class="number">0</span>, <span class="keyword">sizeof</span>(struct sockaddr_nl));</span><br><span class="line">    nls.nl_family = AF_NETLINK;</span><br><span class="line">    nls.nl_groups = <span class="number">-1</span>;</span><br><span class="line"></span><br><span class="line">    pfd.events = POLLIN;</span><br><span class="line">    pfd.fd = socket(PF_NETLINK, SOCK_DGRAM, NETLINK_KOBJECT_UEVENT);</span><br><span class="line">    <span class="keyword">if</span>(pfd.fd == <span class="number">-1</span>)</span><br><span class="line">    {</span><br><span class="line">	die(<span class="string">&quot;Not root\n&quot;</span>);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="comment">//listen to netlink socket</span></span><br><span class="line">    <span class="keyword">if</span>(bind(pfd.fd, (<span class="keyword">void</span> *)&amp;nls, <span class="keyword">sizeof</span>(struct sockaddr_nl)))</span><br><span class="line">    {</span><br><span class="line">	die(<span class="string">&quot;Bind failed!\n&quot;</span>);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">while</span>(<span class="number">-1</span> != poll(&amp;pfd, <span class="number">1</span>, <span class="number">-1</span>))</span><br><span class="line">    {</span><br><span class="line">	<span class="keyword">int</span> i, len = recv(pfd.fd, buf, <span class="keyword">sizeof</span>(buf), MSG_DONTWAIT);</span><br><span class="line">	<span class="keyword">if</span>(len == <span class="number">-1</span>)</span><br><span class="line">	{</span><br><span class="line">	    die(<span class="string">&quot;recv\n&quot;</span>);</span><br><span class="line">	}</span><br><span class="line">	<span class="comment">//print the data to stdout</span></span><br><span class="line">	i = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">while</span>(i &lt; len)</span><br><span class="line">	{</span><br><span class="line">	    <span class="built_in">printf</span>(<span class="string">&quot;%s\n&quot;</span>, buf + i);;</span><br><span class="line">	    i += <span class="built_in">strlen</span>(buf + i) + <span class="number">1</span>;</span><br><span class="line">	}</span><br><span class="line">    }</span><br><span class="line">    die(<span class="string">&quot;poll\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><linux/netlink.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><sys/types.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><sys/socket.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><stdio.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><stdlib.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><string.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><unistd.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><poll.h></span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">die</span><span class="params">(<span class="keyword">char</span> *s)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    write(<span class="number">2</span>, s, <span class="built_in">strlen</span>(s));</span><br><span class="line">    <span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[])</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_nl</span> <span class="title">nls</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">pollfd</span>   <span class="title">pfd</span>;</span></span><br><span class="line">    <span class="keyword">char</span> buf[<span class="number">512</span>];</span><br><span class="line"></span><br><span class="line">    <span class="comment">//Open hotplug event netlink socket</span></span><br><span class="line">    <span class="built_in">memset</span>(&nls, <span class="number">0</span>, <span class="keyword">sizeof</span>(struct sockaddr_nl));</span><br><span class="line">    nls.nl_family = AF_NETLINK;</span><br><span class="line">    nls.nl_groups = <span class="number">-1</span>;</span><br><span class="line"></span><br><span class="line">    pfd.events = POLLIN;</span><br><span class="line">    pfd.fd = socket(PF_NETLINK, SOCK_DGRAM, NETLINK_KOBJECT_UEVENT);</span><br><span class="line">    <span class="keyword">if</span>(pfd.fd == <span class="number">-1</span>)</span><br><span class="line">    {</span><br><span class="line">	die(<span class="string">"Not root\n"</span>);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="comment">//listen to netlink socket</span></span><br><span class="line">    <span class="keyword">if</span>(bind(pfd.fd, (<span class="keyword">void</span> *)&nls, <span class="keyword">sizeof</span>(struct sockaddr_nl)))</span><br><span class="line">    {</span><br><span class="line">	die(<span class="string">"Bind failed!\n"</span>);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">while</span>(<span class="number">-1</span> != poll(&pfd, <span class="number">1</span>, <span class="number">-1</span>))</span><br><span class="line">    {</span><br><span class="line">	<span class="keyword">int</span> i, len = recv(pfd.fd, buf, <span class="keyword">sizeof</span>(buf), MSG_DONTWAIT);</span><br><span class="line">	<span class="keyword">if</span>(len == <span class="number">-1</span>)</span><br><span class="line">	{</span><br><span class="line">	    die(<span class="string">"recv\n"</span>);</span><br><span class="line">	}</span><br><span class="line">	<span class="comment">//print the data to stdout</span></span><br><span class="line">	i = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">while</span>(i < len)</span><br><span class="line">	{</span><br><span class="line">	    <span class="built_in">printf</span>(<span class="string">"%s\n"</span>, buf + i);;</span><br><span class="line">	    i += <span class="built_in">strlen</span>(buf + i) + <span class="number">1</span>;</span><br><span class="line">	}</span><br><span class="line">    }</span><br><span class="line">    die(<span class="string">"poll\n"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 </div>
 
 <a id="more"></a>
 
-<div id="outline-container-org4a504e6" class="outline-2">
-<h2 id="org4a504e6">&#x89C4;&#x5219;</h2>
-<div class="outline-text-2" id="text-org4a504e6">
+<div id="outline-container-org871ae2c" class="outline-2">
+<h2 id="org871ae2c">规则</h2>
+<div class="outline-text-2" id="text-org871ae2c">
 </div>
-<div id="outline-container-orgd951a9a" class="outline-3">
-<h3 id="orgd951a9a">&#x6587;&#x4EF6;&#x4F4D;&#x7F6E;</h3>
-<div class="outline-text-3" id="text-orgd951a9a">
+<div id="outline-container-org700f17e" class="outline-3">
+<h3 id="org700f17e">文件位置</h3>
+<div class="outline-text-3" id="text-org700f17e">
 <p>
-udev&#x63A5;&#x6536;&#x8BBE;&#x5907;&#x7684;&#x6D88;&#x606F;&#x540E;&#xFF0C;&#x5176;&#x5177;&#x4F53;&#x52A8;&#x4F5C;&#x5219;&#x662F;&#x7531;&#x89C4;&#x5219;&#x6587;&#x4EF6;&#x6240;&#x89C4;&#x5B9A;&#x7684;&#x3002;
+udev接收设备的消息后，其具体动作则是由规则文件所规定的。
 </p>
 <ul class="org-ul">
-<li>&#x89C4;&#x5219;&#x6587;&#x4EF6;&#x7684;&#x540E;&#x7F00;&#x4E3A; <code>.rules</code> &#xFF0C;&#x4EE5; root &#x6743;&#x9650;&#x7528;&#x6237;&#x53EF;&#x4EE5;&#x5C06;&#x6587;&#x4EF6;&#x653E;&#x5728; <code>/etc/udev/rules.d</code> &#x4E2D;,&#x6216;&#x653E;&#x5728;&#x8FD0;&#x884C;&#x65F6;&#x6587;&#x4EF6;&#x5939; <code>/run/udev/rules.d</code>
+<li>规则文件的后缀为 <code>.rules</code> ，以 root 权限用户可以将文件放在 <code>/etc/udev/rules.d</code> 中,或放在运行时文件夹 <code>/run/udev/rules.d</code>
 <ul class="org-ul">
-<li>&#x7CFB;&#x7EDF;&#x7684;&#x89C4;&#x5219;&#x6587;&#x4EF6;&#x5B58;&#x5728;&#x4E8E; <code>/lib/udev/rules.d</code> &#x4E2D;&#xFF0C;&#x5F53;&#x7528;&#x6237;&#x6587;&#x4EF6;&#x4E2D;&#x6709;&#x4E0E;&#x7CFB;&#x7EDF;&#x6587;&#x4EF6;&#x540C;&#x540D;&#x7684;&#x6587;&#x4EF6;&#x65F6;&#xFF0C;&#x5219;&#x4F1A;&#x8986;&#x76D6;&#x7CFB;&#x7EDF;&#x6587;&#x4EF6;&#x7684;&#x8BBE;&#x7F6E;
+<li>系统的规则文件存在于 <code>/lib/udev/rules.d</code> 中，当用户文件中有与系统文件同名的文件时，则会覆盖系统文件的设置
 <ul class="org-ul">
-<li>&#x540C;&#x540D;&#x6587;&#x4EF6;&#x8986;&#x76D6;&#x65F6;&#xFF0C;&#x4F18;&#x5148;&#x7EA7;&#x7531;&#x9AD8;&#x5230;&#x4F4E;&#x4F9D;&#x6B21;&#x662F; <code>/etc,/run,/lib</code></li>
+<li>同名文件覆盖时，优先级由高到低依次是 <code>/etc,/run,/lib</code></li>
 </ul></li>
 </ul></li>
-<li>&#x89C4;&#x5219;&#x6587;&#x4EF6;&#x540D;&#x79F0;&#x4EE5;&#x4E00;&#x4E2A;&#x6570;&#x5B57;&#x5F00;&#x5934;&#x4EE3;&#x8868;&#x5176;&#x8FD0;&#x884C;&#x7684;&#x5148;&#x540E;&#x987A;&#x5E8F;&#xFF0C;&#x6BD4;&#x5982; <code>52-xilinx-pcusb.rules</code> 
+<li>规则文件名称以一个数字开头代表其运行的先后顺序，比如 <code>52-xilinx-pcusb.rules</code> 
 <ul class="org-ul">
-<li>udev &#x8FD0;&#x884C;&#x6587;&#x4EF6;&#x662F;&#x4EE5;&#x6570;&#x503C;&#x548C;&#x5B57;&#x6BCD;&#x6392;&#x5E8F;&#x6765;&#x8FD0;&#x884C;&#x7684;</li>
+<li>udev 运行文件是以数值和字母排序来运行的</li>
 </ul></li>
 </ul>
 </div>
 </div>
-<div id="outline-container-org42f365b" class="outline-3">
-<h3 id="org42f365b">&#x8BED;&#x6CD5;</h3>
-<div class="outline-text-3" id="text-org42f365b">
+<div id="outline-container-org90617e7" class="outline-3">
+<h3 id="org90617e7">语法</h3>
+<div class="outline-text-3" id="text-org90617e7">
 </div>
-<div id="outline-container-org071393e" class="outline-4">
-<h4 id="org071393e">&#x57FA;&#x672C;&#x601D;&#x60F3;</h4>
-<div class="outline-text-4" id="text-org071393e">
+<div id="outline-container-orgb1e7b89" class="outline-4">
+<h4 id="orgb1e7b89">基本思想</h4>
+<div class="outline-text-4" id="text-orgb1e7b89">
 <p>
-&#x9700;&#x8981;&#x7406;&#x89E3;&#x7684;&#x662F;&#xFF0C;&#x89C4;&#x5219;&#x6587;&#x4EF6;&#x7684;&#x8BED;&#x6CD5;&#x7531;&#x4E24;&#x5927;&#x90E8;&#x5206;&#x7EC4;&#x6210;&#xFF1A;
+需要理解的是，规则文件的语法由两大部分组成：
 </p>
 <ol class="org-ol">
-<li>&#x8BBE;&#x5907;&#x5339;&#x914D;&#xFF1A;&#x6B64;&#x90E8;&#x5206;&#x4F7F;&#x7528;&#x5E8F;&#x5217;&#x53F7;&#x4E0E;&#x5185;&#x6838;&#x53D1;&#x9001;&#x7684;&#x6D88;&#x606F;&#x5339;&#x914D;</li>
-<li>&#x540E;&#x7EED;&#x52A8;&#x4F5C;&#xFF1A;&#x5F53;&#x8BBE;&#x5907;&#x5339;&#x914D;&#x6210;&#x529F;&#x540E;&#xFF0C;&#x4FBF;&#x6267;&#x884C;&#x5F53;&#x524D;&#x7684;&#x52A8;&#x4F5C;</li>
+<li>设备匹配：此部分使用序列号与内核发送的消息匹配</li>
+<li>后续动作：当设备匹配成功后，便执行当前的动作</li>
 </ol>
 </div>
 </div>
-<div id="outline-container-orgce5183c" class="outline-4">
-<h4 id="orgce5183c">&#x57FA;&#x672C;&#x89C4;&#x5219;</h4>
-<div class="outline-text-4" id="text-orgce5183c">
+<div id="outline-container-org565814a" class="outline-4">
+<h4 id="org565814a">基本规则</h4>
+<div class="outline-text-4" id="text-org565814a">
 <ul class="org-ul">
-<li>&#x7A7A;&#x683C;&#x884C;&#x548C;&#x6CE8;&#x91CA;&#x884C;(&#x4EE5;&quot;#&quot;&#x5F00;&#x5934;)&#x4F1A;&#x88AB;&#x5FFD;&#x7565;</li>
-<li>&#x89C4;&#x5219;&#x6BCF;&#x4E00;&#x884C;&#x81F3;&#x5C11;&#x5305;&#x542B;&#x4E00;&#x5BF9; &quot;key=value&quot; &#x7684;&#x952E;&#x503C;&#x5BF9;&#xFF0C;&#x5176;&#x4E2D;&#x7684;key&#x5C31;&#x5305;&#x542B;&#x8BBE;&#x5907;&#x5339;&#x914D;&#x952E;&#x548C;&#x8D4B;&#x503C;&#x952E;
+<li>空格行和注释行(以"#"开头)会被忽略</li>
+<li>规则每一行至少包含一对 "key=value" 的键值对，其中的key就包含设备匹配键和赋值键
 <ul class="org-ul">
-<li>&#x9996;&#x5148;&#x5F97;&#x9700;&#x8981;&#x6240;&#x6709;&#x7684;&#x8BBE;&#x5907;&#x5339;&#x914D;&#x952E; <b>&#x5B8C;&#x5168;&#x5339;&#x914D;</b> &#x540E;&#xFF0C;&#x540E;&#x9762;&#x7684;&#x8D4B;&#x503C;&#x952E;&#x624D;&#x4F1A;&#x751F;&#x6548;</li>
+<li>首先得需要所有的设备匹配键 <b>完全匹配</b> 后，后面的赋值键才会生效</li>
 </ul></li>
-<li>&#x4E00;&#x4E2A;&#x89C4;&#x5219;&#x6587;&#x4EF6;&#x662F;&#x7531;&#x591A;&#x4E2A;&#x952E;&#x503C;&#x5BF9;&#x6240;&#x7EC4;&#x6210;&#x7684;&#xFF0C;&#x5B83;&#x4EEC;&#x4E4B;&#x95F4;&#x901A;&#x8FC7;&#x9017;&#x53F7;&#x5206;&#x9694;</li>
+<li>一个规则文件是由多个键值对所组成的，它们之间通过逗号分隔</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-org0c696c1" class="outline-4">
-<h4 id="org0c696c1">&#x57FA;&#x672C;&#x64CD;&#x4F5C;</h4>
-<div class="outline-text-4" id="text-org0c696c1">
+<div id="outline-container-org3dc1284" class="outline-4">
+<h4 id="org3dc1284">基本操作</h4>
+<div class="outline-text-4" id="text-org3dc1284">
 <p>
-&#x6BCF;&#x4E2A;&#x952E;&#x503C;&#x5BF9;&#x53EF;&#x6267;&#x884C;&#x5982;&#x4E0B;&#x64CD;&#x4F5C;:
+每个键值对可执行如下操作:
 </p>
 <ul class="org-ul">
-<li>&quot;==&quot; : &#x5224;&#x65AD;&#x662F;&#x5426;&#x76F8;&#x7B49;</li>
-<li>&quot;!=&quot; : &#x5224;&#x65AD;&#x662F;&#x5426;&#x4E0D;&#x7B49;</li>
-<li>&quot;=&quot;  : &#x76F4;&#x63A5;&#x7ED9;key&#x8D4B;&#x503C;&#xFF0C;key&#x4E4B;&#x524D;&#x7684;&#x503C;&#x5C06;&#x4F1A;&#x88AB;&#x8986;&#x76D6;</li>
-<li>&quot;+=&quot; : &#x7ED9;key&#x8FFD;&#x52A0;&#x8D4B;&#x503C;&#xFF0C;&#x65B0;&#x503C;&#x4F1A;&#x52A0;&#x5165;key&#x7684;&#x5217;&#x8868;&#x4E2D;</li>
-<li>&quot;-=&quot; : &#x5220;&#x9664;key&#x5217;&#x8868;&#x4E2D;&#x5305;&#x542B;&#x7684;&#x6B64;&#x503C;</li>
-<li>&quot;:=&quot; : &#x6700;&#x7EC8;&#x8D4B;&#x503C;&#xFF0C;&#x4E5F;&#x5C31;&#x662F;&#x5C06;key&#x7684;&#x503C;&#x5B9A;&#x6B7B;&#x4E3A;&#x8FD9;&#x4E2A;&#x503C;&#x4E86;&#xFF0C;&#x5B83;&#x4E0D;&#x4F1A;&#x88AB;&#x4E4B;&#x540E;&#x7684;&#x503C;&#x8986;&#x76D6;&#x4E86;</li>
+<li>"==" : 判断是否相等</li>
+<li>"!=" : 判断是否不等</li>
+<li>"="  : 直接给key赋值，key之前的值将会被覆盖</li>
+<li>"+=" : 给key追加赋值，新值会加入key的列表中</li>
+<li>"-=" : 删除key列表中包含的此值</li>
+<li>":=" : 最终赋值，也就是将key的值定死为这个值了，它不会被之后的值覆盖了</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-orge3ff94b" class="outline-4">
-<h4 id="orge3ff94b">key&#x7684;&#x5339;&#x914D;</h4>
-<div class="outline-text-4" id="text-orge3ff94b">
+<div id="outline-container-org343b501" class="outline-4">
+<h4 id="org343b501">key的匹配</h4>
+<div class="outline-text-4" id="text-org343b501">
 <p>
-&#x6709;&#x4E0B;&#x9762;&#x8FD9;&#x4E9B;key&#x5339;&#x914D;&#x53EF;&#x4EE5;&#x88AB;&#x4F7F;&#x7528;:
+有下面这些key匹配可以被使用:
 </p>
 <ul class="org-ul">
-<li>&#x8FD9;&#x4E9B;key&#x540D;&#x79F0;&#x5728;&#x4E8B;&#x4EF6;&#x8FD4;&#x56DE;&#x662F;&#x4E5F;&#x4F1A;&#x6709;&#x5BF9;&#x5E94;&#x7684;&#x540D;&#x79F0;</li>
+<li>这些key名称在事件返回是也会有对应的名称</li>
 </ul>
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
@@ -401,124 +401,124 @@ udev&#x63A5;&#x6536;&#x8BBE;&#x5907;&#x7684;&#x6D88;&#x606F;&#x540E;&#xFF0C;&#x5
 <thead>
 <tr>
 <th scope="col" class="org-left">key name</th>
-<th scope="col" class="org-left">&#x4E0E;&#x4E8B;&#x4EF6;&#x4E2D;&#x7684;&#x5BF9;&#x5E94;&#x610F;&#x4E49;</th>
+<th scope="col" class="org-left">与事件中的对应意义</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td class="org-left">ACTION</td>
-<td class="org-left">&#x5F53;&#x524D;&#x52A8;&#x4F5C;&#x7684;&#x540D;&#x79F0;&#xFF0C;&#x76F8;&#x5F53;&#x4E8E;&#x4E00;&#x4E2A;&#x5927;&#x8303;&#x56F4;&#x7684;&#x7B5B;&#x9009;</td>
+<td class="org-left">当前动作的名称，相当于一个大范围的筛选</td>
 </tr>
 
 <tr>
 <td class="org-left">DEVPATH</td>
-<td class="org-left">&#x8BBE;&#x5907;&#x7684;&#x8DEF;&#x5F84;</td>
+<td class="org-left">设备的路径</td>
 </tr>
 
 <tr>
 <td class="org-left">KERNEL</td>
-<td class="org-left">&#x8BBE;&#x5907;&#x7684;&#x540D;&#x79F0;</td>
+<td class="org-left">设备的名称</td>
 </tr>
 
 <tr>
 <td class="org-left">NAME</td>
-<td class="org-left">&#x7F51;&#x7EDC;&#x63A5;&#x53E3;&#x7684;&#x540D;&#x79F0;</td>
+<td class="org-left">网络接口的名称</td>
 </tr>
 
 <tr>
 <td class="org-left">SYMLINK</td>
-<td class="org-left">&#x7B26;&#x53F7;&#x94FE;&#x63A5;&#x7684;&#x540D;&#x79F0;</td>
+<td class="org-left">符号链接的名称</td>
 </tr>
 
 <tr>
 <td class="org-left">SUBSYSTEM</td>
-<td class="org-left">&#x5B50;&#x7CFB;&#x7EDF;&#x5339;&#x914D;</td>
+<td class="org-left">子系统匹配</td>
 </tr>
 
 <tr>
 <td class="org-left">DRIVER</td>
-<td class="org-left">&#x4E0E;&#x8BBE;&#x5907;&#x5BF9;&#x5E94;&#x7684;&#x9A71;&#x52A8;&#x540D;&#x79F0;&#x5339;&#x914D;</td>
+<td class="org-left">与设备对应的驱动名称匹配</td>
 </tr>
 
 <tr>
 <td class="org-left">ATTR{filename}, SYSCTL{kernel parameter}</td>
-<td class="org-left">&#x5206;&#x522B;&#x5BF9;&#x5E94;sysfs&#x4E2D;&#x7684;&#x5C5E;&#x6027;&#x503C;&#x548C;&#x5185;&#x6838;&#x4E2D;&#x7684;&#x53C2;&#x6570;&#x503C;</td>
+<td class="org-left">分别对应sysfs中的属性值和内核中的参数值</td>
 </tr>
 
 <tr>
 <td class="org-left">KERNELS</td>
-<td class="org-left">&#x7236;&#x8BBE;&#x5907;&#x540D;&#x79F0;</td>
+<td class="org-left">父设备名称</td>
 </tr>
 
 <tr>
 <td class="org-left">SUBSYSTEMS</td>
-<td class="org-left">&#x7236;&#x5B50;&#x7CFB;&#x7EDF;&#x540D;&#x79F0;</td>
+<td class="org-left">父子系统名称</td>
 </tr>
 
 <tr>
 <td class="org-left">DRIVERS</td>
-<td class="org-left">&#x7236;&#x8BBE;&#x5907;&#x5BF9;&#x5E94;&#x7684;&#x9A71;&#x52A8;&#x540D;&#x79F0;</td>
+<td class="org-left">父设备对应的驱动名称</td>
 </tr>
 
 <tr>
 <td class="org-left">ATTRS{filename}</td>
-<td class="org-left">&#x7236;&#x8BBE;&#x5907;&#x5BF9;&#x5E94;&#x7684;sysfs&#x4E2D;&#x7684;&#x5C5E;&#x6027;&#x503C;</td>
+<td class="org-left">父设备对应的sysfs中的属性值</td>
 </tr>
 
 <tr>
 <td class="org-left">TAGS</td>
-<td class="org-left">&#x7236;&#x8BBE;&#x5907;&#x6807;&#x8BB0;</td>
+<td class="org-left">父设备标记</td>
 </tr>
 
 <tr>
 <td class="org-left">ENV{key}</td>
-<td class="org-left">&#x5BF9;&#x5E94;&#x8BBE;&#x5907;&#x7684;&#x5C5E;&#x6027;&#x503C;</td>
+<td class="org-left">对应设备的属性值</td>
 </tr>
 
 <tr>
 <td class="org-left">TAG</td>
-<td class="org-left">&#x8BBE;&#x5907;&#x7684;&#x6807;&#x8BB0;</td>
+<td class="org-left">设备的标记</td>
 </tr>
 
 <tr>
 <td class="org-left">TEST{octal mode mask}</td>
-<td class="org-left">&#x6D4B;&#x8BD5;&#x5F53;&#x524D;&#x6587;&#x4EF6;&#x7684;&#x5C5E;&#x6027;</td>
+<td class="org-left">测试当前文件的属性</td>
 </tr>
 
 <tr>
 <td class="org-left">PROGRAM</td>
-<td class="org-left">&#x901A;&#x8FC7;&#x6267;&#x884C;&#x5916;&#x90E8;&#x7A0B;&#x5E8F;&#x6765;&#x5224;&#x65AD;&#x662F;&#x5426;&#x5339;&#x914D;&#xFF0C;&#x5982;&#x679C;&#x7A0B;&#x5E8F;&#x8FD0;&#x884C;&#x6210;&#x529F;&#x5219;&#x8FD4;&#x56DE;true</td>
+<td class="org-left">通过执行外部程序来判断是否匹配，如果程序运行成功则返回true</td>
 </tr>
 
 <tr>
 <td class="org-left">RESULT</td>
-<td class="org-left">&#x8DDF;&#x5728; <code>PROGRAM</code> &#x540E;&#x9762;&#x4EE5;&#x83B7;&#x53D6;&#x7A0B;&#x5E8F;&#x8FD0;&#x884C;&#x7684;&#x8FD4;&#x56DE;&#x503C;</td>
+<td class="org-left">跟在 <code>PROGRAM</code> 后面以获取程序运行的返回值</td>
 </tr>
 </tbody>
 </table>
 
 <p>
-key&#x7684;&#x5B57;&#x7B26;&#x4E32;&#xFF0C;&#x4E5F;&#x53EF;&#x4EE5;&#x4F7F;&#x7528;shell&#x4E2D;&#x7684;&#x4E00;&#x4E9B;&#x901A;&#x914D;&#x7B26;:
+key的字符串，也可以使用shell中的一些通配符:
 </p>
 <ul class="org-ul">
-<li>&quot;*&quot; : &#x5339;&#x914D;0&#x4E2A;&#x6216;&#x591A;&#x4E2A;&#x5B57;&#x7B26;</li>
-<li>&quot;?&quot; : &#x5339;&#x914D;1&#x4E2A;&#x5B57;&#x7B26;</li>
-<li>&quot;[]&quot; : &#x5339;&#x914D;&#x62EC;&#x53F7;&#x4E2D;&#x7684;&#x4E00;&#x4E2A;&#x5B57;&#x7B26;
+<li>"*" : 匹配0个或多个字符</li>
+<li>"?" : 匹配1个字符</li>
+<li>"[]" : 匹配括号中的一个字符
 <ul class="org-ul">
-<li>&#x6BD4;&#x5982; &quot;[0-9]&quot; &#x8868;&#x793A;&#x5339;&#x914D;0-9&#x4E2D;&#x4E00;&#x4E2A;&#x6570;&#x5B57;</li>
+<li>比如 "[0-9]" 表示匹配0-9中一个数字</li>
 </ul></li>
-<li>&quot;|&quot; : &#x5339;&#x914D;&#x5DE6;&#x503C;&#x6216;&#x53F3;&#x503C;</li>
+<li>"|" : 匹配左值或右值</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-org710ca8b" class="outline-4">
-<h4 id="org710ca8b">key&#x7684;&#x8D4B;&#x503C;</h4>
-<div class="outline-text-4" id="text-org710ca8b">
+<div id="outline-container-orge032e33" class="outline-4">
+<h4 id="orge032e33">key的赋值</h4>
+<div class="outline-text-4" id="text-orge032e33">
 <p>
-&#x4E0B;&#x9762;&#x8FD9;&#x4E9B;key&#x53EF;&#x4EE5;&#x88AB;&#x8D4B;&#x503C;
+下面这些key可以被赋值
 </p>
 <ul class="org-ul">
-<li>&#x6240;&#x8C13;&#x8D4B;&#x503C;&#x7684;&#x610F;&#x4E49;&#x5C31;&#x662F;&#x8BBE;&#x7F6E;&#x6216;&#x6267;&#x884C;&#x5BF9;&#x5E94;&#x7684;&#x52A8;&#x4F5C;</li>
+<li>所谓赋值的意义就是设置或执行对应的动作</li>
 </ul>
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
@@ -531,136 +531,136 @@ key&#x7684;&#x5B57;&#x7B26;&#x4E32;&#xFF0C;&#x4E5F;&#x53EF;&#x4EE5;&#x4F7F;&#x75
 <thead>
 <tr>
 <th scope="col" class="org-left">key</th>
-<th scope="col" class="org-left">&#x610F;&#x4E49;</th>
+<th scope="col" class="org-left">意义</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td class="org-left">NAME</td>
-<td class="org-left">&#x7F51;&#x7EDC;&#x63A5;&#x53E3;&#x7684;&#x540D;&#x79F0;</td>
+<td class="org-left">网络接口的名称</td>
 </tr>
 
 <tr>
 <td class="org-left">SYMLINK</td>
-<td class="org-left">&#x7B26;&#x53F7;&#x94FE;&#x63A5;&#x7684;&#x540D;&#x79F0;</td>
+<td class="org-left">符号链接的名称</td>
 </tr>
 
 <tr>
 <td class="org-left">OWNER,GROUP,MODE</td>
-<td class="org-left">&#x8BBE;&#x5907;&#x7684;&#x62E5;&#x6709;&#x8005;&#x3001;&#x7EC4;&#x3001;&#x6A21;&#x5F0F;&#x7B49;</td>
+<td class="org-left">设备的拥有者、组、模式等</td>
 </tr>
 
 <tr>
 <td class="org-left">SECLABEL{module}</td>
-<td class="org-left">&#x4E3A;&#x8BBE;&#x7F6E;&#x6307;&#x5B9A;&#x5BF9;&#x5E94;&#x7684;&#x5B89;&#x5168;&#x6A21;&#x5757;</td>
+<td class="org-left">为设置指定对应的安全模块</td>
 </tr>
 
 <tr>
 <td class="org-left">ATTR{key}</td>
-<td class="org-left">&#x5411;&#x8BBE;&#x5907;sysfs&#x4E2D;&#x7684;&#x5C5E;&#x6027;&#x6587;&#x4EF6;&#x5199;&#x503C;</td>
+<td class="org-left">向设备sysfs中的属性文件写值</td>
 </tr>
 
 <tr>
 <td class="org-left">SYSCTL{kernel parameter}</td>
-<td class="org-left">&#x5411;&#x5185;&#x6838;&#x53C2;&#x6570;&#x5199;&#x503C;</td>
+<td class="org-left">向内核参数写值</td>
 </tr>
 
 <tr>
 <td class="org-left">ENV{key}</td>
-<td class="org-left">&#x8BBE;&#x7F6E;&#x8BBE;&#x5907;&#x7684;&#x5C5E;&#x6027;&#x503C;</td>
+<td class="org-left">设置设备的属性值</td>
 </tr>
 
 <tr>
 <td class="org-left">TAG</td>
-<td class="org-left">&#x8BBE;&#x5907;&#x7684;&#x6807;&#x8BB0;&#xFF0C;&#x7528;&#x4E8E;&#x8FC7;&#x6EE4;&#x548C;&#x5206;&#x7EC4;</td>
+<td class="org-left">设备的标记，用于过滤和分组</td>
 </tr>
 
 <tr>
 <td class="org-left">RUN{type}</td>
-<td class="org-left">&#x5F53;&#x89C4;&#x5219;&#x6267;&#x884C;&#x5B8C;&#x540E;&#xFF0C;&#x6267;&#x884C;&#x7A0B;&#x5E8F;&#x5217;&#x8868;&#x3002;type&#x7684;&#x503C;&#x4E3A; <code>program</code> &#x6216; <code>builtin</code>,&#x7A0B;&#x5E8F;&#x540D;&#x9700;&#x8981;&#x52A0;&#x7EDD;&#x5BF9;&#x8DEF;&#x5F84;</td>
+<td class="org-left">当规则执行完后，执行程序列表。type的值为 <code>program</code> 或 <code>builtin</code>,程序名需要加绝对路径</td>
 </tr>
 
 <tr>
 <td class="org-left">LABEL</td>
-<td class="org-left">&#x548C;C&#x4E2D;label&#x610F;&#x4E49;&#x4E00;&#x6837;&#xFF0C;&#x7528;&#x4E8E;GOTO&#x8DF3;&#x8F6C;</td>
+<td class="org-left">和C中label意义一样，用于GOTO跳转</td>
 </tr>
 
 <tr>
 <td class="org-left">GOTO</td>
-<td class="org-left">&#x8DF3;&#x8F6C;&#x5230;&#x5BF9;&#x5E94;&#x7684;LABEL&#x5904;</td>
+<td class="org-left">跳转到对应的LABEL处</td>
 </tr>
 
 <tr>
 <td class="org-left">IMPORT{type}</td>
-<td class="org-left">&#x4E3A;&#x8BBE;&#x5907;&#x5C5E;&#x6027;&#x5BFC;&#x5165;&#x4E00;&#x4E2A;&#x503C;</td>
+<td class="org-left">为设备属性导入一个值</td>
 </tr>
 
 <tr>
 <td class="org-left">OPTIONS</td>
-<td class="org-left">&#x89C4;&#x5219;&#x548C;&#x8BBE;&#x5907;&#x7684;&#x9009;&#x9879;</td>
+<td class="org-left">规则和设备的选项</td>
 </tr>
 </tbody>
 </table>
 
 <p>
-&#x5176;&#x4E2D; <code>NAME</code>, <code>SYMLINK</code> , <code>PROGRAM</code> , <code>OWNER</code> , <code>GROUP</code> , <code>MODE</code> , <code>SECLABEL</code> , <code>RUN</code> &#x7684;&#x8D4B;&#x503C;&#x5B57;&#x7B26;&#x4E32;&#x53EF;&#x4EE5;&#x4F7F;&#x7528;&#x66FF;&#x6362;&#x7B26;&#xFF0C;
+其中 <code>NAME</code>, <code>SYMLINK</code> , <code>PROGRAM</code> , <code>OWNER</code> , <code>GROUP</code> , <code>MODE</code> , <code>SECLABEL</code> , <code>RUN</code> 的赋值字符串可以使用替换符，
 </p>
 <ul class="org-ul">
-<li><code>RUN</code> &#x7684;&#x66FF;&#x6362;&#x7B26;&#x8981;&#x5728;&#x89C4;&#x5219;&#x6267;&#x884C;&#x5B8C;&#x540E;&#x624D;&#x751F;&#x6548;</li>
+<li><code>RUN</code> 的替换符要在规则执行完后才生效</li>
 </ul>
 
 <p>
-&#x5177;&#x6709;&#x4E0B;&#x9762;&#x8FD9;&#x4E9B;&#x66FF;&#x6362;&#x7B26;:
+具有下面这些替换符:
 </p>
 <ul class="org-ul">
-<li>$kernel, %k : &#x8BBE;&#x5907;&#x5728;&#x5185;&#x6838;&#x4E2D;&#x7684;&#x540D;&#x79F0;</li>
-<li>$number, %n : &#x8BBE;&#x5907;&#x5728;&#x5185;&#x6838;&#x4E2D;&#x7684;&#x6570;&#x503C;</li>
-<li>$devpath, %p : &#x8BBE;&#x5907;&#x7684;&#x8DEF;&#x5F84;</li>
-<li>%id, %b : &#x8BBE;&#x5907;&#x7684;&#x540D;&#x79F0;</li>
-<li>$driver : &#x8BBE;&#x5907;&#x5BF9;&#x5E94;&#x7684;&#x9A71;&#x52A8;&#x540D;&#x79F0;</li>
-<li>$attr{file}, %s{file} : &#x8BBE;&#x5907;&#x5728; <code>sysfs</code> &#x4E2D;&#x7684;&#x5C5E;&#x6027;&#x503C;</li>
-<li>%env{key}, %E{key} : &#x8BBE;&#x5907;&#x5C5E;&#x6027;&#x503C;</li>
-<li>$major, %M : &#x4E3B;&#x8BBE;&#x5907;&#x53F7;</li>
-<li>$minor, %m : &#x6B21;&#x8BBE;&#x5907;&#x53F7;</li>
-<li>$result, %c : &#x8FD0;&#x884C;&#x5916;&#x90E8;&#x7A0B;&#x5E8F;&#x7684; <code>PROGRAM</code> &#x8FD4;&#x56DE;&#x503C;</li>
-<li>$parent, %p : &#x7B26;&#x8BBE;&#x5907;&#x8282;&#x70B9;&#x540D;</li>
-<li>$name : &#x8BBE;&#x5907;&#x540D;&#x79F0;</li>
-<li>$links : &#x7B26;&#x53F7;&#x94FE;&#x63A5;</li>
-<li>$root, %r : <code>dev_root</code> &#x7684;&#x503C;</li>
-<li>$sys, %S : sysfs&#x7684;&#x6302;&#x8F7D;&#x70B9;</li>
-<li>$devnode, %N : &#x8BBE;&#x5907;&#x8282;&#x70B9;&#x540D;&#x79F0;</li>
-<li>%% : &#x4EE3;&#x8868; &#x201C;%&#x201D;</li>
-<li>$$ : &#x4EE3;&#x8868; &#x201C;$&#x201D;</li>
+<li>$kernel, %k : 设备在内核中的名称</li>
+<li>$number, %n : 设备在内核中的数值</li>
+<li>$devpath, %p : 设备的路径</li>
+<li>%id, %b : 设备的名称</li>
+<li>$driver : 设备对应的驱动名称</li>
+<li>$attr{file}, %s{file} : 设备在 <code>sysfs</code> 中的属性值</li>
+<li>%env{key}, %E{key} : 设备属性值</li>
+<li>$major, %M : 主设备号</li>
+<li>$minor, %m : 次设备号</li>
+<li>$result, %c : 运行外部程序的 <code>PROGRAM</code> 返回值</li>
+<li>$parent, %p : 符设备节点名</li>
+<li>$name : 设备名称</li>
+<li>$links : 符号链接</li>
+<li>$root, %r : <code>dev_root</code> 的值</li>
+<li>$sys, %S : sysfs的挂载点</li>
+<li>$devnode, %N : 设备节点名称</li>
+<li>%% : 代表 “%”</li>
+<li>$$ : 代表 “$”</li>
 </ul>
 </div>
 </div>
 </div>
 </div>
 
-<div id="outline-container-org5616445" class="outline-2">
-<h2 id="org5616445">&#x4F7F;&#x7528;</h2>
-<div class="outline-text-2" id="text-org5616445">
+<div id="outline-container-org82e3574" class="outline-2">
+<h2 id="org82e3574">使用</h2>
+<div class="outline-text-2" id="text-org82e3574">
 <p>
-&#x4E0A;&#x9762;&#x4E00;&#x5927;&#x5806;&#x770B;&#x5F97;&#x4EBA;&#x5934;&#x6655;&#xFF0C;&#x5177;&#x4F53;&#x5B9E;&#x8DF5;&#x4E00;&#x4E0B;&#x5C31;&#x660E;&#x767D;&#x4E86;&#xFF0C;&#x6B65;&#x9AA4;&#x5982;&#x4E0B;:
+上面一大堆看得人头晕，具体实践一下就明白了，步骤如下:
 </p>
 <ol class="org-ol">
-<li>&#x627E;&#x5230;&#x8BBE;&#x5907;&#x8DEF;&#x5F84;</li>
-<li>&#x5206;&#x6790;&#x8BBE;&#x5907;&#x53CA;&#x7236;&#x8BBE;&#x5907;&#x5C5E;&#x6027;</li>
-<li>&#x7F16;&#x5199;&#x89C4;&#x5219;&#x6587;&#x4EF6;</li>
-<li>&#x4EFF;&#x771F;&#x6D4B;&#x8BD5;</li>
-<li>&#x9A8C;&#x8BC1;</li>
+<li>找到设备路径</li>
+<li>分析设备及父设备属性</li>
+<li>编写规则文件</li>
+<li>仿真测试</li>
+<li>验证</li>
 </ol>
 </div>
 
-<div id="outline-container-org8de2d35" class="outline-3">
-<h3 id="org8de2d35">&#x627E;&#x5230;&#x8BBE;&#x5907;&#x8DEF;&#x5F84;</h3>
-<div class="outline-text-3" id="text-org8de2d35">
+<div id="outline-container-org04cfcc3" class="outline-3">
+<h3 id="org04cfcc3">找到设备路径</h3>
+<div class="outline-text-3" id="text-org04cfcc3">
 <p>
-&#x9996;&#x5148; <b>&#x8FD0;&#x884C;&#x6587;&#x7AE0;&#x5F00;&#x5934;&#x7684;&#x4EE3;&#x7801;</b> &#xFF0C;&#x7136;&#x540E;&#x67E5;&#x770B;&#x5BF9;&#x5E94;&#x8BBE;&#x5907;&#x63D2;&#x5165;&#x6216;&#x62D4;&#x4E0B;&#x7684;&#x8F93;&#x51FA;&#x4FE1;&#x606F;&#x3002;
+首先 <b>运行文章开头的代码</b> ，然后查看对应设备插入或拔下的输出信息。
 </p>
 
 <p>
-&#x6BD4;&#x5982;&#xFF0C;&#x6211;&#x901A;&#x8FC7;&#x5C06;SD&#x5361;&#x63D2;&#x5165;&#x5230;&#x8BFB;&#x5361;&#x5668;&#x540E;&#xFF0C;&#x8F93;&#x51FA;&#x4E86;&#x4E0B;&#x9762;&#x8FD9;&#x90E8;&#x5206;&#x4FE1;&#x606F;:
+比如，我通过将SD卡插入到读卡器后，输出了下面这部分信息:
 </p>
 <pre class="example">
 ACTION=add
@@ -683,23 +683,23 @@ ID_PART_TABLE_UUID=61a220e7
 ID_PATH=pci-0000:00:0c.0-usb-0:2:1.0-scsi-0:0:0:0
 ID_PATH_TAG=pci-0000_00_0c_0-usb-0_2_</pre>
 <p>
-&#x7531;&#x6B64;&#x4FBF;&#x53EF;&#x5F97;&#x77E5;&#x8BBE;&#x5907;&#x8DEF;&#x5F84; <code>DEVPATH</code> &#x4E3A; <code>/sys/</code> &#x4E0B;&#x7684;:
+由此便可得知设备路径 <code>DEVPATH</code> 为 <code>/sys/</code> 下的:
 </p>
 <pre class="example">
 /devices/pci0000:00/0000:00:0c.0/usb1/1-2/1-2:1.0/host3/target3:0:0/3:0:0:0/block/sdb/sdb1</pre>
 </div>
 </div>
-<div id="outline-container-orgba8bda0" class="outline-3">
-<h3 id="orgba8bda0">&#x5206;&#x6790;&#x8BBE;&#x5907;&#x53CA;&#x7236;&#x8BBE;&#x5907;&#x5C5E;&#x6027;</h3>
-<div class="outline-text-3" id="text-orgba8bda0">
+<div id="outline-container-orgc7bf799" class="outline-3">
+<h3 id="orgc7bf799">分析设备及父设备属性</h3>
+<div class="outline-text-3" id="text-orgc7bf799">
 <p>
-<code>udevadm</code> &#x547D;&#x4EE4;&#x53EF;&#x4EE5;&#x4EE5;&#x5C42;&#x6B21;&#x7684;&#x65B9;&#x5F0F;&#x5C55;&#x793A;&#x5F53;&#x524D;&#x8BBE;&#x5907;&#x5C5E;&#x6027;&#x53CA;&#x7236;&#x8BBE;&#x5907;&#x7684;&#x5C5E;&#x6027;&#xFF0C;&#x4E00;&#x822C;&#x4F7F;&#x7528;&#x65B9;&#x5F0F;&#x4E3A;:
+<code>udevadm</code> 命令可以以层次的方式展示当前设备属性及父设备的属性，一般使用方式为:
 </p>
 <pre class="example">
-udevadm info -ap &lt;devpath&gt;</pre>
+udevadm info -ap <devpath></pre>
 
 <p>
-&#x6240;&#x4EE5;&#x63A5;&#x4E0B;&#x6765;&#x67E5;&#x770B;&#x5176;&#x5C5E;&#x6027;:
+所以接下来查看其属性:
 </p>
 <pre class="example">
 cec@virtual:~$ udevadm info -ap /devices/pci0000:00/0000:00:0c.0/usb1/1-2/1-2:1.0/host3/target3:0:0/3:0:0:0/block/sdb/sdb1
@@ -710,196 +710,196 @@ found, all possible attributes in the udev rules key format.
 A rule to match, can be composed by the attributes of the device
 and the attributes from one single parent device.
 
-  looking at device &apos;/devices/pci0000:00/0000:00:0c.0/usb1/1-2/1-2:1.0/host3/target3:0:0/3:0:0:0/block/sdb/sdb1&apos;:
-    KERNEL==&quot;sdb1&quot;
-    SUBSYSTEM==&quot;block&quot;
-    DRIVER==&quot;&quot;
-    ATTR{alignment_offset}==&quot;0&quot;
-    ATTR{discard_alignment}==&quot;0&quot;
-    ATTR{inflight}==&quot;       0        0&quot;
-    ATTR{partition}==&quot;1&quot;
-    ATTR{ro}==&quot;0&quot;
-    ATTR{size}==&quot;15515648&quot;
-    ATTR{start}==&quot;8192&quot;
-    ATTR{stat}==&quot;     396    14920    20016     1332        1        0        1        0        0      728     1332&quot;
+  looking at device '/devices/pci0000:00/0000:00:0c.0/usb1/1-2/1-2:1.0/host3/target3:0:0/3:0:0:0/block/sdb/sdb1':
+    KERNEL=="sdb1"
+    SUBSYSTEM=="block"
+    DRIVER==""
+    ATTR{alignment_offset}=="0"
+    ATTR{discard_alignment}=="0"
+    ATTR{inflight}=="       0        0"
+    ATTR{partition}=="1"
+    ATTR{ro}=="0"
+    ATTR{size}=="15515648"
+    ATTR{start}=="8192"
+    ATTR{stat}=="     396    14920    20016     1332        1        0        1        0        0      728     1332"
 
-  looking at parent device &apos;/devices/pci0000:00/0000:00:0c.0/usb1/1-2/1-2:1.0/host3/target3:0:0/3:0:0:0/block/sdb&apos;:
-    KERNELS==&quot;sdb&quot;
-    SUBSYSTEMS==&quot;block&quot;
-    DRIVERS==&quot;&quot;
-    ATTRS{alignment_offset}==&quot;0&quot;
-    ATTRS{capability}==&quot;51&quot;
-    ATTRS{discard_alignment}==&quot;0&quot;
-    ATTRS{events}==&quot;media_change&quot;
-    ATTRS{events_async}==&quot;&quot;
-    ATTRS{events_poll_msecs}==&quot;-1&quot;
-    ATTRS{ext_range}==&quot;256&quot;
-    ATTRS{hidden}==&quot;0&quot;
-    ATTRS{inflight}==&quot;       0        0&quot;
-    ATTRS{range}==&quot;16&quot;
-    ATTRS{removable}==&quot;1&quot;
-    ATTRS{ro}==&quot;0&quot;
-    ATTRS{size}==&quot;15523840&quot;
-    ATTRS{stat}==&quot;    1250    44760    64984     4636        3        0        3        0        0     2424     4636&quot;
+  looking at parent device '/devices/pci0000:00/0000:00:0c.0/usb1/1-2/1-2:1.0/host3/target3:0:0/3:0:0:0/block/sdb':
+    KERNELS=="sdb"
+    SUBSYSTEMS=="block"
+    DRIVERS==""
+    ATTRS{alignment_offset}=="0"
+    ATTRS{capability}=="51"
+    ATTRS{discard_alignment}=="0"
+    ATTRS{events}=="media_change"
+    ATTRS{events_async}==""
+    ATTRS{events_poll_msecs}=="-1"
+    ATTRS{ext_range}=="256"
+    ATTRS{hidden}=="0"
+    ATTRS{inflight}=="       0        0"
+    ATTRS{range}=="16"
+    ATTRS{removable}=="1"
+    ATTRS{ro}=="0"
+    ATTRS{size}=="15523840"
+    ATTRS{stat}=="    1250    44760    64984     4636        3        0        3        0        0     2424     4636"
 
 ........
 </pre>
 <p>
-&#x4EE5;&#x4E0A;&#x53EA;&#x6253;&#x5370;&#x4E86;&#x5176;&#x4E0A;&#x4E00;&#x7EA7;&#x7684;&#x7236;&#x8BBE;&#x5907;&#xFF0C;&#x4E00;&#x822C;&#x6765;&#x8BB2;&#x8FD9;&#x5C31;&#x53EF;&#x4EE5;&#x5339;&#x914D;&#x4E86;&#x3002;
+以上只打印了其上一级的父设备，一般来讲这就可以匹配了。
 </p>
 </div>
 </div>
-<div id="outline-container-org2fc3ea3" class="outline-3">
-<h3 id="org2fc3ea3">&#x7F16;&#x5199;&#x89C4;&#x5219;&#x6587;&#x4EF6;</h3>
-<div class="outline-text-3" id="text-org2fc3ea3">
+<div id="outline-container-org50f389e" class="outline-3">
+<h3 id="org50f389e">编写规则文件</h3>
+<div class="outline-text-3" id="text-org50f389e">
 <pre class="example">
-#&#x4EE5;add&#x4F5C;&#x4E3A;&#x6355;&#x6349;&#x70B9;
-# ATTRS &#x90FD;&#x662F;&#x4F7F;&#x7528;&#x7236;&#x8282;&#x70B9;&#x7684;&#x5C5E;&#x6027;
-ACTION==&quot;add&quot; \
-, ATTRS{capability}==&quot;51&quot; \
-, ATTRS{events}==&quot;media_change&quot; \
-, RUN+=&quot;/bin/bash /home/cec/learn/linux/udev/out.sh&quot;</pre>
+#以add作为捕捉点
+# ATTRS 都是使用父节点的属性
+ACTION=="add" \
+, ATTRS{capability}=="51" \
+, ATTRS{events}=="media_change" \
+, RUN+="/bin/bash /home/cec/learn/linux/udev/out.sh"</pre>
 <p>
-&#x4E0A;&#x9762;&#x7684;&#x5339;&#x914D;&#x89C4;&#x5219;&#x6BD4;&#x8F83;&#x7B80;&#x5355;&#xFF0C;&#x9700;&#x8981;&#x6CE8;&#x610F;&#x7684;&#x662F; <code>RUN</code> key,&#x56E0;&#x4E3A;RUN&#x8FD0;&#x884C;&#x7684;&#x5916;&#x90E8;&#x547D;&#x4EE4;&#x90FD;&#x9700;&#x8981;&#x7EDD;&#x5BF9;&#x8DEF;&#x5F84;&#xFF0C;
-&#x5982;&#x679C;&#x6211;&#x4EEC;&#x76F4;&#x63A5;&#x5728;&#x6B64;&#x5904;&#x5199;&#x547D;&#x4EE4;&#x5B9E;&#x5728;&#x9EBB;&#x70E6;&#xFF0C;&#x6240;&#x4EE5;&#x4F7F;&#x7528; <code>/bin/bash</code> &#x6765;&#x8FD0;&#x884C;&#x7EDD;&#x5BF9;&#x8DEF;&#x5F84;&#x811A;&#x672C;&#xFF0C;&#x5728;&#x811A;&#x672C;&#x4E2D;&#x518D;&#x8FD0;&#x884C;&#x547D;&#x4EE4;&#x5C31;&#x65B9;&#x4FBF;&#x591A;&#x4E86;&#x3002;
+上面的匹配规则比较简单，需要注意的是 <code>RUN</code> key,因为RUN运行的外部命令都需要绝对路径，
+如果我们直接在此处写命令实在麻烦，所以使用 <code>/bin/bash</code> 来运行绝对路径脚本，在脚本中再运行命令就方便多了。
 </p>
 
 <p>
-&#x811A;&#x672C;&quot;out.sh&quot; &#x5982;&#x4E0B;:
+脚本"out.sh" 如下:
 </p>
 <div class="org-src-container">
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#/bin/bash</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;sdcard inserted!&quot;</span> &gt; /home/cec/learn/linux/udev/test.out</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#/bin/bash</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"sdcard inserted!"</span> > /home/cec/learn/linux/udev/test.out</span><br></pre></td></tr></table></figure>
 </div>
 <p>
-&#x6700;&#x540E;&#xFF0C;&#x5C06;&#x8FD9;&#x4E2A;&#x89C4;&#x5219;&#x6587;&#x4EF6;&#x9700;&#x8981;&#x62F7;&#x8D1D;&#x5230;&#x89C4;&#x5219;&#x76EE;&#x5F55;:
+最后，将这个规则文件需要拷贝到规则目录:
 </p>
 <pre class="example">
 sudo cp 99-sdcardcheck.rules /etc/udev/rules.d/</pre>
 </div>
 </div>
-<div id="outline-container-orgf02236b" class="outline-3">
-<h3 id="orgf02236b">&#x4EFF;&#x771F;&#x6D4B;&#x8BD5;</h3>
-<div class="outline-text-3" id="text-orgf02236b">
+<div id="outline-container-orged13bdc" class="outline-3">
+<h3 id="orged13bdc">仿真测试</h3>
+<div class="outline-text-3" id="text-orged13bdc">
 <p>
-<code>udevadm test</code> &#x53EF;&#x4EE5;&#x6A21;&#x62DF;&#x89C4;&#x5219;&#x6587;&#x4EF6;&#x662F;&#x5426;&#x88AB;&#x8C03;&#x7528;&#xFF0C; <b>&#x9700;&#x8981;&#x4FDD;&#x8BC1;&#x8BBE;&#x5907;&#x6CA1;&#x6709;&#x88AB;&#x62D4;&#x4E0B;&#xFF01;</b>
+<code>udevadm test</code> 可以模拟规则文件是否被调用， <b>需要保证设备没有被拔下！</b>
 </p>
 <ul class="org-ul">
-<li>&#x5E76;&#x4E0D;&#x4F1A;&#x8FD0;&#x884C; <code>RUN</code> key</li>
+<li>并不会运行 <code>RUN</code> key</li>
 </ul>
 <pre class="example">
 ....
 Reading rules file: /etc/udev/rules.d/99-sdcardcheck.rules
 ....
-run: &apos;/bin/bash /home/cec/learn/linux/udev/out.sh&apos;
+run: '/bin/bash /home/cec/learn/linux/udev/out.sh'
 ....</pre>
 <p>
-&#x7531;&#x4E0A;&#x53EF;&#x4EE5;&#x770B;&#x51FA;&#x89C4;&#x5219;&#x6587;&#x4EF6;&#x5DF2;&#x7ECF;&#x88AB;&#x6B63;&#x786E;&#x8C03;&#x7528;&#x4E86;&#x3002;
+由上可以看出规则文件已经被正确调用了。
 </p>
 </div>
 </div>
-<div id="outline-container-org104b66d" class="outline-3">
-<h3 id="org104b66d">&#x9A8C;&#x8BC1;</h3>
-<div class="outline-text-3" id="text-org104b66d">
+<div id="outline-container-orgf132a9f" class="outline-3">
+<h3 id="orgf132a9f">验证</h3>
+<div class="outline-text-3" id="text-orgf132a9f">
 <p>
-&#x73B0;&#x5728;&#x91CD;&#x8F7D;&#x4E00;&#x4E0B;&#x89C4;&#x5219;&#x6587;&#x4EF6;:
+现在重载一下规则文件:
 </p>
 <pre class="example">
 sudo udevadm control --reload</pre>
 <p>
-&#x7136;&#x540E;&#x91CD;&#x65B0;&#x63D2;&#x5165;sd&#x5361;&#xFF0C;&#x53EF;&#x4EE5;&#x770B;&#x5230;&#x5BF9;&#x5E94;&#x8DEF;&#x5F84;&#x65B0;&#x5EFA;&#x4E86;&#x6587;&#x4EF6; <code>test.out</code>
+然后重新插入sd卡，可以看到对应路径新建了文件 <code>test.out</code>
 </p>
 </div>
 </div>
 </div>
-<div id="outline-container-orgfb5fa01" class="outline-2">
-<h2 id="orgfb5fa01">mdev</h2>
-<div class="outline-text-2" id="text-orgfb5fa01">
+<div id="outline-container-org40daf6b" class="outline-2">
+<h2 id="org40daf6b">mdev</h2>
+<div class="outline-text-2" id="text-org40daf6b">
 <p>
-&#x5BF9;&#x4E8E;&#x5D4C;&#x5165;&#x5F0F;linux&#x6765;&#x8BF4;&#xFF0C;udev&#x76F8;&#x5BF9;&#x592A;&#x91CD;&#x91CF;&#x7EA7;&#x4E86;&#xFF0C;busybox&#x4E3A;&#x6B64;&#x63D0;&#x4F9B;&#x4E86;&#x51E0;&#x4E4E;&#x540C;&#x6837;&#x529F;&#x80FD;&#x7684;mdev&#x3002;
+对于嵌入式linux来说，udev相对太重量级了，busybox为此提供了几乎同样功能的mdev。
 </p>
 </div>
 
-<div id="outline-container-orgefe5a7f" class="outline-3">
-<h3 id="orgefe5a7f">&#x51C6;&#x5907;</h3>
-<div class="outline-text-3" id="text-orgefe5a7f">
+<div id="outline-container-org1cf449e" class="outline-3">
+<h3 id="org1cf449e">准备</h3>
+<div class="outline-text-3" id="text-org1cf449e">
 <p>
-&#x4E3A;&#x4E86;&#x4F7F;&#x7528;mdev&#xFF0C;&#x9700;&#x8981;&#x4EE5;&#x4E0B;&#x51E0;&#x4E2A;&#x524D;&#x63D0;:
+为了使用mdev，需要以下几个前提:
 </p>
 <ul class="org-ul">
-<li>&#x5185;&#x6838;&#x4F7F;&#x80FD;hotplug</li>
-<li>busybox&#x4F7F;&#x80FD;mdev</li>
-<li>&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x9700;&#x8981;&#x6302;&#x8F7D; <code>sysfs</code> &#x548C; <code>proc</code>  &#x6587;&#x4EF6;&#x7CFB;&#x7EDF;</li>
+<li>内核使能hotplug</li>
+<li>busybox使能mdev</li>
+<li>文件系统需要挂载 <code>sysfs</code> 和 <code>proc</code>  文件系统</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-org3e0b3c5" class="outline-3">
-<h3 id="org3e0b3c5">&#x914D;&#x7F6E;</h3>
-<div class="outline-text-3" id="text-org3e0b3c5">
+<div id="outline-container-orgc08a0ec" class="outline-3">
+<h3 id="orgc08a0ec">配置</h3>
+<div class="outline-text-3" id="text-orgc08a0ec">
 <p>
-mdev&#x7684;&#x914D;&#x7F6E;&#x6587;&#x4EF6;&#x4F4D;&#x4E8E; <code>/etc/mdev.conf</code> &#xFF0C;&#x5176;&#x5339;&#x914D;&#x5173;&#x7CFB;&#x683C;&#x5F0F;&#x4E3A;:
+mdev的配置文件位于 <code>/etc/mdev.conf</code> ，其匹配关系格式为:
 </p>
 <pre class="example">
-&lt;device regex&gt; &lt;uid&gt;:&lt;gid&gt; &lt;octal permissions&gt; [=path] [@|$|*&lt;command&gt;]</pre>
+<device regex> <uid>:<gid> <octal permissions> [=path] [@|$|*<command>]</pre>
 <ul class="org-ul">
-<li>&lt;device regex&gt; : &#x4EE5;&#x6B63;&#x5219;&#x8868;&#x8FBE;&#x5F0F;&#x7684;&#x65B9;&#x5F0F;&#x5339;&#x914D; <code>/dev</code> &#x8BBE;&#x5907;&#x540D;</li>
-<li>&lt;uid&gt;:&lt;gid&gt; : &#x8BBE;&#x5B9A;user id &#x548C; group id
+<li><device regex> : 以正则表达式的方式匹配 <code>/dev</code> 设备名</li>
+<li><uid>:<gid> : 设定user id 和 group id
 <ul class="org-ul">
-<li>&#x9ED8;&#x8BA4;&#x7684;uid&#x548C;gid&#x90FD;&#x4E3A;root</li>
+<li>默认的uid和gid都为root</li>
 </ul></li>
-<li>&lt;octal permissions&gt; : &#x8BBE;&#x5B9A;&#x64CD;&#x4F5C;&#x6743;&#x9650;
+<li><octal permissions> : 设定操作权限
 <ul class="org-ul">
-<li>&#x9ED8;&#x8BA4;&#x7684;&#x6743;&#x9650;&#x4E3A;660</li>
+<li>默认的权限为660</li>
 </ul></li>
-<li>&lt;=|&gt;path&gt; : &#x79FB;&#x52A8;&#x6216;&#x91CD;&#x547D;&#x540D;&#x8BBE;&#x5907;&#x8282;&#x70B9;
+<li><=|>path> : 移动或重命名设备节点
 <ul class="org-ul">
-<li>&#x5F53;&#x4E3A; &quot;=&quot; &#x65F6;&#xFF0C;&#x4EE3;&#x8868;&#x5355;&#x7EAF;&#x7684;&#x79FB;&#x52A8;&#x6216;&#x91CD;&#x547D;&#x540D;</li>
-<li>&#x5F53;&#x4E3A; &quot;&gt;&quot; &#x65F6;&#xFF0C;&#x4EE3;&#x8868;&#x79FB;&#x52A8;&#x6216;&#x91CD;&#x547D;&#x540D;&#x540E;&#xFF0C;&#x8FD8;&#x4F1A;&#x5728; <code>/dev</code> &#x4E0B;&#x521B;&#x5EFA;&#x8BBE;&#x5907;&#x7684;&#x7B26;&#x53F7;&#x94FE;&#x63A5;</li>
+<li>当为 "=" 时，代表单纯的移动或重命名</li>
+<li>当为 ">" 时，代表移动或重命名后，还会在 <code>/dev</code> 下创建设备的符号链接</li>
 </ul></li>
-<li>[@|$|*&lt;command&gt;] : &#x5339;&#x914D;&#x6210;&#x529F;&#x540E;&#xFF0C;&#x8C03;&#x7528;&#x5BF9;&#x5E94;&#x7684;&#x547D;&#x4EE4;&#x52A8;&#x4F5C;
+<li>[@|$|*<command>] : 匹配成功后，调用对应的命令动作
 <ul class="org-ul">
-<li>@ : &#x5728;&#x521B;&#x5EFA;&#x8BBE;&#x5907;&#x8282;&#x70B9;&#x540E;&#x8C03;&#x7528;&#x6B64;&#x547D;&#x4EE4;</li>
-<li>$ : &#x5728;&#x79FB;&#x9664;&#x8BBE;&#x5907;&#x8282;&#x70B9;&#x524D;&#x8C03;&#x7528;&#x6B64;&#x547D;&#x4EE4;</li>
-<li>* : &#x5728;&#x521B;&#x5EFA;&#x8BBE;&#x5907;&#x8282;&#x70B9;&#x540E;&#x4EE5;&#x53CA;&#x79FB;&#x9664;&#x8BBE;&#x5907;&#x8282;&#x70B9;&#x524D;&#x90FD;&#x8C03;&#x7528;&#x6B64;&#x547D;&#x4EE4;</li>
+<li>@ : 在创建设备节点后调用此命令</li>
+<li>$ : 在移除设备节点前调用此命令</li>
+<li>* : 在创建设备节点后以及移除设备节点前都调用此命令</li>
 </ul></li>
 </ul>
 
 <p>
-&#x6BD4;&#x5982;:
+比如:
 </p>
 <pre class="example">
 mmcblk1p[0-9]  0:0 660 */etc/hotplug/sd/sd_det</pre>
 
 <p>
-<code>sd_det</code> &#x5C31;&#x662F;&#x4E00;&#x4E2A;&#x811A;&#x672C;&#xFF0C;&#x7528;&#x4E8E;&#x5F53;&#x8BBE;&#x5907;&#x5339;&#x914D;&#x540E;&#x7684;&#x6267;&#x884C;&#x811A;&#x672C;&#x3002;
+<code>sd_det</code> 就是一个脚本，用于当设备匹配后的执行脚本。
 </p>
 <ul class="org-ul">
-<li>&#x5F53;&#x8BBE;&#x5907;&#x5339;&#x914D;&#x540E;&#xFF0C;&#x53D8;&#x91CF; <code>${MDEV}</code> &#x4FBF;&#x662F;&#x8BBE;&#x5907;&#x7684;&#x540D;&#x79F0;</li>
+<li>当设备匹配后，变量 <code>${MDEV}</code> 便是设备的名称</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-orgbcf856c" class="outline-3">
-<h3 id="orgbcf856c">&#x4F7F;&#x7528;</h3>
-<div class="outline-text-3" id="text-orgbcf856c">
+<div id="outline-container-orgd822ed7" class="outline-3">
+<h3 id="orgd822ed7">使用</h3>
+<div class="outline-text-3" id="text-orgd822ed7">
 <ul class="org-ul">
-<li>&#x4F7F;&#x80FD;mdev&#x4E3A;hotplug&#x7BA1;&#x7406;&#x8005;:</li>
+<li>使能mdev为hotplug管理者:</li>
 </ul>
 <pre class="example">
-echo /sbin/mdev &gt; /proc/sys/kernel/hotplug</pre>
+echo /sbin/mdev > /proc/sys/kernel/hotplug</pre>
 <ul class="org-ul">
-<li>&#x542F;&#x52A8;</li>
+<li>启动</li>
 </ul>
 <pre class="example">
 mdev -s</pre>
 </div>
 </div>
-<div id="outline-container-org36cd24b" class="outline-3">
-<h3 id="org36cd24b">&#x5B9E;&#x4F8B;</h3>
-<div class="outline-text-3" id="text-org36cd24b">
+<div id="outline-container-orgd25245d" class="outline-3">
+<h3 id="orgd25245d">实例</h3>
+<div class="outline-text-3" id="text-orgd25245d">
 <p>
 mdev.conf:
 </p>
 <pre class="example">
-$MODALIAS=.* 0:0 660 @modprobe &quot;$MODALIAS&quot;
+$MODALIAS=.* 0:0 660 @modprobe "$MODALIAS"
 
 console 0:0 0600 
 cpu_dma_latency 0:0 0660 
@@ -945,14 +945,14 @@ mmcblk[0-9].* 0:0 660 */etc/mdev/mdev-mount.sh</pre>
 mdev-mount.sh
 </p>
 <div class="org-src-container">
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/sh</span></span><br><span class="line">MDEV_AUTOMOUNT=y</span><br><span class="line">MDEV_AUTOMOUNT_ROOT=/run/media</span><br><span class="line">[ -f /etc/default/mdev ] &amp;&amp; . /etc/default/mdev</span><br><span class="line"><span class="keyword">if</span> [ <span class="string">&quot;<span class="variable">${MDEV_AUTOMOUNT}</span>&quot;</span> = <span class="string">&quot;n&quot;</span> ] ; <span class="keyword">then</span></span><br><span class="line">  <span class="built_in">exit</span> 0</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">case</span> <span class="string">&quot;<span class="variable">$ACTION</span>&quot;</span> <span class="keyword">in</span></span><br><span class="line">  add|<span class="string">&quot;&quot;</span>)</span><br><span class="line">    ACTION=<span class="string">&quot;add&quot;</span></span><br><span class="line">    <span class="comment"># check if already mounted</span></span><br><span class="line">    <span class="keyword">if</span> grep -q <span class="string">&quot;^/dev/<span class="variable">${MDEV}</span> &quot;</span> /proc/mounts ; <span class="keyword">then</span></span><br><span class="line">      <span class="comment"># Already mounted</span></span><br><span class="line">      <span class="built_in">exit</span> 0</span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">    DEVBASE=`expr substr <span class="variable">$MDEV</span> 1 3`</span><br><span class="line">    <span class="keyword">if</span> [ <span class="string">&quot;<span class="variable">${DEVBASE}</span>&quot;</span> == <span class="string">&quot;mmc&quot;</span> ] ; <span class="keyword">then</span></span><br><span class="line">      DEVBASE=`expr substr <span class="variable">$MDEV</span> 1 7`</span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">    <span class="comment"># check for &quot;please don&apos;t mount it&quot; file</span></span><br><span class="line">    <span class="keyword">if</span> [ -f <span class="string">&quot;/dev/nomount.<span class="variable">${DEVBASE}</span>&quot;</span> ] ; <span class="keyword">then</span></span><br><span class="line">      <span class="comment"># blocked</span></span><br><span class="line">      <span class="built_in">exit</span> 0</span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">    <span class="comment"># check for full-disk partition</span></span><br><span class="line">    <span class="keyword">if</span> [ <span class="string">&quot;<span class="variable">${DEVBASE}</span>&quot;</span> == <span class="string">&quot;<span class="variable">${MDEV}</span>&quot;</span> ] ; <span class="keyword">then</span></span><br><span class="line">      <span class="keyword">if</span> [ -d /sys/block/<span class="variable">${DEVBASE}</span>/<span class="variable">${DEVBASE}</span>*1 ] ; <span class="keyword">then</span></span><br><span class="line">	<span class="comment"># Partition detected, just quit</span></span><br><span class="line">	<span class="built_in">exit</span> 0</span><br><span class="line">      <span class="keyword">fi</span></span><br><span class="line">      <span class="keyword">if</span> [ ! -f /sys/block/<span class="variable">${DEVBASE}</span>/size ] ; <span class="keyword">then</span></span><br><span class="line">	<span class="comment"># No size at all</span></span><br><span class="line">	<span class="built_in">exit</span> 0</span><br><span class="line">      <span class="keyword">fi</span></span><br><span class="line">      <span class="keyword">if</span> [ `cat /sys/block/<span class="variable">${DEVBASE}</span>/size` == 0 ] ; <span class="keyword">then</span></span><br><span class="line">	<span class="comment"># empty device, bail out</span></span><br><span class="line">	<span class="built_in">exit</span> 0</span><br><span class="line">      <span class="keyword">fi</span></span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">    <span class="comment"># first allow fstab to determine the mountpoint</span></span><br><span class="line">    <span class="keyword">if</span> ! mount /dev/<span class="variable">$MDEV</span> &gt; /dev/null 2&gt;&amp;1</span><br><span class="line">    <span class="keyword">then</span></span><br><span class="line">      MOUNTPOINT=<span class="string">&quot;<span class="variable">${MDEV_AUTOMOUNT_ROOT}</span>/<span class="variable">$MDEV</span>&quot;</span></span><br><span class="line">      mkdir <span class="string">&quot;<span class="variable">$MOUNTPOINT</span>&quot;</span></span><br><span class="line">      mount -t auto /dev/<span class="variable">$MDEV</span> <span class="string">&quot;<span class="variable">$MOUNTPOINT</span>&quot;</span></span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">    ;;</span><br><span class="line">  remove)</span><br><span class="line">    MOUNTPOINT=`grep <span class="string">&quot;^/dev/<span class="variable">$MDEV</span>\s&quot;</span> /proc/mounts | cut -d<span class="string">&apos; &apos;</span> -f 2`</span><br><span class="line">    <span class="keyword">if</span> [ ! -z <span class="string">&quot;<span class="variable">$MOUNTPOINT</span>&quot;</span> ]</span><br><span class="line">    <span class="keyword">then</span></span><br><span class="line">      umount <span class="string">&quot;<span class="variable">$MOUNTPOINT</span>&quot;</span></span><br><span class="line">      rmdir <span class="string">&quot;<span class="variable">$MOUNTPOINT</span>&quot;</span></span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">      umount /dev/<span class="variable">$MDEV</span></span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">    ;;</span><br><span class="line">  *)</span><br><span class="line">    <span class="comment"># Unexpected keyword</span></span><br><span class="line">    <span class="built_in">exit</span> 1</span><br><span class="line">    ;;</span><br><span class="line"><span class="keyword">esac</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/sh</span></span><br><span class="line">MDEV_AUTOMOUNT=y</span><br><span class="line">MDEV_AUTOMOUNT_ROOT=/run/media</span><br><span class="line">[ -f /etc/default/mdev ] && . /etc/default/mdev</span><br><span class="line"><span class="keyword">if</span> [ <span class="string">"<span class="variable">${MDEV_AUTOMOUNT}</span>"</span> = <span class="string">"n"</span> ] ; <span class="keyword">then</span></span><br><span class="line">  <span class="built_in">exit</span> 0</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">case</span> <span class="string">"<span class="variable">$ACTION</span>"</span> <span class="keyword">in</span></span><br><span class="line">  add|<span class="string">""</span>)</span><br><span class="line">    ACTION=<span class="string">"add"</span></span><br><span class="line">    <span class="comment"># check if already mounted</span></span><br><span class="line">    <span class="keyword">if</span> grep -q <span class="string">"^/dev/<span class="variable">${MDEV}</span> "</span> /proc/mounts ; <span class="keyword">then</span></span><br><span class="line">      <span class="comment"># Already mounted</span></span><br><span class="line">      <span class="built_in">exit</span> 0</span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">    DEVBASE=`expr substr <span class="variable">$MDEV</span> 1 3`</span><br><span class="line">    <span class="keyword">if</span> [ <span class="string">"<span class="variable">${DEVBASE}</span>"</span> == <span class="string">"mmc"</span> ] ; <span class="keyword">then</span></span><br><span class="line">      DEVBASE=`expr substr <span class="variable">$MDEV</span> 1 7`</span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">    <span class="comment"># check for "please don't mount it" file</span></span><br><span class="line">    <span class="keyword">if</span> [ -f <span class="string">"/dev/nomount.<span class="variable">${DEVBASE}</span>"</span> ] ; <span class="keyword">then</span></span><br><span class="line">      <span class="comment"># blocked</span></span><br><span class="line">      <span class="built_in">exit</span> 0</span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">    <span class="comment"># check for full-disk partition</span></span><br><span class="line">    <span class="keyword">if</span> [ <span class="string">"<span class="variable">${DEVBASE}</span>"</span> == <span class="string">"<span class="variable">${MDEV}</span>"</span> ] ; <span class="keyword">then</span></span><br><span class="line">      <span class="keyword">if</span> [ -d /sys/block/<span class="variable">${DEVBASE}</span>/<span class="variable">${DEVBASE}</span>*1 ] ; <span class="keyword">then</span></span><br><span class="line">	<span class="comment"># Partition detected, just quit</span></span><br><span class="line">	<span class="built_in">exit</span> 0</span><br><span class="line">      <span class="keyword">fi</span></span><br><span class="line">      <span class="keyword">if</span> [ ! -f /sys/block/<span class="variable">${DEVBASE}</span>/size ] ; <span class="keyword">then</span></span><br><span class="line">	<span class="comment"># No size at all</span></span><br><span class="line">	<span class="built_in">exit</span> 0</span><br><span class="line">      <span class="keyword">fi</span></span><br><span class="line">      <span class="keyword">if</span> [ `cat /sys/block/<span class="variable">${DEVBASE}</span>/size` == 0 ] ; <span class="keyword">then</span></span><br><span class="line">	<span class="comment"># empty device, bail out</span></span><br><span class="line">	<span class="built_in">exit</span> 0</span><br><span class="line">      <span class="keyword">fi</span></span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">    <span class="comment"># first allow fstab to determine the mountpoint</span></span><br><span class="line">    <span class="keyword">if</span> ! mount /dev/<span class="variable">$MDEV</span> > /dev/null 2>&1</span><br><span class="line">    <span class="keyword">then</span></span><br><span class="line">      MOUNTPOINT=<span class="string">"<span class="variable">${MDEV_AUTOMOUNT_ROOT}</span>/<span class="variable">$MDEV</span>"</span></span><br><span class="line">      mkdir <span class="string">"<span class="variable">$MOUNTPOINT</span>"</span></span><br><span class="line">      mount -t auto /dev/<span class="variable">$MDEV</span> <span class="string">"<span class="variable">$MOUNTPOINT</span>"</span></span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">    ;;</span><br><span class="line">  remove)</span><br><span class="line">    MOUNTPOINT=`grep <span class="string">"^/dev/<span class="variable">$MDEV</span>\s"</span> /proc/mounts | cut -d<span class="string">' '</span> -f 2`</span><br><span class="line">    <span class="keyword">if</span> [ ! -z <span class="string">"<span class="variable">$MOUNTPOINT</span>"</span> ]</span><br><span class="line">    <span class="keyword">then</span></span><br><span class="line">      umount <span class="string">"<span class="variable">$MOUNTPOINT</span>"</span></span><br><span class="line">      rmdir <span class="string">"<span class="variable">$MOUNTPOINT</span>"</span></span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">      umount /dev/<span class="variable">$MDEV</span></span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">    ;;</span><br><span class="line">  *)</span><br><span class="line">    <span class="comment"># Unexpected keyword</span></span><br><span class="line">    <span class="built_in">exit</span> 1</span><br><span class="line">    ;;</span><br><span class="line"><span class="keyword">esac</span></span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </div>
 </div>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
 </div>
 
     </div>
@@ -1038,7 +1038,7 @@ Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org4a504e6"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x89C4;&amp;#x5219;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgd951a9a"><span class="nav-number">1.1.</span> <span class="nav-text">&amp;#x6587;&amp;#x4EF6;&amp;#x4F4D;&amp;#x7F6E;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org42f365b"><span class="nav-number">1.2.</span> <span class="nav-text">&amp;#x8BED;&amp;#x6CD5;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org071393e"><span class="nav-number">1.2.1.</span> <span class="nav-text">&amp;#x57FA;&amp;#x672C;&amp;#x601D;&amp;#x60F3;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgce5183c"><span class="nav-number">1.2.2.</span> <span class="nav-text">&amp;#x57FA;&amp;#x672C;&amp;#x89C4;&amp;#x5219;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org0c696c1"><span class="nav-number">1.2.3.</span> <span class="nav-text">&amp;#x57FA;&amp;#x672C;&amp;#x64CD;&amp;#x4F5C;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orge3ff94b"><span class="nav-number">1.2.4.</span> <span class="nav-text">key&amp;#x7684;&amp;#x5339;&amp;#x914D;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org710ca8b"><span class="nav-number">1.2.5.</span> <span class="nav-text">key&amp;#x7684;&amp;#x8D4B;&amp;#x503C;</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org5616445"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x4F7F;&amp;#x7528;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org8de2d35"><span class="nav-number">2.1.</span> <span class="nav-text">&amp;#x627E;&amp;#x5230;&amp;#x8BBE;&amp;#x5907;&amp;#x8DEF;&amp;#x5F84;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgba8bda0"><span class="nav-number">2.2.</span> <span class="nav-text">&amp;#x5206;&amp;#x6790;&amp;#x8BBE;&amp;#x5907;&amp;#x53CA;&amp;#x7236;&amp;#x8BBE;&amp;#x5907;&amp;#x5C5E;&amp;#x6027;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org2fc3ea3"><span class="nav-number">2.3.</span> <span class="nav-text">&amp;#x7F16;&amp;#x5199;&amp;#x89C4;&amp;#x5219;&amp;#x6587;&amp;#x4EF6;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgf02236b"><span class="nav-number">2.4.</span> <span class="nav-text">&amp;#x4EFF;&amp;#x771F;&amp;#x6D4B;&amp;#x8BD5;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org104b66d"><span class="nav-number">2.5.</span> <span class="nav-text">&amp;#x9A8C;&amp;#x8BC1;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgfb5fa01"><span class="nav-number">3.</span> <span class="nav-text">mdev</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgefe5a7f"><span class="nav-number">3.1.</span> <span class="nav-text">&amp;#x51C6;&amp;#x5907;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org3e0b3c5"><span class="nav-number">3.2.</span> <span class="nav-text">&amp;#x914D;&amp;#x7F6E;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgbcf856c"><span class="nav-number">3.3.</span> <span class="nav-text">&amp;#x4F7F;&amp;#x7528;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org36cd24b"><span class="nav-number">3.4.</span> <span class="nav-text">&amp;#x5B9E;&amp;#x4F8B;</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org871ae2c"><span class="nav-number">1.</span> <span class="nav-text">规则</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org700f17e"><span class="nav-number">1.1.</span> <span class="nav-text">文件位置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org90617e7"><span class="nav-number">1.2.</span> <span class="nav-text">语法</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgb1e7b89"><span class="nav-number">1.2.1.</span> <span class="nav-text">基本思想</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org565814a"><span class="nav-number">1.2.2.</span> <span class="nav-text">基本规则</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org3dc1284"><span class="nav-number">1.2.3.</span> <span class="nav-text">基本操作</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org343b501"><span class="nav-number">1.2.4.</span> <span class="nav-text">key的匹配</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orge032e33"><span class="nav-number">1.2.5.</span> <span class="nav-text">key的赋值</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org82e3574"><span class="nav-number">2.</span> <span class="nav-text">使用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org04cfcc3"><span class="nav-number">2.1.</span> <span class="nav-text">找到设备路径</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgc7bf799"><span class="nav-number">2.2.</span> <span class="nav-text">分析设备及父设备属性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org50f389e"><span class="nav-number">2.3.</span> <span class="nav-text">编写规则文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orged13bdc"><span class="nav-number">2.4.</span> <span class="nav-text">仿真测试</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgf132a9f"><span class="nav-number">2.5.</span> <span class="nav-text">验证</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org40daf6b"><span class="nav-number">3.</span> <span class="nav-text">mdev</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org1cf449e"><span class="nav-number">3.1.</span> <span class="nav-text">准备</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgc08a0ec"><span class="nav-number">3.2.</span> <span class="nav-text">配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgd822ed7"><span class="nav-number">3.3.</span> <span class="nav-text">使用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgd25245d"><span class="nav-number">3.4.</span> <span class="nav-text">实例</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 

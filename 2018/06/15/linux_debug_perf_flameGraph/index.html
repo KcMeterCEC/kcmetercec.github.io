@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="perf &amp;#x662F;Linux(2.6+)&amp;#x5185;&amp;#x7F6E;&amp;#x7684;&amp;#x5F3A;&amp;#x5927;&amp;#x7684;&amp;#x5206;&amp;#x6790;&amp;#x5DE5;&amp;#x5177;&amp;#xFF0C;&amp;#x4F46;&amp;#x662F;&amp;#x5176;&amp;#x8F93;&amp;#x51FA;&amp;#x5E76;&amp;#x4E0D;&amp;#x76F4;&amp;#x89C2;&amp;#xFF0C;&amp;#x914">
+  <meta name="description" content="perf 是Linux(2.6+)内置的强大的分析工具，但是其输出并不直观，配合火焰图更能总览全局。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[What]perf 与 Flame Graph联立显示">
 <meta property="og:url" content="http://kcmetercec.top/2018/06/15/linux_debug_perf_flameGraph/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="perf &amp;#x662F;Linux(2.6+)&amp;#x5185;&amp;#x7F6E;&amp;#x7684;&amp;#x5F3A;&amp;#x5927;&amp;#x7684;&amp;#x5206;&amp;#x6790;&amp;#x5DE5;&amp;#x5177;&amp;#xFF0C;&amp;#x4F46;&amp;#x662F;&amp;#x5176;&amp;#x8F93;&amp;#x51FA;&amp;#x5E76;&amp;#x4E0D;&amp;#x76F4;&amp;#x89C2;&amp;#xFF0C;&amp;#x914">
+<meta property="og:description" content="perf 是Linux(2.6+)内置的强大的分析工具，但是其输出并不直观，配合火焰图更能总览全局。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2018-06-14T16:00:00.000Z">
 <meta property="article:modified_time" content="2020-08-01T01:09:06.536Z">
@@ -299,68 +299,68 @@
       
         <div id="content">
 <p>
-perf &#x662F;Linux(2.6+)&#x5185;&#x7F6E;&#x7684;&#x5F3A;&#x5927;&#x7684;&#x5206;&#x6790;&#x5DE5;&#x5177;&#xFF0C;&#x4F46;&#x662F;&#x5176;&#x8F93;&#x51FA;&#x5E76;&#x4E0D;&#x76F4;&#x89C2;&#xFF0C;&#x914D;&#x5408;&#x706B;&#x7130;&#x56FE;&#x66F4;&#x80FD;&#x603B;&#x89C8;&#x5168;&#x5C40;&#x3002;
+perf 是Linux(2.6+)内置的强大的分析工具，但是其输出并不直观，配合火焰图更能总览全局。
 </p>
 
 <a id="more"></a>
 
-<div id="outline-container-org893d298" class="outline-2">
-<h2 id="org893d298">&#x7B80;&#x6613;&#x6B65;&#x9AA4;</h2>
-<div class="outline-text-2" id="text-org893d298">
+<div id="outline-container-org6195cdd" class="outline-2">
+<h2 id="org6195cdd">简易步骤</h2>
+<div class="outline-text-2" id="text-org6195cdd">
 </div>
-<div id="outline-container-orgeacb5e1" class="outline-3">
-<h3 id="orgeacb5e1">&#x57FA;&#x672C;&#x547D;&#x4EE4;</h3>
-<div class="outline-text-3" id="text-orgeacb5e1">
+<div id="outline-container-org9370451" class="outline-3">
+<h3 id="org9370451">基本命令</h3>
+<div class="outline-text-3" id="text-org9370451">
 <p>
-&#x6570;&#x636E;&#x7684;&#x91C7;&#x96C6;&#x4F7F;&#x7528;&#x4EE5;&#x4E0B;&#x4E24;&#x79CD;&#x57FA;&#x672C;&#x547D;&#x4EE4;:
+数据的采集使用以下两种基本命令:
 </p>
 <ul class="org-ul">
-<li>&#x91C7;&#x96C6;&#x67D0;&#x4E2A;&#x8FDB;&#x7A0B;&#x4E00;&#x6BB5;&#x65F6;&#x95F4;</li>
+<li>采集某个进程一段时间</li>
 </ul>
 <pre class="example">
-#-F &#x540E;&#x7684;99&#x4EE3;&#x8868;1&#x79D2;&#x5185;&#x91C7;&#x6837;99&#x6B21;
-#-p &#x540E;&#x8DDF;&#x8981;&#x91C7;&#x96C6;&#x8FDB;&#x7A0B;&#x7684;pid
-#-g &#x4EE3;&#x8868;&#x91C7;&#x6837;&#x51FD;&#x6570;&#x8C03;&#x7528;&#x6808;
-#&#x6CE8;&#x610F; -- &#x548C; sleep &#x4E4B;&#x95F4;&#x7684;&#x7A7A;&#x683C;!
-#sleep &#x540E;&#x7684;&#x6570;&#x5B57;&#x4EE3;&#x8868;&#x91C7;&#x96C6;&#x591A;&#x957F;&#x7684;&#x65F6;&#x95F4;
-#--call-graph dwarf &#x89E3;&#x538B;&#x7F29;&#x6808;
-#&#x6CE8;&#x610F;&#xFF1A;&#x76D1;&#x89C6;&#x7684;&#x7A0B;&#x5E8F;&#x9700;&#x8981;&#x5177;&#x6709;&#x7B26;&#x53F7;&#x8868;&#xFF0C;&#x4E5F;&#x5C31;&#x662F;&#x7F16;&#x8BD1;&#x7684;&#x65F6;&#x5019;&#x9700;&#x8981;&#x4F7F;&#x7528; -g &#x9009;&#x9879;
-perf record -F 99 -p &lt;pid&gt; -g --call-graph dwarf -- sleep 60</pre>
+#-F 后的99代表1秒内采样99次
+#-p 后跟要采集进程的pid
+#-g 代表采样函数调用栈
+#注意 -- 和 sleep 之间的空格!
+#sleep 后的数字代表采集多长的时间
+#--call-graph dwarf 解压缩栈
+#注意：监视的程序需要具有符号表，也就是编译的时候需要使用 -g 选项
+perf record -F 99 -p <pid> -g --call-graph dwarf -- sleep 60</pre>
 <ul class="org-ul">
-<li>&#x91C7;&#x96C6;&#x6574;&#x4E2A;&#x7CFB;&#x7EDF;</li>
+<li>采集整个系统</li>
 </ul>
 <pre class="example">
-#&#x4E5F;&#x5C31;&#x662F;&#x8BF4;&#x53D6;&#x6D88;pid&#x9009;&#x9879;&#x6362;&#x4E3A; -a
+#也就是说取消pid选项换为 -a
 perf record -F 99 -a -g -- sleep 60</pre>
 </div>
-<div id="outline-container-orgdae2564" class="outline-4">
-<h4 id="orgdae2564">&#x4E3A;&#x4EC0;&#x4E48;&#x91C7;&#x6837;&#x9891;&#x7387;&#x662F;&#x6BCF;&#x79D2;99&#x6B21;&#x800C;&#x4E0D;&#x662F;100&#x6B21;&#xFF1F;</h4>
-<div class="outline-text-4" id="text-orgdae2564">
+<div id="outline-container-org6fad79a" class="outline-4">
+<h4 id="org6fad79a">为什么采样频率是每秒99次而不是100次？</h4>
+<div class="outline-text-4" id="text-org6fad79a">
 <p>
-&#x8FD9;&#x91CC;&#x6D89;&#x53CA;&#x5230;&#x4E00;&#x4E2A; <code>lockstep</code> &#x7684;&#x6982;&#x5FF5;&#x3002;
+这里涉及到一个 <code>lockstep</code> 的概念。
 </p>
 
 <pre class="example">
-&#x5047;&#x8BBE;&#x8981;&#x6D4B;&#x8BD5;&#x67D0;&#x4E2A;&#x8DEF;&#x6BB5;&#x4E00;&#x5929;&#x7684;&#x5168;&#x5C40;&#x62E5;&#x5835;&#x60C5;&#x51B5;&#xFF0C;&#x5982;&#x679C;&#x6211;&#x4EEC;&#x8BBE;&#x7F6E;&#x6BCF;&#x9694;24&#x4E2A;&#x5C0F;&#x65F6;&#x91C7;&#x6837;&#x4E00;&#x6B21;&#x8F66;&#x51B5;&#xFF0C;&#x8FD9;&#x4F1A;&#x5BFC;&#x81F4;&#x7ED3;&#x679C;&#x4E0D;&#x51C6;&#x786E;&#x3002;
-&#x56E0;&#x4E3A;&#x5F53;&#x91C7;&#x6837;&#x65F6;&#x95F4;&#x56FA;&#x5B9A;&#xFF0C;&#x5047;&#x8BBE;&#x4F60;&#x662F;&#x5728;&#x6BCF;&#x5929;&#x4E0A;&#x5348;8&#x70B9;&#x6216;&#x4E0B;&#x5348;5&#x70B9;&#x5F00;&#x59CB;&#x91C7;&#x6837;&#xFF0C;&#x90A3;&#x4E48;&#x5F97;&#x5230;&#x7684;&#x7ED3;&#x679C;&#x662F;&#x5168;&#x5929;&#x62E5;&#x5835;&#x3002;&#x4F46;&#x5982;&#x679C;&#x662F;&#x51CC;&#x6668;3&#x70B9;&#x91C7;&#x6837;&#xFF0C;&#x5F97;&#x5230;&#x7684;&#x7ED3;&#x679C;&#x662F;&#x5168;&#x5929;&#x7545;&#x901A;&#x3002;
+假设要测试某个路段一天的全局拥堵情况，如果我们设置每隔24个小时采样一次车况，这会导致结果不准确。
+因为当采样时间固定，假设你是在每天上午8点或下午5点开始采样，那么得到的结果是全天拥堵。但如果是凌晨3点采样，得到的结果是全天畅通。
 
-&#x4E3A;&#x4E86;&#x89E3;&#x51B3;&#x8FD9;&#x4E2A;&#x95EE;&#x9898;&#xFF0C;&#x53EF;&#x4EE5;&#x6BCF;&#x5929;&#x91C7;&#x6837;&#x65F6;&#x95F4;&#x968F;&#x673A;&#xFF0C;&#x6216;&#x8005;&#x63D0;&#x9AD8;&#x91C7;&#x6837;&#x9891;&#x7387;&#x3002;&#x76F8;&#x5BF9;&#x6765;&#x8BB2;&#xFF0C;&#x4FEE;&#x6539;&#x91C7;&#x6837;&#x9891;&#x7387;&#x662F;&#x4E00;&#x4E2A;&#x6700;&#x7B80;&#x5355;&#x7684;&#x529E;&#x6CD5;&#x3002;
+为了解决这个问题，可以每天采样时间随机，或者提高采样频率。相对来讲，修改采样频率是一个最简单的办法。
 
-&#x6BD4;&#x5982;&#x6BCF;&#x9694;23&#x4E2A;&#x5C0F;&#x65F6;&#x91C7;&#x6837;&#xFF0C;&#x90A3;&#x4E48;&#x6309;&#x7167;&#x7406;&#x8BBA;&#x8BB2;&#xFF0C;&#x65E0;&#x8BBA;&#x8D77;&#x59CB;&#x91C7;&#x6837;&#x65F6;&#x95F4;&#x662F;&#x4EC0;&#x4E48;&#x65F6;&#x5019;&#xFF0C;24&#x5929;&#x540E;&#x5C31;&#x53EF;&#x4EE5;&#x8F6E;&#x8F6C;&#x5168;&#x5929;&#x6BCF;&#x4E2A;&#x5C0F;&#x65F6;&#x7684;&#x91C7;&#x6837;&#x3002;</pre>
+比如每隔23个小时采样，那么按照理论讲，无论起始采样时间是什么时候，24天后就可以轮转全天每个小时的采样。</pre>
 <p>
-&#x6240;&#x4EE5;&#x5C06; <code>perf</code> &#x91C7;&#x6837;&#x7387;&#x8BBE;&#x4E3A;99&#x4E5F;&#x662F;&#x57FA;&#x4E8E;&#x8FD9;&#x4E2A;&#x539F;&#x7406;&#xFF0C;&#x82E5;&#x8BBE;&#x7F6E;&#x5F97;&#x592A;&#x9AD8;&#x5219;&#x4F1A;&#x5BFC;&#x81F4;&#x91C7;&#x6837;&#x7A0B;&#x5E8F;&#x5360;&#x7528;&#x592A;&#x591A;&#x8D44;&#x6E90;&#xFF0C;&#x592A;&#x4F4E;&#x5219;&#x4F1A;&#x5BB9;&#x6613;&#x6F0F;&#x6389;&#x77ED;&#x4FE1;&#x53F7;&#x3002;
+所以将 <code>perf</code> 采样率设为99也是基于这个原理，若设置得太高则会导致采样程序占用太多资源，太低则会容易漏掉短信号。
 </p>
 </div>
 </div>
-<div id="outline-container-org9cd2d32" class="outline-4">
-<h4 id="org9cd2d32">perf interrupt took too long</h4>
-<div class="outline-text-4" id="text-org9cd2d32">
+<div id="outline-container-org5d5c436" class="outline-4">
+<h4 id="org5d5c436">perf interrupt took too long</h4>
+<div class="outline-text-4" id="text-org5d5c436">
 <p>
-&#x5F53;&#x542F;&#x52A8; <code>perf</code> &#x65F6;&#x6709;&#x65F6;&#x4F1A;&#x5F97;&#x5230;&#x8FD9;&#x6837;&#x7684;&#x8B66;&#x544A;&#xFF0C;&#x5176;&#x4EA7;&#x751F;&#x4E8E;&#x51FD;&#x6570; <code>static void perf_duration_warn(struct irq_work *w)</code> &#x3002;
+当启动 <code>perf</code> 时有时会得到这样的警告，其产生于函数 <code>static void perf_duration_warn(struct irq_work *w)</code> 。
 </p>
 
 <p>
-&#x4E0D;&#x8FC7;kernel&#x5185;&#x90E8;&#x7ED9;&#x4E86;&#x5982;&#x4E0B;&#x6CE8;&#x91CA;&#xFF0C;&#x610F;&#x601D;&#x662F;&#x8BF4;&#x8FD9;&#x4E2A;&#x662F;&#x5185;&#x6838;&#x81EA;&#x52A8;&#x8C03;&#x6574;&#x673A;&#x5236;&#xFF0C;&#x7528;&#x6237;&#x4E0D;&#x7528;&#x62C5;&#x5FC3;&#x6B64;&#x63D0;&#x793A;&#x3002;
+不过kernel内部给了如下注释，意思是说这个是内核自动调整机制，用户不用担心此提示。
 </p>
 <pre class="example">
 /*
@@ -372,34 +372,34 @@ perf record -F 99 -a -g -- sleep 60</pre>
 </div>
 </div>
 </div>
-<div id="outline-container-orga9ae071" class="outline-3">
-<h3 id="orga9ae071">&#x6B65;&#x9AA4;</h3>
-<div class="outline-text-3" id="text-orga9ae071">
+<div id="outline-container-org4e9100f" class="outline-3">
+<h3 id="org4e9100f">步骤</h3>
+<div class="outline-text-3" id="text-org4e9100f">
 </div>
-<div id="outline-container-org69ce057" class="outline-4">
-<h4 id="org69ce057">&#x91C7;&#x6837;&#x6570;&#x636E;</h4>
-<div class="outline-text-4" id="text-org69ce057">
+<div id="outline-container-org8e46c4f" class="outline-4">
+<h4 id="org8e46c4f">采样数据</h4>
+<div class="outline-text-4" id="text-org8e46c4f">
 <ul class="org-ul">
-<li>&#x5728;&#x76EE;&#x6807;&#x677F;&#x4E0A;&#x8FD0;&#x884C;&#x88AB;&#x91C7;&#x6837;&#x7684;&#x8FDB;&#x7A0B;&#xFF0C;&#x5E76;&#x4F7F;&#x7528; <code>ps</code> &#x547D;&#x4EE4;&#x53D6;&#x5F97;&#x5176;pid</li>
-<li>&#x4F7F;&#x7528; <code>perf</code> &#x6307;&#x5B9A;&#x5176;pid&#x8FDB;&#x884C;&#x91C7;&#x96C6;</li>
+<li>在目标板上运行被采样的进程，并使用 <code>ps</code> 命令取得其pid</li>
+<li>使用 <code>perf</code> 指定其pid进行采集</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-orgc03bdd2" class="outline-4">
-<h4 id="orgc03bdd2">&#x4F20;&#x8F93;&#x6570;&#x636E;&#x6587;&#x4EF6;</h4>
-<div class="outline-text-4" id="text-orgc03bdd2">
+<div id="outline-container-org37444b2" class="outline-4">
+<h4 id="org37444b2">传输数据文件</h4>
+<div class="outline-text-4" id="text-org37444b2">
 <p>
-&#x4F7F;&#x7528; <code>perf script &gt; out.perf</code> &#x751F;&#x6210;&#x6570;&#x636E;&#x6587;&#x4EF6; <code>out.perf</code> &#xFF0C;&#x5E76;&#x901A;&#x8FC7;&#x7F51;&#x53E3;&#xFF0C;&#x4E32;&#x53E3;&#x6216;USB&#x53E3;&#x4F20;&#x8F93;&#x7ED9;&#x4E3B;&#x673A;&#x3002;
+使用 <code>perf script > out.perf</code> 生成数据文件 <code>out.perf</code> ，并通过网口，串口或USB口传输给主机。
 </p>
 </div>
 </div>
-<div id="outline-container-org85de3ef" class="outline-4">
-<h4 id="org85de3ef">&#x751F;&#x6210;&#x706B;&#x7130;&#x56FE;</h4>
-<div class="outline-text-4" id="text-org85de3ef">
+<div id="outline-container-org65def37" class="outline-4">
+<h4 id="org65def37">生成火焰图</h4>
+<div class="outline-text-4" id="text-org65def37">
 <ul class="org-ul">
-<li>&#x5728; <a href="https://github.com/brendangregg/FlameGraph" target="_blank" rel="noopener">github</a> &#x62F7;&#x8D1D;&#x4EE3;&#x7801;</li>
-<li>&#x4F7F;&#x7528;&#x547D;&#x4EE4; <code>./stackcollapse-perf.pl out.perf &gt; out.folded</code> &#x751F;&#x6210;&#x4E2D;&#x95F4;&#x6587;&#x4EF6; <code>out.folded</code></li>
-<li>&#x4F7F;&#x7528;&#x547D;&#x4EE4; <code>./flamegraph.pl out.folded &gt; kernel.svg</code> &#x751F;&#x6210;&#x56FE;&#x5F62;</li>
+<li>在 <a href="https://github.com/brendangregg/FlameGraph" target="_blank" rel="noopener">github</a> 拷贝代码</li>
+<li>使用命令 <code>./stackcollapse-perf.pl out.perf > out.folded</code> 生成中间文件 <code>out.folded</code></li>
+<li>使用命令 <code>./flamegraph.pl out.folded > kernel.svg</code> 生成图形</li>
 </ul>
 </div>
 </div>
@@ -407,7 +407,7 @@ perf record -F 99 -a -g -- sleep 60</pre>
 </div>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
 </div>
 
     </div>
@@ -493,7 +493,7 @@ Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org893d298"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x7B80;&amp;#x6613;&amp;#x6B65;&amp;#x9AA4;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgeacb5e1"><span class="nav-number">1.1.</span> <span class="nav-text">&amp;#x57FA;&amp;#x672C;&amp;#x547D;&amp;#x4EE4;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgdae2564"><span class="nav-number">1.1.1.</span> <span class="nav-text">&amp;#x4E3A;&amp;#x4EC0;&amp;#x4E48;&amp;#x91C7;&amp;#x6837;&amp;#x9891;&amp;#x7387;&amp;#x662F;&amp;#x6BCF;&amp;#x79D2;99&amp;#x6B21;&amp;#x800C;&amp;#x4E0D;&amp;#x662F;100&amp;#x6B21;&amp;#xFF1F;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org9cd2d32"><span class="nav-number">1.1.2.</span> <span class="nav-text">perf interrupt took too long</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orga9ae071"><span class="nav-number">1.2.</span> <span class="nav-text">&amp;#x6B65;&amp;#x9AA4;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org69ce057"><span class="nav-number">1.2.1.</span> <span class="nav-text">&amp;#x91C7;&amp;#x6837;&amp;#x6570;&amp;#x636E;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgc03bdd2"><span class="nav-number">1.2.2.</span> <span class="nav-text">&amp;#x4F20;&amp;#x8F93;&amp;#x6570;&amp;#x636E;&amp;#x6587;&amp;#x4EF6;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org85de3ef"><span class="nav-number">1.2.3.</span> <span class="nav-text">&amp;#x751F;&amp;#x6210;&amp;#x706B;&amp;#x7130;&amp;#x56FE;</span></a></li></ol></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org6195cdd"><span class="nav-number">1.</span> <span class="nav-text">简易步骤</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org9370451"><span class="nav-number">1.1.</span> <span class="nav-text">基本命令</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org6fad79a"><span class="nav-number">1.1.1.</span> <span class="nav-text">为什么采样频率是每秒99次而不是100次？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org5d5c436"><span class="nav-number">1.1.2.</span> <span class="nav-text">perf interrupt took too long</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org4e9100f"><span class="nav-number">1.2.</span> <span class="nav-text">步骤</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org8e46c4f"><span class="nav-number">1.2.1.</span> <span class="nav-text">采样数据</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org37444b2"><span class="nav-number">1.2.2.</span> <span class="nav-text">传输数据文件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org65def37"><span class="nav-number">1.2.3.</span> <span class="nav-text">生成火焰图</span></a></li></ol></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 

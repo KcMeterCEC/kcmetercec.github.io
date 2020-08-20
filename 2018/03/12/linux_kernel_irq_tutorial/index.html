@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="&amp;#x53C2;&amp;#x8003;:    &amp;#x300A;Linux &amp;#x5185;&amp;#x6838;&amp;#x8BBE;&amp;#x8BA1;&amp;#x4E0E;&amp;#x5B9E;&amp;#x73B0;&amp;#x300B;             kernel version arch     v5.4.x lts arm32      &amp;#x6574;&amp;#x7406;&amp;#x5185;&amp;#x6838;&amp;#x4E2D;">
+  <meta name="description" content="参考:    《Linux 内核设计与实现》             kernel version arch     v5.4.x lts arm32      整理内核中断的使用方式。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[What]linux -&gt; 内核中断基础">
 <meta property="og:url" content="http://kcmetercec.top/2018/03/12/linux_kernel_irq_tutorial/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="&amp;#x53C2;&amp;#x8003;:    &amp;#x300A;Linux &amp;#x5185;&amp;#x6838;&amp;#x8BBE;&amp;#x8BA1;&amp;#x4E0E;&amp;#x5B9E;&amp;#x73B0;&amp;#x300B;             kernel version arch     v5.4.x lts arm32      &amp;#x6574;&amp;#x7406;&amp;#x5185;&amp;#x6838;&amp;#x4E2D;">
+<meta property="og:description" content="参考:    《Linux 内核设计与实现》             kernel version arch     v5.4.x lts arm32      整理内核中断的使用方式。">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[kernel]/[What]kernel--framework/arm_cpsr.jpg?raw=true">
 <meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[kernel]/[What]kernel--framework/arm_modeReg.jpg?raw=true">
@@ -304,10 +304,10 @@
       
         <div id="content">
 <p>
-&#x53C2;&#x8003;: 
+参考: 
 </p>
 <ol class="org-ol">
-<li>&#x300A;Linux &#x5185;&#x6838;&#x8BBE;&#x8BA1;&#x4E0E;&#x5B9E;&#x73B0;&#x300B;</li>
+<li>《Linux 内核设计与实现》</li>
 </ol>
 
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
@@ -333,95 +333,95 @@
 </table>
 
 <p>
-&#x6574;&#x7406;&#x5185;&#x6838;&#x4E2D;&#x65AD;&#x7684;&#x4F7F;&#x7528;&#x65B9;&#x5F0F;&#x3002;
+整理内核中断的使用方式。
 </p>
 
 <a id="more"></a>
 
-<div id="outline-container-org65daf19" class="outline-2">
-<h2 id="org65daf19">&#x6982;&#x89C8;</h2>
-<div class="outline-text-2" id="text-org65daf19">
+<div id="outline-container-orgdb51537" class="outline-2">
+<h2 id="orgdb51537">概览</h2>
+<div class="outline-text-2" id="text-orgdb51537">
 <p>
-ARM &#x4E2D;&#x5177;&#x6709;&#x4E0D;&#x540C;&#x7684;&#x5DE5;&#x4F5C;&#x6A21;&#x5F0F;, &#x6709;&#x4E9B;&#x6A21;&#x5F0F;&#x53C8;&#x79F0;&#x4E3A;&#x5F02;&#x5E38;,&#x800C;&#x4E2D;&#x65AD;&#x662F;&#x5C5E;&#x4E8E;&#x5F02;&#x5E38;&#x4E2D;&#x7684;&#x4E00;&#x79CD;.
-&#x5F02;&#x5E38;&#x5177;&#x6709;&#x5F02;&#x5E38;&#x5411;&#x91CF;&#x8868;,&#x800C;&#x5177;&#x4F53;&#x7684;&#x4E2D;&#x65AD;&#x4E5F;&#x5177;&#x6709;&#x4E2D;&#x65AD;&#x5411;&#x91CF;&#x8868;.
-&#x800C;&#x8FD9;&#x4E09;&#x8005;&#x90FD;&#x662F;&#x4E0E; ARM &#x5185;&#x90E8;&#x7684; &#x7A0B;&#x5E8F;&#x72B6;&#x6001;&#x5BC4;&#x5B58;&#x5668;CPSR(Current Program Status Register)&#x6709;&#x5173;.
+ARM 中具有不同的工作模式, 有些模式又称为异常,而中断是属于异常中的一种.
+异常具有异常向量表,而具体的中断也具有中断向量表.
+而这三者都是与 ARM 内部的 程序状态寄存器CPSR(Current Program Status Register)有关.
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[kernel]/[What]kernel--framework/arm_cpsr.jpg?raw=true" alt="arm_cpsr.jpg">
 </div>
-<div id="outline-container-org2a9b9c7" class="outline-3">
-<h3 id="org2a9b9c7">&#x5DE5;&#x4F5C;&#x6A21;&#x5F0F;</h3>
-<div class="outline-text-3" id="text-org2a9b9c7">
+<div id="outline-container-org9cee19d" class="outline-3">
+<h3 id="org9cee19d">工作模式</h3>
+<div class="outline-text-3" id="text-org9cee19d">
 <p>
-ARM &#x4F53;&#x7CFB;&#x7684; CPU &#x6709;&#x4EE5;&#x4E0B; 7 &#x79CD;&#x5DE5;&#x4F5C;&#x6A21;&#x5F0F;.
+ARM 体系的 CPU 有以下 7 种工作模式.
 </p>
 <ul class="org-ul">
-<li>&#x7528;&#x6237;&#x6A21;&#x5F0F; (usr): ARM &#x5904;&#x7406;&#x5668;&#x6B63;&#x5E38;&#x7684;&#x7A0B;&#x5E8F;&#x6267;&#x884C;&#x72B6;&#x6001;</li>
-<li>&#x5FEB;&#x901F;&#x4E2D;&#x65AD;&#x6A21;&#x5F0F; (fiq) : &#x7528;&#x4E8E;&#x9AD8;&#x901F;&#x6570;&#x636E;&#x4F20;&#x8F93;&#x6216;&#x901A;&#x9053;&#x5904;&#x7406;.</li>
-<li>&#x4E2D;&#x65AD;&#x6A21;&#x5F0F; (irq): &#x7528;&#x4E8E;&#x901A;&#x7528;&#x7684;&#x4E2D;&#x65AD;&#x5904;&#x7406;</li>
-<li>&#x7BA1;&#x7406;&#x6A21;&#x5F0F; (svc): &#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;&#x4F7F;&#x7528;&#x7684;&#x4FDD;&#x62A4;&#x6A21;&#x5F0F;</li>
-<li>&#x6570;&#x636E;&#x8BBF;&#x95EE;&#x7EC8;&#x6B62;&#x6A21;&#x5F0F; (abt) : &#x5F53;&#x6570;&#x636E;&#x6216;&#x6307;&#x4EE4;&#x7EC8;&#x6B62;&#x65F6;&#x8FDB;&#x5165;&#x8BE5;&#x6A21;&#x5F0F;,&#x53EF;&#x4EE5;&#x7528;&#x4E8E;&#x865A;&#x62DF;&#x5B58;&#x50A8;&#x53CA;&#x5B58;&#x50A8;&#x4FDD;&#x62A4;.</li>
-<li>&#x7CFB;&#x7EDF;&#x6A21;&#x5F0F;(sys): &#x8FD0;&#x884C;&#x5177;&#x6709;&#x7279;&#x6743;&#x7684;&#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;&#x4EFB;&#x52A1;</li>
-<li>&#x672A;&#x5B9A;&#x4E49;&#x6307;&#x4EE4;&#x4E2D;&#x6B62;&#x6A21;&#x5F0F; (und):&#x5F53;&#x672A;&#x5B9A;&#x4E49;&#x6307;&#x4EE4;&#x8FDB;&#x5165;&#x8BE5;&#x6A21;&#x5F0F;,&#x53EF;&#x7528;&#x4E8E;&#x652F;&#x6301;&#x786C;&#x4EF6;&#x534F;&#x5904;&#x7406;&#x5668;&#x7684;&#x8F6F;&#x4EF6;&#x4EFF;&#x771F;.</li>
+<li>用户模式 (usr): ARM 处理器正常的程序执行状态</li>
+<li>快速中断模式 (fiq) : 用于高速数据传输或通道处理.</li>
+<li>中断模式 (irq): 用于通用的中断处理</li>
+<li>管理模式 (svc): 操作系统使用的保护模式</li>
+<li>数据访问终止模式 (abt) : 当数据或指令终止时进入该模式,可以用于虚拟存储及存储保护.</li>
+<li>系统模式(sys): 运行具有特权的操作系统任务</li>
+<li>未定义指令中止模式 (und):当未定义指令进入该模式,可用于支持硬件协处理器的软件仿真.</li>
 </ul>
 
 <p>
-&#x5DE5;&#x4F5C;&#x6A21;&#x5F0F;&#x7684;&#x5207;&#x6362;,&#x662F;&#x901A;&#x8FC7; CPSR &#x6765;&#x5B8C;&#x6210;&#x7684;. &#x53EF;&#x4EE5;&#x901A;&#x8FC7;&#x8F6F;&#x4EF6;&#x6765;&#x8FDB;&#x884C;&#x6A21;&#x5F0F;&#x7684;&#x5207;&#x6362;, &#x6216;&#x8005;&#x53D1;&#x751F;&#x5404;&#x7C7B;&#x4E2D;&#x65AD;&#x6216;&#x5F02;&#x5E38;&#x65F6; CPU &#x81EA;&#x52A8;&#x8FDB;&#x5165;&#x76F8;&#x5E94;&#x7684;&#x6A21;&#x5F0F;. &#x9664;&#x7528;&#x6237;&#x6A21;&#x5F0F;&#x5916;, &#x5176;&#x4ED6; 6 &#x79CD;&#x5DE5;&#x4F5C;&#x6A21;&#x5F0F;&#x90FD;&#x5C5E;&#x4E8E;&#x7279;&#x6743;&#x6A21;&#x5F0F;.
+工作模式的切换,是通过 CPSR 来完成的. 可以通过软件来进行模式的切换, 或者发生各类中断或异常时 CPU 自动进入相应的模式. 除用户模式外, 其他 6 种工作模式都属于特权模式.
 </p>
 
 <p>
-&#x5927;&#x591A;&#x6570;&#x7A0B;&#x5E8F;&#x8FD0;&#x884C;&#x4E8E;&#x7528;&#x6237;&#x6A21;&#x5F0F;,&#x8FDB;&#x5165;&#x7279;&#x6743;&#x6A21;&#x5F0F;&#x662F;&#x4E3A;&#x4E86;&#x5904;&#x7406;&#x4E2D;&#x65AD;,&#x5F02;&#x5E38;,&#x6216;&#x8005;&#x8BBF;&#x95EE;&#x88AB;&#x4FDD;&#x62A4;&#x7684;&#x7CFB;&#x7EDF;&#x8D44;&#x6E90;.
+大多数程序运行于用户模式,进入特权模式是为了处理中断,异常,或者访问被保护的系统资源.
 </p>
 
 <p>
-&#x53E6;&#x5916;, ARM &#x4F53;&#x7CFB;&#x7684; CPU &#x6709;&#x4EE5;&#x4E0B;&#x4E24;&#x79CD;&#x5DE5;&#x4F5C;&#x72B6;&#x6001;.
+另外, ARM 体系的 CPU 有以下两种工作状态.
 </p>
 <ul class="org-ul">
-<li>ARM &#x72B6;&#x6001;: &#x6B64;&#x65F6;&#x5904;&#x7406;&#x5668;&#x6267;&#x884C;32&#x4F4D;&#x7684;&#x5B57;&#x5BF9;&#x9F50;&#x7684; ARM &#x6307;&#x4EE4;.
+<li>ARM 状态: 此时处理器执行32位的字对齐的 ARM 指令.
 <ul class="org-ul">
-<li>&#x9ED8;&#x8BA4;&#x5904;&#x4E8E;&#x8FD9;&#x79CD;&#x6A21;&#x5F0F;</li>
+<li>默认处于这种模式</li>
 </ul></li>
-<li>Thumb &#x72B6;&#x6001;: &#x6B64;&#x65F6;&#x5904;&#x7406;&#x5668;&#x6267;&#x884C;16&#x4F4D;&#x7684;&#x534A;&#x5B57;&#x5BF9;&#x9F50;&#x7684; Thumb &#x6307;&#x4EE4;.</li>
+<li>Thumb 状态: 此时处理器执行16位的半字对齐的 Thumb 指令.</li>
 </ul>
 
 <p>
-&#x5404;&#x79CD;&#x6A21;&#x5F0F;&#x4E0B;&#x5BF9;&#x5E94;&#x7684;&#x5BC4;&#x5B58;&#x5668;&#x5982;&#x4E0B;&#x56FE;, &#x5176;&#x4E2D;&#x5E26;&#x7070;&#x8272;&#x4E09;&#x89D2;&#x7684;&#x8868;&#x793A;&#x5728;&#x5BF9;&#x5E94;&#x6A21;&#x5F0F;&#x4E0B;&#x5177;&#x6709;&#x526F;&#x672C;&#x5BC4;&#x5B58;&#x5668;.
+各种模式下对应的寄存器如下图, 其中带灰色三角的表示在对应模式下具有副本寄存器.
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[kernel]/[What]kernel--framework/arm_modeReg.jpg?raw=true" alt="arm_modeReg.jpg">
 <p>
-<b>&#x6CE8;&#x610F;</b> : &#x7528;&#x6237;&#x6A21;&#x5F0F;&#x548C;&#x7CFB;&#x7EDF;&#x6A21;&#x5F0F;&#x4F7F;&#x7528;&#x540C;&#x4E00;&#x4E2A;&#x5BC4;&#x5B58;&#x5668;&#x7EC4;.
+<b>注意</b> : 用户模式和系统模式使用同一个寄存器组.
 </p>
 
 <p>
-&#x56FE;&#x4E2D; R0 ~ R15 &#x53EF;&#x4EE5;&#x76F4;&#x63A5;&#x8BBF;&#x95EE;, &#x8FD9;&#x4E9B;&#x5BC4;&#x5B58;&#x5668;&#x9664;R15&#x5916;&#x90FD;&#x662F;&#x901A;&#x7528;&#x5BC4;&#x5B58;&#x5668;,&#x5373;&#x5B83;&#x4EEC;&#x5373;&#x53EF;&#x4EE5;&#x7528;&#x4E8E;&#x4FDD;&#x5B58;&#x6570;&#x636E;&#x4E5F;&#x53EF;&#x4EE5;&#x7528;&#x4E8E;&#x4FDD;&#x5B58;&#x5730;&#x5740;.&#x53E6;&#x5916;, R13 ~ R15&#x7A0D;&#x6709;&#x7279;&#x6B8A;.
+图中 R0 ~ R15 可以直接访问, 这些寄存器除R15外都是通用寄存器,即它们即可以用于保存数据也可以用于保存地址.另外, R13 ~ R15稍有特殊.
 </p>
 <ul class="org-ul">
-<li>R13 &#x53C8;&#x88AB;&#x79F0;&#x4E3A;&#x6808;&#x6307;&#x9488;&#x5BC4;&#x5B58;&#x5668;,&#x901A;&#x5E38;&#x88AB;&#x7528;&#x4E8E;&#x4FDD;&#x5B58;&#x6808;&#x6307;&#x9488;.</li>
-<li>R14&#x53C8;&#x88AB;&#x79F0;&#x4E3A;&#x7A0B;&#x5E8F;&#x8FDE;&#x63A5;&#x5BC4;&#x5B58;&#x5668;(subroutine Link Register) &#x6216;&#x8FDE;&#x63A5;&#x5BC4;&#x5B58;&#x5668;, &#x5F53;&#x6267;&#x884C; BL &#x5B50;&#x7A0B;&#x5E8F;&#x8C03;&#x7528;&#x6307;&#x4EE4;&#x65F6;, R14 &#x4E2D;&#x5F97;&#x5230; R15(&#x7A0B;&#x5E8F;&#x8BA1;&#x6570;&#x5668; PC)&#x7684;&#x5907;&#x4EFD;.
+<li>R13 又被称为栈指针寄存器,通常被用于保存栈指针.</li>
+<li>R14又被称为程序连接寄存器(subroutine Link Register) 或连接寄存器, 当执行 BL 子程序调用指令时, R14 中得到 R15(程序计数器 PC)的备份.
 <ul class="org-ul">
-<li>&#x5F53;&#x53D1;&#x751F;&#x4E2D;&#x65AD;&#x6216;&#x5F02;&#x5E38;&#x65F6;, &#x5BF9;&#x5E94;&#x6A21;&#x5F0F;&#x4E0B;&#x7684; R14 &#x4E2D;&#x4FDD;&#x5B58; R15&#x8FD4;&#x56DE;&#x503C;.</li>
+<li>当发生中断或异常时, 对应模式下的 R14 中保存 R15返回值.</li>
 </ul></li>
 </ul>
 
 <p>
-&#x5FEB;&#x901F;&#x4E2D;&#x65AD;&#x6A21;&#x5F0F;&#x6709; 7 &#x4E2A;&#x5907;&#x4EFD;&#x5BC4;&#x5B58;&#x5668; R8 ~ R14 , &#x8FD9;&#x4F7F;&#x5F97;&#x8FDB;&#x5165;&#x5FEB;&#x901F;&#x4E2D;&#x65AD;&#x6A21;&#x5F0F;&#x6267;&#x884C;&#x5F88;&#x5927;&#x90E8;&#x5206;&#x7A0B;&#x5E8F;&#x65F6;,&#x5982;&#x679C; R0 ~ R7&#x6CA1;&#x6709;&#x88AB;&#x6539;&#x53D8;,&#x90A3;&#x5C31;&#x4E0D;&#x9700;&#x8981;&#x4FDD;&#x5B58;&#x4EFB;&#x4F55;&#x5BC4;&#x5B58;&#x5668;,&#x5B9E;&#x73B0;&#x5FEB;&#x901F;&#x5207;&#x6362;.
+快速中断模式有 7 个备份寄存器 R8 ~ R14 , 这使得进入快速中断模式执行很大部分程序时,如果 R0 ~ R7没有被改变,那就不需要保存任何寄存器,实现快速切换.
 </p>
 
 <p>
-&#x6BCF;&#x4E2A;&#x6A21;&#x5F0F;&#x90FD;&#x5177;&#x6709;&#x72EC;&#x6709;&#x7684; R13 , R14 ,&#x8FD9;&#x6837;&#x53EF;&#x4EE5;&#x4EE4;&#x6BCF;&#x4E2A;&#x6A21;&#x5F0F;&#x62E5;&#x6709;&#x81EA;&#x5DF1;&#x7684;&#x6808;&#x6307;&#x9488;&#x5BC4;&#x5B58;&#x5668;&#x548C;&#x8FDE;&#x63A5;&#x5BC4;&#x5B58;&#x5668;.
+每个模式都具有独有的 R13 , R14 ,这样可以令每个模式拥有自己的栈指针寄存器和连接寄存器.
 </p>
 
 <p>
-&#x9664; CPSR &#x5916;, &#x9664; &quot;&#x7528;&#x6237;/&#x7CFB;&#x7EDF;&#x6A21;&#x5F0F;&quot; &#x5916;&#x7684;&#x5176;&#x4ED6;&#x6A21;&#x5F0F;&#x5177;&#x6709; &#x7A0B;&#x5E8F;&#x72B6;&#x6001;&#x4FDD;&#x5B58;&#x5BC4;&#x5B58;&#x5668; SPSR(Saved Process Status Registers).&#x5F53;&#x5207;&#x6362;&#x8FDB;&#x5165;&#x8FD9;&#x4E9B;&#x5DE5;&#x4F5C;&#x6A21;&#x5F0F;&#x65F6;, &#x5728; SPSR &#x4E2D;&#x4FDD;&#x5B58;&#x524D;&#x4E00;&#x4E2A;&#x5DE5;&#x4F5C;&#x6A21;&#x5F0F;&#x7684; CPSR &#x503C;,
-&#x8FD9;&#x6837;&#x5F53;&#x8FD4;&#x56DE;&#x524D;&#x4E00;&#x4E2A;&#x5DE5;&#x4F5C;&#x6A21;&#x5F0F;&#x65F6;,&#x53EF;&#x4EE5;&#x5C06; SPSR &#x7684;&#x503C;&#x6062;&#x590D;&#x5230; CPSR&#x4E2D;.
+除 CPSR 外, 除 "用户/系统模式" 外的其他模式具有 程序状态保存寄存器 SPSR(Saved Process Status Registers).当切换进入这些工作模式时, 在 SPSR 中保存前一个工作模式的 CPSR 值,
+这样当返回前一个工作模式时,可以将 SPSR 的值恢复到 CPSR中.
 </p>
 </div>
 </div>
 
-<div id="outline-container-orgfa09f5d" class="outline-3">
-<h3 id="orgfa09f5d">&#x5F02;&#x5E38;&#x7C7B;&#x578B;</h3>
-<div class="outline-text-3" id="text-orgfa09f5d">
+<div id="outline-container-org8e66ec7" class="outline-3">
+<h3 id="org8e66ec7">异常类型</h3>
+<div class="outline-text-3" id="text-org8e66ec7">
 <p>
-ARM &#x5904;&#x7406;&#x5668;&#x652F;&#x6301; 7 &#x79CD;&#x5F02;&#x5E38;&#x60C5;&#x51B5;&#xFF1A;&#x590D;&#x4F4D;&#x3001;&#x672A;&#x5B9A;&#x4E49;&#x6307;&#x4EE4;&#x3001;&#x8F6F;&#x4EF6;&#x4E2D;&#x65AD;&#x3001;&#x6307;&#x4EE4;&#x9884;&#x53D6;&#x4E2D;&#x6B62;&#x3001;&#x6570;&#x636E;&#x4E2D;&#x6B62;&#x3001;&#x4E2D;&#x65AD;&#x8BF7;&#x6C42;&#xFF08;IRQ&#xFF09;&#x548C;&#x5FEB;&#x901F;&#x4E2D;&#x65AD;&#x8BF7;&#x6C42;&#xFF08;FIQ&#xFF09;&#x3002;
+ARM 处理器支持 7 种异常情况：复位、未定义指令、软件中断、指令预取中止、数据中止、中断请求（IRQ）和快速中断请求（FIQ）。
 </p>
 
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
@@ -434,122 +434,122 @@ ARM &#x5904;&#x7406;&#x5668;&#x652F;&#x6301; 7 &#x79CD;&#x5F02;&#x5E38;&#x60C5;&
 </colgroup>
 <thead>
 <tr>
-<th scope="col" class="org-left">&#x5F02;&#x5E38;&#x4E2D;&#x65AD;&#x540D;&#x79F0;</th>
-<th scope="col" class="org-left">&#x542B;&#x4E49;</th>
+<th scope="col" class="org-left">异常中断名称</th>
+<th scope="col" class="org-left">含义</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td class="org-left">&#x590D;&#x4F4D;&#xFF08;RESET&#xFF09;</td>
-<td class="org-left">&#x5F53;&#x5904;&#x7406;&#x5668;&#x7684;&#x590D;&#x4F4D;&#x5F15;&#x811A;&#x6709;&#x6548;&#x65F6;&#xFF0C;&#x7CFB;&#x7EDF;&#x4EA7;&#x751F;&#x590D;&#x4F4D;&#x5F02;&#x5E38;&#x4E2D;&#x65AD;&#xFF0C;&#x7A0B;&#x5E8F;&#x8DF3;&#x8F6C;&#x5230;&#x590D;&#x4F4D;&#x5F02;&#x5E38;&#x4E2D;&#x65AD;&#x7A0B;&#x5E8F;&#x5904;&#x6267;&#x884C;&#x3002;&#x590D;&#x4F4D;&#x5F02;&#x5E38;&#x4E2D;&#x65AD;&#x901A;&#x5E38;&#x7528;&#x5728;&#x4E0B;&#x9762;&#x4E24;&#x79CD;&#x60C5;&#x51B5;&#xFF1A;1&#x3001;&#x7CFB;&#x7EDF;&#x52A0;&#x7535;&#x65F6;&#x548C;&#x7CFB;&#x7EDF;&#x590D;&#x4F4D;&#x65F6; 2&#x3001;&#x8DF3;&#x8F6C;&#x5230;&#x590D;&#x4F4D;&#x4E2D;&#x65AD;&#x5411;&#x91CF;&#x5904;&#x6267;&#x884C;&#xFF0C;&#x79F0;&#x4E3A;&#x8F6F;&#x590D;&#x4F4D;</td>
+<td class="org-left">复位（RESET）</td>
+<td class="org-left">当处理器的复位引脚有效时，系统产生复位异常中断，程序跳转到复位异常中断程序处执行。复位异常中断通常用在下面两种情况：1、系统加电时和系统复位时 2、跳转到复位中断向量处执行，称为软复位</td>
 </tr>
 
 <tr>
-<td class="org-left">&#x6570;&#x636E;&#x8BBF;&#x95EE;&#x4E2D;&#x6B62;&#xFF08;Data Abort&#xFF09;</td>
-<td class="org-left">&#x5982;&#x679C;&#x6570;&#x636E;&#x8BBF;&#x95EE;&#x6307;&#x4EE4;&#x7684;&#x76EE;&#x6807;&#x5730;&#x5740;&#x4E0D;&#x5B58;&#x5728;&#xFF0C;&#x6216;&#x8005;&#x8BE5;&#x5730;&#x5740;&#x4E0D;&#x5141;&#x8BB8;&#x5F53;&#x524D;&#x6307;&#x4EE4;&#x8BBF;&#x95EE;&#xFF0C;&#x5904;&#x7406;&#x5668;&#x4EA7;&#x751F;&#x6570;&#x636E;&#x8BBF;&#x95EE;&#x4E2D;&#x6B62;&#x5F02;&#x5E38;&#x4E2D;&#x65AD;</td>
+<td class="org-left">数据访问中止（Data Abort）</td>
+<td class="org-left">如果数据访问指令的目标地址不存在，或者该地址不允许当前指令访问，处理器产生数据访问中止异常中断</td>
 </tr>
 
 <tr>
-<td class="org-left">&#x5FEB;&#x901F;&#x4E2D;&#x65AD;&#x8BF7;&#x6C42;&#xFF08;FIQ&#xFF09;</td>
-<td class="org-left">&#x5F53;&#x5904;&#x7406;&#x5668;&#x7684;&#x5916;&#x90E8;&#x5FEB;&#x901F;&#x4E2D;&#x65AD;&#x8BF7;&#x6C42;&#x5F15;&#x811A;&#x6709;&#x6548;&#xFF0C;&#x800C;&#x4E14; CPSR &#x5BC4;&#x5B58;&#x5668;&#x7684; F &#x63A7;&#x5236;&#x4F4D;&#x88AB;&#x6E05;&#x9664;&#x65F6;&#xFF0C;&#x5904;&#x7406;&#x5668;&#x4EA7;&#x751F;&#x5916;&#x90E8;&#x4E2D;&#x65AD;&#x8BF7;&#x6C42;&#x5F02;&#x5E38;&#x4E2D;&#x65AD;</td>
+<td class="org-left">快速中断请求（FIQ）</td>
+<td class="org-left">当处理器的外部快速中断请求引脚有效，而且 CPSR 寄存器的 F 控制位被清除时，处理器产生外部中断请求异常中断</td>
 </tr>
 
 <tr>
-<td class="org-left">&#x5916;&#x90E8;&#x4E2D;&#x65AD;&#x8BF7;&#x6C42;&#xFF08;IRQ&#xFF09;</td>
-<td class="org-left">&#x5F53;&#x5904;&#x7406;&#x5668;&#x7684;&#x5916;&#x90E8;&#x4E2D;&#x65AD;&#x8BF7;&#x6C42;&#x5F15;&#x811A;&#x6709;&#x6548;&#xFF0C;&#x800C;&#x4E14; CPSR &#x5BC4;&#x5B58;&#x5668;&#x7684; I &#x63A7;&#x5236;&#x4F4D;&#x88AB;&#x6E05;&#x9664;&#x65F6;&#xFF0C;&#x5904;&#x7406;&#x5668;&#x4EA7;&#x751F;&#x5916;&#x90E8;&#x4E2D;&#x65AD;&#x8BF7;&#x6C42;&#x5F02;&#x5E38;&#x4E2D;&#x65AD;&#x3002;&#x7CFB;&#x7EDF;&#x4E2D;&#x5404;&#x5916;&#x8BBE;&#x901A;&#x5E38;&#x901A;&#x8FC7;&#x8BE5;&#x5F02;&#x5E38;&#x4E2D;&#x65AD;&#x8BF7;&#x6C42;&#x5904;&#x7406;&#x5668;&#x670D;&#x52A1;</td>
+<td class="org-left">外部中断请求（IRQ）</td>
+<td class="org-left">当处理器的外部中断请求引脚有效，而且 CPSR 寄存器的 I 控制位被清除时，处理器产生外部中断请求异常中断。系统中各外设通常通过该异常中断请求处理器服务</td>
 </tr>
 
 <tr>
-<td class="org-left">&#x9884;&#x53D6;&#x6307;&#x4EE4;&#x4E2D;&#x6B62;&#xFF08;Prefech Abort&#xFF09;</td>
-<td class="org-left">&#x5982;&#x679C;&#x5904;&#x7406;&#x5668;&#x9884;&#x53D6;&#x6307;&#x4EE4;&#x7684;&#x5730;&#x5740;&#x4E0D;&#x5B58;&#x5728;&#xFF0C;&#x6216;&#x8005;&#x8BE5;&#x5730;&#x5740;&#x4E0D;&#x5141;&#x8BB8;&#x5F53;&#x524D;&#x6307;&#x4EE4;&#x8BBF;&#x95EE;&#xFF0C;&#x5F53;&#x8BE5;&#x88AB;&#x9884;&#x53D6;&#x7684;&#x6307;&#x4EE4;&#x6267;&#x884C;&#x65F6;&#xFF0C;&#x5904;&#x7406;&#x5668;&#x4EA7;&#x751F;&#x6307;&#x4EE4;&#x9884;&#x53D6;&#x4E2D;&#x6B62;&#x5F02;&#x5E38;&#x4E2D;&#x65AD;</td>
+<td class="org-left">预取指令中止（Prefech Abort）</td>
+<td class="org-left">如果处理器预取指令的地址不存在，或者该地址不允许当前指令访问，当该被预取的指令执行时，处理器产生指令预取中止异常中断</td>
 </tr>
 
 <tr>
-<td class="org-left">&#x8F6F;&#x4EF6;&#x4E2D;&#x65AD;&#xFF08;software interrupt SWI&#xFF09;</td>
-<td class="org-left">&#x8FD9;&#x662F;&#x4E00;&#x4E2A;&#x7528;&#x6237;&#x5B9A;&#x4E49;&#x7684;&#x4E2D;&#x65AD;&#x6307;&#x4EE4;&#xFF0C;&#x53EF;&#x7528;&#x4E8E;&#x7528;&#x6237;&#x6A21;&#x5F0F;&#x4E0B;&#x7684;&#x7A0B;&#x5E8F;&#x8C03;&#x7528;&#x7279;&#x6743;&#x64CD;&#x4F5C;&#x6307;&#x4EE4;&#x3002;&#x5728;&#x5B9E;&#x65F6;&#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;&#x4E2D;&#xFF0C;&#x53EF;&#x4EE5;&#x901A;&#x8FC7;&#x8BE5;&#x673A;&#x5236;&#x5B9E;&#x73B0;&#x7CFB;&#x7EDF;&#x529F;&#x80FD;&#x8C03;&#x7528;</td>
+<td class="org-left">软件中断（software interrupt SWI）</td>
+<td class="org-left">这是一个用户定义的中断指令，可用于用户模式下的程序调用特权操作指令。在实时操作系统中，可以通过该机制实现系统功能调用</td>
 </tr>
 
 <tr>
-<td class="org-left">&#x672A;&#x5B9A;&#x4E49;&#x6307;&#x4EE4;&#xFF08;undefined instruction&#xFF09;</td>
-<td class="org-left">&#x5F53; ARM &#x5904;&#x7406;&#x5668;&#x6216;&#x8005;&#x662F;&#x7CFB;&#x7EDF;&#x4E2D;&#x7684;&#x5199;&#x5904;&#x7406;&#x5668;&#x8BA4;&#x4E3A;&#x5F53;&#x524D;&#x6307;&#x4EE4;&#x672A;&#x5B9A;&#x4E49;&#x65F6;&#xFF0C;&#x4EA7;&#x751F;&#x672A;&#x5B9A;&#x4E49;&#x7684;&#x6307;&#x4EE4;&#x5F02;&#x5E38;&#x4E2D;&#x65AD;&#xFF0C;&#x53EF;&#x4EE5;&#x901A;&#x8FC7;&#x8BE5;&#x5F02;&#x5E38;&#x4E2D;&#x65AD;&#x673A;&#x5236;&#x4EFF;&#x771F;&#x6D6E;&#x70B9;&#x5411;&#x91CF;&#x8FD0;&#x7B97;</td>
+<td class="org-left">未定义指令（undefined instruction）</td>
+<td class="org-left">当 ARM 处理器或者是系统中的写处理器认为当前指令未定义时，产生未定义的指令异常中断，可以通过该异常中断机制仿真浮点向量运算</td>
 </tr>
 </tbody>
 </table>
 </div>
 </div>
 
-<div id="outline-container-org9843a15" class="outline-3">
-<h3 id="org9843a15">&#x5F02;&#x5E38;&#x7C7B;&#x578B;&#x4E0E;&#x5DE5;&#x4F5C;&#x6A21;&#x5F0F;&#x7684;&#x5BF9;&#x6BD4;</h3>
-<div class="outline-text-3" id="text-org9843a15">
+<div id="outline-container-orga207507" class="outline-3">
+<h3 id="orga207507">异常类型与工作模式的对比</h3>
+<div class="outline-text-3" id="text-orga207507">
 <p>
-&#x9664;&#x5F00;&#x4E8C;&#x8005;&#x6240;&#x5171;&#x6709;&#x7684; FIQ , IRQ, ABT(&#x6570;&#x636E;&#x7EC8;&#x6B62;&#x548C;&#x6307;&#x4EE4;&#x7EC8;&#x6B62;), undefined instruction, &#x8FD8;&#x5269;&#x4E0B; &#x590D;&#x4F4D;,&#x8F6F;&#x4EF6;&#x4E2D;&#x65AD; &#x548C; &#x7528;&#x6237;&#x6A21;&#x5F0F; , &#x7BA1;&#x7406;&#x6A21;&#x5F0F;, &#x7CFB;&#x7EDF;&#x6A21;&#x5F0F;.&#x5176;&#x4E2D;&#x7528;&#x6237;&#x6A21;&#x5F0F;&#x5C5E;&#x4E8E;&#x6B63;&#x5E38;&#x5DE5;&#x4F5C;&#x6A21;&#x5F0F;,&#x7CFB;&#x7EDF;&#x6A21;&#x5F0F;&#x9700;&#x8981;&#x7528;&#x6237;&#x624B;&#x52A8;&#x5207;&#x6362;.
-&#x590D;&#x4F4D;&#x548C;&#x8F6F;&#x4EF6;&#x4E2D;&#x65AD;&#x90FD;&#x5C5E;&#x4E8E;&#x662F;&#x7BA1;&#x7406;&#x6A21;&#x5F0F;.&#x8F6F;&#x4EF6;&#x4E2D;&#x65AD;&#x4E00;&#x822C;&#x7531;&#x5E94;&#x7528;&#x7A0B;&#x5E8F;&#x81EA;&#x5DF1;&#x8C03;&#x7528;&#x4EA7;&#x751F;,&#x7528;&#x4E8E;&#x7528;&#x4E8E;&#x7A0B;&#x5E8F;&#x5411;&#x7CFB;&#x7EDF;&#x7533;&#x8BF7;&#x8BBF;&#x95EE;&#x786C;&#x4EF6;&#x8D44;&#x6E90;.
+除开二者所共有的 FIQ , IRQ, ABT(数据终止和指令终止), undefined instruction, 还剩下 复位,软件中断 和 用户模式 , 管理模式, 系统模式.其中用户模式属于正常工作模式,系统模式需要用户手动切换.
+复位和软件中断都属于是管理模式.软件中断一般由应用程序自己调用产生,用于用于程序向系统申请访问硬件资源.
 </p>
 </div>
 </div>
-<div id="outline-container-org0226fdc" class="outline-3">
-<h3 id="org0226fdc">&#x5DE5;&#x4F5C;&#x6D41;&#x7A0B;</h3>
-<div class="outline-text-3" id="text-org0226fdc">
+<div id="outline-container-org58c06fe" class="outline-3">
+<h3 id="org58c06fe">工作流程</h3>
+<div class="outline-text-3" id="text-org58c06fe">
 </div>
-<div id="outline-container-org97abbd3" class="outline-4">
-<h4 id="org97abbd3">&#x8FDB;&#x5165;&#x5F02;&#x5E38;</h4>
-<div class="outline-text-4" id="text-org97abbd3">
+<div id="outline-container-orgcdc96d9" class="outline-4">
+<h4 id="orgcdc96d9">进入异常</h4>
+<div class="outline-text-4" id="text-orgcdc96d9">
 <p>
-&#x7EFC;&#x4E0A;&#x6240;&#x8FF0;,&#x5F53;&#x4E00;&#x4E2A;&#x5F02;&#x5E38;&#x53D1;&#x751F;&#x65F6;,&#x5C06;&#x7531;CPU <b>&#x5F3A;&#x5236;</b> &#x5207;&#x6362;&#x8FDB;&#x5165;&#x76F8;&#x5E94;&#x7684;&#x5DE5;&#x4F5C;&#x6A21;&#x5F0F;,&#x8FD9;&#x65F6; CPU &#x5C06; <b>&#x81EA;&#x52A8;</b> &#x5B8C;&#x6210;&#x5982;&#x4E0B;&#x7684;&#x4E8B;&#x60C5;:
+综上所述,当一个异常发生时,将由CPU <b>强制</b> 切换进入相应的工作模式,这时 CPU 将 <b>自动</b> 完成如下的事情:
 </p>
 <ol class="org-ol">
-<li>&#x5728;&#x5F02;&#x5E38;&#x5DE5;&#x4F5C;&#x6A21;&#x5F0F;&#x7684;&#x8FDE;&#x63A5;&#x5BC4;&#x5B58;&#x5668; R14 &#x4E2D;&#x4FDD;&#x5B58;&#x524D;&#x4E00;&#x4E2A;&#x5DE5;&#x4F5C;&#x6A21;&#x5F0F;&#x7684; <b>&#x4E0B;&#x4E00;&#x6761;&#x6307;&#x4EE4;</b>, &#x4E5F;&#x5C31;&#x662F;&#x8FD4;&#x56DE;&#x5F02;&#x5E38;&#x540E;&#x7684;&#x4E0B;&#x4E00;&#x6761;&#x6307;&#x4EE4;&#x5730;&#x5740;.&#x5BF9;&#x4E8E; ARM &#x72B6;&#x6001;,&#x8FD9;&#x4E2A;&#x503C;&#x662F;&#x5F53;&#x524D; PC &#x503C;&#x52A0; 4 &#x6216;&#x8005;&#x52A0; 8.(&#x56E0;&#x4E3A; CPU &#x7684;&#x6D41;&#x6C34;&#x7EBF;&#x800C;&#x51B3;&#x5B9A;&#x7684;, &#x4E5F;&#x5C31;&#x662F;&#x5728;&#x8BD1;&#x7801;&#x548C;&#x6267;&#x884C;&#x7684;&#x65F6;&#x95F4;, PC &#x503C;&#x4E5F;&#x5728;&#x589E;&#x52A0;)</li>
-<li>&#x5C06; CPSR &#x7684;&#x503C;&#x590D;&#x5236;&#x5230;&#x5F02;&#x5E38;&#x6A21;&#x5F0F;&#x7684; SPSR.</li>
-<li>&#x5C06; CPSR &#x7684;&#x5DE5;&#x4F5C;&#x6A21;&#x5F0F;&#x4F4D;&#x8BBE;&#x7F6E;&#x4E3A;&#x5F53;&#x524D;&#x5F02;&#x5E38;&#x5BF9;&#x5E94;&#x7684;&#x5DE5;&#x4F5C;&#x6A21;&#x5F0F;, &#x5E76;&#x4E14;&#x7981;&#x6B62;&#x6240;&#x6709; IRQ &#x4E2D;&#x65AD;, &#x5F53;&#x8FDB;&#x5165; FIQ &#x5FEB;&#x901F;&#x4E2D;&#x65AD;&#x6A21;&#x5F0F;&#x65F6;&#x7981;&#x6B62; FIQ &#x4E2D;&#x65AD;.</li>
-<li>&#x4EE4; PC &#x503C;&#x7B49;&#x4E8E;&#x8FD9;&#x4E2A;&#x5F02;&#x5E38;&#x6A21;&#x5F0F;&#x5728;&#x5F02;&#x5E38;&#x5411;&#x91CF;&#x8868;&#x4E2D;&#x7684;&#x5730;&#x5740;, &#x4E5F;&#x5C31;&#x662F;&#x8DF3;&#x8F6C;&#x5230;&#x5F02;&#x5E38;&#x5411;&#x91CF;&#x8868;&#x4E2D;&#x6267;&#x884C;&#x76F8;&#x5E94;&#x6307;&#x4EE4;.</li>
+<li>在异常工作模式的连接寄存器 R14 中保存前一个工作模式的 <b>下一条指令</b>, 也就是返回异常后的下一条指令地址.对于 ARM 状态,这个值是当前 PC 值加 4 或者加 8.(因为 CPU 的流水线而决定的, 也就是在译码和执行的时间, PC 值也在增加)</li>
+<li>将 CPSR 的值复制到异常模式的 SPSR.</li>
+<li>将 CPSR 的工作模式位设置为当前异常对应的工作模式, 并且禁止所有 IRQ 中断, 当进入 FIQ 快速中断模式时禁止 FIQ 中断.</li>
+<li>令 PC 值等于这个异常模式在异常向量表中的地址, 也就是跳转到异常向量表中执行相应指令.</li>
 </ol>
 
 <p>
-&#x9664;&#x6B64;&#x4E4B;&#x5916;, <b>&#x5728;&#x8FDB;&#x5165;&#x5F02;&#x5E38;&#x540E;</b> &#x8FD8;&#x9700;&#x8981;&#x8F6F;&#x4EF6;&#x6765; <b>&#x4E3B;&#x52A8;</b> &#x5B8C;&#x6210;&#x7684;&#x4E8B;&#x6709;:
+除此之外, <b>在进入异常后</b> 还需要软件来 <b>主动</b> 完成的事有:
 </p>
 <ol class="org-ol">
-<li>&#x4FDD;&#x5B58;&#x5F53;&#x524D;&#x5171;&#x7528;&#x5BC4;&#x5B58;&#x5668;&#x7684;&#x503C;(&#x5305;&#x62EC; lr), &#x5230;&#x5F53;&#x524D;&#x6A21;&#x5F0F;&#x7684;&#x6808;&#x5185;&#x5B58;&#x4E2D;</li>
-<li>&#x8FDB;&#x5165;&#x5F02;&#x5E38;&#x5904;&#x7406;&#x51FD;&#x6570;,&#x8FDB;&#x884C;&#x76F8;&#x5E94;&#x7684;&#x5904;&#x7406;</li>
+<li>保存当前共用寄存器的值(包括 lr), 到当前模式的栈内存中</li>
+<li>进入异常处理函数,进行相应的处理</li>
 </ol>
 </div>
 </div>
-<div id="outline-container-org1251dce" class="outline-4">
-<h4 id="org1251dce">&#x9000;&#x51FA;&#x5F02;&#x5E38;</h4>
-<div class="outline-text-4" id="text-org1251dce">
+<div id="outline-container-org91dfe6b" class="outline-4">
+<h4 id="org91dfe6b">退出异常</h4>
+<div class="outline-text-4" id="text-org91dfe6b">
 <p>
-&#x4ECE;&#x5F02;&#x5E38;&#x5DE5;&#x4F5C;&#x6A21;&#x5F0F;&#x9000;&#x51FA;&#x56DE;&#x5230;&#x4E4B;&#x524D;&#x7684;&#x5DE5;&#x4F5C;&#x6A21;&#x5F0F;&#x65F6;, &#x9700;&#x8981;&#x8F6F;&#x4EF6; <b>&#x4E3B;&#x52A8;</b> &#x6765;&#x5B8C;&#x6210;&#x5982;&#x4E0B;&#x4E8B;&#x60C5;:
+从异常工作模式退出回到之前的工作模式时, 需要软件 <b>主动</b> 来完成如下事情:
 </p>
 <ol class="org-ol">
-<li>&#x5C06;&#x6808;&#x91CC;&#x4FDD;&#x5B58;&#x7684;&#x503C;&#x8BFB;&#x56DE;&#x7ED9;&#x5171;&#x4EAB;&#x5BC4;&#x5B58;&#x5668;</li>
-<li>&#x5C06;&#x8FDE;&#x63A5;&#x5BC4;&#x5B58;&#x5668;&#x7684;&#x503C;&#x51CF;&#x53BB;&#x4E00;&#x4E2A;&#x9002;&#x5F53;&#x7684;&#x503C;&#x540E;, &#x8D4B;&#x503C;&#x7ED9; PC &#x5BC4;&#x5B58;&#x5668;.</li>
-<li>&#x5C06; SPSR &#x7684;&#x503C;&#x8D4B;&#x503C;&#x7ED9; CPSR</li>
+<li>将栈里保存的值读回给共享寄存器</li>
+<li>将连接寄存器的值减去一个适当的值后, 赋值给 PC 寄存器.</li>
+<li>将 SPSR 的值赋值给 CPSR</li>
 </ol>
 
 <p>
-&#x6574;&#x4F53;&#x6D41;&#x7A0B;&#x5982;&#x4E0B;&#x56FE;&#x6240;&#x793A;:
+整体流程如下图所示:
 </p>
 
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[kernel]/[What]kernel--framework/arm_isr.jpg?raw=true" alt="arm_isr.jpg">
 </div>
 </div>
 </div>
-<div id="outline-container-org2506db5" class="outline-3">
-<h3 id="org2506db5">&#x5F02;&#x5E38;&#x5411;&#x91CF;&#x8868;</h3>
-<div class="outline-text-3" id="text-org2506db5">
+<div id="outline-container-org907992a" class="outline-3">
+<h3 id="org907992a">异常向量表</h3>
+<div class="outline-text-3" id="text-org907992a">
 <p>
-&#x5F53;&#x5F02;&#x5E38;&#x4E2D;&#x65AD;&#x53D1;&#x751F;&#x65F6;&#xFF0C;&#x7A0B;&#x5E8F;&#x8BA1;&#x6570;&#x5668; PC &#x6240;&#x6307;&#x7684;&#x4F4D;&#x7F6E;&#x5BF9;&#x4E8E;&#x5404;&#x79CD;&#x4E0D;&#x540C;&#x7684;&#x5F02;&#x5E38;&#x4E2D;&#x65AD;&#x662F;&#x4E0D;&#x540C;&#x7684;&#xFF0C;&#x540C;&#x6837;&#xFF0C;&#x8FD4;&#x56DE;&#x5730;&#x5740;&#x5BF9;&#x4E8E;&#x5404;&#x79CD;&#x4E0D;&#x540C;&#x7684;&#x5F02;&#x5E38;&#x4E2D;&#x65AD;&#x4E5F;&#x662F;&#x4E0D;&#x540C;&#x7684;&#x3002;&#x4F8B;&#x5916;&#x7684;&#x662F;&#xFF0C;&#x590D;&#x4F4D;&#x5F02;&#x5E38;&#x4E2D;&#x65AD;&#x5904;&#x7406;&#x7A0B;&#x5E8F;&#x662F;&#x4E0D;&#x9700;&#x8981;&#x8FD4;&#x56DE;&#xFF0C; <b>&#x56E0;&#x4E3A;&#x6574;&#x4E2A;&#x5E94;&#x7528;&#x7CFB;&#x7EDF;&#x5C31;&#x662F;&#x4ECE;&#x590D;&#x4F4D;&#x5F02;&#x5E38;&#x4E2D;&#x65AD;&#x5904;&#x7406;&#x7A0B;&#x5E8F;&#x5904;&#x5F00;&#x59CB;&#x6267;&#x884C;&#x7684;</b> &#x3002;
+当异常中断发生时，程序计数器 PC 所指的位置对于各种不同的异常中断是不同的，同样，返回地址对于各种不同的异常中断也是不同的。例外的是，复位异常中断处理程序是不需要返回， <b>因为整个应用系统就是从复位异常中断处理程序处开始执行的</b> 。
 </p>
 
 <p>
-&#x4E2D;&#x65AD;&#x5411;&#x91CF;&#x8868;&#x6307;&#x5B9A;&#x4E86;&#x5404;&#x5F02;&#x5E38;&#x4E2D;&#x65AD;&#x53CA;&#x5904;&#x7406;&#x7A0B;&#x5E8F;&#x7684;&#x5BF9;&#x5E94;&#x5173;&#x7CFB;&#xFF0C;&#x5B83;&#x901A;&#x5E38;&#x653E;&#x5728;&#x5B58;&#x50A8;&#x5730;&#x5740;&#x7684;&#x4F4E;&#x7AEF;&#x3002;&#x5728; ARM &#x4F53;&#x7CFB;&#x4E2D;&#xFF0C;&#x5F02;&#x5E38;&#x4E2D;&#x65AD;&#x5411;&#x91CF;&#x8868;&#x7684;&#x5927;&#x5C0F;&#x4E3A;32&#x5B57;&#x8282;&#x3002;&#x5176;&#x4E2D;&#x6BCF;&#x4E2A;&#x5F02;&#x5E38;&#x4E2D;&#x65AD;&#x5360;&#x636E;4&#x5B57;&#x8282;&#x5927;&#x5C0F;&#xFF0C;&#x4FDD;&#x7559;&#x4E86;4&#x4E2A;&#x5B57;&#x8282;&#x7A7A;&#x95F4;&#x3002;&#x4E5F;&#x5C31;&#x662F;&#x8BF4;&#xFF0C;&#x6B63;&#x597D;&#x6709;7&#x4E2A;&#x4E2D;&#x65AD;&#x5904;&#x7406;&#x7A0B;&#x5E8F;&#x5730;&#x5740;&#x3002;
+中断向量表指定了各异常中断及处理程序的对应关系，它通常放在存储地址的低端。在 ARM 体系中，异常中断向量表的大小为32字节。其中每个异常中断占据4字节大小，保留了4个字节空间。也就是说，正好有7个中断处理程序地址。
 </p>
 
 <p>
-&#x6BCF;&#x4E2A;&#x5F02;&#x5E38;&#x4E2D;&#x65AD;&#x5BF9;&#x5E94;&#x7684;&#x4E2D;&#x65AD;&#x5411;&#x91CF;&#x8868;&#x7684;4&#x4E2A;&#x5B57;&#x8282;&#x7684;&#x7A7A;&#x95F4;&#x5B58;&#x653E;&#x4E86;&#x4E00;&#x4E2A;&#x8DF3;&#x8F6C;&#x6307;&#x4EE4;&#x6216;&#x8005;&#x4E00;&#x4E2A;&#x5411; PC &#x5BC4;&#x5B58;&#x5668;&#x4E2D;&#x8D4B;&#x503C;&#x7684;&#x6570;&#x636E;&#x8BBF;&#x95EE;&#x6307;&#x4EE4;&#x3002;&#x901A;&#x8FC7;&#x8FD9;&#x4E24;&#x79CD;&#x6307;&#x4EE4;&#xFF0C;&#x7A0B;&#x5E8F;&#x5C06;&#x8DF3;&#x8F6C;&#x5230;&#x76F8;&#x5E94;&#x7684;&#x5F02;&#x5E38;&#x4E2D;&#x65AD;&#x5904;&#x7406;&#x7A0B;&#x5E8F;&#x5904;&#x6267;&#x884C;&#x3002;
+每个异常中断对应的中断向量表的4个字节的空间存放了一个跳转指令或者一个向 PC 寄存器中赋值的数据访问指令。通过这两种指令，程序将跳转到相应的异常中断处理程序处执行。
 </p>
 
 <p>
-&#x5F53;&#x51E0;&#x4E2A;&#x5F02;&#x5E38;&#x4E2D;&#x65AD;&#x540C;&#x65F6;&#x53D1;&#x751F;&#x65F6;&#xFF0C;&#x5C31;&#x5FC5;&#x987B;&#x6309;&#x7167;&#x4E00;&#x5B9A;&#x7684;&#x6B21;&#x5E8F;&#x6765;&#x5904;&#x7406;&#x8FD9;&#x4E9B;&#x5F02;&#x5E38;&#x4E2D;&#x65AD;&#x3002;&#x5728; ARM &#x4E2D;&#x901A;&#x8FC7;&#x7ED9;&#x5404;&#x5F02;&#x5E38;&#x4E2D;&#x65AD;&#x8D4B;&#x4E88;&#x4E00;&#x5B9A;&#x7684;&#x4F18;&#x5148;&#x7EA7;&#x6765;&#x5B9E;&#x73B0;&#x8FD9;&#x79CD;&#x5904;&#x7406;&#x6B21;&#x5E8F;&#x3002;&#x5F53;&#x7136;&#xFF0C;&#x6709;&#x4E9B;&#x5F02;&#x5E38;&#x4E2D;&#x65AD;&#x662F;&#x4E0D;&#x53EF;&#x80FD;&#x540C;&#x65F6;&#x53D1;&#x751F;&#x7684;&#xFF0C;&#x5982;&#x6307;&#x4EE4;&#x9884;&#x53D6;&#x4E2D;&#x6B62;&#x5F02;&#x5E38;&#x4E2D;&#x65AD;&#x548C;&#x8F6F;&#x4E2D;&#x65AD;&#xFF08;SWI&#xFF09;&#x5F02;&#x5E38;&#x4E2D;&#x65AD;&#x662F;&#x7531;&#x540C;&#x4E00;&#x6761;&#x6307;&#x4EE4;&#x7684;&#x6267;&#x884C;&#x89E6;&#x53D1;&#x7684;&#xFF0C;&#x662F;&#x4E0D;&#x53EF;&#x80FD;&#x540C;&#x65F6;&#x53D1;&#x751F;&#x7684;&#x3002;&#x5904;&#x7406;&#x5668;&#x6267;&#x884C;&#x67D0;&#x4E2A;&#x7279;&#x5B9A;&#x7684;&#x5F02;&#x5E38;&#x4E2D;&#x65AD;&#x7684;&#x8FC7;&#x7A0B;&#xFF0C;&#x79F0;&#x4E3A;&#x5904;&#x7406;&#x5668;&#x5904;&#x4E8E;&#x7279;&#x5B9A;&#x7684;&#x4E2D;&#x65AD;&#x6A21;&#x5F0F;&#x3002;
+当几个异常中断同时发生时，就必须按照一定的次序来处理这些异常中断。在 ARM 中通过给各异常中断赋予一定的优先级来实现这种处理次序。当然，有些异常中断是不可能同时发生的，如指令预取中止异常中断和软中断（SWI）异常中断是由同一条指令的执行触发的，是不可能同时发生的。处理器执行某个特定的异常中断的过程，称为处理器处于特定的中断模式。
 </p>
 
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
@@ -566,338 +566,338 @@ ARM &#x5904;&#x7406;&#x5668;&#x652F;&#x6301; 7 &#x79CD;&#x5F02;&#x5E38;&#x60C5;&
 </colgroup>
 <thead>
 <tr>
-<th scope="col" class="org-right">&#x4E2D;&#x65AD;&#x5411;&#x91CF;&#x5730;&#x5740;</th>
-<th scope="col" class="org-left">&#x5F02;&#x5E38;&#x4E2D;&#x65AD;&#x7C7B;&#x578B;</th>
-<th scope="col" class="org-left">&#x5F02;&#x5E38;&#x4E2D;&#x65AD;&#x6A21;&#x5F0F;</th>
-<th scope="col" class="org-right">&#x4F18;&#x5148;&#x7EA7;&#xFF08;6 &#x6700;&#x4F4E;&#xFF09;</th>
+<th scope="col" class="org-right">中断向量地址</th>
+<th scope="col" class="org-left">异常中断类型</th>
+<th scope="col" class="org-left">异常中断模式</th>
+<th scope="col" class="org-right">优先级（6 最低）</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td class="org-right">0x00</td>
-<td class="org-left">&#x590D;&#x4F4D;</td>
-<td class="org-left">&#x7BA1;&#x7406;&#x6A21;&#x5F0F;&#xFF08;SVC&#xFF09;</td>
+<td class="org-left">复位</td>
+<td class="org-left">管理模式（SVC）</td>
 <td class="org-right">1</td>
 </tr>
 
 <tr>
 <td class="org-right">0x04</td>
-<td class="org-left">&#x672A;&#x5B9A;&#x4E49;&#x6307;&#x4EE4;</td>
+<td class="org-left">未定义指令</td>
 <td class="org-left">Undef</td>
 <td class="org-right">6</td>
 </tr>
 
 <tr>
 <td class="org-right">0x08</td>
-<td class="org-left">&#x8F6F;&#x4EF6;&#x4E2D;&#x65AD;&#xFF08;SWI&#xFF09;</td>
-<td class="org-left">&#x7BA1;&#x7406;&#x6A21;&#x5F0F;&#xFF08;SVC&#xFF09;</td>
+<td class="org-left">软件中断（SWI）</td>
+<td class="org-left">管理模式（SVC）</td>
 <td class="org-right">6</td>
 </tr>
 
 <tr>
 <td class="org-right">0x0c</td>
-<td class="org-left">&#x6307;&#x4EE4;&#x9884;&#x53D6;&#x4E2D;&#x6B62;</td>
-<td class="org-left">&#x4E2D;&#x6B62;&#x6A21;&#x5F0F;</td>
+<td class="org-left">指令预取中止</td>
+<td class="org-left">中止模式</td>
 <td class="org-right">5</td>
 </tr>
 
 <tr>
 <td class="org-right">0x10</td>
-<td class="org-left">&#x6570;&#x636E;&#x8BBF;&#x95EE;&#x4E2D;&#x6B62;</td>
-<td class="org-left">&#x4E2D;&#x6B62;&#x6A21;&#x5F0F;</td>
+<td class="org-left">数据访问中止</td>
+<td class="org-left">中止模式</td>
 <td class="org-right">2</td>
 </tr>
 
 <tr>
 <td class="org-right">0x14</td>
-<td class="org-left">&#x4FDD;&#x7559;</td>
-<td class="org-left">&#x672A;&#x4F7F;&#x7528;</td>
-<td class="org-right">&#x672A;&#x4F7F;&#x7528;</td>
+<td class="org-left">保留</td>
+<td class="org-left">未使用</td>
+<td class="org-right">未使用</td>
 </tr>
 
 <tr>
 <td class="org-right">0x18</td>
 <td class="org-left">IRQ</td>
-<td class="org-left">IRQ&#x6A21;&#x5F0F;</td>
+<td class="org-left">IRQ模式</td>
 <td class="org-right">4</td>
 </tr>
 
 <tr>
 <td class="org-right">0x1c</td>
 <td class="org-left">FIQ</td>
-<td class="org-left">FIQ&#x6A21;&#x5F0F;</td>
+<td class="org-left">FIQ模式</td>
 <td class="org-right">3</td>
 </tr>
 </tbody>
 </table>
 
 <p>
-&#x5BF9;&#x4E8E;&#x67D0;&#x4E9B;&#x6784;&#x67B6;&#xFF0C;&#x4E2D;&#x65AD;&#x5411;&#x91CF;&#x8868;&#x53EF;&#x4EE5;&#x8BBE;&#x7F6E;&#x4E3A;&#x9AD8;&#x5730;&#x5740;&#x8FD8;&#x662F;&#x4F4E;&#x5730;&#x5740;&#xFF0C; &#x6BD4;&#x5982;&#x5728; zynq &#x4E2D;&#x901A;&#x8FC7;&#x8BBE;&#x7F6E;CP15&#x6765;&#x5B9E;&#x73B0;&#x3002;
+对于某些构架，中断向量表可以设置为高地址还是低地址， 比如在 zynq 中通过设置CP15来实现。
 </p>
 </div>
 </div>
-<div id="outline-container-org15385ce" class="outline-3">
-<h3 id="org15385ce">&#x7A0B;&#x5E8F;&#x4E2D;&#x7684;&#x4E2D;&#x65AD;&#x5904;&#x7406;&#x8FC7;&#x7A0B;</h3>
-<div class="outline-text-3" id="text-org15385ce">
+<div id="outline-container-org088b736" class="outline-3">
+<h3 id="org088b736">程序中的中断处理过程</h3>
+<div class="outline-text-3" id="text-org088b736">
 <p>
-ARM &#x5904;&#x7406;&#x5668;&#x76F8;&#x5E94;&#x4E2D;&#x65AD;&#x7684;&#x65F6;&#x5019;&#xFF0C;&#x603B;&#x662F;&#x4ECE;&#x56FA;&#x5B9A;&#x7684;&#x5730;&#x5740;&#xFF08;&#x4E00;&#x822C;&#x662F;&#x6307;&#x4E2D;&#x65AD;&#x5411;&#x91CF;&#x8868;&#xFF09;&#x5F00;&#x59CB;&#xFF0C;&#x800C;&#x5728;&#x9AD8;&#x7EA7;&#x8BED;&#x8A00;&#x73AF;&#x5883;&#x4E0B;&#x5F00;&#x53D1;&#x4E2D;&#x65AD;&#x670D;&#x52A1;&#x7A0B;&#x5E8F;&#x65F6;&#xFF0C;&#x65E0;&#x6CD5;&#x63A7;&#x5236;&#x56FA;&#x5B9A;&#x5730;&#x5740;&#x5F00;&#x59CB;&#x7684;&#x8DF3;&#x8F6C;&#x6D41;&#x7A0B;&#x3002;
-&#x4E3A;&#x4E86;&#x4F7F;&#x5F97;&#x4E0A;&#x5C42;&#x5E94;&#x7528;&#x7A0B;&#x5E8F;&#x4E0E;&#x786C;&#x4EF6;&#x4E2D;&#x65AD;&#x8DF3;&#x8F6C;&#x8054;&#x7CFB;&#x8D77;&#x6765;&#xFF0C;&#x9700;&#x8981;&#x7F16;&#x5199;&#x4E00;&#x6BB5;&#x4E2D;&#x95F4;&#x7684;&#x670D;&#x52A1;&#x7A0B;&#x5E8F;&#x6765;&#x8FDB;&#x884C;&#x8FDE;&#x63A5;&#x3002;&#x8FD9;&#x6837;&#x7684;&#x670D;&#x52A1;&#x7A0B;&#x5E8F;&#x5E38;&#x88AB;&#x79F0;&#x4E3A;&#x4E2D;&#x65AD;&#x89E3;&#x6790;&#x7A0B;&#x5E8F;&#x3002;
+ARM 处理器相应中断的时候，总是从固定的地址（一般是指中断向量表）开始，而在高级语言环境下开发中断服务程序时，无法控制固定地址开始的跳转流程。
+为了使得上层应用程序与硬件中断跳转联系起来，需要编写一段中间的服务程序来进行连接。这样的服务程序常被称为中断解析程序。
 </p>
 
 <p>
-&#x6BCF;&#x4E2A;&#x5F02;&#x5E38;&#x4E2D;&#x65AD;&#x5BF9;&#x5E94;&#x4E00;&#x4E2A;4&#x5B57;&#x8282;&#x7684;&#x7A7A;&#x95F4;&#xFF0C;&#x6B63;&#x597D;&#x653E;&#x7F6E;&#x4E00;&#x6761;&#x8DF3;&#x8F6C;&#x6307;&#x4EE4;&#x6216;&#x8005;&#x5411; PC &#x5BC4;&#x5B58;&#x5668;&#x8D4B;&#x503C;&#x7684;&#x6570;&#x636E;&#x8BBF;&#x95EE;&#x6307;&#x4EE4;&#x3002;&#x7406;&#x8BBA;&#x4E0A;&#x53EF;&#x4EE5;&#x901A;&#x8FC7;&#x8FD9;&#x4E24;&#x79CD;&#x6307;&#x4EE4;&#x76F4;&#x63A5;&#x4F7F;&#x5F97;&#x7A0B;&#x5E8F;&#x8DF3;&#x8F6C;&#x5230;&#x5BF9;&#x5E94;&#x7684;&#x4E2D;&#x65AD;&#x5904;&#x7406;&#x7A0B;&#x5E8F;&#x4E2D;&#x53BB;&#x3002;&#x4F46;&#x5B9E;&#x9645;&#x4E0A;&#x7531;&#x4E8E;&#x51FD;&#x6570;&#x5730;&#x5740;&#x503C;&#x4E3A;&#x672A;&#x77E5;&#x548C;&#x5176;&#x4ED6;&#x4E00;&#x4E9B;&#x95EE;&#x9898;&#xFF0C;&#x5E76;&#x4E0D;&#x8FD9;&#x4E48;&#x505A;&#x3002;
+每个异常中断对应一个4字节的空间，正好放置一条跳转指令或者向 PC 寄存器赋值的数据访问指令。理论上可以通过这两种指令直接使得程序跳转到对应的中断处理程序中去。但实际上由于函数地址值为未知和其他一些问题，并不这么做。
 </p>
 
 <p>
-&#x53D1;&#x751F;&#x5F02;&#x5E38;&#x540E;&#xFF0C;&#x4E2D;&#x65AD;&#x6E90;&#x8BF7;&#x6C42;&#x4E2D;&#x65AD;&#xFF0C;PC &#x81EA;&#x52A8;&#x8DF3;&#x8F6C;&#x5230;&#x4E2D;&#x65AD;&#x5411;&#x91CF;&#x8868;&#x4E2D;&#x56FA;&#x5B9A;&#x5730;&#x5740;&#x6267;&#x884C;&#x3002;&#x4E2D;&#x65AD;&#x5411;&#x91CF;&#x8868;&#x4E2D;&#x5B58;&#x653E;&#x4E00;&#x6761;&#x8DF3;&#x8F6C;&#x6307;&#x4EE4;&#xFF0C;&#x8DF3;&#x8F6C;&#x5230;&#x7528;&#x6237;&#x81EA;&#x5B9A;&#x4E49;&#x5730;&#x5740;&#xFF08;&#x89E3;&#x6790;&#x7A0B;&#x5E8F;&#xFF09;&#x7EE7;&#x7EED;&#x6267;&#x884C;&#x3002;&#x5728;&#x89E3;&#x6790;&#x7A0B;&#x5E8F;&#x4E2D;&#xFF0C;&#x5C06;&#x4F1A;&#x548C;&#x5F02;&#x5E38;&#x670D;&#x52A1;&#x7A0B;&#x5E8F;&#x8FDE;&#x63A5;&#x8D77;&#x6765;&#x3002;
-&#x5BF9;&#x4E8E; IRQ &#x53C8;&#x4F1A;&#x6709;&#x4E00;&#x4E2A;&#x4E2D;&#x65AD;&#x5411;&#x91CF;&#x8868;,&#x5BF9;&#x4E8E;&#x8BF7;&#x6C42;&#x7684;&#x5404;&#x79CD;&#x4E0D;&#x540C;&#x7684;&#x4E2D;&#x65AD;.
+发生异常后，中断源请求中断，PC 自动跳转到中断向量表中固定地址执行。中断向量表中存放一条跳转指令，跳转到用户自定义地址（解析程序）继续执行。在解析程序中，将会和异常服务程序连接起来。
+对于 IRQ 又会有一个中断向量表,对于请求的各种不同的中断.
 </p>
 
 <p>
-&#x4E00;&#x822C;&#x5728;&#x786C;&#x4EF6;&#x542F;&#x52A8;&#x540E;,&#x4F1A;&#x6709;&#x6C47;&#x7F16;&#x4EE3;&#x7801;&#x6765;&#x63D0;&#x524D;&#x8BBE;&#x7F6E;&#x597D;&#x5404;&#x79CD;&#x6A21;&#x5F0F;&#x7684;&#x6808;&#x3002;
+一般在硬件启动后,会有汇编代码来提前设置好各种模式的栈。
 </p>
 
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[kernel]/[What]kernel--framework/interrupt_IRQ.jpg?raw=true" alt="interrupt_IRQ.jpg">
 </div>
 </div>
 </div>
-<div id="outline-container-orgb8d3619" class="outline-2">
-<h2 id="orgb8d3619">Linux&#x5185;&#x6838;&#x4E2D;&#x7684;&#x4E2D;&#x65AD;</h2>
-<div class="outline-text-2" id="text-orgb8d3619">
+<div id="outline-container-orge848353" class="outline-2">
+<h2 id="orge848353">Linux内核中的中断</h2>
+<div class="outline-text-2" id="text-orge848353">
 </div>
-<div id="outline-container-org2d9d0c8" class="outline-3">
-<h3 id="org2d9d0c8">&#x6982;&#x5FF5;</h3>
-<div class="outline-text-3" id="text-org2d9d0c8">
+<div id="outline-container-org6c3871c" class="outline-3">
+<h3 id="org6c3871c">概念</h3>
+<div class="outline-text-3" id="text-org6c3871c">
 </div>
-<div id="outline-container-org8d95752" class="outline-4">
-<h4 id="org8d95752">&#x4E2D;&#x65AD;&#x7C7B;&#x578B;</h4>
-<div class="outline-text-4" id="text-org8d95752">
+<div id="outline-container-org2faccff" class="outline-4">
+<h4 id="org2faccff">中断类型</h4>
+<div class="outline-text-4" id="text-org2faccff">
 <ul class="org-ul">
-<li>&#x6839;&#x636E;&#x4E2D;&#x65AD;&#x7684;&#x6765;&#x6E90;&#x5206;&#x4E3A;&#x5185;&#x90E8;&#x548C;&#x5916;&#x90E8;&#x4E2D;&#x65AD;&#xFF0C;&#x6BD4;&#x5982;&#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;&#x4ECE;&#x7528;&#x6237;&#x6001;&#x5207;&#x6362;&#x5230;&#x5185;&#x6838;&#x6001;&#x9700;&#x8981;&#x501F;&#x52A9;&#x8F6F;&#x4EF6;&#x4E2D;&#x65AD;</li>
-<li>&#x6839;&#x636E;&#x4E2D;&#x65AD;&#x662F;&#x5426;&#x53EF;&#x4EE5;&#x5C4F;&#x853D;&#x5206;&#x4E3A;&#x53EF;&#x5C4F;&#x853D;&#x4E2D;&#x65AD;&#x548C;&#x4E0D;&#x53EF;&#x5C4F;&#x853D;&#x4E2D;&#x65AD;(NMI)</li>
-<li>&#x6839;&#x636E;&#x4E2D;&#x65AD;&#x5165;&#x53E3;&#x8DF3;&#x8F6C;&#x65B9;&#x6CD5;&#x7684;&#x4E0D;&#x540C;&#xFF0C;&#x4E2D;&#x65AD;&#x5206;&#x4E3A;&#x5411;&#x91CF;&#x4E2D;&#x65AD;&#x548C;&#x975E;&#x5411;&#x91CF;&#x4E2D;&#x65AD;&#xFF0C;&#x5411;&#x91CF;&#x4E2D;&#x65AD;&#x7531;&#x786C;&#x4EF6;&#x63D0;&#x4F9B;&#x4E2D;&#x65AD;&#x670D;&#x52A1;&#x7A0B;&#x5E8F;&#x5165;&#x53E3;&#x5730;&#x5740;&#xFF0C;&#x975E;&#x5411;&#x91CF;&#x4E2D;&#x65AD;&#x7531;&#x8F6F;&#x4EF6;&#x63D0;&#x4F9B;&#x4E2D;&#x65AD;&#x670D;&#x52A1;&#x7A0B;&#x5E8F;&#x5165;&#x53E3;&#x5730;&#x5740;</li>
+<li>根据中断的来源分为内部和外部中断，比如操作系统从用户态切换到内核态需要借助软件中断</li>
+<li>根据中断是否可以屏蔽分为可屏蔽中断和不可屏蔽中断(NMI)</li>
+<li>根据中断入口跳转方法的不同，中断分为向量中断和非向量中断，向量中断由硬件提供中断服务程序入口地址，非向量中断由软件提供中断服务程序入口地址</li>
 </ul>
 
 <p>
-ARM &#x591A;&#x6838;&#x5904;&#x7406;&#x5668;&#x90FD;&#x662F;&#x901A;&#x8FC7;GIC&#xFF08;Generic Interrupt Controller&#xFF09;&#x6765;&#x63A7;&#x5236;&#x4E2D;&#x65AD;:
+ARM 多核处理器都是通过GIC（Generic Interrupt Controller）来控制中断:
 </p>
 <ul class="org-ul">
-<li>&#x6BCF;&#x4E2A;&#x5904;&#x7406;&#x5668;&#x90FD;&#x6709;&#x5176;&#x79C1;&#x6709;&#x7684;&#x4E2D;&#x65AD;PPI(Private Peripheral Interrupt)</li>
-<li>&#x5904;&#x7406;&#x5668;&#x4E4B;&#x95F4;&#xFF0C;&#x7528;&#x6237;&#x6001;&#x4E0E;&#x5185;&#x6838;&#x6001;&#x4E4B;&#x95F4;&#x901A;&#x4FE1;&#x53CA;&#x8BF7;&#x6C42;&#x662F;&#x901A;&#x8FC7;&#x8F6F;&#x4EF6;&#x4E2D;&#x65AD;&#x5B8C;&#x6210;SGI(Software Generated Interrupt).</li>
-<li>&#x591A;&#x4E2A;CPU&#x5171;&#x4EAB;&#x5916;&#x8BBE;&#x4E2D;&#x65AD;SPI(Shared Peripheral Interrupt)
+<li>每个处理器都有其私有的中断PPI(Private Peripheral Interrupt)</li>
+<li>处理器之间，用户态与内核态之间通信及请求是通过软件中断完成SGI(Software Generated Interrupt).</li>
+<li>多个CPU共享外设中断SPI(Shared Peripheral Interrupt)
 <ul class="org-ul">
-<li>linux &#x4E2D;&#x4F7F;&#x7528;&#x51FD;&#x6570; <code>extern int irq_set_affinity(unsigned int irq, const struct cpumask *m);</code> &#x6765;&#x5C06;&#x5916;&#x8BBE;&#x4E2D;&#x65AD;&#x7ED1;&#x5B9A;&#x5230;&#x56FA;&#x5B9A;CPU&#x6838;&#x53BB;</li>
+<li>linux 中使用函数 <code>extern int irq_set_affinity(unsigned int irq, const struct cpumask *m);</code> 来将外设中断绑定到固定CPU核去</li>
 </ul></li>
 </ul>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">///&#x9ED8;&#x8BA4;&#x60C5;&#x51B5;&#x4E0B;&#xFF0C;&#x4E2D;&#x65AD;&#x90FD;&#x662F;&#x5728;CPU0&#x4E0A;&#x4EA7;&#x751F;&#x7684;&#x3002;</span></span><br><span class="line"><span class="comment">///&#x5C06;&#x4E2D;&#x65AD;irq&#x8BBE;&#x5B9A;&#x5230;CPU i &#x4E0A;&#x53BB;</span></span><br><span class="line">irq_set_affinity(irq, cpumask_of(i));</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">///默认情况下，中断都是在CPU0上产生的。</span></span><br><span class="line"><span class="comment">///将中断irq设定到CPU i 上去</span></span><br><span class="line">irq_set_affinity(irq, cpumask_of(i));</span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </div>
-<div id="outline-container-org8310fab" class="outline-4">
-<h4 id="org8310fab">&#x4E2D;&#x65AD;&#x5904;&#x7406;&#x7A0B;&#x5E8F;&#x67B6;&#x6784;</h4>
-<div class="outline-text-4" id="text-org8310fab">
+<div id="outline-container-org4c65029" class="outline-4">
+<h4 id="org4c65029">中断处理程序架构</h4>
+<div class="outline-text-4" id="text-org4c65029">
 <p>
-&#x4E3A;&#x4E86;&#x6EE1;&#x8DB3;&#x4E2D;&#x65AD;&#x5904;&#x7406;&#x65F6;&#x95F4;&#x5C3D;&#x91CF;&#x77ED;&#x7684;&#x8981;&#x6C42;&#xFF0C;Linux&#x5C06;&#x4E2D;&#x65AD;&#x5904;&#x7406;&#x7A0B;&#x5E8F;&#x5206;&#x4E3A;&#x9876;&#x534A;(Top Half)&#x5904;&#x7406;&#x548C;&#x5E95;&#x534A;(Bottom Half)&#x5904;&#x7406;&#x4E24;&#x90E8;&#x5206;(&#x4F18;&#x79C0;&#x7684; RT-thread &#x4E5F;&#x662F;&#x8FD9;&#x6837;&#x505A;&#x7684;)&#x3002;
+为了满足中断处理时间尽量短的要求，Linux将中断处理程序分为顶半(Top Half)处理和底半(Bottom Half)处理两部分(优秀的 RT-thread 也是这样做的)。
 </p>
 <ul class="org-ul">
-<li>&#x9876;&#x534A;&#x90E8;&#x5206;&#x7528;&#x4E8E;&#x5B8C;&#x6210;&#x5C3D;&#x91CF;&#x5C11;&#x7684;&#x6BD4;&#x8F83;&#x7D27;&#x6025;&#x7684;&#x529F;&#x80FD;&#xFF0C;&#x5F80;&#x5F80;&#x53EA;&#x662F;&#x7B80;&#x5355;&#x7684;&#x8BFB;&#x53D6;&#x4E2D;&#x65AD;&#x5BC4;&#x5B58;&#x5668;&#x72B6;&#x6001;&#xFF0C;&#x5E76;&#x5728;&#x6E05;&#x9664;&#x4E2D;&#x65AD;&#x6807;&#x5FD7;&#x540E;&#x5C31;&#x5C06;&#x5E95;&#x534A;&#x5904;&#x7406;&#x7A0B;&#x5E8F;&#x6302;&#x5230;&#x8BBE;&#x5907;&#x7684;&#x5E95;&#x534A;&#x6267;&#x884C;&#x961F;&#x5217;&#x4E2D;&#x53BB;&#x3002;</li>
-<li>&#x5E95;&#x534A;&#x90E8;&#x5206;&#x51E0;&#x4E4E;&#x505A;&#x4E86;&#x4E2D;&#x65AD;&#x5904;&#x7406;&#x7A0B;&#x5E8F;&#x6240;&#x6709;&#x7684;&#x4E8B;&#x60C5;&#xFF0C; <b>&#x800C;&#x4E14;&#x53EF;&#x4EE5;&#x88AB;&#x65B0;&#x4E2D;&#x65AD;&#x6253;&#x65AD;</b>.&#x76F8;&#x5BF9;&#x6765;&#x8BF4;&#x5904;&#x7406;&#x5E76;&#x4E0D;&#x662F;&#x5F88;&#x7D27;&#x6025;&#x4E14;&#x76F8;&#x5BF9;&#x6BD4;&#x8F83;&#x8017;&#x65F6;&#x7684;&#x5DE5;&#x4F5C;&#x3002;</li>
+<li>顶半部分用于完成尽量少的比较紧急的功能，往往只是简单的读取中断寄存器状态，并在清除中断标志后就将底半处理程序挂到设备的底半执行队列中去。</li>
+<li>底半部分几乎做了中断处理程序所有的事情， <b>而且可以被新中断打断</b>.相对来说处理并不是很紧急且相对比较耗时的工作。</li>
 </ul>
 
 <p>
-<b>&#x6CE8;&#x610F;</b>: &#x5982;&#x679C;&#x6574;&#x4E2A;&#x4E2D;&#x65AD;&#x5904;&#x7406;&#x7684;&#x5DE5;&#x4F5C;&#x672C;&#x6765;&#x5C31;&#x5F88;&#x5C11;&#xFF0C;&#x90A3;&#x4E48;&#x5C31;&#x5B8C;&#x5168;&#x53EF;&#x4EE5;&#x76F4;&#x63A5;&#x5728;&#x9876;&#x534A;&#x90E8;&#x5206;&#x5B8C;&#x6210;&#x3002;
+<b>注意</b>: 如果整个中断处理的工作本来就很少，那么就完全可以直接在顶半部分完成。
 </p>
 
 <p>
-&#x67E5;&#x770B; <code>/proc/interrupts</code> &#x6587;&#x4EF6;&#x53EF;&#x4EE5;&#x83B7;&#x5F97;&#x7CFB;&#x7EDF;&#x4E2D;&#x4E2D;&#x65AD;&#x7684;&#x7EDF;&#x8BA1;&#x4FE1;&#x606F;&#xFF0C;&#x5E76;&#x80FD;&#x7EDF;&#x8BA1;&#x51FA;&#x6BCF;&#x4E00;&#x4E2A;&#x4E2D;&#x65AD;&#x53F7;&#x4E0A;&#x7684;&#x4E2D;&#x65AD;&#x5728;&#x6BCF;&#x4E2A;CPU&#x4E0A;&#x53D1;&#x751F;&#x7684;&#x6B21;&#x6570;&#x3002;
+查看 <code>/proc/interrupts</code> 文件可以获得系统中中断的统计信息，并能统计出每一个中断号上的中断在每个CPU上发生的次数。
 </p>
 </div>
 </div>
-<div id="outline-container-org9083f27" class="outline-4">
-<h4 id="org9083f27">&#x4E2D;&#x65AD;&#x4E0A;&#x4E0B;&#x6587;</h4>
-<div class="outline-text-4" id="text-org9083f27">
+<div id="outline-container-org757c0dd" class="outline-4">
+<h4 id="org757c0dd">中断上下文</h4>
+<div class="outline-text-4" id="text-org757c0dd">
 <p>
-&#x5F53;&#x6267;&#x884C;&#x4E00;&#x4E2A;&#x4E2D;&#x65AD;&#x5904;&#x7406;&#x7A0B;&#x5E8F;&#x65F6;&#xFF0C;&#x5185;&#x6838;&#x5904;&#x4E8E;&#x4E2D;&#x65AD;&#x4E0A;&#x4E0B;&#x6587;&#xFF08;interrupt contex&#xFF09;&#x3002;
+当执行一个中断处理程序时，内核处于中断上下文（interrupt contex）。
 </p>
 
 <p>
-&#x5F53;&#x5185;&#x6838;&#x4EE3;&#x8868;&#x8FDB;&#x7A0B;&#x6267;&#x884C;&#x65F6;&#xFF08;&#x6267;&#x884C;&#x7CFB;&#x7EDF;&#x8C03;&#x7528;&#x6216;&#x8FD0;&#x884C;&#x5185;&#x6838;&#x7EBF;&#x7A0B;&#xFF09;&#xFF0C;&#x6B64;&#x65F6;&#x5904;&#x4E8E;&#x8FDB;&#x7A0B;&#x4E0A;&#x4E0B;&#x6587;&#xFF0C;&#x53EF;&#x4EE5;&#x901A;&#x8FC7; current &#x5B8F;&#x83B7;&#x53D6;&#x5F53;&#x524D;&#x4EFB;&#x52A1;&#x3002;
+当内核代表进程执行时（执行系统调用或运行内核线程），此时处于进程上下文，可以通过 current 宏获取当前任务。
 </p>
 <ul class="org-ul">
-<li>&#x5E76;&#x4E14;&#x56E0;&#x4E3A;&#x8FDB;&#x7A0B;&#x662F;&#x4EE5;&#x8FDB;&#x7A0B;&#x4E0A;&#x4E0B;&#x6587;&#x7684;&#x5F62;&#x5F0F;&#x8FDE;&#x63A5;&#x5230;&#x5185;&#x6838;&#x4E2D;&#x7684;&#xFF0C;&#x56E0;&#x6B64;&#x8FDB;&#x7A0B;&#x4E0A;&#x4E0B;&#x6587;&#x53EF;&#x4EE5;&#x7761;&#x7720;&#xFF0C;&#x4E5F;&#x53EF;&#x4EE5;&#x8C03;&#x7528;&#x8C03;&#x5EA6;&#x7A0B;&#x5E8F;&#x3002;</li>
+<li>并且因为进程是以进程上下文的形式连接到内核中的，因此进程上下文可以睡眠，也可以调用调度程序。</li>
 </ul>
 
 <p>
-&#x4F46;&#x4E2D;&#x65AD;&#x4E0A;&#x4E0B;&#x6587;&#x548C;&#x8FDB;&#x7A0B;&#x6CA1;&#x6709;&#x534A;&#x6BDB;&#x94B1;&#x5173;&#x7CFB;&#xFF0C;&#x4E0E; current &#x5B8F;&#x4E5F;&#x6CA1;&#x6709;&#x7EDD;&#x5BF9;&#x5173;&#x7CFB;&#x3002;
+但中断上下文和进程没有半毛钱关系，与 current 宏也没有绝对关系。
 </p>
 <ul class="org-ul">
-<li><b>&#x56E0;&#x4E3A;&#x4E2D;&#x65AD;&#x4E0D;&#x5C5E;&#x4E8E;&#x8C03;&#x5EA6;&#x5668;&#x7684;&#x4E00;&#x90E8;&#x5206;&#xFF0C;&#x5B83;&#x6CA1;&#x6709;&#x540E;&#x5907;&#x8FDB;&#x7A0B;&#xFF0C;&#x6240;&#x4EE5;&#x4E2D;&#x65AD;&#x4E0A;&#x4E0B;&#x6587;&#x4E0D;&#x53EF;&#x4EE5;&#x7761;&#x7720;</b></li>
+<li><b>因为中断不属于调度器的一部分，它没有后备进程，所以中断上下文不可以睡眠</b></li>
 </ul>
 </div>
 </div>
 </div>
-<div id="outline-container-org90830cd" class="outline-3">
-<h3 id="org90830cd">&#x4E2D;&#x65AD;&#x7F16;&#x7A0B;</h3>
-<div class="outline-text-3" id="text-org90830cd">
+<div id="outline-container-orgdf11eba" class="outline-3">
+<h3 id="orgdf11eba">中断编程</h3>
+<div class="outline-text-3" id="text-orgdf11eba">
 </div>
-<div id="outline-container-orga64efd9" class="outline-4">
-<h4 id="orga64efd9">&#x7533;&#x8BF7;&#x548C;&#x91CA;&#x653E;&#x4E2D;&#x65AD;</h4>
-<div class="outline-text-4" id="text-orga64efd9">
+<div id="outline-container-org1c53e4f" class="outline-4">
+<h4 id="org1c53e4f">申请和释放中断</h4>
+<div class="outline-text-4" id="text-org1c53e4f">
 <p>
-&#x8981;&#x5148;&#x7533;&#x8BF7;&#x4E2D;&#x65AD;&#x624D;&#x80FD;&#x591F;&#x4F7F;&#x7528;&#xFF0C;&#x5E76;&#x4E14;&#x5728;&#x4E0D;&#x4F7F;&#x7528;&#x540E;&#x9700;&#x8981;&#x91CA;&#x653E;&#x4E2D;&#x65AD;&#x3002;
+要先申请中断才能够使用，并且在不使用后需要释放中断。
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * enum irqreturn</span></span><br><span class="line"><span class="comment"> * @IRQ_NONE		interrupt was not from this device or was not handled</span></span><br><span class="line"><span class="comment"> * @IRQ_HANDLED		interrupt was handled by this device</span></span><br><span class="line"><span class="comment"> * @IRQ_WAKE_THREAD	handler requests to wake the handler thread</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">enum</span> irqreturn {</span><br><span class="line">		IRQ_NONE		= (<span class="number">0</span> &lt;&lt; <span class="number">0</span>),</span><br><span class="line">		IRQ_HANDLED		= (<span class="number">1</span> &lt;&lt; <span class="number">0</span>),</span><br><span class="line">		IRQ_WAKE_THREAD		= (<span class="number">1</span> &lt;&lt; <span class="number">1</span>),</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">enum</span> irqreturn <span class="keyword">irqreturn_t</span>;</span><br><span class="line"><span class="function"><span class="keyword">typedef</span> <span class="title">irqreturn_t</span> <span class="params">(*<span class="keyword">irq_handler_t</span>)</span><span class="params">(<span class="keyword">int</span>, <span class="keyword">void</span> *)</span></span>;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief &#x7533;&#x8BF7;&#x4E00;&#x4E2A;&#x4E2D;&#x65AD;</span></span><br><span class="line"><span class="comment"> * @param irq: &#x8981;&#x7533;&#x8BF7;&#x7684;&#x786C;&#x4EF6;&#x4E2D;&#x65AD;&#x53F7;</span></span><br><span class="line"><span class="comment"> * @param handler: &#x4E2D;&#x65AD;&#x5904;&#x7406;&#x7684;&#x9876;&#x534A;&#x51FD;&#x6570;</span></span><br><span class="line"><span class="comment"> * @param flags: &#x4E2D;&#x65AD;&#x7684;&#x89E6;&#x53D1;&#x65B9;&#x5F0F;&#x53CA;&#x5904;&#x7406;&#x65B9;&#x5F0F;</span></span><br><span class="line"><span class="comment"> *        + IRQF_TRIGGER_RISING</span></span><br><span class="line"><span class="comment"> *        + IRQF_TRIGGER_FAILING</span></span><br><span class="line"><span class="comment"> *        + IRQF_TRIGGER_HIGH</span></span><br><span class="line"><span class="comment"> *        + IRQF_TRIGGER_LOW</span></span><br><span class="line"><span class="comment"> *        + IRQF_SHARED : &#x591A;&#x4E2A;&#x8BBE;&#x5907;&#x5171;&#x4EAB;&#x4E2D;&#x65AD;</span></span><br><span class="line"><span class="comment"> * @param name: &#x4E2D;&#x65AD;&#x5BF9;&#x5E94;&#x7684;&#x540D;&#x79F0;</span></span><br><span class="line"><span class="comment"> * @param dev: &#x8981;&#x4F20;&#x9012;&#x7ED9;&#x4E2D;&#x65AD;&#x670D;&#x52A1;&#x7A0B;&#x5E8F;&#x7684;&#x79C1;&#x6709;&#x6570;&#x636E;,&#x4E00;&#x822C;&#x4E3A;&#x8BBE;&#x5907;&#x7684;&#x8BBE;&#x5907;&#x7ED3;&#x6784;&#x4F53;&#x5730;&#x5740;&#x6216;NULL</span></span><br><span class="line"><span class="comment"> * @retval</span></span><br><span class="line"><span class="comment"> *        + 0 &#x6210;&#x529F;</span></span><br><span class="line"><span class="comment"> *        + -EINVAL : &#x4E2D;&#x65AD;&#x53F7;&#x65E0;&#x6548;&#x6216;&#x5904;&#x7406;&#x51FD;&#x6570;&#x6307;&#x9488;&#x4E3A;NULL</span></span><br><span class="line"><span class="comment"> *        + -EBUSY : &#x4E2D;&#x65AD;&#x5DF2;&#x7ECF;&#x88AB;&#x5360;&#x7528;&#x4E14;&#x4E0D;&#x80FD;&#x5171;&#x4EAB;</span></span><br><span class="line"><span class="comment"> */</span> <span class="function"><span class="keyword">int</span> <span class="title">request_irq</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">int</span> irq, <span class="keyword">irq_handler_t</span> handler, <span class="keyword">unsigned</span> <span class="keyword">long</span> flags, <span class="keyword">const</span> <span class="keyword">char</span> *name, <span class="keyword">void</span> *dev)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief &#x6B64;&#x51FD;&#x6570;&#x4F1A;&#x5728;&#x5408;&#x9002;&#x7684;&#x65F6;&#x5019;&#x81EA;&#x52A8;&#x91CA;&#x653E;&#x4E2D;&#x65AD;&#x8D44;&#x6E90;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">devm_request_irq</span><span class="params">(struct device *dev, <span class="keyword">unsigned</span> <span class="keyword">int</span> irq, <span class="keyword">irq_handler_t</span> handler, <span class="keyword">unsigned</span> <span class="keyword">long</span> irqflags, <span class="keyword">const</span> <span class="keyword">char</span> *devname, <span class="keyword">void</span> *dev_id)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief &#x5728;&#x6A21;&#x5757;&#x5378;&#x8F7D;&#x524D;&#x81EA;&#x52A8;&#x91CA;&#x653E;</span></span><br><span class="line"><span class="comment"> * @note &#x5728;&#x5B9E;&#x9645;&#x4F7F;&#x7528;&#x65F6;&#xFF0C;&#x5982;&#x679C;&#x5728;&#x9A71;&#x52A8;&#x5378;&#x8F7D;&#x65F6;&#x4E0D;&#x4F7F;&#x7528;&#x6B64;&#x529F;&#x80FD;&#xFF0C;&#x90A3;&#x4E48;&#x5728;&#x9A71;&#x52A8;&#x91CD;&#x65B0;&#x88C5;&#x8F7D;&#x5C31;&#x4F1A;</span></span><br><span class="line"><span class="comment"> * &#x7531;&#x4E8E;&#x7533;&#x8BF7;&#x4E0D;&#x5230;&#x4E2D;&#x65AD;&#x8D44;&#x6E90;&#x800C;&#x8FDB;&#x5165; Oops&#xFF0C;&#x539F;&#x56E0;&#x4E0D;&#x660E;....</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">devm_free_irq</span><span class="params">(struct device *dev, <span class="keyword">unsigned</span> <span class="keyword">int</span> irq, <span class="keyword">void</span> *dev_id)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief &#x91CA;&#x653E;&#x4E2D;&#x65AD;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">free_irq</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">int</span> irq, <span class="keyword">void</span> *dev_id)</span></span>;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * enum irqreturn</span></span><br><span class="line"><span class="comment"> * @IRQ_NONE		interrupt was not from this device or was not handled</span></span><br><span class="line"><span class="comment"> * @IRQ_HANDLED		interrupt was handled by this device</span></span><br><span class="line"><span class="comment"> * @IRQ_WAKE_THREAD	handler requests to wake the handler thread</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">enum</span> irqreturn {</span><br><span class="line">		IRQ_NONE		= (<span class="number">0</span> << <span class="number">0</span>),</span><br><span class="line">		IRQ_HANDLED		= (<span class="number">1</span> << <span class="number">0</span>),</span><br><span class="line">		IRQ_WAKE_THREAD		= (<span class="number">1</span> << <span class="number">1</span>),</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">enum</span> irqreturn <span class="keyword">irqreturn_t</span>;</span><br><span class="line"><span class="function"><span class="keyword">typedef</span> <span class="title">irqreturn_t</span> <span class="params">(*<span class="keyword">irq_handler_t</span>)</span><span class="params">(<span class="keyword">int</span>, <span class="keyword">void</span> *)</span></span>;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 申请一个中断</span></span><br><span class="line"><span class="comment"> * @param irq: 要申请的硬件中断号</span></span><br><span class="line"><span class="comment"> * @param handler: 中断处理的顶半函数</span></span><br><span class="line"><span class="comment"> * @param flags: 中断的触发方式及处理方式</span></span><br><span class="line"><span class="comment"> *        + IRQF_TRIGGER_RISING</span></span><br><span class="line"><span class="comment"> *        + IRQF_TRIGGER_FAILING</span></span><br><span class="line"><span class="comment"> *        + IRQF_TRIGGER_HIGH</span></span><br><span class="line"><span class="comment"> *        + IRQF_TRIGGER_LOW</span></span><br><span class="line"><span class="comment"> *        + IRQF_SHARED : 多个设备共享中断</span></span><br><span class="line"><span class="comment"> * @param name: 中断对应的名称</span></span><br><span class="line"><span class="comment"> * @param dev: 要传递给中断服务程序的私有数据,一般为设备的设备结构体地址或NULL</span></span><br><span class="line"><span class="comment"> * @retval</span></span><br><span class="line"><span class="comment"> *        + 0 成功</span></span><br><span class="line"><span class="comment"> *        + -EINVAL : 中断号无效或处理函数指针为NULL</span></span><br><span class="line"><span class="comment"> *        + -EBUSY : 中断已经被占用且不能共享</span></span><br><span class="line"><span class="comment"> */</span> <span class="function"><span class="keyword">int</span> <span class="title">request_irq</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">int</span> irq, <span class="keyword">irq_handler_t</span> handler, <span class="keyword">unsigned</span> <span class="keyword">long</span> flags, <span class="keyword">const</span> <span class="keyword">char</span> *name, <span class="keyword">void</span> *dev)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 此函数会在合适的时候自动释放中断资源</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">devm_request_irq</span><span class="params">(struct device *dev, <span class="keyword">unsigned</span> <span class="keyword">int</span> irq, <span class="keyword">irq_handler_t</span> handler, <span class="keyword">unsigned</span> <span class="keyword">long</span> irqflags, <span class="keyword">const</span> <span class="keyword">char</span> *devname, <span class="keyword">void</span> *dev_id)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 在模块卸载前自动释放</span></span><br><span class="line"><span class="comment"> * @note 在实际使用时，如果在驱动卸载时不使用此功能，那么在驱动重新装载就会</span></span><br><span class="line"><span class="comment"> * 由于申请不到中断资源而进入 Oops，原因不明....</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">devm_free_irq</span><span class="params">(struct device *dev, <span class="keyword">unsigned</span> <span class="keyword">int</span> irq, <span class="keyword">void</span> *dev_id)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 释放中断</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">free_irq</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">int</span> irq, <span class="keyword">void</span> *dev_id)</span></span>;</span><br></pre></td></tr></table></figure>
 </div>
 <p>
-&#x5173;&#x4E8E; <code>dev_id</code> &#x9700;&#x8981;&#x6CE8;&#x610F;&#x7684;&#x662F;&#xFF1A;dev_id &#x9664;&#x4E86;&#x53EF;&#x4EE5;&#x4F20;&#x9012;&#x79C1;&#x6709;&#x6570;&#x636E;&#x5916;&#xFF0C;&#x8FD8;&#x662F;&#x7528;&#x4E8E;&#x533A;&#x5206;&#x5171;&#x4EAB;&#x4E2D;&#x65AD;&#x3002;
+关于 <code>dev_id</code> 需要注意的是：dev_id 除了可以传递私有数据外，还是用于区分共享中断。
 </p>
 
 <p>
-&#x5F53;&#x4EE5;&#x5171;&#x4EAB;&#x4E2D;&#x65AD;&#x7684;&#x65B9;&#x5F0F;&#x7533;&#x8BF7;&#x4E2D;&#x65AD;&#x5904;&#x7406;&#x7A0B;&#x5E8F;&#x540E;&#xFF0C;free_irq &#x4E2D;&#x7684; dev_id &#x5FC5;&#x987B;&#x4E0E;&#x7533;&#x8BF7;&#x7684;&#x4FDD;&#x6301;&#x4E00;&#x76F4;&#xFF0C;&#x8FD9;&#x6837;&#x7CFB;&#x7EDF;&#x624D;&#x4F1A;&#x5220;&#x9664;&#x5BF9;&#x5E94;&#x7684;&#x4E2D;&#x65AD;&#x5904;&#x7406;&#x51FD;&#x6570;&#x3002;
+当以共享中断的方式申请中断处理程序后，free_irq 中的 dev_id 必须与申请的保持一直，这样系统才会删除对应的中断处理函数。
 </p>
 </div>
 </div>
-<div id="outline-container-org316cf68" class="outline-4">
-<h4 id="org316cf68">&#x4F7F;&#x80FD;&#x548C;&#x5C4F;&#x853D;&#x4E2D;&#x65AD;</h4>
-<div class="outline-text-4" id="text-org316cf68">
+<div id="outline-container-org5153ccf" class="outline-4">
+<h4 id="org5153ccf">使能和屏蔽中断</h4>
+<div class="outline-text-4" id="text-org5153ccf">
 <p>
-&#x5728;&#x7533;&#x8BF7;&#x4E86;&#x4E2D;&#x65AD;&#x8D44;&#x6E90;&#x540E;&#xFF0C;&#x4FBF;&#x53EF;&#x4EE5;&#x4F7F;&#x80FD;&#x53CA;&#x5931;&#x80FD;&#x4E2D;&#x65AD;&#x3002;
+在申请了中断资源后，便可以使能及失能中断。
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief &#x4F7F;&#x80FD;&#x4E2D;&#x65AD;</span></span><br><span class="line"><span class="comment"> * @note &#x4F7F;&#x80FD;&#x4E2D;&#x65AD;&#x63A7;&#x5236;&#x5668;&#x5BF9;&#x5E94;&#x7684; irq</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">enable_irq</span><span class="params">(<span class="keyword">int</span> irq)</span></span>;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief &#x7B49;&#x5F85;&#x76EE;&#x524D;&#x7684;&#x4E2D;&#x65AD;&#x5904;&#x7406;&#x5B8C;&#x6210;&#x540E;&#x5173;&#x95ED;&#x4E2D;&#x65AD;</span></span><br><span class="line"><span class="comment"> * @note: &#x4E0D;&#x80FD;&#x5728;&#x4E2D;&#x65AD;&#x7684;&#x9876;&#x534A;&#x90E8;&#x5206;&#x8C03;&#x7528;&#x6B64;&#x51FD;&#x6570;&#xFF0C;&#x56E0;&#x4E3A;&#x5B83;&#x4F1A;&#x4E00;&#x76F4;&#x7B49;&#x5F85;&#x5E95;&#x534A;&#x90E8;&#x5206;&#xFF0C;&#x800C;&#x5E95;&#x534A;&#x8FD8;&#x6CA1;&#x6709;&#x6267;&#x884C;&#xFF0C;&#x5C31;&#x4F1A;&#x5361;&#x6B7B;</span></span><br><span class="line"><span class="comment"> * @note &#x5173;&#x95ED;&#x4E2D;&#x65AD;&#x63A7;&#x5236;&#x5668;&#x5BF9;&#x5E94;&#x7684; irq</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">disable_irq</span><span class="params">(<span class="keyword">int</span> irq)</span></span>;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief &#x7ED9;&#x4E2D;&#x65AD;&#x5904;&#x7406;&#x53D1;&#x9001;&#x6D88;&#x606F;&#xFF0C;&#x5904;&#x7406;&#x5B8C;&#x6210;&#x540E;&#x81EA;&#x52A8;&#x5173;&#x95ED;&#xFF0C;&#x6B64;&#x51FD;&#x6570;&#x4F1A;&#x7ACB;&#x5373;&#x8FD4;&#x56DE;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">disable_irq_nosync</span><span class="params">(<span class="keyword">int</span> irq)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//&#x5173;&#x95ED;&#x672C;CPU&#x5185;&#x7684;&#x6240;&#x6709;&#x4E2D;&#x65AD;&#xFF0C;&#x5E76;&#x4FDD;&#x5B58;&#x5F53;&#x524D;&#x7684;&#x4E2D;&#x65AD;&#x72B6;&#x6001;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> local_irq_save(flags) ...</span></span><br><span class="line"><span class="comment">//&#x6839;&#x636E;&#x5173;&#x95ED;&#x524D;&#x7684;&#x72B6;&#x6001;&#x6062;&#x590D;&#x4E2D;&#x65AD;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> local_irq_restore(flags) ...</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//&#x5173;&#x95ED;&#x672C;CPU&#x5185;&#x6240;&#x6709;&#x4E2D;&#x65AD;</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">local_irq_disable</span><span class="params">(<span class="keyword">void</span>)</span></span>;</span><br><span class="line"><span class="comment">//&#x6253;&#x5F00;&#x672C;CPU&#x5185;&#x7684;&#x6240;&#x6709;&#x4E2D;&#x65AD;</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">local_irq_enable</span><span class="params">(<span class="keyword">void</span>)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//&#x7B49;&#x5F85;&#x5BF9;&#x5E94;&#x7684;&#x4E2D;&#x65AD;&#x9000;&#x51FA;&#xFF0C;&#x76F8;&#x5F53;&#x4E8E;&#x540C;&#x6B65;&#x4F5C;&#x7528;</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">synchronize_irq</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">int</span> irq)</span></span>;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 使能中断</span></span><br><span class="line"><span class="comment"> * @note 使能中断控制器对应的 irq</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">enable_irq</span><span class="params">(<span class="keyword">int</span> irq)</span></span>;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 等待目前的中断处理完成后关闭中断</span></span><br><span class="line"><span class="comment"> * @note: 不能在中断的顶半部分调用此函数，因为它会一直等待底半部分，而底半还没有执行，就会卡死</span></span><br><span class="line"><span class="comment"> * @note 关闭中断控制器对应的 irq</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">disable_irq</span><span class="params">(<span class="keyword">int</span> irq)</span></span>;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 给中断处理发送消息，处理完成后自动关闭，此函数会立即返回</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">disable_irq_nosync</span><span class="params">(<span class="keyword">int</span> irq)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//关闭本CPU内的所有中断，并保存当前的中断状态</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> local_irq_save(flags) ...</span></span><br><span class="line"><span class="comment">//根据关闭前的状态恢复中断</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> local_irq_restore(flags) ...</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//关闭本CPU内所有中断</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">local_irq_disable</span><span class="params">(<span class="keyword">void</span>)</span></span>;</span><br><span class="line"><span class="comment">//打开本CPU内的所有中断</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">local_irq_enable</span><span class="params">(<span class="keyword">void</span>)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//等待对应的中断退出，相当于同步作用</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">synchronize_irq</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">int</span> irq)</span></span>;</span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </div>
-<div id="outline-container-orge54becc" class="outline-4">
-<h4 id="orge54becc">&#x83B7;&#x53D6;&#x4E2D;&#x65AD;&#x72B6;&#x6001;</h4>
-<div class="outline-text-4" id="text-orge54becc">
+<div id="outline-container-orgee49dff" class="outline-4">
+<h4 id="orgee49dff">获取中断状态</h4>
+<div class="outline-text-4" id="text-orgee49dff">
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief : &#x5982;&#x679C;&#x672C;&#x5730;&#x5904;&#x7406;&#x5668;&#x4E0A;&#x7684;&#x4E2D;&#x65AD;&#x7CFB;&#x7EDF;&#x88AB;&#x7981;&#x6B62;&#xFF0C;&#x5219;&#x8FD4;&#x56DE; true&#xFF0C;&#x5426;&#x5219;&#x8FD4;&#x56DE; false</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">irqs_disable();</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief : &#x5F53;&#x5185;&#x6838;&#x5904;&#x4E8E; NMI,IRQ,SoftIRQ &#x4E0A;&#x4E0B;&#x6587;&#x6216;&#x5E95;&#x534A;&#x5904;&#x7406;&#x88AB;&#x5173;&#x95ED;&#x65F6;&#xFF0C;&#x8FD4;&#x56DE;&#x771F;</span></span><br><span class="line"><span class="comment"> * @note : &#x73B0;&#x5728;&#x4E00;&#x822C;&#x4E0D;&#x4F7F;&#x7528;&#x4E86;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">in_interrupt();</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief : &#x5F53;&#x5185;&#x6838;&#x5904;&#x4E8E; SoftIRQ &#x4E0A;&#x4E0B;&#x6587;&#x6216;&#x5E95;&#x534A;&#x5904;&#x7406;&#x88AB;&#x5173;&#x95ED;&#x65F6;&#xFF0C;&#x8FD4;&#x56DE;&#x771F;</span></span><br><span class="line"><span class="comment"> * @note : &#x73B0;&#x5728;&#x4E00;&#x822C;&#x4E0D;&#x4F7F;&#x7528;&#x4E86;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">in_softirq();</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief : &#x5F53;&#x5185;&#x6838;&#x5904;&#x4E8E; IRQ &#x4E0A;&#x4E0B;&#x6587;&#x65F6;&#xFF0C;&#x8FD4;&#x56DE;&#x771F;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">in_irq();</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief : &#x5F53;&#x5185;&#x6838;&#x5904;&#x4E8E; SoftIRQ &#x4E0A;&#x4E0B;&#x6587;&#x65F6;&#xFF0C;&#x8FD4;&#x56DE;&#x771F;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">in_serving_softirq();</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief : &#x5F53;&#x5185;&#x6838;&#x5904;&#x4E8E; NMI &#x4E0A;&#x4E0B;&#x6587;&#x65F6;&#xFF0C;&#x8FD4;&#x56DE;&#x771F;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">in_nmi();</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief : &#x5F53;&#x5185;&#x6838;&#x5904;&#x4E8E; &#x4EFB;&#x52A1; &#x4E0A;&#x4E0B;&#x6587;&#x65F6;&#xFF0C;&#x8FD4;&#x56DE;&#x771F;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">in_task();</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief : 如果本地处理器上的中断系统被禁止，则返回 true，否则返回 false</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">irqs_disable();</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief : 当内核处于 NMI,IRQ,SoftIRQ 上下文或底半处理被关闭时，返回真</span></span><br><span class="line"><span class="comment"> * @note : 现在一般不使用了</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">in_interrupt();</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief : 当内核处于 SoftIRQ 上下文或底半处理被关闭时，返回真</span></span><br><span class="line"><span class="comment"> * @note : 现在一般不使用了</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">in_softirq();</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief : 当内核处于 IRQ 上下文时，返回真</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">in_irq();</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief : 当内核处于 SoftIRQ 上下文时，返回真</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">in_serving_softirq();</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief : 当内核处于 NMI 上下文时，返回真</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">in_nmi();</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief : 当内核处于 任务 上下文时，返回真</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">in_task();</span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </div>
-<div id="outline-container-orge2af021" class="outline-4">
-<h4 id="orge2af021">&#x5E95;&#x534A;&#x5904;&#x7406;&#x673A;&#x5236;</h4>
-<div class="outline-text-4" id="text-orge2af021">
+<div id="outline-container-org4873133" class="outline-4">
+<h4 id="org4873133">底半处理机制</h4>
+<div class="outline-text-4" id="text-org4873133">
 <p>
-&#x9876;&#x534A;&#x548C;&#x5E95;&#x534A;&#x4E4B;&#x95F4;&#x7684;&#x5212;&#x5206;&#x6709;&#x4E00;&#x4E9B;&#x501F;&#x9274;&#xFF1A;
+顶半和底半之间的划分有一些借鉴：
 </p>
 <ul class="org-ul">
-<li>&#x5982;&#x679C;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x5BF9;&#x65F6;&#x95F4;&#x975E;&#x5E38;&#x654F;&#x611F;&#xFF0C;&#x5C06;&#x5176;&#x653E;&#x5728;&#x4E2D;&#x65AD;&#x5904;&#x7406;&#x7A0B;&#x5E8F;&#x4E2D;&#x6267;&#x884C;</li>
-<li>&#x5982;&#x679C;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x548C;&#x786C;&#x4EF6;&#x76F8;&#x5173;&#xFF0C;&#x5C06;&#x5176;&#x653E;&#x5728;&#x4E2D;&#x65AD;&#x5904;&#x7406;&#x7A0B;&#x5E8F;&#x4E2D;&#x6267;&#x884C;</li>
-<li>&#x5982;&#x679C;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x8981;&#x4FDD;&#x8BC1;&#x4E0D;&#x88AB;&#x5176;&#x4ED6;&#x4E2D;&#x65AD;&#x6253;&#x65AD;&#xFF0C;&#x5C06;&#x5176;&#x653E;&#x5728;&#x4E2D;&#x65AD;&#x5904;&#x7406;&#x7A0B;&#x5E8F;&#x4E2D;&#x6267;&#x884C;</li>
-<li>&#x5176;&#x4ED6;&#x6240;&#x6709;&#x4EFB;&#x52A1;&#xFF0C;&#x8003;&#x8651;&#x653E;&#x7F6E;&#x5728;&#x4E0B;&#x534A;&#x90E8;&#x6267;&#x884C;</li>
+<li>如果一个任务对时间非常敏感，将其放在中断处理程序中执行</li>
+<li>如果一个任务和硬件相关，将其放在中断处理程序中执行</li>
+<li>如果一个任务要保证不被其他中断打断，将其放在中断处理程序中执行</li>
+<li>其他所有任务，考虑放置在下半部执行</li>
 </ul>
 
 <p>
-Linux &#x5B9E;&#x73B0;&#x5E95;&#x534A;&#x90E8;&#x7684;&#x673A;&#x5236;&#x4E3B;&#x8981;&#x6709; tasklet&#x3001;&#x5DE5;&#x4F5C;&#x961F;&#x5217;&#x3001;&#x8F6F;&#x4E2D;&#x65AD;&#x548C;&#x7EBF;&#x7A0B;&#x5316;irq.
+Linux 实现底半部的机制主要有 tasklet、工作队列、软中断和线程化irq.
 </p>
 <ul class="org-ul">
-<li><b>&#x6B64;&#x5904;&#x8F6F;&#x4E2D;&#x65AD;&#x6307;&#x7684;&#x662F;&#x7531;&#x8F6F;&#x4EF6;&#x6A21;&#x62DF;&#x7684;&#x4E2D;&#x65AD;&#x673A;&#x5236;&#xFF0C;&#x800C;&#x4E0D;&#x662F;ARM&#x4E2D;&#x7684;&#x7531;&#x8F6F;&#x4EF6;&#x89E6;&#x53D1;&#x7684;&#x786C;&#x4EF6;&#x4E2D;&#x65AD;&#xFF01;</b>.</li>
-<li>&#x8F6F;&#x4E2D;&#x65AD;&#x548C;tasklet&#x8FD0;&#x884C;&#x4E8E;&#x8F6F;&#x4E2D;&#x65AD;&#x4E0A;&#x4E0B;&#x6587;&#xFF0C;&#x4ECD;&#x7136;&#x5C5E;&#x4E8E;&#x539F;&#x5B50;&#x4E0A;&#x4E0B;&#x6587;&#x7684;&#x4E00;&#x79CD;&#xFF0C;&#x800C;&#x5DE5;&#x4F5C;&#x961F;&#x5217;&#x8FD0;&#x884C;&#x4E8E;&#x8FDB;&#x7A0B;&#x4E0A;&#x4E0B;&#x6587;&#x3002;
+<li><b>此处软中断指的是由软件模拟的中断机制，而不是ARM中的由软件触发的硬件中断！</b>.</li>
+<li>软中断和tasklet运行于软中断上下文，仍然属于原子上下文的一种，而工作队列运行于进程上下文。
 <ul class="org-ul">
-<li><b>&#x56E0;&#x6B64;&#xFF0C;&#x5728;&#x8F6F;&#x4E2D;&#x65AD;&#x548C;takelet&#x5904;&#x7406;&#x51FD;&#x6570;&#x4E2D;&#x4E0D;&#x5141;&#x8BB8;&#x7761;&#x7720;&#xFF0C;&#x800C;&#x5728;&#x5DE5;&#x4F5C;&#x961F;&#x5217;&#x5904;&#x7406;&#x51FD;&#x6570;&#x4E2D;&#x5141;&#x8BB8;&#x7761;&#x7720;</b>.</li>
+<li><b>因此，在软中断和takelet处理函数中不允许睡眠，而在工作队列处理函数中允许睡眠</b>.</li>
 </ul></li>
-<li><code>local_bh_disable() and local_bh_enable()</code> &#x662F;&#x5185;&#x6838;&#x4E2D;&#x7528;&#x4E8E;&#x7981;&#x6B62;&#x548C;&#x4F7F;&#x80FD;&#x7684;&#x8F6F;&#x4E2D;&#x65AD;&#x53CA;tasklet&#x5E95;&#x534A;&#x90E8;&#x673A;&#x5236;&#x7684;&#x51FD;&#x6570;&#x3002;</li>
+<li><code>local_bh_disable() and local_bh_enable()</code> 是内核中用于禁止和使能的软中断及tasklet底半部机制的函数。</li>
 </ul>
 
 <p>
-<b>&#x6CE8;&#x610F;</b>: &#x8F6F;&#x4E2D;&#x65AD;&#x4EE5;&#x53CA;&#x57FA;&#x4E8E;&#x8F6F;&#x4E2D;&#x65AD;&#x7684;tasklet&#x5982;&#x679C;&#x5728;&#x67D0;&#x6BB5;&#x65F6;&#x95F4;&#x5927;&#x91CF;&#x51FA;&#x73B0;&#x7684;&#x8BDD;,&#x5185;&#x6838;&#x4F1A;&#x628A;&#x540E;&#x7EED;&#x8F6F;&#x4E2D;&#x65AD;&#x653E;&#x5165; ksoftirqd &#x5185;&#x6838;&#x7EBF;&#x7A0B;&#x4E2D;&#x6267;&#x884C;&#x3002;
+<b>注意</b>: 软中断以及基于软中断的tasklet如果在某段时间大量出现的话,内核会把后续软中断放入 ksoftirqd 内核线程中执行。
 </p>
 <ul class="org-ul">
-<li>&#x56E0;&#x4E3A;&#x8F6F;&#x4E2D;&#x65AD;&#x7684;&#x4F18;&#x5148;&#x7EA7;&#x9AD8;&#x4E8E;&#x4EFB;&#x52A1;&#x8C03;&#x5EA6;&#xFF0C;&#x5982;&#x679C;&#x8F6F;&#x4E2D;&#x65AD;&#x7684;&#x8C03;&#x5EA6;&#x9891;&#x7387;&#x8FC7;&#x9AD8;&#x90A3;&#x4EFB;&#x52A1;&#x8C03;&#x5EA6;&#x5C31;&#x4F1A;&#x88AB;&#x997F;&#x6B7B;&#x3002;</li>
+<li>因为软中断的优先级高于任务调度，如果软中断的调度频率过高那任务调度就会被饿死。</li>
 </ul>
 </div>
 <ul class="org-ul">
-<li><a id="orgbd7ed25"></a>tasklet<br>
-<div class="outline-text-5" id="text-orgbd7ed25">
+<li><a id="orga1811f8"></a>tasklet<br>
+<div class="outline-text-5" id="text-orga1811f8">
 <p>
-tasklet &#x7684;&#x6267;&#x884C;&#x4E0A;&#x4E0B;&#x6587;&#x662F;&#x8F6F;&#x4E2D;&#x65AD;&#xFF0C;&#x6267;&#x884C;&#x65F6;&#x673A;&#x901A;&#x5E38;&#x662F;&#x9876;&#x534A;&#x90E8;&#x8FD4;&#x56DE;&#x7684;&#x65F6;&#x5019;&#x3002;&#x53EA;&#x9700;&#x8981;&#x5B9A;&#x4E49; tasklet &#x53CA;&#x5176;&#x5904;&#x7406;&#x51FD;&#x6570;&#xFF0C;&#x5E76;&#x5C06;&#x4E24;&#x8005;&#x5173;&#x8054;&#x5373;&#x53EF;&#x3002;
+tasklet 的执行上下文是软中断，执行时机通常是顶半部返回的时候。只需要定义 tasklet 及其处理函数，并将两者关联即可。
 </p>
 
 <p>
-takelet &#x6267;&#x884C;&#x901A;&#x5E38;&#x662F;&#x5728;&#x4E2D;&#x65AD;&#x9000;&#x51FA;&#x540E;&#x7ACB;&#x5373;&#x6267;&#x884C;&#xFF0C;&#x8F6F;&#x4E2D;&#x65AD;&#x4F9D;&#x6B21;&#x8FD0;&#x884C;&#x6302;&#x5728;&#x5176;&#x7B49;&#x5F85;&#x961F;&#x5217;&#x4E0A;&#x7684; tasklet &#x5904;&#x7406;&#x51FD;&#x6570;&#x3002;
+takelet 执行通常是在中断退出后立即执行，软中断依次运行挂在其等待队列上的 tasklet 处理函数。
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief &#x5B9A;&#x4E49;&#x4E00;&#x4E2A;tasklet&#x7ED3;&#x6784; my_tasklet, &#x4E0E; my_tasklet_func(data) &#x51FD;&#x6570;&#x5173;&#x8054;</span></span><br><span class="line"><span class="comment"> * &#x4F20;&#x9012;&#x7ED9; my_tasklet_func &#x7684;&#x53C2;&#x6570;&#x5C31;&#x662F; data</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">my_tasklet_func</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">long</span>)</span></span>;</span><br><span class="line">DECLARE_TASKLET(my_tasklet, my_tasklet_func, data);</span><br><span class="line"></span><br><span class="line"><span class="comment">//&#x542F;&#x52A8;&#x5E95;&#x534A;&#x5904;&#x7406;&#x673A;&#x5236;&#xFF0C;&#x6B64;&#x51FD;&#x6570;&#x5728;&#x9876;&#x534A;&#x5904;&#x7406;&#x4E2D;&#x4F7F;&#x7528;</span></span><br><span class="line">tasklet_schedule(&amp;my_tasklet);</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 定义一个tasklet结构 my_tasklet, 与 my_tasklet_func(data) 函数关联</span></span><br><span class="line"><span class="comment"> * 传递给 my_tasklet_func 的参数就是 data</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">my_tasklet_func</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">long</span>)</span></span>;</span><br><span class="line">DECLARE_TASKLET(my_tasklet, my_tasklet_func, data);</span><br><span class="line"></span><br><span class="line"><span class="comment">//启动底半处理机制，此函数在顶半处理中使用</span></span><br><span class="line">tasklet_schedule(&my_tasklet);</span><br></pre></td></tr></table></figure>
 </div>
 <p>
-&#x4F7F;&#x7528;tasklet &#x7684;&#x6574;&#x4F53;&#x9A71;&#x52A8;&#x6A21;&#x677F;
+使用tasklet 的整体驱动模板
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">xxx_do_task_let</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">long</span>)</span></span>;</span><br><span class="line">DECLARE_TASKLET(xxx_tasklet, xxx_do_task_let, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">xxx_do_task_let</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">long</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	...</span><br><span class="line">}</span><br><span class="line"><span class="function"><span class="keyword">irqreturn_t</span> <span class="title">xxx_interrupt</span><span class="params">(<span class="keyword">int</span> irq, <span class="keyword">void</span> *dev_id)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	...</span><br><span class="line">	tasklet_schedule(&amp;xxx_tasklet);</span><br><span class="line">	...</span><br><span class="line">	<span class="keyword">return</span> IRQ_HANDLED;</span><br><span class="line">}</span><br><span class="line"><span class="function"><span class="keyword">int</span> __init <span class="title">xxx_init</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	...</span><br><span class="line">	result = request_irq(xxx_irq, xxx_interrupt, <span class="number">0</span>, <span class="string">&quot;xxx&quot;</span>, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> __exit <span class="title">xxx_exit</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	...</span><br><span class="line">	free_irq(xxx_irq, xxx_interrupt);</span><br><span class="line">	...</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">xxx_do_task_let</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">long</span>)</span></span>;</span><br><span class="line">DECLARE_TASKLET(xxx_tasklet, xxx_do_task_let, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">xxx_do_task_let</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">long</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	...</span><br><span class="line">}</span><br><span class="line"><span class="function"><span class="keyword">irqreturn_t</span> <span class="title">xxx_interrupt</span><span class="params">(<span class="keyword">int</span> irq, <span class="keyword">void</span> *dev_id)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	...</span><br><span class="line">	tasklet_schedule(&xxx_tasklet);</span><br><span class="line">	...</span><br><span class="line">	<span class="keyword">return</span> IRQ_HANDLED;</span><br><span class="line">}</span><br><span class="line"><span class="function"><span class="keyword">int</span> __init <span class="title">xxx_init</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	...</span><br><span class="line">	result = request_irq(xxx_irq, xxx_interrupt, <span class="number">0</span>, <span class="string">"xxx"</span>, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> __exit <span class="title">xxx_exit</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	...</span><br><span class="line">	free_irq(xxx_irq, xxx_interrupt);</span><br><span class="line">	...</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </li>
-<li><a id="org5d24172"></a>&#x5DE5;&#x4F5C;&#x961F;&#x5217;<br>
-<div class="outline-text-5" id="text-org5d24172">
+<li><a id="orgee5de51"></a>工作队列<br>
+<div class="outline-text-5" id="text-orgee5de51">
 <p>
-&#x5DE5;&#x4F5C;&#x961F;&#x5217;&#x7684;&#x6267;&#x884C;&#x4E0A;&#x4E0B;&#x6587;&#x662F;&#x5185;&#x6838;&#x7EBF;&#x7A0B;&#xFF0C;&#x56E0;&#x6B64; *&#x53EF;&#x4EE5;&#x8C03;&#x5EA6;&#x548C;&#x7761;&#x7720;*&#xFF0C;&#x5F53;&#x9700;&#x8981;&#x5904;&#x7406;&#x7684;&#x5E95;&#x534A;&#x4EFB;&#x52A1;&#x53EF;&#x80FD;&#x4F1A;&#x5F15;&#x8D77;&#x7761;&#x7720;&#x65F6;&#xFF0C;&#x5C31;&#x5E94;&#x8BE5;&#x4F7F;&#x7528;&#x5DE5;&#x4F5C;&#x961F;&#x5217;&#x3002;
+工作队列的执行上下文是内核线程，因此 *可以调度和睡眠*，当需要处理的底半任务可能会引起睡眠时，就应该使用工作队列。
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * &#x5B9A;&#x4E49;&#x6570;&#x636E;&#x7ED3;&#x6784;&#x53CA;&#x64CD;&#x4F5C;&#x51FD;&#x6570;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">work_struct</span> <span class="title">my_wq</span>;</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">my_wq_func</span><span class="params">(struct work_struct *work)</span></span>;</span><br><span class="line">INIT_WORK(&amp;my_wq, my_wq_func);</span><br><span class="line"><span class="comment">//&#x542F;&#x52A8;</span></span><br><span class="line">schedule_work(&amp;my_wq);</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 定义数据结构及操作函数</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">work_struct</span> <span class="title">my_wq</span>;</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">my_wq_func</span><span class="params">(struct work_struct *work)</span></span>;</span><br><span class="line">INIT_WORK(&my_wq, my_wq_func);</span><br><span class="line"><span class="comment">//启动</span></span><br><span class="line">schedule_work(&my_wq);</span><br></pre></td></tr></table></figure>
 </div>
 <p>
-&#x961F;&#x5217;&#x5904;&#x7406;&#x6A21;&#x677F;
+队列处理模板
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">work_struct</span> <span class="title">xxx_wq</span>;</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">xxx_do_work</span><span class="params">(struct work_struct *work)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">xxx_do_work</span><span class="params">(struct work_struct *work)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	...</span><br><span class="line">}</span><br><span class="line"><span class="function"><span class="keyword">irqreturn_t</span> <span class="title">xxx_interrupt</span><span class="params">(<span class="keyword">int</span> irq, <span class="keyword">void</span> *dev_id)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	...</span><br><span class="line">	schdule_work(&amp;xxx_wq);</span><br><span class="line">	...</span><br><span class="line">	<span class="keyword">return</span> IRQ_HANDLED;</span><br><span class="line">}</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">xxx_init</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	...</span><br><span class="line">	result = request_irq(xxx_irq, xxx_interrupt, <span class="number">0</span>,  <span class="string">&quot;xxx&quot;</span>, <span class="literal">NULL</span>);</span><br><span class="line">	...</span><br><span class="line"><span class="comment">//&#x4E0E;tasklet &#x4E0D;&#x540C;&#x4E4B;&#x5904;</span></span><br><span class="line">	INIT_WORK(&amp;xxx_wq, xxx_do_work);</span><br><span class="line">	...</span><br><span class="line">}</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">xxx_exit</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	...</span><br><span class="line">	freq_irq(xxx_irq, xxx_interrupt);</span><br><span class="line">	...</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">work_struct</span> <span class="title">xxx_wq</span>;</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">xxx_do_work</span><span class="params">(struct work_struct *work)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">xxx_do_work</span><span class="params">(struct work_struct *work)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	...</span><br><span class="line">}</span><br><span class="line"><span class="function"><span class="keyword">irqreturn_t</span> <span class="title">xxx_interrupt</span><span class="params">(<span class="keyword">int</span> irq, <span class="keyword">void</span> *dev_id)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	...</span><br><span class="line">	schdule_work(&xxx_wq);</span><br><span class="line">	...</span><br><span class="line">	<span class="keyword">return</span> IRQ_HANDLED;</span><br><span class="line">}</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">xxx_init</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	...</span><br><span class="line">	result = request_irq(xxx_irq, xxx_interrupt, <span class="number">0</span>,  <span class="string">"xxx"</span>, <span class="literal">NULL</span>);</span><br><span class="line">	...</span><br><span class="line"><span class="comment">//与tasklet 不同之处</span></span><br><span class="line">	INIT_WORK(&xxx_wq, xxx_do_work);</span><br><span class="line">	...</span><br><span class="line">}</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">xxx_exit</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	...</span><br><span class="line">	freq_irq(xxx_irq, xxx_interrupt);</span><br><span class="line">	...</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </li>
-<li><a id="orge31b4df"></a>&#x8F6F;&#x4E2D;&#x65AD;(&#x4E0D;&#x5EFA;&#x8BAE;&#x4F7F;&#x7528;)<br>
-<div class="outline-text-5" id="text-orge31b4df">
+<li><a id="org5f43910"></a>软中断(不建议使用)<br>
+<div class="outline-text-5" id="text-org5f43910">
 <p>
-&#x8F6F;&#x4E2D;&#x65AD;&#x7684;&#x6267;&#x884C;&#x65F6;&#x673A;&#x901A;&#x5E38;&#x662F;&#x9876;&#x534A;&#x90E8;&#x5206;&#x8FD4;&#x56DE;&#x7684;&#x65F6;&#x5019;&#xFF0C;tasklet&#x662F;&#x57FA;&#x4E8E;&#x8F6F;&#x4E2D;&#x65AD;&#x5B9E;&#x73B0;&#x7684;&#xFF0C;&#x56E0;&#x6B64;&#x4E5F;&#x8FD0;&#x884C;&#x4E8E;&#x8F6F;&#x4E2D;&#x65AD;&#x4E0A;&#x4E0B;&#x6587;&#x3002;
+软中断的执行时机通常是顶半部分返回的时候，tasklet是基于软中断实现的，因此也运行于软中断上下文。
 </p>
 <ul class="org-ul">
-<li>&#x6BCF;&#x4E00;&#x4E2A;&#x6838;&#x4E0A;&#x90FD;&#x5BF9;&#x5E94;&#x4E00;&#x4E2A; <code>ksoftirqd</code> &#xFF0C;&#x7528;&#x4E8E;&#x9AD8;&#x9891;&#x51FA;&#x73B0;&#x8F6F;&#x4E2D;&#x65AD;&#x6216; tasklet &#x65F6;&#x7684;&#x7EBF;&#x7A0B;&#x5316;&#x5904;&#x7406;</li>
+<li>每一个核上都对应一个 <code>ksoftirqd</code> ，用于高频出现软中断或 tasklet 时的线程化处理</li>
 </ul>
 
 <p>
-&#x8F6F;&#x4E2D;&#x65AD;&#x4E0D;&#x5EFA;&#x8BAE;&#x4F7F;&#x7528;&#x7684;&#x539F;&#x56E0;&#x662F;&#xFF1A;&#x540C;&#x4E00;&#x4EFD;&#x8F6F;&#x4E2D;&#x65AD;&#x51FD;&#x6570;&#x5728;&#x591A;&#x6838;&#x73AF;&#x5883;&#x4E0B;&#x6709;&#x53EF;&#x80FD;&#x88AB;&#x591A;&#x4E2A;&#x6838;&#x540C;&#x65F6;&#x6267;&#x884C;&#xFF0C;&#x6240;&#x4EE5;&#x9700;&#x8981;&#x8003;&#x8651;&#x8FD9;&#x79CD;&#x4E92;&#x65A5;&#x6027;&#x3002;
-&#x800C; tasklet &#x7684;&#x8C03;&#x5EA6;&#x7B56;&#x7565;&#x662F;&#x4E0D;&#x4F1A;&#x5728;&#x591A;&#x4E2A;&#x6838;&#x4E0A;&#x8FD0;&#x884C;&#x540C;&#x4E00;&#x4E2A; tasklet &#x51FD;&#x6570;&#xFF0C;&#x8FD9;&#x6837;&#x76F8;&#x5BF9;&#x5C31;&#x66F4;&#x5BB9;&#x6613;&#x5B9E;&#x73B0;&#x4E00;&#x70B9;
+软中断不建议使用的原因是：同一份软中断函数在多核环境下有可能被多个核同时执行，所以需要考虑这种互斥性。
+而 tasklet 的调度策略是不会在多个核上运行同一个 tasklet 函数，这样相对就更容易实现一点
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* PLEASE, avoid to allocate new softirqs, if you need not _really_ high</span></span><br><span class="line"><span class="comment">   frequency threaded job scheduling. For almost all the purposes</span></span><br><span class="line"><span class="comment">   tasklets are more than enough. F.e. all serial device BHs et</span></span><br><span class="line"><span class="comment">   al. should be converted to tasklets, not to softirqs.</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="comment">//! &#x5185;&#x6838;&#x5DF2;&#x7ECF;&#x5EFA;&#x8BAE;&#x4E0D;&#x76F4;&#x63A5;&#x4F7F;&#x7528; softirq &#x800C;&#x662F;&#x4F7F;&#x7528;&#x5176; tasklet</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">enum</span></span><br><span class="line">  {</span><br><span class="line">   HI_SOFTIRQ=<span class="number">0</span>, <span class="comment">//&#x4F18;&#x5148;&#x7EA7;&#x9AD8;&#x7684; tasklets</span></span><br><span class="line">   TIMER_SOFTIRQ,<span class="comment">//&#x5B9A;&#x65F6;&#x5668;&#x4E0B;&#x534A;&#x90E8;</span></span><br><span class="line">   NET_TX_SOFTIRQ,<span class="comment">//&#x53D1;&#x9001;&#x7F51;&#x7EDC;&#x6570;&#x636E;&#x5305;</span></span><br><span class="line">   NET_RX_SOFTIRQ,<span class="comment">//&#x63A5;&#x6536;&#x7F51;&#x7EDC;&#x6570;&#x636E;&#x5305;</span></span><br><span class="line">   BLOCK_SOFTIRQ,<span class="comment">//BLOCK &#x88C5;&#x7F6E;</span></span><br><span class="line">   IRQ_POLL_SOFTIRQ,</span><br><span class="line">   TASKLET_SOFTIRQ,<span class="comment">//&#x6B63;&#x5E38;&#x4F18;&#x5148;&#x7EA7;&#x7684; tasklets</span></span><br><span class="line">   SCHED_SOFTIRQ,<span class="comment">//&#x8C03;&#x5EA6;&#x7A0B;&#x5E8F;</span></span><br><span class="line">   HRTIMER_SOFTIRQ, <span class="comment">/* Unused, but kept as tools rely on the</span></span><br><span class="line"><span class="comment">		       numbering. Sigh! */</span><span class="comment">//&#x9AD8;&#x7CBE;&#x5EA6;&#x5B9A;&#x65F6;&#x5668;</span></span><br><span class="line">   RCU_SOFTIRQ,    <span class="comment">/* Preferable RCU should always be the last softirq */</span><span class="comment">//RCU &#x9501;</span></span><br><span class="line"></span><br><span class="line">   NR_SOFTIRQS <span class="comment">//10</span></span><br><span class="line">  };</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* PLEASE, avoid to allocate new softirqs, if you need not _really_ high</span></span><br><span class="line"><span class="comment">   frequency threaded job scheduling. For almost all the purposes</span></span><br><span class="line"><span class="comment">   tasklets are more than enough. F.e. all serial device BHs et</span></span><br><span class="line"><span class="comment">   al. should be converted to tasklets, not to softirqs.</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="comment">//! 内核已经建议不直接使用 softirq 而是使用其 tasklet</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">enum</span></span><br><span class="line">  {</span><br><span class="line">   HI_SOFTIRQ=<span class="number">0</span>, <span class="comment">//优先级高的 tasklets</span></span><br><span class="line">   TIMER_SOFTIRQ,<span class="comment">//定时器下半部</span></span><br><span class="line">   NET_TX_SOFTIRQ,<span class="comment">//发送网络数据包</span></span><br><span class="line">   NET_RX_SOFTIRQ,<span class="comment">//接收网络数据包</span></span><br><span class="line">   BLOCK_SOFTIRQ,<span class="comment">//BLOCK 装置</span></span><br><span class="line">   IRQ_POLL_SOFTIRQ,</span><br><span class="line">   TASKLET_SOFTIRQ,<span class="comment">//正常优先级的 tasklets</span></span><br><span class="line">   SCHED_SOFTIRQ,<span class="comment">//调度程序</span></span><br><span class="line">   HRTIMER_SOFTIRQ, <span class="comment">/* Unused, but kept as tools rely on the</span></span><br><span class="line"><span class="comment">		       numbering. Sigh! */</span><span class="comment">//高精度定时器</span></span><br><span class="line">   RCU_SOFTIRQ,    <span class="comment">/* Preferable RCU should always be the last softirq */</span><span class="comment">//RCU 锁</span></span><br><span class="line"></span><br><span class="line">   NR_SOFTIRQS <span class="comment">//10</span></span><br><span class="line">  };</span><br></pre></td></tr></table></figure>
 </div>
 
 <p>
-&#x7528; <code>softirq_action</code> &#x7ED3;&#x6784;&#x4F53;&#x8868;&#x793A;&#x4E00;&#x4E2A;&#x8F6F;&#x4E2D;&#x65AD;&#xFF0C;&#x4F7F;&#x7528; <code>open_softirq()</code> &#x6CE8;&#x518C;&#x8F6F;&#x4E2D;&#x65AD;&#x5BF9;&#x5E94;&#x7684;&#x5904;&#x7406;&#x51FD;&#x6570;&#xFF0C; <code>raise_softirq()</code> &#x89E6;&#x53D1;&#x4E00;&#x4E2A;&#x8F6F;&#x4E2D;&#x65AD;&#x3002;
+用 <code>softirq_action</code> 结构体表示一个软中断，使用 <code>open_softirq()</code> 注册软中断对应的处理函数， <code>raise_softirq()</code> 触发一个软中断。
 </p>
 <div class="org-src-container">
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">open_softirq</span><span class="params">(<span class="keyword">int</span> nr, <span class="keyword">void</span> (*action)(struct softirq_action *))</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">raise_softirq</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">int</span> nr)</span></span>;</span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </li>
-<li><a id="org59a6b09"></a>threaded_irq<br>
-<div class="outline-text-5" id="text-org59a6b09">
+<li><a id="org0d95142"></a>threaded_irq<br>
+<div class="outline-text-5" id="text-org0d95142">
 <p>
-&#x5185;&#x6838;&#x4E2D;&#x9664;&#x4E86;&#x53EF;&#x4EE5;&#x901A;&#x8FC7; <code>request_irq(),devm_request_irq()</code> &#x7533;&#x8BF7;&#x4E2D;&#x65AD;&#x5916;&#xFF0C;&#x8FD8;&#x53EF;&#x4EE5;&#x901A;&#x8FC7;&#x4E0B;&#x9762;&#x51FD;&#x6570;&#x7533;&#x8BF7;&#xFF1A;
+内核中除了可以通过 <code>request_irq(),devm_request_irq()</code> 申请中断外，还可以通过下面函数申请：
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief &#x76F8;&#x6BD4; request_irq() &#x5185;&#x6838;&#x4F1A;&#x4E3A;&#x76F8;&#x5E94;&#x7684;&#x4E2D;&#x65AD;&#x53F7;&#x5206;&#x914D;&#x4E00;&#x4E2A;&#x5BF9;&#x5E94;&#x7684;&#x5185;&#x6838;&#x7EBF;&#x7A0B;</span></span><br><span class="line"><span class="comment"> * @brief &#x5982;&#x679C;&#x4E2D;&#x65AD;&#x5904;&#x7406;&#x51FD;&#x6570; handler() &#x8FD4;&#x56DE;&#x503C;&#x662F; IRQ_WAKE_THREAD ,&#x5185;&#x6838;&#x4F1A;&#x8C03;&#x5EA6;&#x5BF9;&#x5E94;&#x7684;&#x7EBF;&#x7A0B;&#x6267;&#x884C; thread_fn &#x51FD;&#x6570;</span></span><br><span class="line"><span class="comment"> * @note &#x652F;&#x6301;flags &#x4E2D;&#x8BBE;&#x7F6E; IRQF_ONESHOT,&#x5185;&#x6838;&#x4F1A;&#x81EA;&#x52A8;&#x5E2E;&#x52A9;&#x6211;&#x4EEC;&#x5728;&#x4E2D;&#x65AD;&#x4E0A;&#x4E0B;&#x6587;&#x4E2D;&#x5C4F;&#x853D;&#x5BF9;&#x5E94;&#x7684;&#x4E2D;&#x65AD;&#x53F7;&#xFF0C;&#x800C;&#x5728;&#x5185;&#x6838;&#x8C03;&#x5EA6;thread_fn &#x6267;&#x884C;&#x540E;&#xFF0C;&#x91CD;&#x65B0;&#x4F7F;&#x80FD;&#x8BE5;&#x4E2D;&#x65AD;&#x53F7;</span></span><br><span class="line"><span class="comment"> * &#x5F53; handler &#x4E3A;NULL&#x65F6;&#xFF0C; &#x5185;&#x6838;&#x9ED8;&#x8BA4;&#x4F7F;&#x7528; irq_default_primary_handler() &#x4EE3;&#x66FF; handler() &#x5E76;&#x4F7F;&#x7528; IRQF_ONESHOT</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">request_threaded_irq</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">int</span> irq, <span class="keyword">irq_handler_t</span> handler, <span class="keyword">irq_handler_t</span> thread_fn,</span></span></span><br><span class="line"><span class="function"><span class="params">			 <span class="keyword">unsigned</span> <span class="keyword">long</span> flags, <span class="keyword">const</span> <span class="keyword">char</span> *name, <span class="keyword">void</span> *dev)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">devm_request_threaded_irq</span><span class="params">(struct device *dev,<span class="keyword">unsigned</span> <span class="keyword">int</span> irq, <span class="keyword">irq_handler_t</span> handler, <span class="keyword">irq_handler_t</span> thread_fn,<span class="keyword">unsigned</span> <span class="keyword">long</span> flags, <span class="keyword">const</span> <span class="keyword">char</span> *name, <span class="keyword">void</span> *dev)</span></span>;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 相比 request_irq() 内核会为相应的中断号分配一个对应的内核线程</span></span><br><span class="line"><span class="comment"> * @brief 如果中断处理函数 handler() 返回值是 IRQ_WAKE_THREAD ,内核会调度对应的线程执行 thread_fn 函数</span></span><br><span class="line"><span class="comment"> * @note 支持flags 中设置 IRQF_ONESHOT,内核会自动帮助我们在中断上下文中屏蔽对应的中断号，而在内核调度thread_fn 执行后，重新使能该中断号</span></span><br><span class="line"><span class="comment"> * 当 handler 为NULL时， 内核默认使用 irq_default_primary_handler() 代替 handler() 并使用 IRQF_ONESHOT</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">request_threaded_irq</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">int</span> irq, <span class="keyword">irq_handler_t</span> handler, <span class="keyword">irq_handler_t</span> thread_fn,</span></span></span><br><span class="line"><span class="function"><span class="params">			 <span class="keyword">unsigned</span> <span class="keyword">long</span> flags, <span class="keyword">const</span> <span class="keyword">char</span> *name, <span class="keyword">void</span> *dev)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">devm_request_threaded_irq</span><span class="params">(struct device *dev,<span class="keyword">unsigned</span> <span class="keyword">int</span> irq, <span class="keyword">irq_handler_t</span> handler, <span class="keyword">irq_handler_t</span> thread_fn,<span class="keyword">unsigned</span> <span class="keyword">long</span> flags, <span class="keyword">const</span> <span class="keyword">char</span> *name, <span class="keyword">void</span> *dev)</span></span>;</span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </li>
 </ul>
 </div>
-<div id="outline-container-org8b8d863" class="outline-4">
-<h4 id="org8b8d863">&#x4E2D;&#x65AD;&#x5171;&#x4EAB;</h4>
-<div class="outline-text-4" id="text-org8b8d863">
+<div id="outline-container-orgfeec2cc" class="outline-4">
+<h4 id="orgfeec2cc">中断共享</h4>
+<div class="outline-text-4" id="text-orgfeec2cc">
 <p>
-&#x5728;&#x591A;&#x4E2A;&#x8BBE;&#x5907;&#x5171;&#x4EAB;&#x4E00;&#x6839;&#x786C;&#x4EF6;&#x4E2D;&#x65AD;&#x7EBF;&#x7684;&#x60C5;&#x51B5;&#x4E0B;&#xFF0C;&#x9700;&#x8981;&#x4F7F;&#x7528;&#x4E2D;&#x65AD;&#x5171;&#x4EAB;&#x7684;&#x65B9;&#x5F0F;&#xFF1A;
+在多个设备共享一根硬件中断线的情况下，需要使用中断共享的方式：
 </p>
 <ul class="org-ul">
-<li>&#x5171;&#x4EAB;&#x4E2D;&#x65AD;&#x7684;&#x591A;&#x4E2A;&#x8BBE;&#x5907;&#x5728;&#x7533;&#x8BF7;&#x4E2D;&#x65AD;&#x7684;&#x65F6;&#x5019;&#xFF0C;&#x90FD;&#x5E94;&#x8BE5;&#x4F7F;&#x7528; <code>IRQF_SHARED</code> &#x6807;&#x5FD7;&#xFF0C;&#x800C;&#x4E14;&#x4E00;&#x4E2A;&#x8BBE;&#x5907;&#x4EE5; <code>IRQF_SHARED</code> &#x7533;&#x8BF7;&#x67D0;&#x4E2D;&#x65AD;&#x6210;&#x529F;&#x7684;&#x524D;&#x63D0;&#x662F;&#x8BE5;&#x4E2D;&#x65AD;&#x672A;&#x88AB;&#x7533;&#x8BF7;&#x6216;&#x4E4B;&#x524D;&#x7533;&#x8BF7;&#x6807;&#x5FD7;&#x4E5F;&#x662F; <code>IRQF_SHARED</code></li>
-<li><code>request_irq()</code> &#x7684;&#x53C2;&#x6570; <code>void *dev_id</code> &#x5E94;&#x8BE5;&#x4F7F;&#x7528;&#x5F53;&#x524D;&#x8BBE;&#x5907;&#x7684;&#x7ED3;&#x6784;&#x4F53;&#x5730;&#x5740;</li>
-<li>&#x5728;&#x4E2D;&#x65AD;&#x5230;&#x6765;&#x65F6;&#xFF0C;&#x4F1A;&#x904D;&#x5386;&#x6267;&#x884C;&#x5171;&#x4EAB;&#x6B64;&#x4E2D;&#x65AD;&#x7684;&#x6240;&#x6709;&#x4E2D;&#x65AD;&#x5904;&#x7406;&#x7A0B;&#x5E8F;&#xFF0C;&#x76F4;&#x5230;&#x67D0;&#x4E00;&#x4E2A;&#x51FD;&#x6570;&#x8FD4;&#x56DE; IRQ_HANDLED .&#x5728;&#x4E2D;&#x65AD;&#x5904;&#x7406;&#x9876;&#x534A;&#x90E8;&#x5206;&#x4E2D;&#xFF0C;&#x5E94;&#x8BE5;&#x6839;&#x636E;&#x786C;&#x4EF6;&#x5BC4;&#x5B58;&#x5668;&#x4E2D;&#x7684;&#x4FE1;&#x606F;&#x6BD4;&#x5BF9;&#x4F20;&#x5165;&#x7684; <code>dev_id</code> &#x662F;&#x5426;&#x4E00;&#x81F4;&#xFF0C;&#x4E0D;&#x4E00;&#x81F4;&#x5C31;&#x8FD4;&#x56DE; <code>IRQ_NONE</code>.</li>
+<li>共享中断的多个设备在申请中断的时候，都应该使用 <code>IRQF_SHARED</code> 标志，而且一个设备以 <code>IRQF_SHARED</code> 申请某中断成功的前提是该中断未被申请或之前申请标志也是 <code>IRQF_SHARED</code></li>
+<li><code>request_irq()</code> 的参数 <code>void *dev_id</code> 应该使用当前设备的结构体地址</li>
+<li>在中断到来时，会遍历执行共享此中断的所有中断处理程序，直到某一个函数返回 IRQ_HANDLED .在中断处理顶半部分中，应该根据硬件寄存器中的信息比对传入的 <code>dev_id</code> 是否一致，不一致就返回 <code>IRQ_NONE</code>.</li>
 </ul>
 
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">irqreturn_t</span> <span class="title">xxx_interrupt</span><span class="params">(<span class="keyword">int</span> irq, <span class="keyword">void</span> *dev_id)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	...</span><br><span class="line">	<span class="keyword">int</span> status = read_int_status();<span class="comment">// &#x83B7;&#x53D6;&#x4E2D;&#x65AD;&#x6E90;&#x72B6;&#x6001;</span></span><br><span class="line">	<span class="keyword">if</span>(!is_myint(dev_id, status))</span><br><span class="line">		<span class="keyword">return</span> IRQ_NONE;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// &#x4E2D;&#x65AD;&#x5339;&#x914D;&#xFF0C;&#x6267;&#x884C;&#x5E95;&#x534A;&#x90E8;&#x5206;</span></span><br><span class="line">	<span class="keyword">return</span> IRQ_HANDLED;</span><br><span class="line">}</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">xxx_init</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	...</span><br><span class="line">	result = request_irq(sh_irq, xxx_interrupt, IRQF_SHARED, <span class="string">&quot;xxx&quot;</span>, xxx_dev);</span><br><span class="line">	...</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">xxx_exit</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	...</span><br><span class="line">	free_irq(xxx_irq, xxx_interrupt);</span><br><span class="line">	..</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">irqreturn_t</span> <span class="title">xxx_interrupt</span><span class="params">(<span class="keyword">int</span> irq, <span class="keyword">void</span> *dev_id)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	...</span><br><span class="line">	<span class="keyword">int</span> status = read_int_status();<span class="comment">// 获取中断源状态</span></span><br><span class="line">	<span class="keyword">if</span>(!is_myint(dev_id, status))</span><br><span class="line">		<span class="keyword">return</span> IRQ_NONE;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 中断匹配，执行底半部分</span></span><br><span class="line">	<span class="keyword">return</span> IRQ_HANDLED;</span><br><span class="line">}</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">xxx_init</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	...</span><br><span class="line">	result = request_irq(sh_irq, xxx_interrupt, IRQF_SHARED, <span class="string">"xxx"</span>, xxx_dev);</span><br><span class="line">	...</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">xxx_exit</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	...</span><br><span class="line">	free_irq(xxx_irq, xxx_interrupt);</span><br><span class="line">	..</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </div>
@@ -905,7 +905,7 @@ takelet &#x6267;&#x884C;&#x901A;&#x5E38;&#x662F;&#x5728;&#x4E2D;&#x65AD;&#x9000;
 </div>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-07 &#x4E94; 14:38.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
 </div>
 
     </div>
@@ -991,7 +991,7 @@ Last Updated 2020-08-07 &#x4E94; 14:38.<br>Render by <a href="https://github.com
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org65daf19"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x6982;&amp;#x89C8;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org2a9b9c7"><span class="nav-number">1.1.</span> <span class="nav-text">&amp;#x5DE5;&amp;#x4F5C;&amp;#x6A21;&amp;#x5F0F;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgfa09f5d"><span class="nav-number">1.2.</span> <span class="nav-text">&amp;#x5F02;&amp;#x5E38;&amp;#x7C7B;&amp;#x578B;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org9843a15"><span class="nav-number">1.3.</span> <span class="nav-text">&amp;#x5F02;&amp;#x5E38;&amp;#x7C7B;&amp;#x578B;&amp;#x4E0E;&amp;#x5DE5;&amp;#x4F5C;&amp;#x6A21;&amp;#x5F0F;&amp;#x7684;&amp;#x5BF9;&amp;#x6BD4;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org0226fdc"><span class="nav-number">1.4.</span> <span class="nav-text">&amp;#x5DE5;&amp;#x4F5C;&amp;#x6D41;&amp;#x7A0B;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org97abbd3"><span class="nav-number">1.4.1.</span> <span class="nav-text">&amp;#x8FDB;&amp;#x5165;&amp;#x5F02;&amp;#x5E38;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org1251dce"><span class="nav-number">1.4.2.</span> <span class="nav-text">&amp;#x9000;&amp;#x51FA;&amp;#x5F02;&amp;#x5E38;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org2506db5"><span class="nav-number">1.5.</span> <span class="nav-text">&amp;#x5F02;&amp;#x5E38;&amp;#x5411;&amp;#x91CF;&amp;#x8868;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org15385ce"><span class="nav-number">1.6.</span> <span class="nav-text">&amp;#x7A0B;&amp;#x5E8F;&amp;#x4E2D;&amp;#x7684;&amp;#x4E2D;&amp;#x65AD;&amp;#x5904;&amp;#x7406;&amp;#x8FC7;&amp;#x7A0B;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgb8d3619"><span class="nav-number">2.</span> <span class="nav-text">Linux&amp;#x5185;&amp;#x6838;&amp;#x4E2D;&amp;#x7684;&amp;#x4E2D;&amp;#x65AD;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org2d9d0c8"><span class="nav-number">2.1.</span> <span class="nav-text">&amp;#x6982;&amp;#x5FF5;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org8d95752"><span class="nav-number">2.1.1.</span> <span class="nav-text">&amp;#x4E2D;&amp;#x65AD;&amp;#x7C7B;&amp;#x578B;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org8310fab"><span class="nav-number">2.1.2.</span> <span class="nav-text">&amp;#x4E2D;&amp;#x65AD;&amp;#x5904;&amp;#x7406;&amp;#x7A0B;&amp;#x5E8F;&amp;#x67B6;&amp;#x6784;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org9083f27"><span class="nav-number">2.1.3.</span> <span class="nav-text">&amp;#x4E2D;&amp;#x65AD;&amp;#x4E0A;&amp;#x4E0B;&amp;#x6587;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org90830cd"><span class="nav-number">2.2.</span> <span class="nav-text">&amp;#x4E2D;&amp;#x65AD;&amp;#x7F16;&amp;#x7A0B;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orga64efd9"><span class="nav-number">2.2.1.</span> <span class="nav-text">&amp;#x7533;&amp;#x8BF7;&amp;#x548C;&amp;#x91CA;&amp;#x653E;&amp;#x4E2D;&amp;#x65AD;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org316cf68"><span class="nav-number">2.2.2.</span> <span class="nav-text">&amp;#x4F7F;&amp;#x80FD;&amp;#x548C;&amp;#x5C4F;&amp;#x853D;&amp;#x4E2D;&amp;#x65AD;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orge54becc"><span class="nav-number">2.2.3.</span> <span class="nav-text">&amp;#x83B7;&amp;#x53D6;&amp;#x4E2D;&amp;#x65AD;&amp;#x72B6;&amp;#x6001;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orge2af021"><span class="nav-number">2.2.4.</span> <span class="nav-text">&amp;#x5E95;&amp;#x534A;&amp;#x5904;&amp;#x7406;&amp;#x673A;&amp;#x5236;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org8b8d863"><span class="nav-number">2.2.5.</span> <span class="nav-text">&amp;#x4E2D;&amp;#x65AD;&amp;#x5171;&amp;#x4EAB;</span></a></li></ol></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#orgdb51537"><span class="nav-number">1.</span> <span class="nav-text">概览</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org9cee19d"><span class="nav-number">1.1.</span> <span class="nav-text">工作模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org8e66ec7"><span class="nav-number">1.2.</span> <span class="nav-text">异常类型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orga207507"><span class="nav-number">1.3.</span> <span class="nav-text">异常类型与工作模式的对比</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org58c06fe"><span class="nav-number">1.4.</span> <span class="nav-text">工作流程</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgcdc96d9"><span class="nav-number">1.4.1.</span> <span class="nav-text">进入异常</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org91dfe6b"><span class="nav-number">1.4.2.</span> <span class="nav-text">退出异常</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org907992a"><span class="nav-number">1.5.</span> <span class="nav-text">异常向量表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org088b736"><span class="nav-number">1.6.</span> <span class="nav-text">程序中的中断处理过程</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orge848353"><span class="nav-number">2.</span> <span class="nav-text">Linux内核中的中断</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org6c3871c"><span class="nav-number">2.1.</span> <span class="nav-text">概念</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org2faccff"><span class="nav-number">2.1.1.</span> <span class="nav-text">中断类型</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org4c65029"><span class="nav-number">2.1.2.</span> <span class="nav-text">中断处理程序架构</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org757c0dd"><span class="nav-number">2.1.3.</span> <span class="nav-text">中断上下文</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgdf11eba"><span class="nav-number">2.2.</span> <span class="nav-text">中断编程</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org1c53e4f"><span class="nav-number">2.2.1.</span> <span class="nav-text">申请和释放中断</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org5153ccf"><span class="nav-number">2.2.2.</span> <span class="nav-text">使能和屏蔽中断</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgee49dff"><span class="nav-number">2.2.3.</span> <span class="nav-text">获取中断状态</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org4873133"><span class="nav-number">2.2.4.</span> <span class="nav-text">底半处理机制</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgfeec2cc"><span class="nav-number">2.2.5.</span> <span class="nav-text">中断共享</span></a></li></ol></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 

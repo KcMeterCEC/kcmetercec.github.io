@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="&amp;#x4E4B;&amp;#x524D;&amp;#x63D0;&amp;#x5230;&amp;#x8FC7;&amp;#xFF0C;&amp;#x5F53;&amp;#x76EE;&amp;#x6807;&amp;#x677F;&amp;#x6CA1;&amp;#x6709;&amp;#x7F51;&amp;#x53E3;&amp;#x6216;&amp;#x7F51;&amp;#x53E3;&amp;#x7528;&amp;#x4F5C;&amp;#x5176;&amp;#x4ED6;&amp;#x7528;&amp;#x9014;&amp;#x65F6;&amp;#xFF0">
+  <meta name="description" content="之前提到过，当目标板没有网口或网口用作其他用途时，我使用串口传输文件，但这遇到两个问题：   传输文件稍微大一点，就会等很久，慢得要死。。。 使用gdb remote 调试经常的情况是你要调试的程序还没有崩溃，串口先崩溃了。。。  无奈只能在busybox中加入gdb，在目标板调试，但依然很麻烦     所以当有usb时，就可以使用usb来虚拟网卡，以上两个问题都可以解决。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[What]使用USB模拟网口从主机传输文件到目标板">
 <meta property="og:url" content="http://kcmetercec.top/2018/07/18/linux_debug_usage_usb_eth_transfer/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="&amp;#x4E4B;&amp;#x524D;&amp;#x63D0;&amp;#x5230;&amp;#x8FC7;&amp;#xFF0C;&amp;#x5F53;&amp;#x76EE;&amp;#x6807;&amp;#x677F;&amp;#x6CA1;&amp;#x6709;&amp;#x7F51;&amp;#x53E3;&amp;#x6216;&amp;#x7F51;&amp;#x53E3;&amp;#x7528;&amp;#x4F5C;&amp;#x5176;&amp;#x4ED6;&amp;#x7528;&amp;#x9014;&amp;#x65F6;&amp;#xFF0">
+<meta property="og:description" content="之前提到过，当目标板没有网口或网口用作其他用途时，我使用串口传输文件，但这遇到两个问题：   传输文件稍微大一点，就会等很久，慢得要死。。。 使用gdb remote 调试经常的情况是你要调试的程序还没有崩溃，串口先崩溃了。。。  无奈只能在busybox中加入gdb，在目标板调试，但依然很麻烦     所以当有usb时，就可以使用usb来虚拟网卡，以上两个问题都可以解决。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2018-07-17T16:00:00.000Z">
 <meta property="article:modified_time" content="2020-08-01T01:09:06.532Z">
@@ -299,60 +299,60 @@
       
         <div id="content">
 <p>
-&#x4E4B;&#x524D;&#x63D0;&#x5230;&#x8FC7;&#xFF0C;&#x5F53;&#x76EE;&#x6807;&#x677F;&#x6CA1;&#x6709;&#x7F51;&#x53E3;&#x6216;&#x7F51;&#x53E3;&#x7528;&#x4F5C;&#x5176;&#x4ED6;&#x7528;&#x9014;&#x65F6;&#xFF0C;&#x6211;<a href="https://kcmetercec.github.io/2018/02/05/linux_debug_usage_serial_transfer/" target="_blank" rel="noopener">&#x4F7F;&#x7528;&#x4E32;&#x53E3;&#x4F20;&#x8F93;&#x6587;&#x4EF6;</a>&#xFF0C;&#x4F46;&#x8FD9;&#x9047;&#x5230;&#x4E24;&#x4E2A;&#x95EE;&#x9898;&#xFF1A;
+之前提到过，当目标板没有网口或网口用作其他用途时，我<a href="https://kcmetercec.github.io/2018/02/05/linux_debug_usage_serial_transfer/" target="_blank" rel="noopener">使用串口传输文件</a>，但这遇到两个问题：
 </p>
 <ol class="org-ol">
-<li>&#x4F20;&#x8F93;&#x6587;&#x4EF6;&#x7A0D;&#x5FAE;&#x5927;&#x4E00;&#x70B9;&#xFF0C;&#x5C31;&#x4F1A;&#x7B49;&#x5F88;&#x4E45;&#xFF0C;&#x6162;&#x5F97;&#x8981;&#x6B7B;&#x3002;&#x3002;&#x3002;</li>
-<li>&#x4F7F;&#x7528;gdb remote &#x8C03;&#x8BD5;&#x7ECF;&#x5E38;&#x7684;&#x60C5;&#x51B5;&#x662F;&#x4F60;&#x8981;&#x8C03;&#x8BD5;&#x7684;&#x7A0B;&#x5E8F;&#x8FD8;&#x6CA1;&#x6709;&#x5D29;&#x6E83;&#xFF0C;&#x4E32;&#x53E3;&#x5148;&#x5D29;&#x6E83;&#x4E86;&#x3002;&#x3002;&#x3002;
+<li>传输文件稍微大一点，就会等很久，慢得要死。。。</li>
+<li>使用gdb remote 调试经常的情况是你要调试的程序还没有崩溃，串口先崩溃了。。。
 <ul class="org-ul">
-<li>&#x65E0;&#x5948;&#x53EA;&#x80FD;&#x5728;busybox&#x4E2D;&#x52A0;&#x5165;gdb&#xFF0C;&#x5728;&#x76EE;&#x6807;&#x677F;&#x8C03;&#x8BD5;&#xFF0C;&#x4F46;&#x4F9D;&#x7136;&#x5F88;&#x9EBB;&#x70E6;</li>
+<li>无奈只能在busybox中加入gdb，在目标板调试，但依然很麻烦</li>
 </ul></li>
 </ol>
 
 <p>
-&#x6240;&#x4EE5;&#x5F53;&#x6709;usb&#x65F6;&#xFF0C;&#x5C31;&#x53EF;&#x4EE5;&#x4F7F;&#x7528;usb&#x6765;&#x865A;&#x62DF;&#x7F51;&#x5361;&#xFF0C;&#x4EE5;&#x4E0A;&#x4E24;&#x4E2A;&#x95EE;&#x9898;&#x90FD;&#x53EF;&#x4EE5;&#x89E3;&#x51B3;&#x3002;
+所以当有usb时，就可以使用usb来虚拟网卡，以上两个问题都可以解决。
 </p>
 
 <a id="more"></a>
 
-<div id="outline-container-orgdda6181" class="outline-2">
-<h2 id="orgdda6181">&#x76EE;&#x6807;&#x677F;&#x7F16;&#x8BD1;</h2>
-<div class="outline-text-2" id="text-orgdda6181">
+<div id="outline-container-org3004619" class="outline-2">
+<h2 id="org3004619">目标板编译</h2>
+<div class="outline-text-2" id="text-org3004619">
 <p>
-&#x5728;&#x7F16;&#x8BD1;&#x5185;&#x6838;&#x65F6;&#xFF0C;&#x9700;&#x8981;&#x52A0;&#x4E0A;&#x5BF9;&#x5E94;&#x7684;&#x7F16;&#x8BD1;&#x9009;&#x9879;&#xFF0C;&#x8FD9;&#x4E9B;&#x5728;&#x7F51;&#x4E0A;&#x90FD;&#x6709;<a href="https://developer.ridgerun.com/wiki/index.php/How_to_use_USB_device_networking" target="_blank" rel="noopener">&#x8BE6;&#x7EC6;&#x8BF4;&#x660E;</a>
+在编译内核时，需要加上对应的编译选项，这些在网上都有<a href="https://developer.ridgerun.com/wiki/index.php/How_to_use_USB_device_networking" target="_blank" rel="noopener">详细说明</a>
 </p>
 <ul class="org-ul">
-<li>&#x4F46;&#x5177;&#x4F53;&#x914D;&#x7F6E;&#x8FD8;&#x9700;&#x8981;&#x53C2;&#x8003;&#x539F;&#x5382;&#x7684;&#x6587;&#x6863;&#xFF0C;&#x6BD4;&#x5982;<a href="http://www.wiki.xilinx.com/Zynq%2520Linux%2520USB%2520Device%2520Driver" target="_blank" rel="noopener">zynq usb</a>.</li>
+<li>但具体配置还需要参考原厂的文档，比如<a href="http://www.wiki.xilinx.com/Zynq%2520Linux%2520USB%2520Device%2520Driver" target="_blank" rel="noopener">zynq usb</a>.</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-org653924c" class="outline-2">
-<h2 id="org653924c">&#x4E0E;linux&#x4E3B;&#x673A;&#x8FDE;&#x63A5;</h2>
-<div class="outline-text-2" id="text-org653924c">
+<div id="outline-container-org405eaf3" class="outline-2">
+<h2 id="org405eaf3">与linux主机连接</h2>
+<div class="outline-text-2" id="text-org405eaf3">
 </div>
-<div id="outline-container-orgd18ac49" class="outline-3">
-<h3 id="orgd18ac49">&#x76EE;&#x6807;&#x677F;&#x914D;&#x7F6E;</h3>
-<div class="outline-text-3" id="text-orgd18ac49">
+<div id="outline-container-org3470e95" class="outline-3">
+<h3 id="org3470e95">目标板配置</h3>
+<div class="outline-text-3" id="text-org3470e95">
 <ul class="org-ul">
-<li>&#x76EE;&#x6807;&#x677F;&#x9700;&#x8981;&#x5148;&#x914D;&#x7F6E;ip&#x4EE5;&#x53CA;&#x5C06;&#x4E3B;&#x673A;ip&#x914D;&#x7F6E;&#x4E3A;&#x7F51;&#x5173;:
+<li>目标板需要先配置ip以及将主机ip配置为网关:
 <ul class="org-ul">
-<li>&#x76EE;&#x6807;&#x677F;&#x914D;&#x7F6E;&#x53EF;&#x4EE5;&#x5199;&#x5165;&#x542F;&#x52A8;&#x811A;&#x672C;&#x4E2D;&#x4EE5;&#x81EA;&#x52A8;&#x5316;</li>
+<li>目标板配置可以写入启动脚本中以自动化</li>
 </ul></li>
 </ul>
 <pre class="example">
 ifconfig usb0 192.168.7.2 netmask 255.255.255.0 up
 route add default gw 192.168.7.3
 
-#&#x67E5;&#x770B;&#x914D;&#x7F6E;
+#查看配置
 route</pre>
 <ul class="org-ul">
-<li>&#x5C06;USB&#x4E0E;linux&#x4E3B;&#x673A;&#x8FDE;&#x63A5;&#x540E;&#xFF0C;&#x4E3B;&#x673A;&#x4F1A;&#x51FA;&#x73B0;&#x4E00;&#x4E2A;&#x65B0;&#x7684;&#x7F51;&#x5361;
+<li>将USB与linux主机连接后，主机会出现一个新的网卡
 <ul class="org-ul">
-<li>&#x6BD4;&#x5982;&#x6211;&#x7684;ubuntu16.04&#x4E2D;&#x51FA;&#x73B0;&#x4E86; <code>enp0s20u6</code></li>
+<li>比如我的ubuntu16.04中出现了 <code>enp0s20u6</code></li>
 </ul></li>
-<li>&#x8BBE;&#x7F6E;&#x4E3B;&#x673A;IP
+<li>设置主机IP
 <ul class="org-ul">
-<li>&#x4E3B;&#x673A;&#x8BBE;&#x7F6E;&#x53EF;&#x4EE5;&#x8BBE;&#x4E3A; alias &#x4EE5;&#x7B80;&#x5316;&#x64CD;&#x4F5C;</li>
+<li>主机设置可以设为 alias 以简化操作</li>
 </ul></li>
 </ul>
 <pre class="example">
@@ -366,7 +366,7 @@ enjoy ^_^
 </div>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
 </div>
 
     </div>
@@ -452,7 +452,7 @@ Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#orgdda6181"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x76EE;&amp;#x6807;&amp;#x677F;&amp;#x7F16;&amp;#x8BD1;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org653924c"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x4E0E;linux&amp;#x4E3B;&amp;#x673A;&amp;#x8FDE;&amp;#x63A5;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgd18ac49"><span class="nav-number">2.1.</span> <span class="nav-text">&amp;#x76EE;&amp;#x6807;&amp;#x677F;&amp;#x914D;&amp;#x7F6E;</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org3004619"><span class="nav-number">1.</span> <span class="nav-text">目标板编译</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org405eaf3"><span class="nav-number">2.</span> <span class="nav-text">与linux主机连接</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org3470e95"><span class="nav-number">2.1.</span> <span class="nav-text">目标板配置</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 

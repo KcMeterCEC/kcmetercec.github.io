@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="&amp;#x68B3;&amp;#x7406;&amp;#x5176;&amp;#x5E95;&amp;#x5C42;&amp;#x6D41;&amp;#x7A0B;&amp;#xFF0C;&amp;#x7406;&amp;#x89E3;&amp;#x6700;&amp;#x540E;&amp;#x662F;&amp;#x5982;&amp;#x4F55;&amp;#x8BBF;&amp;#x95EE;&amp;#x5230;&amp;#x786C;&amp;#x76D8;&amp;#x7684;&amp;#x3002;">
+  <meta name="description" content="梳理其底层流程，理解最后是如何访问到硬盘的。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[What]Linux文件系统底层流程">
 <meta property="og:url" content="http://kcmetercec.top/2018/06/04/linux_fs_struct_skeleton/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="&amp;#x68B3;&amp;#x7406;&amp;#x5176;&amp;#x5E95;&amp;#x5C42;&amp;#x6D41;&amp;#x7A0B;&amp;#xFF0C;&amp;#x7406;&amp;#x89E3;&amp;#x6700;&amp;#x540E;&amp;#x662F;&amp;#x5982;&amp;#x4F55;&amp;#x8BBF;&amp;#x95EE;&amp;#x5230;&amp;#x786C;&amp;#x76D8;&amp;#x7684;&amp;#x3002;">
+<meta property="og:description" content="梳理其底层流程，理解最后是如何访问到硬盘的。">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[fs]/[What]Linux--skeleton/vfs_fileoperations.jpg?raw=true">
 <meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[fs]/[What]Linux--skeleton/vfs_harddisk.jpg?raw=true">
@@ -304,153 +304,153 @@
       
         <div id="content">
 <p>
-&#x68B3;&#x7406;&#x5176;&#x5E95;&#x5C42;&#x6D41;&#x7A0B;&#xFF0C;&#x7406;&#x89E3;&#x6700;&#x540E;&#x662F;&#x5982;&#x4F55;&#x8BBF;&#x95EE;&#x5230;&#x786C;&#x76D8;&#x7684;&#x3002;
+梳理其底层流程，理解最后是如何访问到硬盘的。
 </p>
 <a id="more"></a>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[fs]/[What]Linux--skeleton/vfs_fileoperations.jpg?raw=true" alt="vfs_fileoperations.jpg">
-<div id="outline-container-org781f0d5" class="outline-2">
-<h2 id="org781f0d5">&#x8BBF;&#x95EE;&#x786C;&#x76D8;&#x6574;&#x4F53;&#x89C6;&#x91CE;</h2>
-<div class="outline-text-2" id="text-org781f0d5">
+<div id="outline-container-org563f991" class="outline-2">
+<h2 id="org563f991">访问硬盘整体视野</h2>
+<div class="outline-text-2" id="text-org563f991">
 <p>
-&#x7531;&#x4E0A;&#x56FE;&#x53EF;&#x4EE5;&#x770B;&#x51FA;&#xFF0C;&#x865A;&#x62DF;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x62BD;&#x8C61;&#x4E86;&#x5404;&#x79CD;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x7684;&#x64CD;&#x4F5C;&#x4E3A;&#x4E00;&#x4E2A; <code>struct file_operations</code> &#x7ED3;&#x6784;&#x4F53;&#x4E2D;&#xFF0C;&#x81F3;&#x4E8E;&#x8FD9;&#x4E2A; <code>file_operations</code> &#x5982;&#x4F55;&#x8BBF;&#x95EE;&#x5230;&#x786C;&#x76D8;&#x5462;&#xFF1F;
+由上图可以看出，虚拟文件系统抽象了各种文件系统的操作为一个 <code>struct file_operations</code> 结构体中，至于这个 <code>file_operations</code> 如何访问到硬盘呢？
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[fs]/[What]Linux--skeleton/vfs_harddisk.jpg?raw=true" alt="vfs_harddisk.jpg">
 <p>
-&#x5177;&#x4F53;&#x6D41;&#x7A0B;&#x5982;&#x4E0A;&#x56FE;&#x6240;&#x793A;&#xFF1A;
+具体流程如上图所示：
 </p>
 </div>
-<div id="outline-container-org3d16b68" class="outline-3">
-<h3 id="org3d16b68">&#x7531;&#x8FDB;&#x7A0B;&#x5230;inode</h3>
-<div class="outline-text-3" id="text-org3d16b68">
+<div id="outline-container-orgb209be3" class="outline-3">
+<h3 id="orgb209be3">由进程到inode</h3>
+<div class="outline-text-3" id="text-orgb209be3">
 <ul class="org-ul">
-<li>&#x8FDB;&#x7A0B;&#x5728;&#x5185;&#x5BB9;&#x4E2D;&#x662F;&#x4EE5; <code>task_struct</code> &#x6765;&#x4F53;&#x73B0;&#x7684;&#xFF0C;&#x5F53;&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x6253;&#x5F00;&#x4E00;&#x4E2A;&#x6587;&#x4EF6;&#x65F6;&#xFF0C;&#x5176;&#x4F1A;&#x83B7;&#x53D6;&#x6B64;&#x6587;&#x4EF6;&#x7684;&#x8D44;&#x6E90;&#xFF0C;&#x5E76;&#x4E14;&#x8FD4;&#x56DE;&#x6587;&#x4EF6;&#x5BF9;&#x5E94;&#x7684;&#x7D22;&#x5F15;&#x3002;</li>
-<li>&#x901A;&#x8FC7;&#x6B64;&#x7D22;&#x5F15;&#xFF0C;&#x5C31;&#x53EF;&#x4EE5;&#x5728; <code>fd_arrary</code> &#x4E2D;&#x83B7;&#x53D6;&#x4E00;&#x4E2A;&#x6587;&#x4EF6;&#x7684; <code>struct file</code> &#x6574;&#x4F53;&#x63CF;&#x8FF0;&#xFF0C;&#x6B64;&#x7ED3;&#x6784;&#x4F53;&#x4E2D;&#x5C31;&#x5F97;&#x5230;&#x4E86;&#x4E0E;&#x6B64;&#x6587;&#x4EF6;&#x6240;&#x5BF9;&#x5E94;&#x7684; <code>inode</code> &#x3002;</li>
-<li>inode&#x4E2D;&#x5C31;&#x6709;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x6240;&#x586B;&#x5145;&#x597D;&#x7684; <code>file_operations</code> &#xFF0C;&#x6B64;&#x65F6;&#x5C31;&#x53EF;&#x4EE5;&#x6620;&#x5C04;&#x5230;VFS&#x7684;file_operations &#x64CD;&#x4F5C;</li>
+<li>进程在内容中是以 <code>task_struct</code> 来体现的，当一个进程打开一个文件时，其会获取此文件的资源，并且返回文件对应的索引。</li>
+<li>通过此索引，就可以在 <code>fd_arrary</code> 中获取一个文件的 <code>struct file</code> 整体描述，此结构体中就得到了与此文件所对应的 <code>inode</code> 。</li>
+<li>inode中就有文件系统所填充好的 <code>file_operations</code> ，此时就可以映射到VFS的file_operations 操作</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-orgb5739c3" class="outline-3">
-<h3 id="orgb5739c3">&#x7531;inode&#x5230;&#x786C;&#x76D8;</h3>
-<div class="outline-text-3" id="text-orgb5739c3">
+<div id="outline-container-orgadf26fb" class="outline-3">
+<h3 id="orgadf26fb">由inode到硬盘</h3>
+<div class="outline-text-3" id="text-orgadf26fb">
 <ul class="org-ul">
-<li>&#x5F53;&#x5E94;&#x7528;&#x5C42;&#x8C03;&#x7528;&#x6587;&#x4EF6;&#x64CD;&#x4F5C;&#x63A5;&#x53E3;&#x65F6;&#xFF0C;&#x9996;&#x5148;&#x4ECE; <code>inode</code> &#x7684; <code>page cache</code> &#x4E2D;&#x5BFB;&#x627E;&#x5176;&#x8981;&#x8BFB;&#x7684;&#x90E8;&#x5206;&#x662F;&#x5426;&#x5DF2;&#x7ECF;&#x88AB;&#x7F13;&#x5B58;&#xFF0C;&#x5982;&#x679C;&#x7F13;&#x5B58;&#x547D;&#x4E2D;&#xFF0C;&#x5219;&#x8BFB;&#x53D6;&#x7F13;&#x5B58;&#x5E76;&#x8FD4;&#x56DE;&#x3002;</li>
+<li>当应用层调用文件操作接口时，首先从 <code>inode</code> 的 <code>page cache</code> 中寻找其要读的部分是否已经被缓存，如果缓存命中，则读取缓存并返回。</li>
 </ul>
 <p>
-&#x5728;&#x5199;&#x8FC7;&#x7A0B;&#x4E2D;&#xFF0C;&#x5982;&#x679C;&#x5199;&#x662F;&#x4EE5;&#x5F02;&#x6B65;&#x65B9;&#x5F0F;&#x6267;&#x884C;&#x7684;&#x8BDD;&#xFF0C;&#x4E5F;&#x662F;&#x5148;&#x5199;&#x5165; <code>page cache</code> &#xFF0C;&#x7136;&#x540E;&#x5185;&#x6838;&#x518D;&#x5728;&#x5408;&#x9002;&#x7684;&#x65F6;&#x673A;&#x540C;&#x6B65;&#x5230;&#x786C;&#x76D8;&#x3002;
+在写过程中，如果写是以异步方式执行的话，也是先写入 <code>page cache</code> ，然后内核再在合适的时机同步到硬盘。
 </p>
 <ul class="org-ul">
-<li>&#x6B64;&#x90E8;&#x5982;&#x679C;&#x6B63;&#x786E;&#x6267;&#x884C;&#xFF0C;&#x90A3;&#x5C31;&#x4E0D;&#x4F1A;&#x8BBF;&#x95EE;&#x786C;&#x76D8;</li>
+<li>此部如果正确执行，那就不会访问硬盘</li>
 </ul>
 <ul class="org-ul">
-<li>&#x5F53;&#x7F13;&#x5B58;&#x4E0D;&#x547D;&#x4E2D;&#xFF0C;&#x518D;&#x8C03;&#x7528; <code>address_space_operations</code> &#x6765;&#x5BF9;&#x786C;&#x76D8;&#x8FDB;&#x884C;&#x771F;&#x6B63;&#x7684;&#x8BFB;&#x5199;&#x64CD;&#x4F5C;&#x3002;&#x5E76;&#x5C06;&#x5176;&#x5BF9;&#x5E94;&#x7684; <code>page</code> &#x5199;&#x5165; <code>page cache</code> &#x4E2D;
+<li>当缓存不命中，再调用 <code>address_space_operations</code> 来对硬盘进行真正的读写操作。并将其对应的 <code>page</code> 写入 <code>page cache</code> 中
 <ul class="org-ul">
-<li>&#x8FD9;&#x4E2A;&#x8FC7;&#x7A0B;&#x548C;CPU&#x7684;&#x6570;&#x636E;&#x7F13;&#x5B58;&#x548C;&#x6307;&#x4EE4;&#x7F13;&#x5B58;&#x7C7B;&#x4F3C;</li>
+<li>这个过程和CPU的数据缓存和指令缓存类似</li>
 </ul></li>
 </ul>
 </div>
 </div>
-<div id="outline-container-org3841a86" class="outline-3">
-<h3 id="org3841a86">&#x5173;&#x4E8E;page cache &#x4E0E; block &#x4E0E; sector</h3>
-<div class="outline-text-3" id="text-org3841a86">
+<div id="outline-container-orgce52dfa" class="outline-3">
+<h3 id="orgce52dfa">关于page cache 与 block 与 sector</h3>
+<div class="outline-text-3" id="text-orgce52dfa">
 <ul class="org-ul">
-<li>page cache &#x662F;&#x5185;&#x5B58;&#x7BA1;&#x7406;&#x7684;&#x57FA;&#x672C;&#x5355;&#x5143;&#xFF0C;&#x800C;block&#x662F;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x5B58;&#x50A8;&#x7684;&#x57FA;&#x672C;&#x5355;&#x5143;&#xFF0C;&#x8FD9;&#x4E24;&#x4E2A;&#x90FD;&#x662F;&#x903B;&#x8F91;&#x5355;&#x5143; &#xFF0C;&#x786C;&#x76D8;&#x4E0A;&#x7684;sector &#x662F;&#x7531;&#x5176;&#x786C;&#x4EF6;&#x800C;&#x51B3;&#x5B9A;&#x7684;&#x7269;&#x7406;&#x5B58;&#x50A8;&#x5355;&#x5143;</li>
-<li>&#x6240;&#x4EE5;&#x6839;&#x636E;&#x5927;&#x5C0F;&#x4E0D;&#x540C;&#xFF0C;&#x4E00;&#x4E2A; page cache &#x53EF;&#x80FD;&#x5BF9;&#x5E94;&#x591A;&#x4E2A; block&#xFF0C;&#x800C;&#x4E00;&#x4E2A;block&#x4E00;&#x822C;&#x5BF9;&#x5E94;&#x786C;&#x76D8;&#x4E0A;&#x7684;&#x591A;&#x4E2A; sector</li>
+<li>page cache 是内存管理的基本单元，而block是文件系统存储的基本单元，这两个都是逻辑单元 ，硬盘上的sector 是由其硬件而决定的物理存储单元</li>
+<li>所以根据大小不同，一个 page cache 可能对应多个 block，而一个block一般对应硬盘上的多个 sector</li>
 </ul>
 
 <p>
-&#x4F7F;&#x7528;&#x547D;&#x4EE4; <code>free -w</code> &#x53EF;&#x4EE5;&#x770B;&#x5230;&#x5176;&#x4E2D;&#x6709; <code>buffers,cached</code> &#x4E24;&#x9879;&#xFF0C;&#x5176;&#x503C;&#x5BF9;&#x5E94;&#x4E8E;&#x5185;&#x6838;&#x51FD;&#x6570; <code>void si_meminfo(struct sysinfo *val)</code> &#x3002;
+使用命令 <code>free -w</code> 可以看到其中有 <code>buffers,cached</code> 两项，其值对应于内核函数 <code>void si_meminfo(struct sysinfo *val)</code> 。
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">si_meminfo</span><span class="params">(struct sysinfo *val)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  val-&gt;totalram = totalram_pages;</span><br><span class="line">  val-&gt;sharedram = global_page_state(NR_SHMEM);</span><br><span class="line">  val-&gt;freeram = global_page_state(NR_FREE_PAGES);</span><br><span class="line">  val-&gt;bufferram = nr_blockdev_pages();</span><br><span class="line">  val-&gt;totalhigh = totalhigh_pages;</span><br><span class="line">  val-&gt;freehigh = nr_free_highpages();</span><br><span class="line">  val-&gt;mem_unit = PAGE_SIZE;</span><br><span class="line">}</span><br><span class="line"><span class="function"><span class="keyword">long</span> <span class="title">nr_blockdev_pages</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">block_device</span> *<span class="title">bdev</span>;</span></span><br><span class="line">  <span class="keyword">long</span> ret = <span class="number">0</span>;</span><br><span class="line">  spin_lock(&amp;bdev_lock);</span><br><span class="line">  <span class="comment">//&#x4ECE;&#x6240;&#x6709;&#x7684;&#x5757;&#x8BBE;&#x5907;&#x4E2D;&#xFF0C;&#x83B7;&#x53D6;&#x5DF2;&#x7ECF;&#x8FDB;&#x5165;page cache&#x7684;&#x6570;&#x91CF;</span></span><br><span class="line">  list_for_each_entry(bdev, &amp;all_bdevs, bd_list) {</span><br><span class="line">    ret += bdev-&gt;bd_inode-&gt;i_mapping-&gt;nrpages;</span><br><span class="line">  }</span><br><span class="line">  spin_unlock(&amp;bdev_lock);</span><br><span class="line">  <span class="keyword">return</span> ret;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">si_meminfo</span><span class="params">(struct sysinfo *val)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  val->totalram = totalram_pages;</span><br><span class="line">  val->sharedram = global_page_state(NR_SHMEM);</span><br><span class="line">  val->freeram = global_page_state(NR_FREE_PAGES);</span><br><span class="line">  val->bufferram = nr_blockdev_pages();</span><br><span class="line">  val->totalhigh = totalhigh_pages;</span><br><span class="line">  val->freehigh = nr_free_highpages();</span><br><span class="line">  val->mem_unit = PAGE_SIZE;</span><br><span class="line">}</span><br><span class="line"><span class="function"><span class="keyword">long</span> <span class="title">nr_blockdev_pages</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">block_device</span> *<span class="title">bdev</span>;</span></span><br><span class="line">  <span class="keyword">long</span> ret = <span class="number">0</span>;</span><br><span class="line">  spin_lock(&bdev_lock);</span><br><span class="line">  <span class="comment">//从所有的块设备中，获取已经进入page cache的数量</span></span><br><span class="line">  list_for_each_entry(bdev, &all_bdevs, bd_list) {</span><br><span class="line">    ret += bdev->bd_inode->i_mapping->nrpages;</span><br><span class="line">  }</span><br><span class="line">  spin_unlock(&bdev_lock);</span><br><span class="line">  <span class="keyword">return</span> ret;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 </div>
 <ul class="org-ul">
-<li>buffers &#x662F;&#x7AD9;&#x5728;&#x786C;&#x76D8;&#x7684;&#x89D2;&#x5EA6;&#x6765;&#x770B;cache&#x7684;&#x4E2A;&#x6570;&#xFF0C;&#x4E0E;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x65E0;&#x5173;</li>
-<li>cached &#x662F;&#x7AD9;&#x5728;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x7684;&#x89D2;&#x5EA6;&#x6765;&#x770B; page cache &#x7684;&#x4E2A;&#x6570;</li>
+<li>buffers 是站在硬盘的角度来看cache的个数，与文件系统无关</li>
+<li>cached 是站在文件系统的角度来看 page cache 的个数</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-org7ad155f" class="outline-3">
-<h3 id="org7ad155f">O_DIRECT &#x4E0E; O_SYNC &#x7684;&#x533A;&#x522B;</h3>
-<div class="outline-text-3" id="text-org7ad155f">
-<img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[fs]/[What]Linux--skeleton/direct_sync.jpg?raw=true" alt="direct_sync.jpg">- &#x666E;&#x901A;&#x65B9;&#x5F0F;&#x4E0B;&#xFF0C;&#x6570;&#x636E;&#x8BFB;&#x5199;&#x90FD;&#x662F;&#x6682;&#x5B58;&#x5728;cache&#x4E2D;&#x7684;
+<div id="outline-container-org156e65a" class="outline-3">
+<h3 id="org156e65a">O_DIRECT 与 O_SYNC 的区别</h3>
+<div class="outline-text-3" id="text-org156e65a">
+<img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[fs]/[What]Linux--skeleton/direct_sync.jpg?raw=true" alt="direct_sync.jpg">- 普通方式下，数据读写都是暂存在cache中的
 <ul class="org-ul">
-<li>&#x5F53;&#x8BBE;&#x7F6E;&#x4E3A; <code>O_SYNC</code> &#x65B9;&#x5F0F;&#x65F6;&#xFF0C;&#x6570;&#x636E;&#x4F1A;&#x540C;&#x65F6;&#x5199;&#x5230; cache &#x4E0E;&#x786C;&#x76D8;&#x4E2D;</li>
-<li>&#x5F53;&#x8BBE;&#x7F6E;&#x4E3A; <code>O_DIRECT</code> &#x65B9;&#x5F0F;&#x65F6;&#xFF0C;&#x53D6;&#x6D88;&#x4E86;&#x786C;&#x76D8;&#x7684;cache&#x76F4;&#x63A5;&#x5BF9;&#x786C;&#x76D8;&#x5199;&#x5165;
+<li>当设置为 <code>O_SYNC</code> 方式时，数据会同时写到 cache 与硬盘中</li>
+<li>当设置为 <code>O_DIRECT</code> 方式时，取消了硬盘的cache直接对硬盘写入
 <ul class="org-ul">
-<li>&#x8FD9;&#x79CD;&#x65B9;&#x5F0F;&#x4E0D;&#x63A8;&#x8350;</li>
+<li>这种方式不推荐</li>
 </ul></li>
 </ul>
 
 <p>
-&#x4EE5;&#x4E0A;&#x8FD9;&#x4E9B;&#x6982;&#x5FF5;&#x548C;&#x5728;&#x786C;&#x4EF6;&#x5C42;&#x6B21;&#x7684; CPU cache &#x7C7B;&#x4F3C;&#xFF0C;&#x53EA;&#x662F;&#x4E00;&#x4E2A;&#x662F;&#x7AD9;&#x5728;&#x786C;&#x4EF6;&#x89D2;&#x5EA6;&#xFF0C;&#x4E00;&#x4E2A;&#x662F;&#x5728;&#x8F6F;&#x4EF6;&#x62BD;&#x8C61;&#x89D2;&#x5EA6;&#x3002;
+以上这些概念和在硬件层次的 CPU cache 类似，只是一个是站在硬件角度，一个是在软件抽象角度。
 </p>
 </div>
 </div>
 </div>
-<div id="outline-container-orgb5a7d87" class="outline-2">
-<h2 id="orgb5a7d87">&#x8BBF;&#x95EE;&#x786C;&#x76D8;&#x7684;&#x7EC6;&#x8282;</h2>
-<div class="outline-text-2" id="text-orgb5a7d87">
+<div id="outline-container-orgdfbc764" class="outline-2">
+<h2 id="orgdfbc764">访问硬盘的细节</h2>
+<div class="outline-text-2" id="text-orgdfbc764">
 <p>
-&#x524D;&#x9762;&#x7684;&#x56FE;&#x53EF;&#x4EE5;&#x770B;&#x51FA;&#xFF0C;&#x6700;&#x7EC8;&#x8BBF;&#x95EE;&#x786C;&#x76D8;&#x7684;&#x63A5;&#x53E3;&#x90FD;&#x662F;&#x901A;&#x8FC7;&#x64CD;&#x4F5C; <code>address_space_operations</code> &#x91CC;&#x7684;&#x65B9;&#x6CD5;&#x6765;&#x5B9E;&#x73B0;&#x7684;&#x3002;
+前面的图可以看出，最终访问硬盘的接口都是通过操作 <code>address_space_operations</code> 里的方法来实现的。
 </p>
 
 <p>
-&#x5728;&#x4ECE;&#x64CD;&#x4F5C;&#x51FD;&#x6570;&#x5230;&#x6700;&#x7EC8;&#x8BBF;&#x95EE;&#x5230;&#x786C;&#x76D8;&#x8FD9;&#x4E2D;&#x95F4;&#x7ECF;&#x8FC7;&#x4E86;&#x591A;&#x6B21;&#x6392;&#x5E8F;&#x6253;&#x5305;(&#x90FD;&#x662F;&#x4E3A;&#x4E86;&#x5C3D;&#x91CF;&#x6279;&#x91CF;&#x5316;&#x3001;&#x6574;&#x5757;&#x7684;&#x64CD;&#x4F5C;I/O,&#x4EE5;&#x63D0;&#x9AD8;&#x541E;&#x5410;&#x91CF;)&#xFF1A;
+在从操作函数到最终访问到硬盘这中间经过了多次排序打包(都是为了尽量批量化、整块的操作I/O,以提高吞吐量)：
 </p>
 <ol class="org-ol">
-<li>&#x5355;&#x6B21;&#x8BFB;&#x5199;&#x6587;&#x4EF6;&#x65F6;&#xFF0C;&#x5C06;&#x8981;&#x8BBF;&#x95EE;&#x7684;&#x6570;&#x636E;&#x8F6C;&#x6362;&#x4E3A;&#x5BF9;&#x5E94;&#x7684;block&#x5E76;&#x7F13;&#x5B58;&#x5230; plug &#x961F;&#x5217;
+<li>单次读写文件时，将要访问的数据转换为对应的block并缓存到 plug 队列
 <ul class="org-ul">
-<li>&#x5185;&#x5B58;&#x4E2D;&#x7684; page cache &#x4E0E; block &#x7684;&#x5BF9;&#x5E94;&#x5173;&#x7CFB;&#x901A;&#x8FC7; bio(block io) &#x6765;&#x5B9E;&#x73B0;&#xFF0C;&#x5B83;&#x94FE;&#x63A5;&#x4E86;&#x786C;&#x76D8;&#x7684;block&#x548C;&#x5185;&#x5B58;&#x7684;page cache
+<li>内存中的 page cache 与 block 的对应关系通过 bio(block io) 来实现，它链接了硬盘的block和内存的page cache
 <ul class="org-ul">
-<li>&#x5982;&#x679C;&#x5BF9;&#x5E94;&#x7684;block&#x4E0D;&#x8FDE;&#x7EED;&#xFF0C;&#x90A3;&#x4E48;&#x4F1A;&#x751F;&#x6210;&#x591A;&#x4E2A;bio&#x6765;&#x5B9E;&#x73B0;&#x591A;&#x4E2A;&#x5C0F;&#x5757;</li>
+<li>如果对应的block不连续，那么会生成多个bio来实现多个小块</li>
 </ul></li>
 </ul></li>
-<li>&#x5C06;&#x6B64;&#x8FDB;&#x7A0B;&#x7684;&#x8BFB;&#x5199;&#x6570;&#x636E;&#x7684;plug&#x961F;&#x5217;&#x4E2D;&#x7684;bio&#x5C3D;&#x91CF;&#x62FC;&#x63A5;&#x4E3A;&#x591A;&#x4E2A;&#x8FDE;&#x7EED;&#x7684;&#x5757;
+<li>将此进程的读写数据的plug队列中的bio尽量拼接为多个连续的块
 <ul class="org-ul">
-<li>&#x6B64;&#x65F6;&#x4F1A;&#x591A;&#x4E2A;&#x5C06;bio&#x5408;&#x5E76;&#x4E3A;&#x591A;&#x4E2A; request</li>
+<li>此时会多个将bio合并为多个 request</li>
 </ul></li>
-<li>&#x5C06;&#x591A;&#x4E2A;&#x8FDB;&#x7A0B;&#x591A;&#x4E2A;&#x8FDE;&#x7EED;&#x7684;&#x5757;&#x518D;&#x6B21;&#x62FC;&#x63A5;&#x4E3A;&#x591A;&#x4E2A;&#x5927;&#x5757;
+<li>将多个进程多个连续的块再次拼接为多个大块
 <ul class="org-ul">
-<li>&#x5C06;&#x591A;&#x4E2A;request&#x518D;&#x6B21;&#x6392;&#x5E8F;&#x662F;&#x7531;&#x7535;&#x68AF;&#x8C03;&#x5EA6;&#x7B97;&#x6CD5;&#x6765;&#x5B8C;&#x6210;&#x7684;</li>
+<li>将多个request再次排序是由电梯调度算法来完成的</li>
 </ul></li>
-<li>&#x6700;&#x540E;&#x5C06;&#x6392;&#x5E8F;&#x540E;&#x7684;request&#x653E;&#x5165; dispatch&#x961F;&#x5217;&#x751F;&#x6210;&#x6570;&#x636E;&#x5305;</li>
-<li>&#x5757;&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#x53D6;&#x51FA;&#x6570;&#x636E;&#x5305;&#x5199;&#x5165;&#x786C;&#x76D8;</li>
+<li>最后将排序后的request放入 dispatch队列生成数据包</li>
+<li>块设备驱动取出数据包写入硬盘</li>
 </ol>
 
 <p>
-&#x5982;&#x4E0B;&#x56FE;&#x6240;&#x793A;&#xFF1A;
+如下图所示：
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[fs]/[What]Linux--skeleton/io_hd.jpg?raw=true" alt="io_hd.jpg">
 </div>
-<div id="outline-container-org7d96cf8" class="outline-3">
-<h3 id="org7d96cf8">&#x4F7F;&#x7528; ftrace &#x6355;&#x6349;&#x8BBF;&#x95EE;&#x786C;&#x76D8;&#x7684;&#x51FD;&#x6570;&#x6D41;&#x7A0B;</h3>
-<div class="outline-text-3" id="text-org7d96cf8">
+<div id="outline-container-org10f58d1" class="outline-3">
+<h3 id="org10f58d1">使用 ftrace 捕捉访问硬盘的函数流程</h3>
+<div class="outline-text-3" id="text-org10f58d1">
 </div>
-<div id="outline-container-orga64d1a9" class="outline-4">
-<h4 id="orga64d1a9">&#x51C6;&#x5907;&#x5DE5;&#x4F5C;</h4>
-<div class="outline-text-4" id="text-orga64d1a9">
+<div id="outline-container-orgcb97055" class="outline-4">
+<h4 id="orgcb97055">准备工作</h4>
+<div class="outline-text-4" id="text-orgcb97055">
 <ul class="org-ul">
-<li>&#x51C6;&#x5907;&#x5E26;&#x6709;&#x5185;&#x5BB9;&#x7684;&#x6587;&#x4EF6; <code>file</code></li>
-<li>&#x7F16;&#x5199;&#x8BFB;&#x4EE3;&#x7801;&#xFF0C;&#x5E76;&#x5C06;&#x5176;&#x7F16;&#x8BD1;&#x4E3A;&#x540D;&#x79F0;&#x662F; <code>read</code> &#x7684;&#x53EF;&#x6267;&#x884C;&#x6587;&#x4EF6;</li>
+<li>准备带有内容的文件 <code>file</code></li>
+<li>编写读代码，并将其编译为名称是 <code>read</code> 的可执行文件</li>
 </ul>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> READ_SIZE 4096</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  <span class="keyword">int</span> fd = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">char</span> buf[READ_SIZE];</span><br><span class="line"></span><br><span class="line">  sleep(<span class="number">30</span>); <span class="comment">//waiting for run ftrace shell</span></span><br><span class="line">  <span class="keyword">if</span>((fd = open(<span class="string">&quot;./file&quot;</span>, O_RDONLY)) == <span class="number">-1</span>)</span><br><span class="line">    {</span><br><span class="line">      perror(<span class="string">&quot;can not open file:&quot;</span>);</span><br><span class="line">    }</span><br><span class="line">  read(fd, buf, READ_SIZE);</span><br><span class="line">  read(fd, buf, READ_SIZE);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><unistd.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><fcntl.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><stdio.h></span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> READ_SIZE 4096</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  <span class="keyword">int</span> fd = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">char</span> buf[READ_SIZE];</span><br><span class="line"></span><br><span class="line">  sleep(<span class="number">30</span>); <span class="comment">//waiting for run ftrace shell</span></span><br><span class="line">  <span class="keyword">if</span>((fd = open(<span class="string">"./file"</span>, O_RDONLY)) == <span class="number">-1</span>)</span><br><span class="line">    {</span><br><span class="line">      perror(<span class="string">"can not open file:"</span>);</span><br><span class="line">    }</span><br><span class="line">  read(fd, buf, READ_SIZE);</span><br><span class="line">  read(fd, buf, READ_SIZE);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 </div>
 <ul class="org-ul">
-<li>&#x7F16;&#x5199; ftrace &#x811A;&#x672C;&#xFF1A;</li>
+<li>编写 ftrace 脚本：</li>
 </ul>
 <div class="org-src-container">
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#! /bin/bash</span></span><br><span class="line"></span><br><span class="line">debugfs=/sys/kernel/debug</span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> nop &gt; <span class="variable">${debugfs}</span>/tracing/current_tracer</span><br><span class="line"><span class="built_in">echo</span> 0 &gt; <span class="variable">${debugfs}</span>/tracing/tracing_on</span><br><span class="line"><span class="built_in">echo</span> `pidof <span class="built_in">read</span>` &gt; <span class="variable">${debugfs}</span>/tracing/set_ftrace_pid</span><br><span class="line"><span class="built_in">echo</span> function_graph &gt; <span class="variable">${debugfs}</span>/tracing/current_tracer</span><br><span class="line"><span class="built_in">echo</span> vfs_read &gt; <span class="variable">${debugfs}</span>/tracing/set_graph_function</span><br><span class="line"><span class="built_in">echo</span> 1 &gt; <span class="variable">${debugfs}</span>/tracing/tracing_on</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#! /bin/bash</span></span><br><span class="line"></span><br><span class="line">debugfs=/sys/kernel/debug</span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> nop > <span class="variable">${debugfs}</span>/tracing/current_tracer</span><br><span class="line"><span class="built_in">echo</span> 0 > <span class="variable">${debugfs}</span>/tracing/tracing_on</span><br><span class="line"><span class="built_in">echo</span> `pidof <span class="built_in">read</span>` > <span class="variable">${debugfs}</span>/tracing/set_ftrace_pid</span><br><span class="line"><span class="built_in">echo</span> function_graph > <span class="variable">${debugfs}</span>/tracing/current_tracer</span><br><span class="line"><span class="built_in">echo</span> vfs_read > <span class="variable">${debugfs}</span>/tracing/set_graph_function</span><br><span class="line"><span class="built_in">echo</span> 1 > <span class="variable">${debugfs}</span>/tracing/tracing_on</span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </div>
-<div id="outline-container-org5629ba9" class="outline-4">
-<h4 id="org5629ba9">&#x8FD0;&#x884C;</h4>
-<div class="outline-text-4" id="text-org5629ba9">
+<div id="outline-container-org27089d8" class="outline-4">
+<h4 id="org27089d8">运行</h4>
+<div class="outline-text-4" id="text-org27089d8">
 <ul class="org-ul">
-<li>&#x9996;&#x5148;&#x8FD0;&#x884C; read , <code>./read</code></li>
-<li>&#x7136;&#x540E;&#x4F7F;&#x7528;root&#x8EAB;&#x4EFD;&#x542F;&#x52A8;&#x811A;&#x672C; <code>./ftrace.sh</code></li>
-<li>&#x5F85; read &#x9000;&#x51FA;&#x540E;&#xFF0C;&#x5C06;&#x6355;&#x6349;&#x5230;&#x7684;&#x7ED3;&#x679C;&#x5B58;&#x5165;&#x6587;&#x4EF6;&#xFF1A; <code>cat /sys/kernel/debug/tracing/trace &gt; result</code></li>
+<li>首先运行 read , <code>./read</code></li>
+<li>然后使用root身份启动脚本 <code>./ftrace.sh</code></li>
+<li>待 read 退出后，将捕捉到的结果存入文件： <code>cat /sys/kernel/debug/tracing/trace > result</code></li>
 </ul>
 </div>
 </div>
@@ -458,9 +458,9 @@
 
 
 
-<div id="outline-container-orgde7d77c" class="outline-4">
-<h4 id="orgde7d77c">&#x6700;&#x7EC8;&#x5982;&#x4E0B;&#x6240;&#x793A;</h4>
-<div class="outline-text-4" id="text-orgde7d77c">
+<div id="outline-container-org937640c" class="outline-4">
+<h4 id="org937640c">最终如下所示</h4>
+<div class="outline-text-4" id="text-org937640c">
 <pre class="example">
 # tracer: function_graph
 #
@@ -715,124 +715,124 @@
  2) + 11.295 us   |    }
  2) + 22.191 us   |  }</pre>
 <p>
-&#x53EF;&#x4EE5;&#x53D1;&#x73B0;&#xFF1A;&#x7B2C;&#x4E00;&#x6B21;&#x8BFB;&#x6240;&#x82B1;&#x7684;&#x65F6;&#x95F4;&#x6BD4;&#x7B2C;&#x4E8C;&#x6B21;&#x591A;&#x5F97;&#x591A;&#xFF0C;&#x56E0;&#x4E3A;&#x7B2C;&#x4E00;&#x6B21;&#x5185;&#x5B58;&#x5E76;&#x6CA1;&#x6709;&#x6B64;&#x6587;&#x4EF6;&#x7684;cache&#xFF0C;&#x6240;&#x4EE5;&#x9700;&#x8981;&#x5230;&#x786C;&#x76D8;&#x8BFB;&#x53D6;&#xFF0C;&#x800C;&#x7B2C;&#x4E8C;&#x6B21;&#x76F4;&#x63A5;&#x4ECE;&#x5185;&#x5B58;&#x8BFB;&#x53D6;&#x4E86;&#x3002;
+可以发现：第一次读所花的时间比第二次多得多，因为第一次内存并没有此文件的cache，所以需要到硬盘读取，而第二次直接从内存读取了。
 </p>
 </div>
 </div>
 </div>
-<div id="outline-container-org826d76b" class="outline-3">
-<h3 id="org826d76b">&#x4F7F;&#x7528;blktrace(&#x6355;&#x6349;),blkparse(&#x5206;&#x6790;) blk io&#x64CD;&#x4F5C;&#x6D41;&#x7A0B;</h3>
-<div class="outline-text-3" id="text-org826d76b">
+<div id="outline-container-org8e91a73" class="outline-3">
+<h3 id="org8e91a73">使用blktrace(捕捉),blkparse(分析) blk io操作流程</h3>
+<div class="outline-text-3" id="text-org8e91a73">
 <ul class="org-ul">
-<li>&#x4F7F;&#x7528; <code>blktrace -d /dev/sda1 -o - |blkparse -i - &gt; 1.trace</code> &#x6765;&#x76D1;&#x89C6; <code>/dev/sda1</code></li>
-<li>&#x5728;&#x8FD9;&#x4E2A;&#x5206;&#x533A;&#x4E2D;&#x7684;&#x8DEF;&#x5F84;&#x4E2D;&#x4F7F;&#x7528;&#x547D;&#x4EE4; :</li>
+<li>使用 <code>blktrace -d /dev/sda1 -o - |blkparse -i - > 1.trace</code> 来监视 <code>/dev/sda1</code></li>
+<li>在这个分区中的路径中使用命令 :</li>
 </ul>
 <pre class="example">
-#&#x4F7F;&#x7528;sync&#x65B9;&#x5F0F;&#x5199;&#x5165; barry &#x6587;&#x4EF6;&#xFF0C;&#x8FD9;&#x6837;&#x4FDD;&#x8BC1;&#x786C;&#x76D8;&#x786E;&#x5B9E;&#x88AB;&#x8BBF;&#x95EE;&#x5230;&#x4E86;
+#使用sync方式写入 barry 文件，这样保证硬盘确实被访问到了
 dd if=read.c of=barry oflag=sync</pre>
 <ul class="org-ul">
-<li>&#x505C;&#x6B62; <code>blktrace</code> &#x540E;&#x67E5;&#x770B;&#x6587;&#x4EF6; <code>1.trace</code></li>
-<li>&#x53D1;&#x73B0;&#x4E0E; <code>dd</code> &#x547D;&#x4EE4;&#x76F8;&#x5173;&#x7684;&#x6709;&#x8FD9;&#x4E48;&#x4E00;&#x884C;:</li>
+<li>停止 <code>blktrace</code> 后查看文件 <code>1.trace</code></li>
+<li>发现与 <code>dd</code> 命令相关的有这么一行:</li>
 </ul>
 <pre class="example">
-//dd &#x547D;&#x4EE4;&#x5C06;&#x6570;&#x636E;&#x5199;&#x5165;&#x5230;&#x4E86; 181857104&#x6247;&#x533A;&#xFF0C;&#x524D;&#x9762;&#x77E5;&#x9053;&#x5668;&#x6247;&#x533A;&#x662F;512&#x5B57;&#x8282;&#xFF0C;&#x90A3;&#x4E48;block&#x4E5F;&#x5C31;&#x662F; 22732138
-  8,0    2        9    42.366779547  7055  A  WS 181859152 + 8 &lt;- (8,1) 181857104
+//dd 命令将数据写入到了 181857104扇区，前面知道器扇区是512字节，那么block也就是 22732138
+  8,0    2        9    42.366779547  7055  A  WS 181859152 + 8 <- (8,1) 181857104
   8,1    2       10    42.366782026  7055  Q  WS 181859152 + 8 [dd]</pre>
 <p>
-&#x4F7F;&#x7528;<a href="https://kcmetercec.github.io/2018/05/29/linux_fs_struct_detail/" target="_blank" rel="noopener">&#x5DE5;&#x5177;</a> &#x5C31;&#x53EF;&#x4EE5;&#x67E5;&#x51FA;&#x5176;&#x6587;&#x4EF6;&#x5185;&#x5BB9;&#x3002;
+使用<a href="https://kcmetercec.github.io/2018/05/29/linux_fs_struct_detail/" target="_blank" rel="noopener">工具</a> 就可以查出其文件内容。
 </p>
 </div>
 </div>
 
-<div id="outline-container-org1c702f4" class="outline-3">
-<h3 id="org1c702f4">&#x7535;&#x68AF;&#x8C03;&#x5EA6;&#x7B97;&#x6CD5;</h3>
-<div class="outline-text-3" id="text-org1c702f4">
+<div id="outline-container-orgedd9b0f" class="outline-3">
+<h3 id="orgedd9b0f">电梯调度算法</h3>
+<div class="outline-text-3" id="text-orgedd9b0f">
 <p>
-&#x5E38;&#x7528;&#x7684;&#x7535;&#x68AF;&#x8C03;&#x5EA6;&#x7B97;&#x6CD5;&#x5305;&#x62EC;&#xFF1A;
+常用的电梯调度算法包括：
 </p>
 <ul class="org-ul">
-<li>Noop : &#x6700;&#x7B80;&#x5355;&#x7684;&#x8C03;&#x5EA6;&#x5668;&#xFF0C;&#x628A;&#x90BB;&#x8FD1;&#x7684;bio&#x8FDB;&#x884C;&#x4E86;&#x5408;&#x5E76;&#x5904;&#x7406;</li>
-<li>Deadline: &#x4FDD;&#x8BC1;&#x8BFB;&#x4F18;&#x5148;&#x7684;&#x524D;&#x63D0;&#x4E0B;&#xFF0C;&#x5199;&#x4E0D;&#x4F1A;&#x997F;&#x6B7B;</li>
-<li>CFQ: &#x8003;&#x8651;&#x8FDB;&#x7A0B;&#x88AB;&#x516C;&#x5E73;&#x8C03;&#x5EA6;
+<li>Noop : 最简单的调度器，把邻近的bio进行了合并处理</li>
+<li>Deadline: 保证读优先的前提下，写不会饿死</li>
+<li>CFQ: 考虑进程被公平调度
 <ul class="org-ul">
-<li>&#x901A;&#x8FC7;&#x6307;&#x5B9A;NICE&#x503C;&#x786E;&#x5B9A;&#x4F18;&#x5148;&#x7EA7;&#xFF0C;&#x4E0E;&#x8FDB;&#x7A0B;&#x8C03;&#x5EA6;&#x7B56;&#x7565;&#x4E00;&#x81F4;</li>
+<li>通过指定NICE值确定优先级，与进程调度策略一致</li>
 </ul></li>
 </ul>
 </div>
-<div id="outline-container-orgec2eb20" class="outline-4">
-<h4 id="orgec2eb20">&#x4F53;&#x9A8C;</h4>
-<div class="outline-text-4" id="text-orgec2eb20">
+<div id="outline-container-orge09247c" class="outline-4">
+<h4 id="orge09247c">体验</h4>
+<div class="outline-text-4" id="text-orge09247c">
 <ul class="org-ul">
-<li>&#x67E5;&#x770B;&#x5F53;&#x524D;&#x7B97;&#x6CD5;,&#x5E76;&#x5C06;&#x5176;&#x4FEE;&#x6539;&#x4E3A;cfq</li>
+<li>查看当前算法,并将其修改为cfq</li>
 </ul>
 <pre class="example">
 cat /sys/block/sda/queue/scheduler
-#&#x4F7F;&#x7528; echo noop/deadline/cfg &gt; scheduler &#x6765;&#x6539;&#x53D8;&#x5176;&#x8C03;&#x5EA6;&#x7B97;&#x6CD5;</pre>
+#使用 echo noop/deadline/cfg > scheduler 来改变其调度算法</pre>
 <ul class="org-ul">
-<li>&#x4F7F;&#x7528; ionice &#x547D;&#x4EE4;&#x6765;&#x542F;&#x52A8;&#x4E24;&#x4E2A;&#x4F18;&#x5148;&#x7EA7;&#x4E0D;&#x540C;&#x7684;&#x8FDB;&#x7A0B;</li>
+<li>使用 ionice 命令来启动两个优先级不同的进程</li>
 </ul>
 <pre class="example">
-ionice -c 2 -n 0 cat /dev/sda &gt; /dev/null &amp;
-ionice -c 2 -n 7 cat /dev/sda &gt; /dev/null &amp;</pre>
+ionice -c 2 -n 0 cat /dev/sda > /dev/null &
+ionice -c 2 -n 7 cat /dev/sda > /dev/null &</pre>
 <ul class="org-ul">
-<li>&#x4F7F;&#x7528; iotop &#x6765;&#x67E5;&#x770B;io&#x5360;&#x7528;,&#x53EF;&#x4EE5;&#x770B;&#x5230;&#x9AD8;&#x4F18;&#x5148;&#x7EA7;&#x7684;&#x5360;&#x7528;&#x78C1;&#x76D8;&#x91CF;&#x4F1A;&#x5927;&#x4E00;&#x70B9;
+<li>使用 iotop 来查看io占用,可以看到高优先级的占用磁盘量会大一点
 <ul class="org-ul">
-<li>&#x5982;&#x679C;&#x5C06;io&#x8BBE;&#x4E3A; rt &#x6A21;&#x5F0F;&#xFF0C;&#x90A3;&#x4E48;rt&#x5360;&#x7528;&#x4F1A;&#x66F4;&#x5927;&#x3002;</li>
+<li>如果将io设为 rt 模式，那么rt占用会更大。</li>
 </ul></li>
 </ul>
 </div>
 </div>
-<div id="outline-container-orgffd13d0" class="outline-4">
-<h4 id="orgffd13d0">cgroup -&gt; &#x7528;&#x4E8E;CFQ&#x8C03;&#x5EA6;&#x7B97;&#x6CD5;</h4>
-<div class="outline-text-4" id="text-orgffd13d0">
+<div id="outline-container-org0f809e3" class="outline-4">
+<h4 id="org0f809e3">cgroup -> 用于CFQ调度算法</h4>
+<div class="outline-text-4" id="text-org0f809e3">
 <p>
-&#x4E0E;&#x8FDB;&#x7A0B;&#x8C03;&#x5EA6;&#x4E2D;&#x7684;&#x6982;&#x5FF5;&#x7C7B;&#x4F3C;&#xFF0C;&#x4F7F;&#x7528;cgroup&#x6765;&#x5C06;&#x591A;&#x4E2A;&#x8FDB;&#x7A0B;&#x52A0;&#x5165;&#x4E00;&#x4E2A;&#x7FA4;&#x7EC4;&#x4EE5;&#x4ECE;&#x6574;&#x4F53;&#x4E0A;&#x9650;&#x5236;&#x7FA4;&#x7EC4;&#x4F7F;&#x7528;&#x7387;&#x3002;
+与进程调度中的概念类似，使用cgroup来将多个进程加入一个群组以从整体上限制群组使用率。
 </p>
 
 <p>
-&#x4E0E;IO&#x76F8;&#x5173;&#x7684;group&#x4F4D;&#x4E8E;&#x8DEF;&#x5F84; <code>/sys/fs/cgroup/blkio</code> ,&#x5728;&#x6B64;&#x76EE;&#x5F55;&#x4E0B;&#x6BCF;&#x65B0;&#x5EFA;&#x4E00;&#x4E2A;&#x6587;&#x4EF6;&#x5939;&#x5C31;&#x4EE3;&#x8868;&#x65B0;&#x5EFA;&#x4E86;&#x4E00;&#x4E2A;&#x7EC4;&#x3002;
+与IO相关的group位于路径 <code>/sys/fs/cgroup/blkio</code> ,在此目录下每新建一个文件夹就代表新建了一个组。
 </p>
 
 <ul class="org-ul">
-<li>&#x4FEE;&#x6539;&#x6743;&#x91CD;&#x4F7F;&#x7528; <code>echo &lt;num&gt; &gt; blkio.weight</code></li>
-<li>&#x4E3A;&#x8FDB;&#x7A0B;&#x5206;&#x914D;IO&#x7EC4;&#x4F7F;&#x7528; <code>cgexec -g blkio:&lt;group_name&gt; &lt;process&gt;</code></li>
+<li>修改权重使用 <code>echo <num> > blkio.weight</code></li>
+<li>为进程分配IO组使用 <code>cgexec -g blkio:<group_name> <process></code></li>
 </ul>
 <pre class="example">
-#&#x5728; /sys/fs/cgroup/blkio &#x4E2D;&#x65B0;&#x5EFA;&#x7EC4; A &#x548C; B
+#在 /sys/fs/cgroup/blkio 中新建组 A 和 B
 mkdir A
 mkdir B
-#&#x4FEE;&#x6539;A&#x7684;&#x6743;&#x91CD;&#x4E3A;100&#xFF0C;B&#x7684;&#x6743;&#x91CD;&#x4E3A;10
-echo 100 &gt; A/blkio.weight
-echo 10 &gt; B/blkio.weight
-#&#x542F;&#x52A8;&#x4E24;&#x4E2A;&#x8FDB;&#x7A0B;
-cgexec -g blkio:A dd if=/dev/sda of=/dev/null &amp;
-cgexec -g blkio:B dd if=/dev/sda of=/dev/null &amp;
-#&#x901A;&#x8FC7;iotop&#x53EF;&#x4EE5;&#x89C2;&#x5BDF;&#x5230;&#x6743;&#x91CD;&#x9AD8;&#x7684;io&#x8FDB;&#x7A0B;&#x786C;&#x76D8;&#x5360;&#x6709;&#x7387;&#x66F4;&#x9AD8;</pre>
+#修改A的权重为100，B的权重为10
+echo 100 > A/blkio.weight
+echo 10 > B/blkio.weight
+#启动两个进程
+cgexec -g blkio:A dd if=/dev/sda of=/dev/null &
+cgexec -g blkio:B dd if=/dev/sda of=/dev/null &
+#通过iotop可以观察到权重高的io进程硬盘占有率更高</pre>
 <ul class="org-ul">
-<li>&#x9650;&#x5236;&#x8BFB;&#x786C;&#x76D8;&#x7684;&#x901F;&#x5EA6;&#x4F7F;&#x7528; <code>echo &quot;&lt;device_num&gt; &lt;speed&gt;&quot; blkio.throttle.read_bps_device</code></li>
-<li>&#x9650;&#x5236;&#x5199;&#x786C;&#x76D8;&#x7684;&#x901F;&#x5EA6;&#x4F7F;&#x7528; <code>echo &quot;&lt;device_num&gt; &lt;speed&gt;&quot; blkio.throttle.write_bps_device</code></li>
+<li>限制读硬盘的速度使用 <code>echo "<device_num> <speed>" blkio.throttle.read_bps_device</code></li>
+<li>限制写硬盘的速度使用 <code>echo "<device_num> <speed>" blkio.throttle.write_bps_device</code></li>
 </ul>
 <pre class="example">
-#&#x9650;&#x5236;A group &#x5BF9;&#x786C;&#x76D8; /dev/sda &#x7684;&#x8BFB;&#x5199;&#x901F;&#x5EA6;&#x4E3A;1M&#x5B57;&#x8282;&#x6BCF;&#x79D2;
-#8:0 &#x4EE3;&#x8868;&#x8BBE;&#x5907;&#x53F7;
-echo &quot;8:0 1048576&quot; &gt;  blkio.throttle.read_bps_device 
-#cgroup v1 &#x5199;&#x9650;&#x5236;&#x53EA;&#x80FD;&#x9650;&#x5236;direct&#x6A21;&#x5F0F;&#xFF0C;cgroup v2 &#x5199;&#x9650;&#x5236;&#x901A;&#x8FC7;&#x89C2;&#x5BDF;dirty pages&#x4EE5;&#x5F97;&#x5230;write back&#x901F;&#x5EA6;&#x6765;&#x9650;&#x5236;
-echo &quot;8:0 1048576&quot; &gt;  blkio.throttle.write_bps_device </pre>
+#限制A group 对硬盘 /dev/sda 的读写速度为1M字节每秒
+#8:0 代表设备号
+echo "8:0 1048576" >  blkio.throttle.read_bps_device 
+#cgroup v1 写限制只能限制direct模式，cgroup v2 写限制通过观察dirty pages以得到write back速度来限制
+echo "8:0 1048576" >  blkio.throttle.write_bps_device </pre>
 </div>
 </div>
 </div>
-<div id="outline-container-org9ea24be" class="outline-3">
-<h3 id="org9ea24be">&#x89C2;&#x5BDF;&#x786C;&#x76D8;&#x72B6;&#x6001;</h3>
-<div class="outline-text-3" id="text-org9ea24be">
+<div id="outline-container-orga77f35d" class="outline-3">
+<h3 id="orga77f35d">观察硬盘状态</h3>
+<div class="outline-text-3" id="text-orga77f35d">
 <p>
-&#x4F7F;&#x7528; <code>iostat</code> &#x89C2;&#x5BDF;&#x786C;&#x76D8;&#x7684;&#x5168;&#x5C40;&#x72B6;&#x6001;&#x3002;
+使用 <code>iostat</code> 观察硬盘的全局状态。
 </p>
 </div>
 </div>
 </div>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
 </div>
 
     </div>
@@ -918,7 +918,7 @@ Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org781f0d5"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x8BBF;&amp;#x95EE;&amp;#x786C;&amp;#x76D8;&amp;#x6574;&amp;#x4F53;&amp;#x89C6;&amp;#x91CE;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org3d16b68"><span class="nav-number">1.1.</span> <span class="nav-text">&amp;#x7531;&amp;#x8FDB;&amp;#x7A0B;&amp;#x5230;inode</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgb5739c3"><span class="nav-number">1.2.</span> <span class="nav-text">&amp;#x7531;inode&amp;#x5230;&amp;#x786C;&amp;#x76D8;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org3841a86"><span class="nav-number">1.3.</span> <span class="nav-text">&amp;#x5173;&amp;#x4E8E;page cache &amp;#x4E0E; block &amp;#x4E0E; sector</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org7ad155f"><span class="nav-number">1.4.</span> <span class="nav-text">O_DIRECT &amp;#x4E0E; O_SYNC &amp;#x7684;&amp;#x533A;&amp;#x522B;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgb5a7d87"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x8BBF;&amp;#x95EE;&amp;#x786C;&amp;#x76D8;&amp;#x7684;&amp;#x7EC6;&amp;#x8282;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org7d96cf8"><span class="nav-number">2.1.</span> <span class="nav-text">&amp;#x4F7F;&amp;#x7528; ftrace &amp;#x6355;&amp;#x6349;&amp;#x8BBF;&amp;#x95EE;&amp;#x786C;&amp;#x76D8;&amp;#x7684;&amp;#x51FD;&amp;#x6570;&amp;#x6D41;&amp;#x7A0B;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orga64d1a9"><span class="nav-number">2.1.1.</span> <span class="nav-text">&amp;#x51C6;&amp;#x5907;&amp;#x5DE5;&amp;#x4F5C;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org5629ba9"><span class="nav-number">2.1.2.</span> <span class="nav-text">&amp;#x8FD0;&amp;#x884C;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgde7d77c"><span class="nav-number">2.1.3.</span> <span class="nav-text">&amp;#x6700;&amp;#x7EC8;&amp;#x5982;&amp;#x4E0B;&amp;#x6240;&amp;#x793A;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org826d76b"><span class="nav-number">2.2.</span> <span class="nav-text">&amp;#x4F7F;&amp;#x7528;blktrace(&amp;#x6355;&amp;#x6349;),blkparse(&amp;#x5206;&amp;#x6790;) blk io&amp;#x64CD;&amp;#x4F5C;&amp;#x6D41;&amp;#x7A0B;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org1c702f4"><span class="nav-number">2.3.</span> <span class="nav-text">&amp;#x7535;&amp;#x68AF;&amp;#x8C03;&amp;#x5EA6;&amp;#x7B97;&amp;#x6CD5;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgec2eb20"><span class="nav-number">2.3.1.</span> <span class="nav-text">&amp;#x4F53;&amp;#x9A8C;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgffd13d0"><span class="nav-number">2.3.2.</span> <span class="nav-text">cgroup -&gt; &amp;#x7528;&amp;#x4E8E;CFQ&amp;#x8C03;&amp;#x5EA6;&amp;#x7B97;&amp;#x6CD5;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org9ea24be"><span class="nav-number">2.4.</span> <span class="nav-text">&amp;#x89C2;&amp;#x5BDF;&amp;#x786C;&amp;#x76D8;&amp;#x72B6;&amp;#x6001;</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org563f991"><span class="nav-number">1.</span> <span class="nav-text">访问硬盘整体视野</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgb209be3"><span class="nav-number">1.1.</span> <span class="nav-text">由进程到inode</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgadf26fb"><span class="nav-number">1.2.</span> <span class="nav-text">由inode到硬盘</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgce52dfa"><span class="nav-number">1.3.</span> <span class="nav-text">关于page cache 与 block 与 sector</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org156e65a"><span class="nav-number">1.4.</span> <span class="nav-text">O_DIRECT 与 O_SYNC 的区别</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgdfbc764"><span class="nav-number">2.</span> <span class="nav-text">访问硬盘的细节</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org10f58d1"><span class="nav-number">2.1.</span> <span class="nav-text">使用 ftrace 捕捉访问硬盘的函数流程</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgcb97055"><span class="nav-number">2.1.1.</span> <span class="nav-text">准备工作</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org27089d8"><span class="nav-number">2.1.2.</span> <span class="nav-text">运行</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org937640c"><span class="nav-number">2.1.3.</span> <span class="nav-text">最终如下所示</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org8e91a73"><span class="nav-number">2.2.</span> <span class="nav-text">使用blktrace(捕捉),blkparse(分析) blk io操作流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgedd9b0f"><span class="nav-number">2.3.</span> <span class="nav-text">电梯调度算法</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orge09247c"><span class="nav-number">2.3.1.</span> <span class="nav-text">体验</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org0f809e3"><span class="nav-number">2.3.2.</span> <span class="nav-text">cgroup -&gt; 用于CFQ调度算法</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orga77f35d"><span class="nav-number">2.4.</span> <span class="nav-text">观察硬盘状态</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 

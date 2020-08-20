@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="&amp;#x5B66;&amp;#x4E60;&amp;#x591A;&amp;#x6838;&amp;#x5FC3;&amp;#x4E0B;&amp;#x7684;&amp;#x8C03;&amp;#x5EA6;&amp;#x3002;">
+  <meta name="description" content="学习多核心下的调度。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[What]Scheduling: Multiprocessor">
 <meta property="og:url" content="http://kcmetercec.top/2019/08/27/book_ostep_cpu-sched-multi/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="&amp;#x5B66;&amp;#x4E60;&amp;#x591A;&amp;#x6838;&amp;#x5FC3;&amp;#x4E0B;&amp;#x7684;&amp;#x8C03;&amp;#x5EA6;&amp;#x3002;">
+<meta property="og:description" content="学习多核心下的调度。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2019-08-26T16:00:00.000Z">
 <meta property="article:modified_time" content="2020-08-01T01:09:06.484Z">
@@ -295,62 +295,62 @@
       
         <div id="content">
 <p>
-&#x5B66;&#x4E60;&#x591A;&#x6838;&#x5FC3;&#x4E0B;&#x7684;&#x8C03;&#x5EA6;&#x3002;
+学习多核心下的调度。
 </p>
 <a id="more"></a>
-<div id="outline-container-org0b45444" class="outline-2">
-<h2 id="org0b45444">&#x591A;&#x6838;&#x76F8;&#x6BD4;&#x5355;&#x6838;&#x591A;&#x51FA;&#x7684;&#x95EE;&#x9898;</h2>
-<div class="outline-text-2" id="text-org0b45444">
+<div id="outline-container-orge2bf12c" class="outline-2">
+<h2 id="orge2bf12c">多核相比单核多出的问题</h2>
+<div class="outline-text-2" id="text-orge2bf12c">
 </div>
-<div id="outline-container-org5a61768" class="outline-3">
-<h3 id="org5a61768">cache coherence&#xFF08;cache &#x4E00;&#x81F4;&#x6027;&#xFF09;</h3>
-<div class="outline-text-3" id="text-org5a61768">
+<div id="outline-container-orgf3eab4f" class="outline-3">
+<h3 id="orgf3eab4f">cache coherence（cache 一致性）</h3>
+<div class="outline-text-3" id="text-orgf3eab4f">
 <p>
-&#x5F53; CPU1 &#x5728;&#x8BBF;&#x95EE;&#x4E3B;&#x5B58;&#x5730;&#x5740; A &#x5904;&#x7684;&#x503C;&#x65F6;&#xFF0C;&#x4F1A;&#x5C06; A &#x5904;&#x7684;&#x503C;&#x5148;&#x8BFB;&#x5165; CPU1 &#x7684; cache&#xFF0C;&#x4FEE;&#x6539;&#x7684;&#x503C;&#x4E5F;&#x4F1A;&#x5199;&#x5165; cache&#xFF0C;&#x5E76;&#x4F1A;&#x5EF6;&#x8FDF;&#x5199;&#x5165;&#x4E3B;&#x5B58;&#x3002;
+当 CPU1 在访问主存地址 A 处的值时，会将 A 处的值先读入 CPU1 的 cache，修改的值也会写入 cache，并会延迟写入主存。
 </p>
 
 <p>
-&#x63A5;&#x4E0B;&#x6765; CPU2 &#x4E5F;&#x8981;&#x8BBF;&#x95EE;&#x5730;&#x5740; A &#x5904;&#x7684;&#x503C;&#xFF0C;&#x6B64;&#x65F6;&#x5B83;&#x8BFB;&#x5165; cache &#x7684;&#x503C;&#x4E3A;&#x65E7;&#x503C;&#xFF0C;&#x800C;&#x4E0D;&#x662F; CPU1 &#x4FEE;&#x6539;&#x540E;&#x7684;&#x65B0;&#x503C;&#x3002;
+接下来 CPU2 也要访问地址 A 处的值，此时它读入 cache 的值为旧值，而不是 CPU1 修改后的新值。
 </p>
 <pre class="example">
-&#x5176;&#x4E2D;&#x4E00;&#x4E2A;&#x89E3;&#x51B3;&#x65B9;&#x6848;&#x662F;&#x4F7F;&#x7528; bus snooping&#xFF08;&#x603B;&#x7EBF;&#x63A2;&#x6D4B;&#xFF09;&#x6280;&#x672F;&#xFF1A;
-&#x7B80;&#x5355;&#x8BF4;&#x5C31;&#x662F;&#x4FDD;&#x6301;&#x5404;&#x4E2A; CPU &#x5BF9;&#x540C;&#x4E00;&#x4E3B;&#x5B58;&#x5904;&#x7684; cache &#x4E00;&#x81F4;&#x6027;&#x3002;</pre>
+其中一个解决方案是使用 bus snooping（总线探测）技术：
+简单说就是保持各个 CPU 对同一主存处的 cache 一致性。</pre>
 </div>
 </div>
-<div id="outline-container-org19a6257" class="outline-3">
-<h3 id="org19a6257">cache affinity&#xFF08;cache &#x4EB2;&#x548C;&#x6027;&#xFF09;</h3>
-<div class="outline-text-3" id="text-org19a6257">
+<div id="outline-container-org8ebc805" class="outline-3">
+<h3 id="org8ebc805">cache affinity（cache 亲和性）</h3>
+<div class="outline-text-3" id="text-org8ebc805">
 <p>
-&#x5F53;&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x5728; CPU1 &#x8FD0;&#x884C;&#x65F6;&#xFF0C;&#x90A3;&#x4E48;&#x5B83;&#x7684;&#x5F53;&#x524D;&#x72B6;&#x6001;&#x4F1A;&#x88AB;&#x4FDD;&#x5B58;&#x5230; CPU1 &#x7684; cache &#x4E2D;&#xFF0C;&#x5185;&#x5B58;&#x9875;&#x8868;&#x4E5F;&#x4F1A;&#x88AB;&#x4FDD;&#x5B58;&#x5728;&#x5FEB;&#x8868;&#x4E2D;&#x3002;
+当一个进程在 CPU1 运行时，那么它的当前状态会被保存到 CPU1 的 cache 中，内存页表也会被保存在快表中。
 </p>
 
 <p>
-&#x5982;&#x679C;&#x8FD9;&#x4E2A;&#x8FDB;&#x7A0B;&#x4E0B;&#x6B21;&#x8FD0;&#x884C;&#x53C8;&#x8DD1;&#x5230;&#x4E86; CPU2 &#x53BB;&#xFF0C;&#x90A3;&#x4E48;&#x53C8;&#x5F97;&#x9700;&#x8981;&#x505A;&#x4E00;&#x6B21; cache &#x548C;&#x5FEB;&#x8868;&#xFF0C;&#x8FD9;&#x663E;&#x7136;&#x662F;&#x6548;&#x7387;&#x4F4E;&#x4E0B;&#x7684;&#x3002;
+如果这个进程下次运行又跑到了 CPU2 去，那么又得需要做一次 cache 和快表，这显然是效率低下的。
 </p>
 
 <p>
-&#x6240;&#x4EE5;&#xFF0C;&#x4E3A;&#x4E86;&#x66F4;&#x9AD8;&#x7684;&#x8FD0;&#x884C;&#x6548;&#x7387;&#xFF0C;&#x8C03;&#x5EA6;&#x5668;&#x5C31;&#x9700;&#x8981;&#x4FDD;&#x8BC1;&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x8981;&#x5728;&#x5176;&#x56FA;&#x5B9A;&#x7684; CPU &#x4E0A;&#x8FD0;&#x884C;&#xFF0C;&#x800C;&#x4E0D;&#x662F;&#x628A;&#x8FDB;&#x7A0B;&#x8C03;&#x5EA6;&#x5230;&#x5176;&#x4ED6; CPU &#x4E0A;&#x53BB;&#x3002;
+所以，为了更高的运行效率，调度器就需要保证一个进程要在其固定的 CPU 上运行，而不是把进程调度到其他 CPU 上去。
 </p>
 </div>
 </div>
 </div>
-<div id="outline-container-orge1b3320" class="outline-2">
-<h2 id="orge1b3320">&#x5355;&#x961F;&#x5217;&#x591A;&#x6838;&#x8C03;&#x5EA6;&#x5668;</h2>
-<div class="outline-text-2" id="text-orge1b3320">
+<div id="outline-container-org105df4e" class="outline-2">
+<h2 id="org105df4e">单队列多核调度器</h2>
+<div class="outline-text-2" id="text-org105df4e">
 <p>
-SQMS&#xFF08;single queue multiprocessor scheduling&#xFF0C;&#x5355;&#x961F;&#x5217;&#x591A;&#x6838;&#x8C03;&#x5EA6;&#x5668;&#xFF09;&#xFF0C;&#x5C06;&#x9700;&#x8981;&#x88AB;&#x8C03;&#x5EA6;&#x7684;&#x4EFB;&#x52A1;&#x653E;&#x5728;&#x4E00;&#x4E2A;&#x961F;&#x5217;&#x4E4B;&#x4E2D;&#x3002;
+SQMS（single queue multiprocessor scheduling，单队列多核调度器），将需要被调度的任务放在一个队列之中。
 </p>
 
 <p>
-&#x5728;&#x4ECE;&#x961F;&#x5217;&#x53D6;&#x51FA;&#x88AB;&#x8C03;&#x5EA6;&#x7684;&#x4EFB;&#x52A1;&#x65F6;&#xFF0C;&#x6BCF;&#x4E2A;&#x6838;&#x6309;&#x987A;&#x5E8F;&#x53D6;&#x51FA;&#x4EFB;&#x52A1;&#x5206;&#x914D;&#x7ED9;&#x81EA;&#x5DF1;&#xFF0C;&#x56E0;&#x6B64; SQMS &#x9700;&#x8981;&#x52A0;&#x9501;&#x4EE5;&#x4FDD;&#x8BC1;&#x8C03;&#x5EA6;&#x7684;&#x6B63;&#x786E;&#x6027;&#x3002;
+在从队列取出被调度的任务时，每个核按顺序取出任务分配给自己，因此 SQMS 需要加锁以保证调度的正确性。
 </p>
 <ul class="org-ul">
-<li>&#x4F46;&#x662F;&#x968F;&#x7740; CPU &#x6570;&#x91CF;&#x7684;&#x589E;&#x52A0;&#xFF0C;&#x52A0;&#x9501;&#x7684;&#x65B9;&#x5F0F;&#x4F1A;&#x5BFC;&#x81F4;&#x8C03;&#x5EA6;&#x5668;&#x6027;&#x80FD;&#x8D8A;&#x6765;&#x8D8A;&#x4F4E;&#xFF08;&#x9700;&#x8981;&#x7B49;&#x5F85;&#x5176;&#x4ED6;&#x6838;&#x5148;&#x53D6;&#x51FA;&#x4EFB;&#x52A1;&#xFF09;&#x3002;</li>
+<li>但是随着 CPU 数量的增加，加锁的方式会导致调度器性能越来越低（需要等待其他核先取出任务）。</li>
 </ul>
 
 <p>
-<b>SQMS &#x5177;&#x6709; cache affinity &#x95EE;&#x9898;</b> &#xFF1A;
-&#x5047;&#x8BBE;&#x961F;&#x5217;&#x4E2D;&#x6709;&#x4EFB;&#x52A1; A&#x3001;B&#x3001;C&#x3001;D&#x3001;E&#xFF0C;&#x5E76;&#x4E14;&#x5F53;&#x524D;&#x6709; 4 &#x4E2A; CPU&#xFF0C;&#x90A3;&#x4E48;&#x968F;&#x7740;&#x65F6;&#x95F4;&#x63A8;&#x79FB;&#x5176;&#x8C03;&#x5EA6;&#x987A;&#x5E8F;&#x4E3A;&#xFF1A;
+<b>SQMS 具有 cache affinity 问题</b> ：
+假设队列中有任务 A、B、C、D、E，并且当前有 4 个 CPU，那么随着时间推移其调度顺序为：
 </p>
 
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
@@ -369,7 +369,7 @@ SQMS&#xFF08;single queue multiprocessor scheduling&#xFF0C;&#x5355;&#x961F;&#x521
 </colgroup>
 <thead>
 <tr>
-<th scope="col" class="org-right">&#xA0;</th>
+<th scope="col" class="org-right"> </th>
 <th scope="col" class="org-left">CPU0</th>
 <th scope="col" class="org-left">CPU1</th>
 <th scope="col" class="org-left">CPU2</th>
@@ -428,11 +428,11 @@ SQMS&#xFF08;single queue multiprocessor scheduling&#xFF0C;&#x5355;&#x961F;&#x521
 </table>
 
 <p>
-&#x53EF;&#x4EE5;&#x770B;&#x5230;&#x8FD9;&#x79CD;&#x8C03;&#x5EA6;&#x65B9;&#x5F0F;&#x5C06;&#x5BFC;&#x81F4; cache miss &#x548C; TLB miss&#x3002;
+可以看到这种调度方式将导致 cache miss 和 TLB miss。
 </p>
 
 <p>
-&#x4E3A;&#x6B64; SQMS &#x7684;&#x6539;&#x8FDB;&#x65B9;&#x6848;&#x662F;&#xFF1A;&#x56FA;&#x5B9A;&#x51E0;&#x4E2A;&#x4EFB;&#x52A1;&#x5728;&#x5BF9;&#x5E94;&#x7684; CPU &#x8FD0;&#x884C;&#xFF0C;&#x591A;&#x4F59;&#x7684;&#x4EFB;&#x52A1;&#x8F6E;&#x8F6C;&#x5230;&#x5404;&#x4E2A; CPU &#x4F9D;&#x6B21;&#x8FD0;&#x884C;&#xFF1A;
+为此 SQMS 的改进方案是：固定几个任务在对应的 CPU 运行，多余的任务轮转到各个 CPU 依次运行：
 </p>
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
@@ -450,7 +450,7 @@ SQMS&#xFF08;single queue multiprocessor scheduling&#xFF0C;&#x5355;&#x961F;&#x521
 </colgroup>
 <thead>
 <tr>
-<th scope="col" class="org-right">&#xA0;</th>
+<th scope="col" class="org-right"> </th>
 <th scope="col" class="org-left">CPU0</th>
 <th scope="col" class="org-left">CPU1</th>
 <th scope="col" class="org-left">CPU2</th>
@@ -509,34 +509,34 @@ SQMS&#xFF08;single queue multiprocessor scheduling&#xFF0C;&#x5355;&#x961F;&#x521
 </table>
 
 <p>
-&#x8FD9;&#x79CD;&#x65B9;&#x5F0F;&#x76F8;&#x6BD4;&#x4E0A;&#x9762;&#x7684;&#x8C03;&#x5EA6;&#x65B9;&#x5F0F;&#x786E;&#x5B9E;&#x5F88;&#x597D;&#x7684;&#x5229;&#x7528;&#x7684; cache&#x3002;
+这种方式相比上面的调度方式确实很好的利用的 cache。
 </p>
 </div>
 </div>
-<div id="outline-container-org9f561e1" class="outline-2">
-<h2 id="org9f561e1">&#x591A;&#x961F;&#x5217;&#x591A;&#x6838;&#x8C03;&#x5EA6;&#x5668;</h2>
-<div class="outline-text-2" id="text-org9f561e1">
+<div id="outline-container-orgdee73e3" class="outline-2">
+<h2 id="orgdee73e3">多队列多核调度器</h2>
+<div class="outline-text-2" id="text-orgdee73e3">
 <p>
-MQMS&#xFF08;multi-queue multiprocessor scheduling, &#x591A;&#x961F;&#x5217;&#x591A;&#x6838;&#x8C03;&#x5EA6;&#x5668;&#xFF09;&#xFF0C;&#x6BCF;&#x4E2A; CPU &#x90FD;&#x6709;&#x5C5E;&#x4E8E;&#x81EA;&#x5DF1;&#x7684;&#x961F;&#x5217;&#x3002;
+MQMS（multi-queue multiprocessor scheduling, 多队列多核调度器），每个 CPU 都有属于自己的队列。
 </p>
 
 <p>
-&#x8FD9;&#x6837;&#x5C31;&#x4E0D;&#x9700;&#x8981;&#x5728;&#x8C03;&#x5EA6;&#x7684;&#x65F6;&#x5019;&#x8FD8;&#x8981;&#x52A0;&#x9501;&#x8BBF;&#x95EE;&#xFF0C;&#x5E76;&#x4E14; cache affinity &#x4E5F;&#x80FD;&#x5F97;&#x5230;&#x6EE1;&#x8DB3;&#x3002;
+这样就不需要在调度的时候还要加锁访问，并且 cache affinity 也能得到满足。
 </p>
 
 <p>
-&#x4F46;&#x8FD9;&#x6837;&#x4E5F;&#x6709;&#x4E00;&#x4E2A;&#x95EE;&#x9898;&#xFF1A;&#x6700;&#x5F00;&#x59CB;&#x6BCF;&#x4E2A;&#x6838;&#x90FD;&#x5206;&#x914D;&#x4E86;&#x51E0;&#x4E4E;&#x76F8;&#x7B49;&#x7684;&#x4EFB;&#x52A1;&#x6570;&#xFF0C;&#x4F46;&#x5982;&#x679C;&#x67D0;&#x4E2A;&#x6838;&#x4E0A;&#x7684;&#x4EFB;&#x52A1;&#x90FD;&#x6267;&#x884C;&#x5B8C;&#x6BD5;&#xFF0C;
-&#x5B83;&#x5C31;&#x7A7A;&#x95F2;&#x7740;&#x6CA1;&#x4E8B;&#x505A;&#x3002;&#x800C;&#x5176;&#x5B83;&#x7684;&#x6838;&#x53EF;&#x80FD;&#x8FD8;&#x7D2F;&#x5230;&#x4E0D;&#x884C;&#x2026;&#x2026;
+但这样也有一个问题：最开始每个核都分配了几乎相等的任务数，但如果某个核上的任务都执行完毕，
+它就空闲着没事做。而其它的核可能还累到不行……
 </p>
 
 <p>
-&#x89E3;&#x51B3;&#x65B9;&#x6CD5;&#x5C31;&#x662F;&#x505A;&#x8D1F;&#x8F7D;&#x5747;&#x8861;&#xFF1A;&#x5C06;&#x4EFB;&#x52A1;&#x591A;&#x7684;&#x961F;&#x5217;&#x4E2D;&#x7684;&#x4EFB;&#x52A1;&#xFF0C;&#x8F6C;&#x79FB;&#x5230;&#x4EFB;&#x52A1;&#x5C11;&#x7684;&#x961F;&#x5217;&#x4E2D;&#x3002;
+解决方法就是做负载均衡：将任务多的队列中的任务，转移到任务少的队列中。
 </p>
 </div>
 </div>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
 </div>
 
     </div>
@@ -622,7 +622,7 @@ Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org0b45444"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x591A;&amp;#x6838;&amp;#x76F8;&amp;#x6BD4;&amp;#x5355;&amp;#x6838;&amp;#x591A;&amp;#x51FA;&amp;#x7684;&amp;#x95EE;&amp;#x9898;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org5a61768"><span class="nav-number">1.1.</span> <span class="nav-text">cache coherence&amp;#xFF08;cache &amp;#x4E00;&amp;#x81F4;&amp;#x6027;&amp;#xFF09;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org19a6257"><span class="nav-number">1.2.</span> <span class="nav-text">cache affinity&amp;#xFF08;cache &amp;#x4EB2;&amp;#x548C;&amp;#x6027;&amp;#xFF09;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orge1b3320"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x5355;&amp;#x961F;&amp;#x5217;&amp;#x591A;&amp;#x6838;&amp;#x8C03;&amp;#x5EA6;&amp;#x5668;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org9f561e1"><span class="nav-number">3.</span> <span class="nav-text">&amp;#x591A;&amp;#x961F;&amp;#x5217;&amp;#x591A;&amp;#x6838;&amp;#x8C03;&amp;#x5EA6;&amp;#x5668;</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#orge2bf12c"><span class="nav-number">1.</span> <span class="nav-text">多核相比单核多出的问题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgf3eab4f"><span class="nav-number">1.1.</span> <span class="nav-text">cache coherence（cache 一致性）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org8ebc805"><span class="nav-number">1.2.</span> <span class="nav-text">cache affinity（cache 亲和性）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org105df4e"><span class="nav-number">2.</span> <span class="nav-text">单队列多核调度器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgdee73e3"><span class="nav-number">3.</span> <span class="nav-text">多队列多核调度器</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 

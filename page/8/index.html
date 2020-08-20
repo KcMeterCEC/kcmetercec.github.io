@@ -297,14 +297,14 @@
       
           <div id="content">
 <p>
-&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x7684;udev&#x53EF;&#x4EE5;&#x63A5;&#x6536;&#x5185;&#x6838;&#x8BBE;&#x5907;&#x53D1;&#x9001;&#x7684;netlink&#x6D88;&#x606F;&#xFF0C;&#x5E76;&#x6839;&#x636E;&#x5F53;&#x524D;&#x72B6;&#x6001;&#x52A8;&#x4F5C;&#x3002;
+用户空间的udev可以接收内核设备发送的netlink消息，并根据当前状态动作。
 </p>
 
 <p>
-&#x8FD0;&#x884C;&#x4E0B;&#x9762;&#x7684;&#x4EE3;&#x7801;&#x5373;&#x53EF;&#x4F53;&#x9A8C;:
+运行下面的代码即可体验:
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/netlink.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;poll.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">die</span><span class="params">(<span class="keyword">char</span> *s)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    write(<span class="number">2</span>, s, <span class="built_in">strlen</span>(s));</span><br><span class="line">    <span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[])</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_nl</span> <span class="title">nls</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">pollfd</span>   <span class="title">pfd</span>;</span></span><br><span class="line">    <span class="keyword">char</span> buf[<span class="number">512</span>];</span><br><span class="line"></span><br><span class="line">    <span class="comment">//Open hotplug event netlink socket</span></span><br><span class="line">    <span class="built_in">memset</span>(&amp;nls, <span class="number">0</span>, <span class="keyword">sizeof</span>(struct sockaddr_nl));</span><br><span class="line">    nls.nl_family = AF_NETLINK;</span><br><span class="line">    nls.nl_groups = <span class="number">-1</span>;</span><br><span class="line"></span><br><span class="line">    pfd.events = POLLIN;</span><br><span class="line">    pfd.fd = socket(PF_NETLINK, SOCK_DGRAM, NETLINK_KOBJECT_UEVENT);</span><br><span class="line">    <span class="keyword">if</span>(pfd.fd == <span class="number">-1</span>)</span><br><span class="line">    {</span><br><span class="line">	die(<span class="string">&quot;Not root\n&quot;</span>);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="comment">//listen to netlink socket</span></span><br><span class="line">    <span class="keyword">if</span>(bind(pfd.fd, (<span class="keyword">void</span> *)&amp;nls, <span class="keyword">sizeof</span>(struct sockaddr_nl)))</span><br><span class="line">    {</span><br><span class="line">	die(<span class="string">&quot;Bind failed!\n&quot;</span>);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">while</span>(<span class="number">-1</span> != poll(&amp;pfd, <span class="number">1</span>, <span class="number">-1</span>))</span><br><span class="line">    {</span><br><span class="line">	<span class="keyword">int</span> i, len = recv(pfd.fd, buf, <span class="keyword">sizeof</span>(buf), MSG_DONTWAIT);</span><br><span class="line">	<span class="keyword">if</span>(len == <span class="number">-1</span>)</span><br><span class="line">	{</span><br><span class="line">	    die(<span class="string">&quot;recv\n&quot;</span>);</span><br><span class="line">	}</span><br><span class="line">	<span class="comment">//print the data to stdout</span></span><br><span class="line">	i = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">while</span>(i &lt; len)</span><br><span class="line">	{</span><br><span class="line">	    <span class="built_in">printf</span>(<span class="string">&quot;%s\n&quot;</span>, buf + i);;</span><br><span class="line">	    i += <span class="built_in">strlen</span>(buf + i) + <span class="number">1</span>;</span><br><span class="line">	}</span><br><span class="line">    }</span><br><span class="line">    die(<span class="string">&quot;poll\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><linux/netlink.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><sys/types.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><sys/socket.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><stdio.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><stdlib.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><string.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><unistd.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><poll.h></span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">die</span><span class="params">(<span class="keyword">char</span> *s)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    write(<span class="number">2</span>, s, <span class="built_in">strlen</span>(s));</span><br><span class="line">    <span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[])</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_nl</span> <span class="title">nls</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">pollfd</span>   <span class="title">pfd</span>;</span></span><br><span class="line">    <span class="keyword">char</span> buf[<span class="number">512</span>];</span><br><span class="line"></span><br><span class="line">    <span class="comment">//Open hotplug event netlink socket</span></span><br><span class="line">    <span class="built_in">memset</span>(&nls, <span class="number">0</span>, <span class="keyword">sizeof</span>(struct sockaddr_nl));</span><br><span class="line">    nls.nl_family = AF_NETLINK;</span><br><span class="line">    nls.nl_groups = <span class="number">-1</span>;</span><br><span class="line"></span><br><span class="line">    pfd.events = POLLIN;</span><br><span class="line">    pfd.fd = socket(PF_NETLINK, SOCK_DGRAM, NETLINK_KOBJECT_UEVENT);</span><br><span class="line">    <span class="keyword">if</span>(pfd.fd == <span class="number">-1</span>)</span><br><span class="line">    {</span><br><span class="line">	die(<span class="string">"Not root\n"</span>);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="comment">//listen to netlink socket</span></span><br><span class="line">    <span class="keyword">if</span>(bind(pfd.fd, (<span class="keyword">void</span> *)&nls, <span class="keyword">sizeof</span>(struct sockaddr_nl)))</span><br><span class="line">    {</span><br><span class="line">	die(<span class="string">"Bind failed!\n"</span>);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">while</span>(<span class="number">-1</span> != poll(&pfd, <span class="number">1</span>, <span class="number">-1</span>))</span><br><span class="line">    {</span><br><span class="line">	<span class="keyword">int</span> i, len = recv(pfd.fd, buf, <span class="keyword">sizeof</span>(buf), MSG_DONTWAIT);</span><br><span class="line">	<span class="keyword">if</span>(len == <span class="number">-1</span>)</span><br><span class="line">	{</span><br><span class="line">	    die(<span class="string">"recv\n"</span>);</span><br><span class="line">	}</span><br><span class="line">	<span class="comment">//print the data to stdout</span></span><br><span class="line">	i = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">while</span>(i < len)</span><br><span class="line">	{</span><br><span class="line">	    <span class="built_in">printf</span>(<span class="string">"%s\n"</span>, buf + i);;</span><br><span class="line">	    i += <span class="built_in">strlen</span>(buf + i) + <span class="number">1</span>;</span><br><span class="line">	}</span><br><span class="line">    }</span><br><span class="line">    die(<span class="string">"poll\n"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 </div>
           <!--noindex-->
             <div class="post-button">
@@ -417,7 +417,7 @@
       
           <div id="content">
 <p>
-&#x6574;&#x7406;zynq&#x7684;&#x8F6F;&#x4EF6;&#x542F;&#x52A8;&#x6D41;&#x7A0B;&#x3002;
+整理zynq的软件启动流程。
 </p>
           <!--noindex-->
             <div class="post-button">
@@ -530,7 +530,7 @@
       
           <div id="content">
 <p>
-&#x6574;&#x7406;zynq&#x7684;&#x786C;&#x4EF6;&#x542F;&#x52A8;&#x6D41;&#x7A0B;&#x3002;
+整理zynq的硬件启动流程。
 </p>
           <!--noindex-->
             <div class="post-button">
@@ -639,11 +639,11 @@
       
           <div id="content">
 <p>
-&#x8BFE;&#x7A0B;&#xFF1A;&#x738B;&#x4E89; &#x2013;&gt; &lt;&#x6570;&#x636E;&#x7ED3;&#x6784;&#x4E0E;&#x7B97;&#x6CD5;&#x4E4B;&#x7F8E;&gt;
+课程：王争 –> <数据结构与算法之美>
 </p>
 
 <p>
-&#x6574;&#x7406;&#x5E38;&#x7528;&#x7684;&#x51E0;&#x79CD;&#x6392;&#x5E8F;&#x7B97;&#x6CD5;&#x3002;
+整理常用的几种排序算法。
 </p>
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
@@ -661,76 +661,76 @@
 </colgroup>
 <thead>
 <tr>
-<th scope="col" class="org-left">&#x7B97;&#x6CD5;</th>
-<th scope="col" class="org-left">&#x65F6;&#x95F4;&#x590D;&#x6742;&#x5EA6;</th>
-<th scope="col" class="org-left">&#x662F;&#x5426;&#x57FA;&#x4E8E;&#x6BD4;&#x8F83;</th>
-<th scope="col" class="org-left">&#x662F;&#x5426;&#x7A33;&#x5B9A;&#x6392;&#x5E8F;</th>
-<th scope="col" class="org-left">&#x662F;&#x5426;&#x539F;&#x5730;&#x6392;&#x5E8F;</th>
+<th scope="col" class="org-left">算法</th>
+<th scope="col" class="org-left">时间复杂度</th>
+<th scope="col" class="org-left">是否基于比较</th>
+<th scope="col" class="org-left">是否稳定排序</th>
+<th scope="col" class="org-left">是否原地排序</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td class="org-left">&#x5192;&#x6CE1;</td>
+<td class="org-left">冒泡</td>
 <td class="org-left">O(n ^ 2)</td>
-<td class="org-left">&#x662F;</td>
-<td class="org-left">&#x662F;</td>
-<td class="org-left">&#x662F;</td>
+<td class="org-left">是</td>
+<td class="org-left">是</td>
+<td class="org-left">是</td>
 </tr>
 
 <tr>
-<td class="org-left">&#x63D2;&#x5165;</td>
+<td class="org-left">插入</td>
 <td class="org-left">O(n ^ 2)</td>
-<td class="org-left">&#x662F;</td>
-<td class="org-left">&#x662F;</td>
-<td class="org-left">&#x662F;</td>
+<td class="org-left">是</td>
+<td class="org-left">是</td>
+<td class="org-left">是</td>
 </tr>
 
 <tr>
-<td class="org-left">&#x9009;&#x62E9;</td>
+<td class="org-left">选择</td>
 <td class="org-left">O(n ^ 2)</td>
-<td class="org-left">&#x662F;</td>
-<td class="org-left">&#x5426;</td>
-<td class="org-left">&#x662F;</td>
+<td class="org-left">是</td>
+<td class="org-left">否</td>
+<td class="org-left">是</td>
 </tr>
 
 <tr>
-<td class="org-left">&#x5FEB;&#x6392;</td>
+<td class="org-left">快排</td>
 <td class="org-left">O(nlogn)</td>
-<td class="org-left">&#x662F;</td>
-<td class="org-left">&#x5426;</td>
-<td class="org-left">&#x662F;</td>
+<td class="org-left">是</td>
+<td class="org-left">否</td>
+<td class="org-left">是</td>
 </tr>
 
 <tr>
-<td class="org-left">&#x5F52;&#x5E76;</td>
+<td class="org-left">归并</td>
 <td class="org-left">O(nlogn)</td>
-<td class="org-left">&#x662F;</td>
-<td class="org-left">&#x662F;</td>
-<td class="org-left">&#x5426;</td>
+<td class="org-left">是</td>
+<td class="org-left">是</td>
+<td class="org-left">否</td>
 </tr>
 
 <tr>
-<td class="org-left">&#x6876;</td>
+<td class="org-left">桶</td>
 <td class="org-left">O(n)</td>
-<td class="org-left">&#x5426;</td>
-<td class="org-left">&#x662F;</td>
-<td class="org-left">&#x5426;</td>
+<td class="org-left">否</td>
+<td class="org-left">是</td>
+<td class="org-left">否</td>
 </tr>
 
 <tr>
-<td class="org-left">&#x8BA1;&#x6570;</td>
+<td class="org-left">计数</td>
 <td class="org-left">O(n)</td>
-<td class="org-left">&#x5426;</td>
-<td class="org-left">&#x662F;</td>
-<td class="org-left">&#x5426;</td>
+<td class="org-left">否</td>
+<td class="org-left">是</td>
+<td class="org-left">否</td>
 </tr>
 
 <tr>
-<td class="org-left">&#x57FA;&#x6570;</td>
+<td class="org-left">基数</td>
 <td class="org-left">O(m*n)</td>
-<td class="org-left">&#x5426;</td>
-<td class="org-left">&#x662F;</td>
-<td class="org-left">&#x5426;</td>
+<td class="org-left">否</td>
+<td class="org-left">是</td>
+<td class="org-left">否</td>
 </tr>
 </tbody>
 </table>
@@ -841,14 +841,14 @@
       
           <div id="content">
 <p>
-&#x8BFE;&#x7A0B;&#xFF1A;&#x738B;&#x4E89; &#x2013;&gt; &lt;&#x6570;&#x636E;&#x7ED3;&#x6784;&#x4E0E;&#x7B97;&#x6CD5;&#x4E4B;&#x7F8E;&gt;
+课程：王争 –> <数据结构与算法之美>
 </p>
 
 <ul class="org-ul">
-<li>&#x5F53;&#x6570;&#x636E;&#x53EA;&#x9700;&#x8981;&#x5728;&#x4E00;&#x7AEF;&#x63D2;&#x5165;&#x548C;&#x5220;&#x9664;&#x64CD;&#x4F5C;&#xFF0C;&#x5E76;&#x4E14;&#x6EE1;&#x8DB3;&#x5148;&#x8FDB;&#x540E;&#x51FA;(FILO)&#x3001;&#x540E;&#x8FDB;&#x5148;&#x51FA;&#x7684;&#x7279;&#x6027;&#x65F6;&#xFF0C;&#x5C31;&#x5E94;&#x8BE5;&#x9996;&#x9009;&#x201C;&#x6808;&#x201D;&#x3002;</li>
-<li>&#x5F53;&#x6570;&#x636E;&#x53EA;&#x9700;&#x8981;&#x5728;&#x4E00;&#x7AEF;&#x63D2;&#x5165;,&#x53E6;&#x4E00;&#x7AEF;&#x8BFB;&#x53D6;&#x64CD;&#x4F5C;&#xFF0C;&#x5E76;&#x4E14;&#x6EE1;&#x8DB3;&#x5148;&#x8FDB;&#x5148;&#x51FA;(FIFO)&#x3001;&#x540E;&#x8FDB;&#x540E;&#x51FA;&#x7684;&#x7279;&#x6027;&#x65F6;&#xFF0C;&#x5C31;&#x5E94;&#x8BE5;&#x9996;&#x9009;&#x201C;&#x961F;&#x5217;&#x201D;&#x3002;
+<li>当数据只需要在一端插入和删除操作，并且满足先进后出(FILO)、后进先出的特性时，就应该首选“栈”。</li>
+<li>当数据只需要在一端插入,另一端读取操作，并且满足先进先出(FIFO)、后进后出的特性时，就应该首选“队列”。
 <ul class="org-ul">
-<li>&#x8FD9;&#x79CD;&#x65B9;&#x5F0F;&#x64CD;&#x4F5C;&#x63A5;&#x53E3;&#x7B80;&#x5355;&#xFF0C;&#x6613;&#x4E8E;&#x7EF4;&#x62A4;&#x548C;&#x7406;&#x89E3;&#x3002;</li>
+<li>这种方式操作接口简单，易于维护和理解。</li>
 </ul></li>
 </ul>
           <!--noindex-->
@@ -958,11 +958,11 @@
       
           <div id="content">
 <p>
-&#x8BFE;&#x7A0B;&#xFF1A;&#x738B;&#x4E89; &#x2013;&gt; &lt;&#x6570;&#x636E;&#x7ED3;&#x6784;&#x4E0E;&#x7B97;&#x6CD5;&#x4E4B;&#x7F8E;&gt;
+课程：王争 –> <数据结构与算法之美>
 </p>
 
 <p>
-&#x6574;&#x7406;&#x94FE;&#x8868;&#x7684;&#x64CD;&#x4F5C;.
+整理链表的操作.
 </p>
           <!--noindex-->
             <div class="post-button">
@@ -1071,11 +1071,11 @@
       
           <div id="content">
 <p>
-&#x8BFE;&#x7A0B;&#xFF1A;&#x738B;&#x4E89; &#x2013;&gt; &lt;&#x6570;&#x636E;&#x7ED3;&#x6784;&#x4E0E;&#x7B97;&#x6CD5;&#x4E4B;&#x7F8E;&gt;
+课程：王争 –> <数据结构与算法之美>
 </p>
 
 <p>
-&#x4EE5;&#x53E6;&#x4E00;&#x4E2A;&#x89D2;&#x5EA6;&#x770B;&#x5F85;&#x6570;&#x7EC4;&#x3002;
+以另一个角度看待数组。
 </p>
           <!--noindex-->
             <div class="post-button">
@@ -1184,15 +1184,15 @@
       
           <div id="content">
 <p>
-&#x8BFE;&#x7A0B;&#xFF1A;&#x738B;&#x4E89; &#x2013;&gt; &lt;&#x6570;&#x636E;&#x7ED3;&#x6784;&#x4E0E;&#x7B97;&#x6CD5;&#x4E4B;&#x7F8E;&gt;
+课程：王争 –> <数据结构与算法之美>
 </p>
 
 <p>
-&#x4E4B;&#x524D;&#x770B;&#x7684;<a href="http://kcmetercec.top/categories/book/%25E7%25AE%2597%25E6%25B3%2595%25E5%259B%25BE%25E8%25A7%25A3-%25E5%2585%25A5%25E9%2597%25A8/">&#x56FE;&#x89E3;&#x7B97;&#x6CD5;</a>&#x4E5F;&#x4EC5;&#x4EC5;&#x662F;&#x5BF9;&#x6570;&#x636E;&#x7ED3;&#x6784;&#x4E0E;&#x7B97;&#x6CD5;&#x6709;&#x4E86;&#x4E00;&#x4E2A;&#x5927;&#x4F53;&#x4E0A;&#x7684;&#x611F;&#x6027;&#x8BA4;&#x8BC6;&#xFF0C;&#x73B0;&#x5728;&#x5C31;&#x9700;&#x8981;&#x6765;&#x6DF1;&#x5165;&#x7406;&#x89E3;&#x76F8;&#x5173;&#x6982;&#x5FF5;&#x4E86;&#x3002;
+之前看的<a href="http://kcmetercec.top/categories/book/%25E7%25AE%2597%25E6%25B3%2595%25E5%259B%25BE%25E8%25A7%25A3-%25E5%2585%25A5%25E9%2597%25A8/">图解算法</a>也仅仅是对数据结构与算法有了一个大体上的感性认识，现在就需要来深入理解相关概念了。
 </p>
 
 <p>
-&#x6700;&#x4E3A;&#x57FA;&#x7840;&#x548C;&#x91CD;&#x8981;&#x7684;&#x5C31;&#x662F;&#x5206;&#x6790;&#x4EE3;&#x7801;&#x7684;&#x590D;&#x6742;&#x5EA6;&#xFF0C;&#x53EA;&#x6709;&#x80FD;&#x6E05;&#x695A;&#x5176;&#x590D;&#x6742;&#x5EA6;&#x624D;&#x80FD;&#x77E5;&#x9053;&#x5982;&#x4F55;&#x6839;&#x636E;&#x5F53;&#x524D;&#x73AF;&#x5883;&#x800C;&#x505A;&#x4F18;&#x5316;&#x3002;
+最为基础和重要的就是分析代码的复杂度，只有能清楚其复杂度才能知道如何根据当前环境而做优化。
 </p>
 
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[program]/[What]program--datastruct/ds_complication.jpg?raw=true" alt="ds_complication.jpg">
@@ -1307,14 +1307,14 @@
       
           <div id="content">
 <p>
-&#x53C2;&#x8003;&#x4E66;&#x7C4D;:Embedded Linux System with the Yocto Project
+参考书籍:Embedded Linux System with the Yocto Project
 </p>
 <ul class="org-ul">
-<li>&#x4E66;&#x7C4D;&#x6BD4;&#x5B9E;&#x9645;&#x7684;yocto&#x7248;&#x672C;&#x8981;&#x4F4E;&#xFF0C;&#x6240;&#x4EE5;yocto&#x7684;&#x8BE6;&#x7EC6;&#x547D;&#x4EE4;&#x9700;&#x8981;&#x53C2;&#x8003;&#x5176;<a href="https://www.yoctoproject.org/docs/" target="_blank" rel="noopener">&#x5BF9;&#x5E94;&#x7248;&#x672C;&#x624B;&#x518C;</a></li>
+<li>书籍比实际的yocto版本要低，所以yocto的详细命令需要参考其<a href="https://www.yoctoproject.org/docs/" target="_blank" rel="noopener">对应版本手册</a></li>
 </ul>
 
 <p>
-&#x8FD0;&#x884C;&#x73AF;&#x5883;:
+运行环境:
 </p>
 <ul class="org-ul">
 <li>ubuntu18.04 amd64</li>
@@ -1322,11 +1322,11 @@
 </ul>
 
 <p>
-BitBake&#x662F;&#x7531;&#x7EAF;Python&#x5F00;&#x53D1;&#x7684;&#x6784;&#x5EFA;&#x5DE5;&#x5177;&#xFF0C;&#x5176;&#x7075;&#x6D3B;&#x6027;&#x3001;&#x53EF;&#x6269;&#x5C55;&#x6027;&#x548C;&#x53EF;&#x79FB;&#x690D;&#x6027;&#x8FDC;&#x8FDC;&#x5F3A;&#x4E8E;&#x540C;&#x7C7B;&#x7684; make &#x8FD9;&#x7C7B;&#x5DE5;&#x5177;&#x3002;
+BitBake是由纯Python开发的构建工具，其灵活性、可扩展性和可移植性远远强于同类的 make 这类工具。
 </p>
 
 <p>
-&#x5176;metadata&#x6784;&#x5EFA;&#x89C4;&#x5219;&#x6587;&#x4EF6;&#x5C31;&#x7C7B;&#x4F3C;&#x4E8E;make&#x4E2D;&#x7684;Makefile&#x3002;
+其metadata构建规则文件就类似于make中的Makefile。
 </p>
           <!--noindex-->
             <div class="post-button">
@@ -1439,14 +1439,14 @@ BitBake&#x662F;&#x7531;&#x7EAF;Python&#x5F00;&#x53D1;&#x7684;&#x6784;&#x5EFA;&#x
       
           <div id="content">
 <p>
-&#x53C2;&#x8003;&#x4E66;&#x7C4D;:Embedded Linux System with the Yocto Project
+参考书籍:Embedded Linux System with the Yocto Project
 </p>
 <ul class="org-ul">
-<li>&#x4E66;&#x7C4D;&#x6BD4;&#x5B9E;&#x9645;&#x7684;yocto&#x7248;&#x672C;&#x8981;&#x4F4E;&#xFF0C;&#x6240;&#x4EE5;yocto&#x7684;&#x8BE6;&#x7EC6;&#x547D;&#x4EE4;&#x9700;&#x8981;&#x53C2;&#x8003;&#x5176;<a href="https://www.yoctoproject.org/docs/" target="_blank" rel="noopener">&#x5BF9;&#x5E94;&#x7248;&#x672C;&#x624B;&#x518C;</a></li>
+<li>书籍比实际的yocto版本要低，所以yocto的详细命令需要参考其<a href="https://www.yoctoproject.org/docs/" target="_blank" rel="noopener">对应版本手册</a></li>
 </ul>
 
 <p>
-&#x8FD0;&#x884C;&#x73AF;&#x5883;:
+运行环境:
 </p>
 <ul class="org-ul">
 <li>ubuntu18.04 amd64</li>
@@ -1454,7 +1454,7 @@ BitBake&#x662F;&#x7531;&#x7EAF;Python&#x5F00;&#x53D1;&#x7684;&#x6784;&#x5EFA;&#x
 </ul>
 
 <p>
-&#x524D;&#x9762;&#x8BB2;&#x4E86;&#x90A3;&#x4E48;&#x591A;&#x7684;&#x7406;&#x8BBA;&#xFF0C;&#x73B0;&#x5728;&#x5C31;&#x9700;&#x8981;&#x5B9E;&#x9645;&#x6765;&#x63A7;&#x5236;BitBake&#x5B8C;&#x6210;&#x6784;&#x5EFA;&#xFF0C;&#x63D0;&#x9AD8;&#x611F;&#x6027;&#x8BA4;&#x77E5;&#x3002;
+前面讲了那么多的理论，现在就需要实际来控制BitBake完成构建，提高感性认知。
 </p>
           <!--noindex-->
             <div class="post-button">

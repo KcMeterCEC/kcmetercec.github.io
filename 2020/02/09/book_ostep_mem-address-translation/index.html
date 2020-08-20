@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="&amp;#x4E4B;&amp;#x524D;&amp;#x7AD9;&amp;#x5728; MMU &amp;#x7684;&amp;#x89D2;&amp;#x5EA6;&amp;#xFF0C;&amp;#x7406;&amp;#x89E3;&amp;#x865A;&amp;#x62DF;&amp;#x5730;&amp;#x5740;&amp;#x5230;&amp;#x7269;&amp;#x7406;&amp;#x5730;&amp;#x5740;&amp;#x7684;&amp;#x8F6C;&amp;#x6362;&amp;#xFF0C;&amp;#x73FE;&amp;">
+  <meta name="description" content="之前站在 MMU 的角度，理解虚拟地址到物理地址的转换，現在看看這本神書的角度是如何描述的。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[What]Mechanism: Address Translation">
 <meta property="og:url" content="http://kcmetercec.top/2020/02/09/book_ostep_mem-address-translation/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="&amp;#x4E4B;&amp;#x524D;&amp;#x7AD9;&amp;#x5728; MMU &amp;#x7684;&amp;#x89D2;&amp;#x5EA6;&amp;#xFF0C;&amp;#x7406;&amp;#x89E3;&amp;#x865A;&amp;#x62DF;&amp;#x5730;&amp;#x5740;&amp;#x5230;&amp;#x7269;&amp;#x7406;&amp;#x5730;&amp;#x5740;&amp;#x7684;&amp;#x8F6C;&amp;#x6362;&amp;#xFF0C;&amp;#x73FE;&amp;">
+<meta property="og:description" content="之前站在 MMU 的角度，理解虚拟地址到物理地址的转换，現在看看這本神書的角度是如何描述的。">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mem_translation_hd_requirement.jpg?raw=true">
 <meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mem_translation_sw_requirement.jpg?raw=true">
@@ -300,66 +300,66 @@
       
         <div id="content">
 <p>
-<a href="http://kcmetercec.top/2018/03/26/hardware_basic_mmu/">&#x4E4B;&#x524D;&#x7AD9;&#x5728; MMU &#x7684;&#x89D2;&#x5EA6;&#xFF0C;</a>&#x7406;&#x89E3;&#x865A;&#x62DF;&#x5730;&#x5740;&#x5230;&#x7269;&#x7406;&#x5730;&#x5740;&#x7684;&#x8F6C;&#x6362;&#xFF0C;&#x73FE;&#x5728;&#x770B;&#x770B;&#x9019;&#x672C;&#x795E;&#x66F8;&#x7684;&#x89D2;&#x5EA6;&#x662F;&#x5982;&#x4F55;&#x63CF;&#x8FF0;&#x7684;&#x3002;
+<a href="http://kcmetercec.top/2018/03/26/hardware_basic_mmu/">之前站在 MMU 的角度，</a>理解虚拟地址到物理地址的转换，現在看看這本神書的角度是如何描述的。
 </p>
 <a id="more"></a>
-<div id="outline-container-org4796674" class="outline-2">
-<h2 id="org4796674">&#x5730;&#x5740;&#x8F6C;&#x6362;</h2>
-<div class="outline-text-2" id="text-org4796674">
+<div id="outline-container-orgd0c9d79" class="outline-2">
+<h2 id="orgd0c9d79">地址转换</h2>
+<div class="outline-text-2" id="text-orgd0c9d79">
 <p>
-&#x865A;&#x62DF;&#x5730;&#x5740;&#x8F6C;&#x4E3A;&#x7269;&#x7406;&#x5730;&#x5740;&#xFF0C;&#x9700;&#x8981;&#x5728;&#x5C3D;&#x91CF;&#x4FDD;&#x8BC1;&#x9AD8;&#x6548;&#x7684;&#x60C5;&#x51B5;&#x4E0B;&#x5B9E;&#x73B0;&#x6B64;&#x529F;&#x80FD;&#xFF0C;&#x90A3;&#x4E48;&#x5C31;&#x662F;&#x5982;&#x4E0B;&#x7684;&#x7EBF;&#x6027;&#x6620;&#x5C04;&#x65B9;&#x5F0F;&#xFF1A;
+虚拟地址转为物理地址，需要在尽量保证高效的情况下实现此功能，那么就是如下的线性映射方式：
 </p>
 <pre class="example">
 physical address = virtual address + base</pre>
 <p>
-&#x8FD9;&#x5C31;&#x7C7B;&#x4F3C;&#x4E8E;&#x6570;&#x7EC4;&#x53EF;&#x4EE5;&#x9AD8;&#x6548;&#x7684;&#x968F;&#x673A;&#x8BBF;&#x95EE;&#x4E00;&#x6837;&#xFF0C;&#x76F4;&#x63A5;&#x5728;&#x57FA;&#x5730;&#x5740;&#x4E0A;&#x505A;&#x4E00;&#x4E2A;&#x504F;&#x79FB;&#xFF0C;&#x6CA1;&#x6709;&#x6BD4;&#x8FD9;&#x66F4;&#x5FEB;&#x7684;&#x65B9;&#x5F0F;&#x4E86;&#xFF1A;
+这就类似于数组可以高效的随机访问一样，直接在基地址上做一个偏移，没有比这更快的方式了：
 </p>
 <ul class="org-ul">
-<li>PC &#x4ECE;&#x865A;&#x62DF;&#x5730;&#x5740;&#x5904;&#x53D6;&#x6307;&#x4EE4;</li>
-<li>&#x5E95;&#x5C42;&#x786C;&#x4EF6;&#x81EA;&#x52A8;&#x5C06;&#x865A;&#x62DF;&#x5730;&#x5740;&#x52A0;&#x4E0A;&#x57FA;&#x5730;&#x5740;&#x5F97;&#x5230;&#x771F;&#x6B63;&#x7684;&#x7269;&#x7406;&#x5730;&#x5740;</li>
-<li>&#x6700;&#x7EC8;&#x4ECE;&#x7269;&#x7406;&#x5730;&#x5740;&#x53D6;&#x6307;&#x4EE4;</li>
+<li>PC 从虚拟地址处取指令</li>
+<li>底层硬件自动将虚拟地址加上基地址得到真正的物理地址</li>
+<li>最终从物理地址取指令</li>
 </ul>
 
 <p>
-&#x9664;&#x6B64;&#x4E4B;&#x5916;&#xFF0C;&#x8FD8;&#x9700;&#x8981;&#x6709;&#x4E00;&#x4E2A;&#x9650;&#x5236;&#x503C;&#xFF0C;&#x4E5F;&#x53EF;&#x4EE5;&#x68C0;&#x67E5;&#x865A;&#x62DF;&#x5730;&#x5740;&#x662F;&#x5426;&#x5408;&#x6CD5;&#x3002;
+除此之外，还需要有一个限制值，也可以检查虚拟地址是否合法。
 </p>
 </div>
 </div>
 
-<div id="outline-container-org9b1b78c" class="outline-2">
-<h2 id="org9b1b78c">&#x5BF9;&#x786C;&#x4EF6;&#x7684;&#x8981;&#x6C42;</h2>
-<div class="outline-text-2" id="text-org9b1b78c">
+<div id="outline-container-org2312e08" class="outline-2">
+<h2 id="org2312e08">对硬件的要求</h2>
+<div class="outline-text-2" id="text-org2312e08">
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mem_translation_hd_requirement.jpg?raw=true" alt="mem_translation_hd_requirement.jpg">
 <p>
-&#x4E3A;&#x4E86;&#x5B9E;&#x73B0;&#x5185;&#x5B58;&#x7684;&#x865A;&#x62DF;&#x5316;&#xFF0C;&#x9700;&#x8981;&#x786C;&#x4EF6;&#x505A;&#x4E0B;&#x9762;&#x8FD9;&#x4E9B;&#x652F;&#x6301;&#xFF1A;
+为了实现内存的虚拟化，需要硬件做下面这些支持：
 </p>
 <ul class="org-ul">
-<li>&#x53EF;&#x4EE5;&#x5207;&#x6362; CPU &#x7684;&#x6A21;&#x5F0F;&#x4E3A;&#x7279;&#x6743;&#x6A21;&#x5F0F;&#x548C;&#x7528;&#x6237;&#x6A21;&#x5F0F;&#xFF0C;&#x7279;&#x6743;&#x6A21;&#x5F0F;&#x5177;&#x6709;&#x8BBF;&#x95EE;&#x6240;&#x6709;&#x786C;&#x4EF6;&#x7684;&#x6743;&#x9650;&#xFF0C;&#x7528;&#x6237;&#x6A21;&#x5F0F;&#x7528;&#x4E8E;&#x8FD0;&#x884C;&#x5E94;&#x7528;&#x7A0B;&#x5E8F;</li>
-<li>&#x6BCF;&#x4E2A; CPU &#x90FD;&#x5F97;&#x5177;&#x6709; MMU&#xFF08;memory management unit&#xFF09;&#x63D0;&#x4F9B;&#x57FA;&#x5730;&#x5740;&#x548C;&#x5730;&#x5740;&#x9650;&#x5236;&#x503C;&#x5BC4;&#x5B58;&#x5668;&#xFF0C;&#x5E76;&#x80FD;&#x591F;&#x6839;&#x636E;&#x865A;&#x62DF;&#x5730;&#x5740;&#x8F6C;&#x6362;&#x4E3A;&#x7269;&#x7406;&#x5730;&#x5740;&#x3002;
+<li>可以切换 CPU 的模式为特权模式和用户模式，特权模式具有访问所有硬件的权限，用户模式用于运行应用程序</li>
+<li>每个 CPU 都得具有 MMU（memory management unit）提供基地址和地址限制值寄存器，并能够根据虚拟地址转换为物理地址。
 <ul class="org-ul">
-<li>&#x5F53;&#x8FD0;&#x884C;&#x7684;&#x8FDB;&#x7A0B;&#x4E0D;&#x540C;&#xFF0C;&#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;&#x4F1A;&#x586B;&#x5165;&#x5F53;&#x524D;&#x8FDB;&#x7A0B;&#x5BF9;&#x5E94;&#x7684;&#x57FA;&#x5730;&#x5740;&#x548C;&#x9650;&#x5236;&#x503C;&#xFF08;&#x5F53;&#x7136;&#x5FC5;&#x987B;&#x662F;&#x5728;&#x7279;&#x6743;&#x6A21;&#x5F0F;&#x4E0B;&#x624D;&#x80FD;&#x66F4;&#x6539;&#x8FD9;&#x4E9B;&#x503C;&#xFF09;</li>
+<li>当运行的进程不同，操作系统会填入当前进程对应的基地址和限制值（当然必须是在特权模式下才能更改这些值）</li>
 </ul></li>
-<li>&#x5F53;&#x8FDB;&#x7A0B;&#x8FDB;&#x884C;&#x4E86;&#x975E;&#x6CD5;&#x8BBF;&#x95EE;&#x540E;&#xFF0C;&#x786C;&#x4EF6;&#x53EF;&#x4EE5;&#x901A;&#x77E5; CPU &#x53D1;&#x51FA;&#x5F02;&#x5E38;&#xFF0C;&#x8BA9;&#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;&#x6765;&#x5904;&#x7406;&#x8BE5;&#x5F02;&#x5E38;&#x8FDB;&#x7A0B;&#x3002;</li>
+<li>当进程进行了非法访问后，硬件可以通知 CPU 发出异常，让操作系统来处理该异常进程。</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-org0eaeec1" class="outline-2">
-<h2 id="org0eaeec1">&#x5BF9;&#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;&#x7684;&#x8981;&#x6C42;</h2>
-<div class="outline-text-2" id="text-org0eaeec1">
+<div id="outline-container-orgcc45a88" class="outline-2">
+<h2 id="orgcc45a88">对操作系统的要求</h2>
+<div class="outline-text-2" id="text-orgcc45a88">
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mem_translation_sw_requirement.jpg?raw=true" alt="mem_translation_sw_requirement.jpg">
 <p>
-&#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;&#x5BF9;&#x5E94;&#x7684;&#x4E5F;&#x9700;&#x8981;&#x505A;&#x5982;&#x4E0B;&#x652F;&#x6301;&#xFF1A;
+操作系统对应的也需要做如下支持：
 </p>
 <ul class="org-ul">
-<li>&#x4F7F;&#x7528;&#x7A7A;&#x95F2;&#x5217;&#x8868;&#x7EF4;&#x62A4;&#x7269;&#x7406;&#x5185;&#x5B58;&#x5F53;&#x524D;&#x54EA;&#x4E9B;&#x90E8;&#x5206;&#x8FD8;&#x672A;&#x4F7F;&#x7528;</li>
-<li>&#x5F53;&#x4E00;&#x4E2A;&#x65B0;&#x8FDB;&#x7A0B;&#x542F;&#x52A8;&#x65F6;&#xFF0C;&#x5148;&#x4ECE;&#x7269;&#x7406;&#x5185;&#x5B58;&#x4E2D;&#x627E;&#x51FA;&#x7A7A;&#x95F2;&#x7A7A;&#x95F4;&#x5F97;&#x51FA;&#x5176;&#x57FA;&#x5730;&#x5740;&#x548C;&#x9650;&#x5236;&#x503C;&#xFF0C;&#x5199;&#x5165; PCB&#xFF08;process control block&#xFF09; &#x4E2D;&#xFF0C;&#x5E76;&#x521D;&#x59CB;&#x5316; MMU</li>
-<li>&#x5F53;&#x8FDB;&#x7A0B;&#x9000;&#x51FA;&#x540E;&#xFF0C;&#x56DE;&#x6536;&#x8BE5;&#x8FDB;&#x7A0B;&#x7684;&#x5185;&#x5B58;&#x4F7F;&#x7528;&#x7A7A;&#x95F4;&#xFF0C;&#x91CD;&#x65B0;&#x6302;&#x5165;&#x5230;&#x7A7A;&#x95F2;&#x5217;&#x8868;&#x4E2D;</li>
-<li>&#x5F53;&#x53D1;&#x751F;&#x8FDB;&#x7A0B;&#x5207;&#x6362;&#x65F6;&#xFF0C;&#x7531;&#x4E8E;&#x4E00;&#x4E2A; CPU &#x4EC5;&#x6709;&#x4E00;&#x5BF9;&#x57FA;&#x5730;&#x5740;&#x548C;&#x9650;&#x5236;&#x503C;&#x5BC4;&#x5B58;&#x5668;&#xFF0C;&#x6240;&#x4EE5;&#x8981;&#x5C06;&#x5F53;&#x524D;&#x8FDB;&#x7A0B;&#x7684;&#x57FA;&#x5730;&#x5740;&#x548C;&#x9650;&#x5236;&#x503C;&#x4FDD;&#x5B58;&#x5230; PCB &#x4E2D;&#xFF0C;&#x7136;&#x540E;&#x53D6;&#x51FA;&#x65B0;&#x8FD0;&#x884C;&#x8FDB;&#x7A0B;&#x7684;&#x57FA;&#x5730;&#x5740;&#x548C;&#x9650;&#x5236;&#x503C;</li>
-<li>&#x5F53;&#x51FA;&#x73B0;&#x975E;&#x6CD5;&#x8BBF;&#x95EE;&#x65F6;&#xFF0C;CPU &#x4F1A;&#x53D1;&#x51FA;&#x5F02;&#x5E38;&#xFF0C;OS &#x8981;&#x80FD;&#x83B7;&#x53D6;&#x8BE5;&#x5F02;&#x5E38;&#x5E76;&#x8FDB;&#x884C;&#x76F8;&#x5E94;&#x7684;&#x5904;&#x7406;&#x3002;</li>
+<li>使用空闲列表维护物理内存当前哪些部分还未使用</li>
+<li>当一个新进程启动时，先从物理内存中找出空闲空间得出其基地址和限制值，写入 PCB（process control block） 中，并初始化 MMU</li>
+<li>当进程退出后，回收该进程的内存使用空间，重新挂入到空闲列表中</li>
+<li>当发生进程切换时，由于一个 CPU 仅有一对基地址和限制值寄存器，所以要将当前进程的基地址和限制值保存到 PCB 中，然后取出新运行进程的基地址和限制值</li>
+<li>当出现非法访问时，CPU 会发出异常，OS 要能获取该异常并进行相应的处理。</li>
 </ul>
 
 <p>
-&#x7ED3;&#x5408;&#x8F6F;&#x4EF6;&#x548C;&#x786C;&#x4EF6;&#x7684;&#x914D;&#x5408;&#x6D41;&#x7A0B;&#x5982;&#x4E0B;&#x56FE;&#xFF1A;
+结合软件和硬件的配合流程如下图：
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mem_translation_process1.jpg?raw=true" alt="mem_translation_process1.jpg">
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mem_translation_process2.jpg?raw=true" alt="mem_translation_process2.jpg">
@@ -367,7 +367,7 @@ physical address = virtual address + base</pre>
 </div>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
 </div>
 
     </div>
@@ -453,7 +453,7 @@ Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org4796674"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x5730;&amp;#x5740;&amp;#x8F6C;&amp;#x6362;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org9b1b78c"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x5BF9;&amp;#x786C;&amp;#x4EF6;&amp;#x7684;&amp;#x8981;&amp;#x6C42;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org0eaeec1"><span class="nav-number">3.</span> <span class="nav-text">&amp;#x5BF9;&amp;#x64CD;&amp;#x4F5C;&amp;#x7CFB;&amp;#x7EDF;&amp;#x7684;&amp;#x8981;&amp;#x6C42;</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#orgd0c9d79"><span class="nav-number">1.</span> <span class="nav-text">地址转换</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org2312e08"><span class="nav-number">2.</span> <span class="nav-text">对硬件的要求</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgcc45a88"><span class="nav-number">3.</span> <span class="nav-text">对操作系统的要求</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 

@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="&amp;#x524D;&amp;#x9762;&amp;#x8BF4;&amp;#x8FC7; MMU &amp;#x4E2D;&amp;#x53EA;&amp;#x5B58;&amp;#x653E;&amp;#x9875;&amp;#x8868;&amp;#x57FA;&amp;#x5730;&amp;#x5740;&amp;#xFF0C;&amp;#x800C;&amp;#x9875;&amp;#x8868;&amp;#x662F;&amp;#x5B58;&amp;#x653E;&amp;#x5728; SDRAM &amp;#x4E2D;&amp;#x7684;&amp;#">
+  <meta name="description" content="前面说过 MMU 中只存放页表基地址，而页表是存放在 SDRAM 中的。 每次执行指令或读写数据前，都需要先将虚拟地址转换为物理地址，这就需要先读取页表的内容，这无疑是很慢的。    所以需要在 MMU 中增加一个 cache，也就是快表（translation-lookaside buffer, TLB）， 当要进行地址转换时，如果 TLB 中有缓存的转换关系，那么就可以不用访问页表从而大大">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[What]Translation Lookaside Buffers">
 <meta property="og:url" content="http://kcmetercec.top/2020/02/28/book_ostep_vm-tlb/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="&amp;#x524D;&amp;#x9762;&amp;#x8BF4;&amp;#x8FC7; MMU &amp;#x4E2D;&amp;#x53EA;&amp;#x5B58;&amp;#x653E;&amp;#x9875;&amp;#x8868;&amp;#x57FA;&amp;#x5730;&amp;#x5740;&amp;#xFF0C;&amp;#x800C;&amp;#x9875;&amp;#x8868;&amp;#x662F;&amp;#x5B58;&amp;#x653E;&amp;#x5728; SDRAM &amp;#x4E2D;&amp;#x7684;&amp;#">
+<meta property="og:description" content="前面说过 MMU 中只存放页表基地址，而页表是存放在 SDRAM 中的。 每次执行指令或读写数据前，都需要先将虚拟地址转换为物理地址，这就需要先读取页表的内容，这无疑是很慢的。    所以需要在 MMU 中增加一个 cache，也就是快表（translation-lookaside buffer, TLB）， 当要进行地址转换时，如果 TLB 中有缓存的转换关系，那么就可以不用访问页表从而大大">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/tlb/tlb_ex.jpg?raw=true">
 <meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/tlb/tlb_entry.jpg?raw=true">
@@ -298,25 +298,25 @@
       
         <div id="content">
 <p>
-&#x524D;&#x9762;&#x8BF4;&#x8FC7; MMU &#x4E2D;&#x53EA;&#x5B58;&#x653E;&#x9875;&#x8868;&#x57FA;&#x5730;&#x5740;&#xFF0C;&#x800C;&#x9875;&#x8868;&#x662F;&#x5B58;&#x653E;&#x5728; SDRAM &#x4E2D;&#x7684;&#x3002;
-&#x6BCF;&#x6B21;&#x6267;&#x884C;&#x6307;&#x4EE4;&#x6216;&#x8BFB;&#x5199;&#x6570;&#x636E;&#x524D;&#xFF0C;&#x90FD;&#x9700;&#x8981;&#x5148;&#x5C06;&#x865A;&#x62DF;&#x5730;&#x5740;&#x8F6C;&#x6362;&#x4E3A;&#x7269;&#x7406;&#x5730;&#x5740;&#xFF0C;&#x8FD9;&#x5C31;&#x9700;&#x8981;&#x5148;&#x8BFB;&#x53D6;&#x9875;&#x8868;&#x7684;&#x5185;&#x5BB9;&#xFF0C;&#x8FD9;&#x65E0;&#x7591;&#x662F;&#x5F88;&#x6162;&#x7684;&#x3002;
+前面说过 MMU 中只存放页表基地址，而页表是存放在 SDRAM 中的。
+每次执行指令或读写数据前，都需要先将虚拟地址转换为物理地址，这就需要先读取页表的内容，这无疑是很慢的。
 </p>
 
 <p>
-&#x6240;&#x4EE5;&#x9700;&#x8981;&#x5728; MMU &#x4E2D;&#x589E;&#x52A0;&#x4E00;&#x4E2A; cache&#xFF0C;&#x4E5F;&#x5C31;&#x662F;&#x5FEB;&#x8868;&#xFF08;translation-lookaside buffer, TLB&#xFF09;&#xFF0C;
-&#x5F53;&#x8981;&#x8FDB;&#x884C;&#x5730;&#x5740;&#x8F6C;&#x6362;&#x65F6;&#xFF0C;&#x5982;&#x679C; TLB &#x4E2D;&#x6709;&#x7F13;&#x5B58;&#x7684;&#x8F6C;&#x6362;&#x5173;&#x7CFB;&#xFF0C;&#x90A3;&#x4E48;&#x5C31;&#x53EF;&#x4EE5;&#x4E0D;&#x7528;&#x8BBF;&#x95EE;&#x9875;&#x8868;&#x4ECE;&#x800C;&#x5927;&#x5927;&#x63D0;&#x9AD8;&#x4E86;&#x8F6C;&#x6362;&#x901F;&#x5EA6;&#x3002;
+所以需要在 MMU 中增加一个 cache，也就是快表（translation-lookaside buffer, TLB），
+当要进行地址转换时，如果 TLB 中有缓存的转换关系，那么就可以不用访问页表从而大大提高了转换速度。
 </p>
 <a id="more"></a>
-<div id="outline-container-orge92c7a1" class="outline-2">
-<h2 id="orge92c7a1">TLB &#x7684;&#x57FA;&#x7840;&#x7B97;&#x6CD5;</h2>
-<div class="outline-text-2" id="text-orge92c7a1">
+<div id="outline-container-org37631fc" class="outline-2">
+<h2 id="org37631fc">TLB 的基础算法</h2>
+<div class="outline-text-2" id="text-org37631fc">
 <pre class="example">
-VPN = (VirtualAddress &amp; VPN_MASK) &gt;&gt; SHIFT
+VPN = (VirtualAddress & VPN_MASK) >> SHIFT
 (Success, TlbEntry) = TLB_Lookup(VPN)
 if (Success == True) // TLB Hit
     if (CanAccess(TlbEntry.ProtectBits) == True)
-        Offset = VirtualAddress &amp; OFFSET_MASK
-        PhysAddr = (TlbEntry.PFN &lt;&lt; SHIFT) | Offset
+        Offset = VirtualAddress & OFFSET_MASK
+        PhysAddr = (TlbEntry.PFN << SHIFT) | Offset
         Register = AccessMemory(PhysAddr)
     else
         RaiseException(PROTECTION_FAULT)
@@ -331,211 +331,211 @@ else // TLB Miss
     TLB_Insert(VPN, PTE.PFN, PTE.ProtectBits)
     RetryInstruction()</pre>
 <ul class="org-ul">
-<li>&#x9996;&#x5148;&#x6839;&#x636E;&#x865A;&#x62DF;&#x5730;&#x5740;&#x5F97;&#x51FA;&#x9875;&#x8868;&#x504F;&#x79FB;&#xFF0C;&#x6839;&#x636E;&#x6B64;&#x9875;&#x8868;&#x504F;&#x79FB;&#x67E5;&#x770B; TLB &#x4E2D;&#x662F;&#x5426;&#x6709;&#x5BF9;&#x5E94;&#x7684;&#x9875;&#x8868;&#x3002;</li>
-<li>&#x5982;&#x679C;&#x6709;&#x5BF9;&#x5E94;&#x9875;&#x8868;&#x9879;&#x5E76;&#x4E14;&#x5177;&#x6709;&#x8BBF;&#x95EE;&#x6743;&#x9650;&#xFF0C;&#x90A3;&#x4E48;&#x5C31;&#x53EF;&#x4EE5;&#x6839;&#x636E; TLB &#x4E2D;&#x6B64;&#x9875;&#x8868;&#x7684;&#x5185;&#x5BB9;&#x7684;&#x7269;&#x7406;&#x5757;&#x504F;&#x79FB;&#x548C;&#x865A;&#x62DF;&#x5730;&#x5740;&#x7684; offset &#x5F97;&#x51FA;&#x6700;&#x7EC8;&#x7684;&#x7269;&#x7406;&#x5730;&#x5740;&#xFF0C;&#x4ECE;&#x800C;&#x8BBF;&#x95EE;&#x5185;&#x5B58;&#x3002;
+<li>首先根据虚拟地址得出页表偏移，根据此页表偏移查看 TLB 中是否有对应的页表。</li>
+<li>如果有对应页表项并且具有访问权限，那么就可以根据 TLB 中此页表的内容的物理块偏移和虚拟地址的 offset 得出最终的物理地址，从而访问内存。
 <ul class="org-ul">
-<li>&#x8FD9;&#x79CD;&#x60C5;&#x51B5;&#x4E0B;&#x5C06;&#x539F;&#x6765;&#x9700;&#x8981;&#x8BBF;&#x95EE;&#x4E24;&#x6B21;&#x7269;&#x7406;&#x5185;&#x5B58;&#x7684;&#x64CD;&#x4F5C;&#x5C31;&#x51CF;&#x5C11;&#x5230;&#x4E86;&#x4E00;&#x6B21;&#xFF08;&#x5F53;&#x6709; CPU cache &#x5E76;&#x547D;&#x4E2D;&#x65F6;&#xFF0C;&#x8FDE;&#x8FD9;&#x4E00;&#x6B21;&#x7269;&#x7406;&#x5185;&#x5B58;&#x8BBF;&#x95EE;&#x90FD;&#x53EF;&#x4EE5;&#x7701;&#x6389;&#xFF09;</li>
+<li>这种情况下将原来需要访问两次物理内存的操作就减少到了一次（当有 CPU cache 并命中时，连这一次物理内存访问都可以省掉）</li>
 </ul></li>
-<li>&#x5982;&#x679C; TLB &#x4E2D;&#x6CA1;&#x6709;&#x5BF9;&#x5E94;&#x7684;&#x9875;&#x8868;&#x9879;&#xFF0C;&#x90A3;&#x4E48;&#x9700;&#x8981;&#x6839;&#x636E;&#x9875;&#x8868;&#x504F;&#x79FB;&#x548C;&#x9875;&#x8868;&#x57FA;&#x5730;&#x5740;&#x4ECE;&#x7269;&#x7406;&#x5185;&#x5B58;&#x4E2D;&#x53D6;&#x51FA;&#x9875;&#x8868;&#x9879;&#xFF0C;&#x5E76;&#x4E14;&#x5982;&#x679C;&#x6B64;&#x9875;&#x8868;&#x9879;&#x6709;&#x8BBF;&#x95EE;&#x6743;&#x9650;&#xFF0C;&#x90A3;&#x4E48;&#x5C06;&#x6B64;&#x9875;&#x8868;&#x9879;&#x7684;&#x5185;&#x5BB9;&#x5199;&#x56DE; TLB&#x3002;&#x518D;&#x6B21;&#x89E3;&#x6790;&#x5C31;&#x4F1A; TLB &#x547D;&#x4E2D;&#x5E76;&#x8BBF;&#x95EE;&#x5230;&#x5BF9;&#x5E94;&#x5185;&#x5B58;&#x4E86;&#x3002;
+<li>如果 TLB 中没有对应的页表项，那么需要根据页表偏移和页表基地址从物理内存中取出页表项，并且如果此页表项有访问权限，那么将此页表项的内容写回 TLB。再次解析就会 TLB 命中并访问到对应内存了。
 <ul class="org-ul">
-<li>&#x8FD9;&#x79CD;&#x60C5;&#x51B5;&#x5C31;&#x4F1A;&#x6709;&#x4E24;&#x6B21;&#x7269;&#x7406;&#x5185;&#x5B58;&#x8BBF;&#x95EE;&#xFF0C;&#x6548;&#x7387;&#x4F4E;&#x5F88;&#x591A;&#x3002;</li>
+<li>这种情况就会有两次物理内存访问，效率低很多。</li>
 </ul></li>
 </ul>
 
 <p>
-&#x5F53;&#x9891;&#x7E41;&#x51FA;&#x73B0; TLB miss &#x65F6;&#xFF0C;&#x7CFB;&#x7EDF;&#x8FD0;&#x884C;&#x6548;&#x7387;&#x5C31;&#x4F1A;&#x5927;&#x5927;&#x964D;&#x4F4E;&#xFF0C;&#x6240;&#x4EE5;&#xFF1A;
+当频繁出现 TLB miss 时，系统运行效率就会大大降低，所以：
 </p>
 <ul class="org-ul">
-<li>&#x8981;&#x51CF;&#x5C0F;&#x8FDB;&#x7A0B;&#x7684;&#x5207;&#x6362;&#x9891;&#x7387;&#xFF0C;&#x4E00;&#x65E6;&#x8FDB;&#x7A0B;&#x5207;&#x6362;&#x5176;&#x9875;&#x8868;&#x90FD;&#x4F1A; miss &#x6389;</li>
-<li>&#x4EE3;&#x7801;&#x5C3D;&#x91CF;&#x64CD;&#x4F5C;&#x8FDE;&#x7EED;&#x5185;&#x5B58;&#xFF0C;&#x5982;&#x679C;&#x5185;&#x5B58;&#x5730;&#x5740;&#x8DF3;&#x8DC3;&#x8FC7;&#x5927;&#xFF0C;&#x4E5F;&#x5F88;&#x53EF;&#x80FD;&#x4F1A;&#x5BFC;&#x81F4; miss&#x3002;</li>
+<li>要减小进程的切换频率，一旦进程切换其页表都会 miss 掉</li>
+<li>代码尽量操作连续内存，如果内存地址跳跃过大，也很可能会导致 miss。</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-orgc8267a2" class="outline-2">
-<h2 id="orgc8267a2">&#x793A;&#x4F8B;</h2>
-<div class="outline-text-2" id="text-orgc8267a2">
+<div id="outline-container-orgff012bd" class="outline-2">
+<h2 id="orgff012bd">示例</h2>
+<div class="outline-text-2" id="text-orgff012bd">
 <p>
-&#x73B0;&#x5728;&#x5047;&#x8BBE;&#x865A;&#x62DF;&#x5730;&#x5740;&#x7A7A;&#x95F4;&#x662F; 256 &#x5B57;&#x8282;&#xFF0C;&#x5E76;&#x4E14;&#x9875;&#x5927;&#x5C0F;&#x662F; 16 &#x5B57;&#x8282;&#xFF0C;&#x90A3;&#x5C31;&#x4F1A;&#x6709; 16 &#x4E2A;&#x9875;&#x3002;
+现在假设虚拟地址空间是 256 字节，并且页大小是 16 字节，那就会有 16 个页。
 </p>
 
 <p>
-&#x90A3;&#x5982;&#x679C;&#x73B0;&#x5728;&#x6709;&#x4E2A;&#x6570;&#x7EC4;&#xFF0C;&#x6570;&#x7EC4;&#x7684;&#x8D77;&#x59CB;&#x865A;&#x62DF;&#x5730;&#x5740;&#x662F; 100&#xFF08;10&#x8FDB;&#x5236;&#xFF09;&#xFF0C;&#x6570;&#x636E;&#x542B;&#x6709; 10 &#x4E2A;&#x5143;&#x7D20;&#xFF0C;&#x6BCF;&#x4E2A;&#x5143;&#x7D20;&#x5927;&#x5C0F;&#x662F; 4&#xFF0C;&#x90A3;&#x4E48;&#x8FD9;&#x4E2A;&#x6570;&#x7EC4;&#x5728;&#x5BF9;&#x5E94;&#x9875;&#x8868;&#x7684;&#x4F4D;&#x7F6E;&#x5982;&#x4E0B;&#xFF1A;
+那如果现在有个数组，数组的起始虚拟地址是 100（10进制），数据含有 10 个元素，每个元素大小是 4，那么这个数组在对应页表的位置如下：
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/tlb/tlb_ex.jpg?raw=true" alt="mempic/tlb/tlb_ex.jpg">
 <p>
-&#x4E0B;&#x9762;&#x5047;&#x8BBE;&#x8BBF;&#x95EE;&#x8FD9;&#x4E2A;&#x6570;&#x7EC4;&#x7684;&#x4EE3;&#x7801;&#x5982;&#x4E0B;&#xFF1A;
+下面假设访问这个数组的代码如下：
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> sum = <span class="number">0</span>;</span><br><span class="line"><span class="keyword">for</span>(i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++)</span><br><span class="line">{</span><br><span class="line">  sum += a[i];</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> sum = <span class="number">0</span>;</span><br><span class="line"><span class="keyword">for</span>(i = <span class="number">0</span>; i < <span class="number">10</span>; i++)</span><br><span class="line">{</span><br><span class="line">  sum += a[i];</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 </div>
 <p>
-&#x5047;&#x8BBE;&#x6700;&#x5F00;&#x59CB; TLB &#x4E2D;&#x5E76;&#x6CA1;&#x6709;&#x7F13;&#x5B58; VPN06 &#x8FD9;&#x4E2A;&#x9875;&#x8868;&#x9879;&#xFF0C;&#x90A3;&#x4E48;&#x6700;&#x5F00;&#x59CB;&#x8BBF;&#x95EE; a[0] &#x65F6;&#xFF0C;&#x4F1A;&#x5BFC;&#x81F4; TLB miss&#xFF0C;&#x4ECE;&#x800C; MMU &#x4F1A;&#x4ECE;&#x7269;&#x7406;&#x5185;&#x5B58;&#x66F4;&#x65B0;&#x8BE5;&#x9875;&#x8868;&#x9879;&#x5230; TLB &#x4E2D;&#x3002;
+假设最开始 TLB 中并没有缓存 VPN06 这个页表项，那么最开始访问 a[0] 时，会导致 TLB miss，从而 MMU 会从物理内存更新该页表项到 TLB 中。
 </p>
 
 <p>
-&#x4E0B;&#x6B21;&#x8BBF;&#x95EE; a[1] &#x65F6;&#xFF0C;&#x7531;&#x4E8E;&#x6B64;&#x5730;&#x5740;&#x4E5F;&#x662F;&#x5728; VPN06 &#x4E2D;&#xFF0C;&#x6240;&#x4EE5;&#x4E00;&#x5B9A;&#x662F; TLB hit&#x3002;&#x8BBF;&#x95EE; a[2] &#x65F6;&#x540C;&#x7406;&#x4E5F;&#x4F1A;&#x662F; TLB hit&#x3002;
+下次访问 a[1] 时，由于此地址也是在 VPN06 中，所以一定是 TLB hit。访问 a[2] 时同理也会是 TLB hit。
 </p>
 
 <p>
-&#x540C;&#x6837;&#x7684;&#xFF0C;&#x5728;&#x9996;&#x6B21;&#x8BBF;&#x95EE; a[3],a[7] &#x65F6;&#x4E5F;&#x4F1A;&#x9020;&#x6210; TLB miss&#xFF0C;&#x800C;&#x5728;&#x540C;&#x4E00;&#x9875;&#x7684;&#x5176;&#x4ED6;&#x5143;&#x7D20;&#x8BBF;&#x95EE;&#x4E5F;&#x662F; TLB hit&#x3002;
+同样的，在首次访问 a[3],a[7] 时也会造成 TLB miss，而在同一页的其他元素访问也是 TLB hit。
 </p>
 </div>
 </div>
-<div id="outline-container-orge8b8bd8" class="outline-2">
-<h2 id="orge8b8bd8">&#x8C01;&#x5728;&#x5904;&#x7406; TLB miss</h2>
-<div class="outline-text-2" id="text-orge8b8bd8">
+<div id="outline-container-org9726d9c" class="outline-2">
+<h2 id="org9726d9c">谁在处理 TLB miss</h2>
+<div class="outline-text-2" id="text-org9726d9c">
 <p>
-&#x5F53; TLB miss &#x51FA;&#x73B0;&#x65F6;&#xFF0C;&#x6709;&#x4EE5;&#x4E0B;&#x4E24;&#x79CD;&#x65B9;&#x5F0F;&#x5904;&#x7406;&#xFF1A;
+当 TLB miss 出现时，有以下两种方式处理：
 </p>
 <ul class="org-ul">
-<li>&#x7531;&#x786C;&#x4EF6;&#x6765;&#x5B8C;&#x6210;&#xFF1A;&#x5F53; TLB &#x4E2D;&#x6CA1;&#x6709;&#x5BF9;&#x5E94;&#x7684;&#x9875;&#x8868;&#x9879;&#x65F6;&#xFF0C;&#x7531;&#x786C;&#x4EF6;(hardware-managed TLBs)&#x6839;&#x636E;&#x9875;&#x8868;&#x7684;&#x57FA;&#x5730;&#x5740;&#xFF0C;&#x4ECE;&#x7269;&#x7406;&#x5185;&#x5B58;&#x4E2D;&#x53D6;&#x51FA;&#x8BE5;&#x9875;&#x8868;&#x9879;&#x5B58;&#x5165; TLB</li>
-<li>&#x7531;&#x8F6F;&#x4EF6;&#x5B8C;&#x6210;&#xFF1A;&#x5F53; TLB &#x4E2D;&#x6CA1;&#x6709;&#x5BF9;&#x5E94;&#x9875;&#x8868;&#x9879;&#x65F6;&#xFF0C;&#x786C;&#x4EF6;&#x4EA7;&#x751F;&#x5F02;&#x5E38;&#xFF0C;&#x7CFB;&#x7EDF;&#x8FDB;&#x5165;&#x5185;&#x6838;&#x6001;&#x7684;&#x5F02;&#x5E38;&#x5904;&#x7406;&#x4EE3;&#x7801;&#xFF0C;&#x8FD9;&#x6BB5;&#x4EE3;&#x7801;&#x5B8C;&#x6210;&#x66F4;&#x65B0; TLB &#x7684;&#x529F;&#x80FD;
+<li>由硬件来完成：当 TLB 中没有对应的页表项时，由硬件(hardware-managed TLBs)根据页表的基地址，从物理内存中取出该页表项存入 TLB</li>
+<li>由软件完成：当 TLB 中没有对应页表项时，硬件产生异常，系统进入内核态的异常处理代码，这段代码完成更新 TLB 的功能
 <ul class="org-ul">
-<li>&#x8FD9;&#x79CD;&#x60C5;&#x51B5;&#x4E0E;&#x4E2D;&#x65AD;&#x8FD4;&#x56DE;&#x6709;&#x4E9B;&#x4E0D;&#x4E00;&#x6837;&#xFF0C;&#x4E2D;&#x65AD;&#x8FD4;&#x56DE;&#x7684;&#x662F;&#x4E2D;&#x65AD;&#x524D;&#x7684;&#x4E0B;&#x4E00;&#x6761;&#x6307;&#x4EE4;&#x7EE7;&#x7EED;&#x6267;&#x884C;&#xFF0C;&#x800C; TLB miss &#x5F02;&#x5E38;&#x5904;&#x7406;&#x4EE3;&#x7801;&#x8FD4;&#x56DE;&#x70B9;&#x5219;&#x662F;&#x9020;&#x6210; TLB miss &#x7684;&#x6307;&#x4EE4;&#x5904;&#xFF0C;&#x8FD9;&#x6837;&#x518D;&#x6267;&#x884C;&#x4E00;&#x6B21;&#x8BE5;&#x6307;&#x4EE4;&#x4FBF;&#x662F; TLB hit &#x4E86;&#x3002;</li>
-<li>&#x8F6F;&#x4EF6;&#x5904;&#x7406;&#x7684;&#x65B9;&#x5F0F;&#x4E0B;&#xFF0C;&#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;&#x53EF;&#x4EE5;&#x4EE5;&#x7EDF;&#x4E00;&#x7684;&#x6570;&#x636E;&#x7ED3;&#x6784;&#x6765;&#x5C4F;&#x853D;&#x786C;&#x4EF6;&#x7684;&#x5DEE;&#x5F02;</li>
+<li>这种情况与中断返回有些不一样，中断返回的是中断前的下一条指令继续执行，而 TLB miss 异常处理代码返回点则是造成 TLB miss 的指令处，这样再执行一次该指令便是 TLB hit 了。</li>
+<li>软件处理的方式下，操作系统可以以统一的数据结构来屏蔽硬件的差异</li>
 </ul></li>
 </ul>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">VPN = (VirtualAddress &amp; VPN_MASK) &gt;&gt; SHIFT</span><br><span class="line">(Success, TlbEntry) = TLB_Lookup(VPN)</span><br><span class="line"><span class="keyword">if</span> (Success == True) <span class="comment">// TLB Hit</span></span><br><span class="line">  <span class="keyword">if</span> (CanAccess(TlbEntry.ProtectBits) == True)</span><br><span class="line">    Offset = VirtualAddress &amp; OFFSET_MASK</span><br><span class="line">    PhysAddr = (TlbEntry.PFN &lt;&lt; SHIFT) | Offset</span><br><span class="line">    Register = AccessMemory(PhysAddr)</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    RaiseException(PROTECTION_FAULT)</span><br><span class="line"><span class="keyword">else</span> <span class="comment">// TLB Miss</span></span><br><span class="line">   RaiseException(TLB_MISS)</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">VPN = (VirtualAddress & VPN_MASK) >> SHIFT</span><br><span class="line">(Success, TlbEntry) = TLB_Lookup(VPN)</span><br><span class="line"><span class="keyword">if</span> (Success == True) <span class="comment">// TLB Hit</span></span><br><span class="line">  <span class="keyword">if</span> (CanAccess(TlbEntry.ProtectBits) == True)</span><br><span class="line">    Offset = VirtualAddress & OFFSET_MASK</span><br><span class="line">    PhysAddr = (TlbEntry.PFN << SHIFT) | Offset</span><br><span class="line">    Register = AccessMemory(PhysAddr)</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    RaiseException(PROTECTION_FAULT)</span><br><span class="line"><span class="keyword">else</span> <span class="comment">// TLB Miss</span></span><br><span class="line">   RaiseException(TLB_MISS)</span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </div>
-<div id="outline-container-org15780d1" class="outline-2">
-<h2 id="org15780d1">TLB &#x7684;&#x5185;&#x5BB9;</h2>
-<div class="outline-text-2" id="text-org15780d1">
+<div id="outline-container-orgf7fb7d7" class="outline-2">
+<h2 id="orgf7fb7d7">TLB 的内容</h2>
+<div class="outline-text-2" id="text-orgf7fb7d7">
 <p>
-&#x7531;&#x4E8E; TLB &#x4FDD;&#x6301;&#x4E86;&#x865A;&#x62DF;&#x5185;&#x5B58;&#x5757;&#x5230;&#x7269;&#x7406;&#x5185;&#x5B58;&#x5757;&#x7684;&#x6620;&#x5C04;&#x5173;&#x7CFB;&#xFF0C;&#x6240;&#x4EE5;&#x5176;&#x5185;&#x5BB9;&#x5982;&#x540C;&#x4E0B;&#x9762;&#x8FD9;&#x822C;&#xFF1A;
+由于 TLB 保持了虚拟内存块到物理内存块的映射关系，所以其内容如同下面这般：
 </p>
 <pre class="example">
 VPN | PFN | other bits</pre>
 <p>
-other bits &#x5177;&#x6709;&#x5982;&#x4E0B;&#x7C7B;&#x4F3C;&#x7684;&#x5185;&#x5BB9;&#xFF1A;
+other bits 具有如下类似的内容：
 </p>
 <ul class="org-ul">
-<li>valid bit : &#x8BF4;&#x660E;&#x8FD9;&#x6BB5;&#x7F13;&#x5B58;&#x662F;&#x5426;&#x6709;&#x6548;</li>
-<li>protection bits : &#x8BE5;&#x6BB5;&#x5185;&#x5B58;&#x7684;&#x6743;&#x9650;</li>
-<li>dirty bit &#xFF1A; &#x8BF4;&#x660E;&#x5185;&#x5B58;&#x662F;&#x5426;&#x88AB;&#x4FEE;&#x6539;&#x8FC7;</li>
+<li>valid bit : 说明这段缓存是否有效</li>
+<li>protection bits : 该段内存的权限</li>
+<li>dirty bit ： 说明内存是否被修改过</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-org2409151" class="outline-2">
-<h2 id="org2409151">TLB &#x4E0E;&#x4E0A;&#x4E0B;&#x6587;&#x5207;&#x6362;</h2>
-<div class="outline-text-2" id="text-org2409151">
+<div id="outline-container-org1e0bb51" class="outline-2">
+<h2 id="org1e0bb51">TLB 与上下文切换</h2>
+<div class="outline-text-2" id="text-org1e0bb51">
 <p>
-&#x6211;&#x4EEC;&#x77E5;&#x9053;&#xFF0C;&#x6BCF;&#x4E2A;&#x8FDB;&#x7A0B;&#x90FD;&#x6709;&#x5176;&#x72EC;&#x7ACB;&#x7684;&#x9875;&#x8868;&#xFF0C;&#x6BCF;&#x6B21;&#x5207;&#x6362;&#x8FDB;&#x7A0B;&#x65F6;&#x90FD;&#x8981;&#x5207;&#x6362;&#x5BF9;&#x5E94;&#x8FDB;&#x7A0B;&#x7684;&#x9875;&#x8868;&#x3002;
+我们知道，每个进程都有其独立的页表，每次切换进程时都要切换对应进程的页表。
 </p>
 
 <p>
-&#x90A3;&#x4E48;&#x6BEB;&#x65E0;&#x7591;&#x95EE;&#xFF1A;&#x5F53;&#x8FDB;&#x7A0B;&#x5207;&#x6362;&#x65F6;&#xFF0C;TLB &#x4E2D;&#x7684;&#x5185;&#x5BB9;&#x5BF9;&#x4E8E;&#x8BE5;&#x8FDB;&#x7A0B;&#x4E5F;&#x662F;&#x65E0;&#x610F;&#x4E49;&#x7684;&#xFF0C;&#x6240;&#x4EE5;&#x9700;&#x8981;&#x5904;&#x7406;&#x3002;
+那么毫无疑问：当进程切换时，TLB 中的内容对于该进程也是无意义的，所以需要处理。
 </p>
 
 <p>
-&#x76EE;&#x524D;&#x5904;&#x7406;&#x6709;&#x4EE5;&#x4E0B;&#x4E24;&#x79CD;&#x65B9;&#x5F0F;&#xFF1A;
+目前处理有以下两种方式：
 </p>
 <ul class="org-ul">
-<li>&#x7B80;&#x5355;&#x7C97;&#x66B4;&#x7684;&#x65B9;&#x5F0F;&#x4F7F;&#x65E0;&#x6548;&#x6574;&#x4E2A; TLB&#xFF1A;&#x8FD9;&#x4F1A;&#x9020;&#x6210;&#x8FDB;&#x7A0B;&#x5207;&#x6362;&#x6548;&#x7387;&#x4F4E;&#x4E0B;
+<li>简单粗暴的方式使无效整个 TLB：这会造成进程切换效率低下
 <ul class="org-ul">
-<li>&#x5F53;&#x786C;&#x4EF6;&#x5177;&#x6709; hardware-managed TLB &#x65F6;&#xFF0C;&#x5F53;&#x9875;&#x8868;&#x57FA;&#x5730;&#x5740;&#x5BC4;&#x5B58;&#x5668;&#x88AB;&#x4FEE;&#x6539;&#x540E;&#xFF0C;&#x786C;&#x4EF6;&#x81EA;&#x52A8;&#x4F7F;&#x65E0;&#x6548;&#x6574;&#x4E2A; TLB</li>
-<li>&#x5F53;&#x786C;&#x4EF6;&#x4E0D;&#x5177;&#x6709; hardware-managed TLB &#x65F6;&#xFF0C;&#x7531;&#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;&#x4E3B;&#x52A8;&#x5C06; TLB &#x7684; valid &#x4F4D;&#x7F6E;0</li>
+<li>当硬件具有 hardware-managed TLB 时，当页表基地址寄存器被修改后，硬件自动使无效整个 TLB</li>
+<li>当硬件不具有 hardware-managed TLB 时，由操作系统主动将 TLB 的 valid 位置0</li>
 </ul></li>
-<li>&#x786C;&#x4EF6;&#x5177;&#x6709; address space identifier(ASID) &#x65F6;&#xFF0C;&#x53EF;&#x4EE5;&#x4FDD;&#x5B58;&#x5F53;&#x524D; TLB &#x9879;&#x5BF9;&#x5E94;&#x7684;&#x8FDB;&#x7A0B;&#x3002;
+<li>硬件具有 address space identifier(ASID) 时，可以保存当前 TLB 项对应的进程。
 <ul class="org-ul">
-<li>&#x8FD9;&#x6837;&#x5207;&#x6362;&#x6548;&#x7387;&#x5C31;&#x6BD4;&#x8F83;&#x9AD8;&#x4E86;</li>
+<li>这样切换效率就比较高了</li>
 </ul></li>
 </ul>
 </div>
 </div>
-<div id="outline-container-orgfa38053" class="outline-2">
-<h2 id="orgfa38053">TLB &#x7684;&#x7F6E;&#x6362;&#x7B56;&#x7565;</h2>
-<div class="outline-text-2" id="text-orgfa38053">
+<div id="outline-container-orgfc7fee3" class="outline-2">
+<h2 id="orgfc7fee3">TLB 的置换策略</h2>
+<div class="outline-text-2" id="text-orgfc7fee3">
 <p>
-&#x5F53; TLB &#x4E2D;&#x5B58;&#x653E;&#x7684;&#x90FD;&#x662F;&#x6709;&#x6548;&#x6570;&#x636E;&#x5E76;&#x4E14;&#x6B64;&#x65F6;&#x53C8;&#x9700;&#x8981;&#x7F6E;&#x6362;&#x4E00;&#x4E2A;&#x65B0;&#x7684; TLB &#x65F6;&#xFF0C;&#x6709;&#x4EE5;&#x4E0B;&#x4E24;&#x79CD;&#x5E38;&#x7528;&#x7684;&#x7F6E;&#x6362;&#x7B56;&#x7565;&#xFF1A;
+当 TLB 中存放的都是有效数据并且此时又需要置换一个新的 TLB 时，有以下两种常用的置换策略：
 </p>
 <ul class="org-ul">
-<li>&#x6700;&#x8FD1;&#x6700;&#x5C11;&#x4F7F;&#x7528;&#x7B97;&#x6CD5;&#xFF08;least-recently-used,LRU&#xFF09;&#xFF1A;&#x6BCF;&#x6B21;&#x90FD;&#x7F6E;&#x6362;&#x6700;&#x8FD1;&#x6700;&#x5C11;&#x4F7F;&#x7528;&#x7684;&#x90A3;&#x4E2A; TLB
+<li>最近最少使用算法（least-recently-used,LRU）：每次都置换最近最少使用的那个 TLB
 <ul class="org-ul">
-<li>&#x8FD9;&#x79CD;&#x7B97;&#x6CD5;&#x5229;&#x7528;&#x4E86;&#x5C40;&#x90E8;&#x6027;&#x539F;&#x7406;&#xFF0C;&#x4F46;&#x5F53; TLB &#x6570;&#x91CF;&#x4E3A; N &#x800C;&#x4EE3;&#x7801;&#x5FAA;&#x73AF;&#x9700;&#x8981;&#x8BBF;&#x95EE; N + 1 &#x4E2A; TLB &#x65F6;&#xFF0C;&#x4F1A;&#x5BFC;&#x81F4; TLB &#x4E00;&#x76F4; miss</li>
+<li>这种算法利用了局部性原理，但当 TLB 数量为 N 而代码循环需要访问 N + 1 个 TLB 时，会导致 TLB 一直 miss</li>
 </ul></li>
-<li>&#x968F;&#x673A;&#x7B97;&#x6CD5;&#xFF1A;&#x968F;&#x673A;&#x7F6E;&#x6362;&#x51FA;&#x4E00;&#x4E2A; TLB
+<li>随机算法：随机置换出一个 TLB
 <ul class="org-ul">
-<li>&#x8FD9;&#x79CD;&#x7B97;&#x6CD5;&#x867D;&#x7136;&#x770B;&#x4E0A;&#x53BB;&#x6548;&#x7387;&#x6CA1;&#x6709; LRU &#x9AD8;&#xFF0C;&#x4F46;&#x662F;&#x5B83;&#x53EF;&#x4EE5;&#x907F;&#x514D;&#x4E0A;&#x9762;&#x7684; N &#x4E2A; TLB &#x5BF9;&#x5E94; N + 1 &#x4E2A;&#x5FAA;&#x73AF;&#x7F6E;&#x6362;&#x7684;&#x95EE;&#x9898;&#x3002;</li>
+<li>这种算法虽然看上去效率没有 LRU 高，但是它可以避免上面的 N 个 TLB 对应 N + 1 个循环置换的问题。</li>
 </ul></li>
 </ul>
 </div>
 </div>
-<div id="outline-container-org6ec77ef" class="outline-2">
-<h2 id="org6ec77ef">&#x771F;&#x5B9E;&#x7684; TLB &#x9879;</h2>
-<div class="outline-text-2" id="text-org6ec77ef">
+<div id="outline-container-org5e536b1" class="outline-2">
+<h2 id="org5e536b1">真实的 TLB 项</h2>
+<div class="outline-text-2" id="text-org5e536b1">
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/tlb/tlb_entry.jpg?raw=true" alt="mempic/tlb/tlb_entry.jpg">
 <p>
-&#x4E0A;&#x56FE;&#x662F; MIPS &#x7684; TLB &#x9879;&#x5185;&#x5BB9;&#xFF0C;&#x603B;&#x5171;&#x6709; 64 &#x4F4D;&#x3002;
+上图是 MIPS 的 TLB 项内容，总共有 64 位。
 </p>
 
 <p>
-MIPS &#x652F;&#x6301; 4KB &#x9875;&#x8868;&#xFF08;&#x8FD9;&#x4E5F;&#x662F;&#x5927;&#x90E8;&#x5206;&#x60C5;&#x51B5;&#x4E0B;&#x7684;&#x8BBE;&#x7F6E;&#xFF09;&#xFF0C;&#x90A3;&#x4E48;&#x4E3A;&#x4E86;&#x652F;&#x6301; 32 &#x4F4D;&#x865A;&#x62DF;&#x5730;&#x5740;&#x5BFB;&#x5740;&#x7A7A;&#x95F4;&#xFF0C;&#x5C31;&#x9700;&#x8981; VPN &#x6709; 20 &#x4F4D;&#x3002;
+MIPS 支持 4KB 页表（这也是大部分情况下的设置），那么为了支持 32 位虚拟地址寻址空间，就需要 VPN 有 20 位。
 </p>
 
 <p>
-&#x7531;&#x4E8E; MIPS &#x5C06;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x548C;&#x5185;&#x6838;&#x7A7A;&#x95F4;&#x5206;&#x522B;&#x8BBE;&#x4E3A; 2GB&#xFF0C;&#x6240;&#x4EE5; VPN &#x4EC5;&#x9700;&#x8981; 19 &#x4F4D;&#x5C31;&#x591F;&#x4E86;&#x3002;
-&#x5E76;&#x4E14; VPN &#x53EF;&#x4EE5;&#x6620;&#x5C04;&#x7684;&#x7269;&#x7406;&#x5730;&#x5740; PFN &#x6709; 24 &#x4F4D;&#xFF0C;&#x90A3;&#x4E5F;&#x5C31;&#x662F;&#x8BF4; MIPS &#x6700;&#x591A;&#x652F;&#x6301; 64GB &#x7684;&#x7269;&#x7406;&#x5730;&#x5740;&#x7A7A;&#x95F4;&#x3002;
+由于 MIPS 将用户空间和内核空间分别设为 2GB，所以 VPN 仅需要 19 位就够了。
+并且 VPN 可以映射的物理地址 PFN 有 24 位，那也就是说 MIPS 最多支持 64GB 的物理地址空间。
 </p>
 <ul class="org-ul">
-<li>&#x4F46; VPN &#x53EA;&#x80FD;&#x5728;&#x7279;&#x5B9A;&#x60C5;&#x51B5;&#x4E0B;&#x5BFB;&#x5740; 2GB&#xFF0C;&#x90A3;&#x5176;&#x4F59;&#x672A;&#x6620;&#x5C04;&#x7684;&#x5982;&#x4F55;&#x5904;&#x7406;&#xFF1F;</li>
+<li>但 VPN 只能在特定情况下寻址 2GB，那其余未映射的如何处理？</li>
 </ul>
 
 <p>
-&#x9664;&#x6B64;&#x4E4B;&#x5916;&#xFF0C;&#x8FD8;&#x6709;&#x4E0B;&#x9762;&#x8FD9;&#x4E9B;&#x4F4D;&#xFF1A;
+除此之外，还有下面这些位：
 </p>
 <ul class="org-ul">
-<li>G&#xFF08;Global&#xFF09;&#xFF1A;&#x8BF4;&#x660E;&#x8BE5;&#x9875;&#x662F;&#x5426;&#x662F;&#x6240;&#x6709;&#x8FDB;&#x7A0B;&#x6240;&#x5171;&#x4EAB;&#x7684;
+<li>G（Global）：说明该页是否是所有进程所共享的
 <ul class="org-ul">
-<li>&#x8FD9;&#x79CD;&#x60C5;&#x51B5;&#x4E0B; ASID &#x4F4D;&#x4FBF;&#x65E0;&#x6548;&#x4E86;</li>
+<li>这种情况下 ASID 位便无效了</li>
 </ul></li>
-<li>ASID&#xFF08;address space identifier&#xFF09;&#xFF1A;&#x6307;&#x660E;&#x8BE5;&#x9875;&#x8868;&#x6620;&#x5C04;&#x7528;&#x4E8E;&#x54EA;&#x4E2A;&#x8FDB;&#x7A0B;
+<li>ASID（address space identifier）：指明该页表映射用于哪个进程
 <ul class="org-ul">
-<li>&#x4F46;&#x53EA;&#x6709; 8 &#x4F4D;&#xFF0C;&#x90A3;&#x4E48;&#x8FDB;&#x7A0B;&#x64CD;&#x4F5C; 256 &#x4E2A;&#x540E;&#xFF0C;&#x5C31;&#x65E0;&#x6CD5;&#x5168;&#x90E8;&#x4FDD;&#x5B58;&#x4E86;</li>
+<li>但只有 8 位，那么进程操作 256 个后，就无法全部保存了</li>
 </ul></li>
-<li>C&#xFF08;Coherence&#xFF09;&#xFF1A;cache &#x4E0E;&#x786C;&#x4EF6;&#x7684;&#x4E00;&#x81F4;&#x6027;</li>
-<li>D&#xFF08;Dirty&#xFF09;&#xFF1A;&#x9875;&#x662F;&#x5426;&#x88AB;&#x4FEE;&#x6539;&#x8FC7;</li>
-<li>V&#xFF08;Valid&#xFF09;&#xFF1A;&#x8BE5;&#x9875;&#x9879;&#x662F;&#x5426;&#x6709;&#x6548;</li>
+<li>C（Coherence）：cache 与硬件的一致性</li>
+<li>D（Dirty）：页是否被修改过</li>
+<li>V（Valid）：该页项是否有效</li>
 </ul>
 </div>
 </div>
 
 
 
-<div id="outline-container-orgac81af0" class="outline-2">
-<h2 id="orgac81af0">TLB &#x5B9E;&#x9A8C;</h2>
-<div class="outline-text-2" id="text-orgac81af0">
+<div id="outline-container-org937c26c" class="outline-2">
+<h2 id="org937c26c">TLB 实验</h2>
+<div class="outline-text-2" id="text-org937c26c">
 <p>
-&#x5F53;&#x8BBF;&#x95EE;&#x5185;&#x5B58;&#x5E76;&#x4E14; TLB hit &#x65F6;&#xFF0C;&#x6B64;&#x65F6;&#x7684;&#x64CD;&#x4F5C;&#x6548;&#x7387;&#x662F;&#x5F88;&#x9AD8;&#x7684;&#x3002;
-&#x4F46;&#x5F53;&#x51FA;&#x73B0; TLB miss &#x65F6;&#xFF0C;&#x7531;&#x4E8E;&#x786C;&#x4EF6;&#x6216;&#x8F6F;&#x4EF6;&#x9700;&#x8981;&#x66F4;&#x65B0; TLB&#xFF0C;&#x6240;&#x4EE5;&#x9700;&#x8981;&#x4ECE;&#x7269;&#x7406;&#x5185;&#x5B58;&#x8BFB;&#x53D6;&#x9875;&#x8868;&#x9879;&#xFF0C;&#x90A3;&#x4E48;&#x64CD;&#x4F5C;&#x6548;&#x7387;&#x5C31;&#x4F4E;&#x4E86;&#x4E0D;&#x5C11;&#x3002;
+当访问内存并且 TLB hit 时，此时的操作效率是很高的。
+但当出现 TLB miss 时，由于硬件或软件需要更新 TLB，所以需要从物理内存读取页表项，那么操作效率就低了不少。
 </p>
 
 <p>
-&#x5982;&#x679C;&#x5199;&#x4E00;&#x6BB5;&#x6D4B;&#x8BD5;&#x4EE3;&#x7801;&#xFF0C;&#x6BCF;&#x6B21;&#x4EE5;&#x9875;&#x4E3A;&#x8DE8;&#x5EA6;&#x5355;&#x4F4D;&#x8FDB;&#x884C;&#x8BBF;&#x95EE;&#xFF1A;
+如果写一段测试代码，每次以页为跨度单位进行访问：
 </p>
 <ul class="org-ul">
-<li>&#x5F53;&#x8BBF;&#x95EE;&#x9875;&#x7684;&#x6570;&#x76EE;&#x5C0F;&#x4E8E;&#x6216;&#x7B49;&#x4E8E; TLB &#x5927;&#x5C0F;&#x65F6;&#xFF0C;&#x6B64;&#x65F6;&#x64CD;&#x4F5C;&#x6548;&#x7387;&#x5F88;&#x9AD8;</li>
-<li>&#x4E00;&#x65E6;&#x6570;&#x76EE;&#x8D85;&#x8FC7;&#x6B64; TLB &#x5927;&#x5C0F;&#xFF0C;&#x4FBF;&#x4F1A;&#x51FA;&#x73B0; TLB miss</li>
-<li>&#x5982;&#x679C;&#x4E00;&#x4E2A;&#x5927;&#x5FAA;&#x73AF;&#x4E0D;&#x65AD;&#x7684;&#x8D85;&#x51FA; TLB &#x8303;&#x56F4;&#xFF0C;&#x4FBF;&#x4F1A;&#x4E00;&#x76F4;&#x51FA;&#x73B0; TLB miss</li>
+<li>当访问页的数目小于或等于 TLB 大小时，此时操作效率很高</li>
+<li>一旦数目超过此 TLB 大小，便会出现 TLB miss</li>
+<li>如果一个大循环不断的超出 TLB 范围，便会一直出现 TLB miss</li>
 </ul>
 
 <p>
-&#x57FA;&#x4E8E;&#x4EE5;&#x4E0A;&#x903B;&#x8F91;&#xFF0C;&#x53EF;&#x4EE5;&#x901A;&#x8FC7;&#x6D4B;&#x91CF;&#x5FAA;&#x73AF;&#x4EE3;&#x7801;&#x7684;&#x6267;&#x884C;&#x65F6;&#x95F4;&#xFF0C;&#x63A8;&#x6D4B;&#x51FA;&#x5927;&#x81F4;&#x5F53;&#x524D;&#x5904;&#x7406;&#x5668; TLB &#x7684;&#x5927;&#x5C0F;&#xFF0C;&#x4EE5;&#x53CA;&#x5176;&#x662F;&#x5426;&#x6709;&#x591A;&#x7EA7; TLB cache&#x3002;
+基于以上逻辑，可以通过测量循环代码的执行时间，推测出大致当前处理器 TLB 的大小，以及其是否有多级 TLB cache。
 </p>
 
 <p>
-&#x7B80;&#x6613;&#x7684;&#x6D4B;&#x8BD5;&#x4EE3;&#x7801;&#x5982;&#x4E0B;&#xFF1A;
+简易的测试代码如下：
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> _GNU_SOURCE</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;assert.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/time.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdint.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sched.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[])</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="keyword">if</span>(argc != <span class="number">3</span>)</span><br><span class="line">    {</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;usage: %s &lt;number of pages&gt; &lt;number of trials&gt;\n&quot;</span>, argv[<span class="number">0</span>]);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="keyword">cpu_set_t</span> <span class="built_in">set</span>;</span><br><span class="line"></span><br><span class="line">    CPU_ZERO(&amp;<span class="built_in">set</span>);</span><br><span class="line">    CPU_SET(<span class="number">1</span>, &amp;<span class="built_in">set</span>);</span><br><span class="line">    <span class="keyword">int</span> ret = sched_setaffinity(<span class="number">0</span>, <span class="keyword">sizeof</span>(<span class="keyword">cpu_set_t</span>), &amp;<span class="built_in">set</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(ret)</span><br><span class="line">    {</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;can&apos;t set affinity:&quot;</span>);</span><br><span class="line">	<span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> page_size = getpagesize();</span><br><span class="line">    <span class="keyword">int</span> pages = atoi(argv[<span class="number">1</span>]);</span><br><span class="line">    <span class="keyword">int</span> trials = atoi(argv[<span class="number">2</span>]);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;page size: %d, pages: %d, trials: %d\n&quot;</span>,</span><br><span class="line">	    page_size, pages, trials);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> *buf = (<span class="keyword">int</span> *)<span class="built_in">malloc</span>(pages * page_size);</span><br><span class="line">    assert(buf);</span><br><span class="line">    <span class="built_in">memset</span>(buf, <span class="number">0</span>, pages * page_size);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> jump = page_size / <span class="keyword">sizeof</span>(<span class="keyword">int</span>);</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timeval</span> <span class="title">start</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timeval</span> <span class="title">stop</span>;</span></span><br><span class="line"></span><br><span class="line">    ret = gettimeofday(&amp;start, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(ret)</span><br><span class="line">    {</span><br><span class="line">	perror(<span class="string">&quot;get time failed:&quot;</span>);</span><br><span class="line">	<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; trials; j++)</span><br><span class="line">    {</span><br><span class="line">	<span class="keyword">for</span>( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; pages * jump; i+= jump)</span><br><span class="line">	{</span><br><span class="line">	    buf[i] += <span class="number">1</span>;</span><br><span class="line">	}</span><br><span class="line">    }</span><br><span class="line">    ret = gettimeofday(&amp;stop, <span class="literal">NULL</span>);</span><br><span class="line">    <span class="keyword">if</span>(ret)</span><br><span class="line">    {</span><br><span class="line">	perror(<span class="string">&quot;get time failed:&quot;</span>);</span><br><span class="line">	<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="keyword">uint64_t</span> elapse = (stop.tv_sec - start.tv_sec) * <span class="number">1000000</span> +</span><br><span class="line">	(stop.tv_usec - start.tv_usec);</span><br><span class="line">    <span class="keyword">double</span> average = (<span class="keyword">double</span>)elapse * <span class="number">1000</span> / (trials * pages);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;elapse : %llu uS, average time : %f nS\n&quot;</span>,</span><br><span class="line">	    elapse, average);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> _GNU_SOURCE</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><stdio.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><unistd.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><stdlib.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><assert.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><string.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><sys/time.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><stdint.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><sched.h></span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[])</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="keyword">if</span>(argc != <span class="number">3</span>)</span><br><span class="line">    {</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"usage: %s <number of pages> <number of trials>\n"</span>, argv[<span class="number">0</span>]);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="keyword">cpu_set_t</span> <span class="built_in">set</span>;</span><br><span class="line"></span><br><span class="line">    CPU_ZERO(&<span class="built_in">set</span>);</span><br><span class="line">    CPU_SET(<span class="number">1</span>, &<span class="built_in">set</span>);</span><br><span class="line">    <span class="keyword">int</span> ret = sched_setaffinity(<span class="number">0</span>, <span class="keyword">sizeof</span>(<span class="keyword">cpu_set_t</span>), &<span class="built_in">set</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(ret)</span><br><span class="line">    {</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"can't set affinity:"</span>);</span><br><span class="line">	<span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> page_size = getpagesize();</span><br><span class="line">    <span class="keyword">int</span> pages = atoi(argv[<span class="number">1</span>]);</span><br><span class="line">    <span class="keyword">int</span> trials = atoi(argv[<span class="number">2</span>]);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"page size: %d, pages: %d, trials: %d\n"</span>,</span><br><span class="line">	    page_size, pages, trials);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> *buf = (<span class="keyword">int</span> *)<span class="built_in">malloc</span>(pages * page_size);</span><br><span class="line">    assert(buf);</span><br><span class="line">    <span class="built_in">memset</span>(buf, <span class="number">0</span>, pages * page_size);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> jump = page_size / <span class="keyword">sizeof</span>(<span class="keyword">int</span>);</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timeval</span> <span class="title">start</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timeval</span> <span class="title">stop</span>;</span></span><br><span class="line"></span><br><span class="line">    ret = gettimeofday(&start, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(ret)</span><br><span class="line">    {</span><br><span class="line">	perror(<span class="string">"get time failed:"</span>);</span><br><span class="line">	<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> j = <span class="number">0</span>; j < trials; j++)</span><br><span class="line">    {</span><br><span class="line">	<span class="keyword">for</span>( <span class="keyword">int</span> i = <span class="number">0</span>; i < pages * jump; i+= jump)</span><br><span class="line">	{</span><br><span class="line">	    buf[i] += <span class="number">1</span>;</span><br><span class="line">	}</span><br><span class="line">    }</span><br><span class="line">    ret = gettimeofday(&stop, <span class="literal">NULL</span>);</span><br><span class="line">    <span class="keyword">if</span>(ret)</span><br><span class="line">    {</span><br><span class="line">	perror(<span class="string">"get time failed:"</span>);</span><br><span class="line">	<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="keyword">uint64_t</span> elapse = (stop.tv_sec - start.tv_sec) * <span class="number">1000000</span> +</span><br><span class="line">	(stop.tv_usec - start.tv_usec);</span><br><span class="line">    <span class="keyword">double</span> average = (<span class="keyword">double</span>)elapse * <span class="number">1000</span> / (trials * pages);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"elapse : %llu uS, average time : %f nS\n"</span>,</span><br><span class="line">	    elapse, average);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </div>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
 </div>
 
     </div>
@@ -621,7 +621,7 @@ Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#orge92c7a1"><span class="nav-number">1.</span> <span class="nav-text">TLB &amp;#x7684;&amp;#x57FA;&amp;#x7840;&amp;#x7B97;&amp;#x6CD5;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgc8267a2"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x793A;&amp;#x4F8B;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orge8b8bd8"><span class="nav-number">3.</span> <span class="nav-text">&amp;#x8C01;&amp;#x5728;&amp;#x5904;&amp;#x7406; TLB miss</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org15780d1"><span class="nav-number">4.</span> <span class="nav-text">TLB &amp;#x7684;&amp;#x5185;&amp;#x5BB9;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org2409151"><span class="nav-number">5.</span> <span class="nav-text">TLB &amp;#x4E0E;&amp;#x4E0A;&amp;#x4E0B;&amp;#x6587;&amp;#x5207;&amp;#x6362;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgfa38053"><span class="nav-number">6.</span> <span class="nav-text">TLB &amp;#x7684;&amp;#x7F6E;&amp;#x6362;&amp;#x7B56;&amp;#x7565;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org6ec77ef"><span class="nav-number">7.</span> <span class="nav-text">&amp;#x771F;&amp;#x5B9E;&amp;#x7684; TLB &amp;#x9879;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgac81af0"><span class="nav-number">8.</span> <span class="nav-text">TLB &amp;#x5B9E;&amp;#x9A8C;</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org37631fc"><span class="nav-number">1.</span> <span class="nav-text">TLB 的基础算法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgff012bd"><span class="nav-number">2.</span> <span class="nav-text">示例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org9726d9c"><span class="nav-number">3.</span> <span class="nav-text">谁在处理 TLB miss</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgf7fb7d7"><span class="nav-number">4.</span> <span class="nav-text">TLB 的内容</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org1e0bb51"><span class="nav-number">5.</span> <span class="nav-text">TLB 与上下文切换</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgfc7fee3"><span class="nav-number">6.</span> <span class="nav-text">TLB 的置换策略</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org5e536b1"><span class="nav-number">7.</span> <span class="nav-text">真实的 TLB 项</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org937c26c"><span class="nav-number">8.</span> <span class="nav-text">TLB 实验</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 

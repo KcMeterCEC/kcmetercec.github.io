@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="&amp;#x8BFE;&amp;#x7A0B;: &amp;#x5B8B;&amp;#x5B9D;&amp;#x534E;&amp;#x8001;&amp;#x5E08;&amp;#x7684;&amp;#x5185;&amp;#x5B58;&amp;#x7BA1;&amp;#x7406;    &amp;#x6574;&amp;#x7406;Linux&amp;#x4E2D;&amp;#x7684;&amp;#x5185;&amp;#x5B58;&amp;#x7533;&amp;#x8BF7;&amp;#x4E0E;&amp;#x91CA;&amp;#x653E;&amp;#x">
+  <meta name="description" content="课程: 宋宝华老师的内存管理    整理Linux中的内存申请与释放的原理。             kernel version arch     v4.4.0 arm32">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[What]Linux 内存的申请与释放">
 <meta property="og:url" content="http://kcmetercec.top/2018/06/14/linux_memory_overview_allocAndFree/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="&amp;#x8BFE;&amp;#x7A0B;: &amp;#x5B8B;&amp;#x5B9D;&amp;#x534E;&amp;#x8001;&amp;#x5E08;&amp;#x7684;&amp;#x5185;&amp;#x5B58;&amp;#x7BA1;&amp;#x7406;    &amp;#x6574;&amp;#x7406;Linux&amp;#x4E2D;&amp;#x7684;&amp;#x5185;&amp;#x5B58;&amp;#x7533;&amp;#x8BF7;&amp;#x4E0E;&amp;#x91CA;&amp;#x653E;&amp;#x">
+<meta property="og:description" content="课程: 宋宝华老师的内存管理    整理Linux中的内存申请与释放的原理。             kernel version arch     v4.4.0 arm32">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[mm]/skeleton/buddy_struct.jpg?raw=true">
 <meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[mm]/skeleton/malloc.jpg?raw=true">
@@ -304,11 +304,11 @@
       
         <div id="content">
 <p>
-&#x8BFE;&#x7A0B;: &#x5B8B;&#x5B9D;&#x534E;&#x8001;&#x5E08;&#x7684;&#x5185;&#x5B58;&#x7BA1;&#x7406;
+课程: 宋宝华老师的内存管理
 </p>
 
 <p>
-&#x6574;&#x7406;Linux&#x4E2D;&#x7684;&#x5185;&#x5B58;&#x7533;&#x8BF7;&#x4E0E;&#x91CA;&#x653E;&#x7684;&#x539F;&#x7406;&#x3002;
+整理Linux中的内存申请与释放的原理。
 </p>
 
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
@@ -335,334 +335,334 @@
 
 <a id="more"></a>
 
-<div id="outline-container-orgfb73958" class="outline-2">
-<h2 id="orgfb73958">buddy &#x7B97;&#x6CD5;&#x7F3A;&#x9677;</h2>
-<div class="outline-text-2" id="text-orgfb73958">
+<div id="outline-container-orgf748de0" class="outline-2">
+<h2 id="orgf748de0">buddy 算法缺陷</h2>
+<div class="outline-text-2" id="text-orgf748de0">
 </div>
-<div id="outline-container-orgf31db81" class="outline-3">
-<h3 id="orgf31db81">&#x7B97;&#x6CD5;&#x9875;&#x9762;&#x8FDE;&#x7EED;&#x6027;&#x7F3A;&#x9677;</h3>
-<div class="outline-text-3" id="text-orgf31db81">
+<div id="outline-container-orgfd23efc" class="outline-3">
+<h3 id="orgfd23efc">算法页面连续性缺陷</h3>
+<div class="outline-text-3" id="text-orgfd23efc">
 <p>
-buddy&#x7B97;&#x6CD5;&#x867D;&#x7136;&#x662F;&#x52A8;&#x6001;&#x7684;&#x5206;&#x79BB;&#x548C;&#x5408;&#x5E76;&#xFF0C;&#x4F46;&#x5408;&#x5E76;&#x7684;&#x524D;&#x7F6E;&#x6761;&#x4EF6;&#x662F;&#x8FD9;&#x6BB5;&#x7269;&#x7406;&#x9875;&#x5185;&#x5B58;&#x7A7A;&#x95F4;&#x9700;&#x8981;&#x662F;&#x8FDE;&#x7EED;&#x7684;&#x3002;&#x4F46;&#x5728;&#x7533;&#x8BF7;&#x5185;&#x5B58;&#x7684;&#x65F6;&#x5019;&#xFF0C;&#x786E;&#x662F;&#x5206;&#x6563;&#x7684;&#x3002;
-&#x968F;&#x7740;&#x65F6;&#x95F4;&#x7684;&#x63A8;&#x79FB;&#xFF0C;&#x6700;&#x7EC8;&#x5FC5;&#x7136;&#x4F1A;&#x9020;&#x6210;&#x5F88;&#x591A;&#x7A7A;&#x95F2;&#x5185;&#x5B58;&#x9875;&#x5206;&#x6563;&#x7684;&#x60C5;&#x51B5;&#x3002;
+buddy算法虽然是动态的分离和合并，但合并的前置条件是这段物理页内存空间需要是连续的。但在申请内存的时候，确是分散的。
+随着时间的推移，最终必然会造成很多空闲内存页分散的情况。
 </p>
 
 <p>
-&#x8FD9;&#x5C31;&#x4F1A;&#x9020;&#x6210;&#x4E00;&#x4E2A;&#x95EE;&#x9898;&#xFF1A; <b>&#x5F53;DMA&#x9700;&#x8981;&#x7533;&#x8BF7;&#x4E00;&#x4E2A;&#x8FDE;&#x7EED;&#x7684;&#x7269;&#x7406;&#x5185;&#x5B58;&#x7A7A;&#x95F4;&#x65F6;&#xFF0C;&#x867D;&#x7136;&#x7A7A;&#x95F2;&#x9875;&#x9762;&#x8FDC;&#x8FDC;&#x5927;&#x4E8E;&#x6B64;&#x5185;&#x5B58;&#xFF0C;&#x4F46;&#x7531;&#x4E8E;&#x5B83;&#x4EEC;&#x90FD;&#x662F;&#x5206;&#x6563;&#x7684;&#xFF0C;&#x5BFC;&#x81F4;&#x7533;&#x8BF7;&#x5931;&#x8D25;!</b>
+这就会造成一个问题： <b>当DMA需要申请一个连续的物理内存空间时，虽然空闲页面远远大于此内存，但由于它们都是分散的，导致申请失败!</b>
 </p>
 <ul class="org-ul">
-<li>&#x5BF9;&#x4E8E;&#x7528;&#x6237;&#x800C;&#x8A00;&#xFF0C;&#x865A;&#x62DF;&#x5730;&#x5740;&#x7A7A;&#x95F4;&#x8FDE;&#x7EED;&#x5373;&#x53EF;&#xFF0C;&#x7269;&#x7406;&#x7A7A;&#x95F4;&#x662F;&#x5426;&#x5206;&#x6563;&#x90FD;&#x4E0D;&#x5F71;&#x54CD;&#x5176;&#x4F7F;&#x7528;&#xFF0C;&#x800C;DMA&#x662F;&#x76F4;&#x63A5;&#x5BF9;&#x5E94;&#x7269;&#x7406;&#x5185;&#x5B58;&#x64CD;&#x4F5C;&#x7684;&#xFF0C;&#x9700;&#x8981;&#x5176;&#x7269;&#x7406;&#x5185;&#x5B58;&#x771F;&#x7684;&#x8FDE;&#x7EED;&#x3002;</li>
+<li>对于用户而言，虚拟地址空间连续即可，物理空间是否分散都不影响其使用，而DMA是直接对应物理内存操作的，需要其物理内存真的连续。</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-orgd447c07" class="outline-3">
-<h3 id="orgd447c07">&#x9875;&#x9762;&#x8FDE;&#x7EED;&#x6027;&#x95EE;&#x9898;&#x89E3;&#x51B3;&#x65B9;&#x6848;</h3>
-<div class="outline-text-3" id="text-orgd447c07">
+<div id="outline-container-orge2db2a4" class="outline-3">
+<h3 id="orge2db2a4">页面连续性问题解决方案</h3>
+<div class="outline-text-3" id="text-orge2db2a4">
 </div>
-<div id="outline-container-org0c5c483" class="outline-4">
-<h4 id="org0c5c483">reserved &#x5185;&#x5B58;</h4>
-<div class="outline-text-4" id="text-org0c5c483">
+<div id="outline-container-org07ed6df" class="outline-4">
+<h4 id="org07ed6df">reserved 内存</h4>
+<div class="outline-text-4" id="text-org07ed6df">
 <p>
-&#x4E3A;&#x4E86;&#x4FDD;&#x8BC1;DMA&#x5728;&#x4EFB;&#x4F55;&#x65F6;&#x5019;&#x90FD;&#x53EF;&#x4EE5;&#x7533;&#x8BF7;&#x5230;&#x8FDE;&#x7EED;&#x7684;&#x7269;&#x7406;&#x5185;&#x5B58;&#xFF0C;&#x6240;&#x4EE5;&#x5728;&#x4E00;&#x5F00;&#x59CB;&#x5C31;&#x6307;&#x5B9A;&#x4E00;&#x7247;&#x5185;&#x5B58;&#x533A;&#x57DF;&#x4E3A;&#x4FDD;&#x7559;&#x533A;&#xFF0C;&#x4EC5;&#x4EC5;&#x7528;&#x4E8E;DMA&#x7533;&#x8BF7;&#x8FDE;&#x7EED;&#x7269;&#x7406;&#x5185;&#x5B58;&#x3002;
+为了保证DMA在任何时候都可以申请到连续的物理内存，所以在一开始就指定一片内存区域为保留区，仅仅用于DMA申请连续物理内存。
 </p>
 
 <p>
-&#x4F46;&#x8FD9;&#x4F1A;&#x5BFC;&#x81F4;&#x5F53;&#x5E73;&#x65F6;DMA&#x4E0D;&#x4F7F;&#x7528;&#x65F6;&#xFF0C;&#x8FD9;&#x7247;&#x5185;&#x5B58;&#x4E5F;&#x65E0;&#x6CD5;&#x7528;&#x4F5C;&#x5176;&#x4ED6;&#x7528;&#x9014;&#xFF0C;&#x9020;&#x6210;&#x7A7A;&#x95F4;&#x6D6A;&#x8D39;&#x3002;
+但这会导致当平时DMA不使用时，这片内存也无法用作其他用途，造成空间浪费。
 </p>
 </div>
 </div>
-<div id="outline-container-org77188b8" class="outline-4">
-<h4 id="org77188b8">CMA(Contiguous Memory Allocator, &#x8FDE;&#x7EED;&#x5185;&#x5B58;&#x5206;&#x914D;&#x5668;)</h4>
-<div class="outline-text-4" id="text-org77188b8">
+<div id="outline-container-org84ddd7a" class="outline-4">
+<h4 id="org84ddd7a">CMA(Contiguous Memory Allocator, 连续内存分配器)</h4>
+<div class="outline-text-4" id="text-org84ddd7a">
 <p>
-&#x4E3A;&#x4E86;&#x5F25;&#x8865; reserved &#x65B9;&#x5F0F;&#x7684;&#x4E0D;&#x8DB3;&#xFF0C;&#x4E09;&#x661F;&#x63D0;&#x51FA;&#x4E86;CMA&#x65B9;&#x5F0F;&#xFF0C;&#x5176;&#x57FA;&#x672C;&#x601D;&#x60F3;&#x4E3A;&#xFF1A;
+为了弥补 reserved 方式的不足，三星提出了CMA方式，其基本思想为：
 </p>
 <ol class="org-ol">
-<li>&#x5728;&#x7269;&#x7406;&#x5185;&#x5B58;&#x5206;&#x914D;&#x4E86;&#x4E00;&#x7247;CMA&#x533A;&#x57DF;(&#x8BBE;&#x5907;&#x6811;&#x4E2D;&#x6307;&#x5B9A;)&#xFF0C;&#x8FD9;&#x7247;&#x533A;&#x57DF;&#x662F;&#x7269;&#x7406;&#x5185;&#x5B58;&#x8FDE;&#x7EED;&#x7684;&#x3002;</li>
-<li>&#x5F53;DMA&#x6CA1;&#x6709;&#x4F7F;&#x7528;&#x65F6;&#xFF0C;&#x8FD9;&#x7247;CMA&#x533A;&#x57DF;&#x4EA4;&#x4ED8;&#x7ED9;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x4F7F;&#x7528;</li>
-<li>&#x5F53;DMA&#x8981;&#x4F7F;&#x7528;&#x65F6;&#xFF0C;&#x5C06;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x7684;&#x865A;&#x62DF;&#x4E0E;&#x7269;&#x7406;&#x5185;&#x5B58;&#x5BF9;&#x5E94;&#x8868;&#x8FDB;&#x884C;&#x4FEE;&#x6539;&#xFF0C;&#x4E5F;&#x5C31;&#x662F;&#x5C06;&#x8FD9;&#x7247;&#x7269;&#x7406;&#x5185;&#x5B58;&#x533A;&#x57DF;&#x79FB;&#x52A8;&#x5230;&#x5176;&#x4ED6;&#x7269;&#x7406;&#x5185;&#x5B58;&#x533A;&#x57DF;&#xFF0C;&#x7A7A;&#x95F2;&#x51FA;CMA&#x533A;&#x3002;
+<li>在物理内存分配了一片CMA区域(设备树中指定)，这片区域是物理内存连续的。</li>
+<li>当DMA没有使用时，这片CMA区域交付给用户空间使用</li>
+<li>当DMA要使用时，将用户空间的虚拟与物理内存对应表进行修改，也就是将这片物理内存区域移动到其他物理内存区域，空闲出CMA区。
 <ul class="org-ul">
-<li>&#x5728;&#x8FD9;&#x4E2A;&#x8FC7;&#x7A0B;&#x4E2D;&#xFF0C;&#x7531;&#x4E8E;&#x5E94;&#x7528;&#x7A0B;&#x5E8F;&#x7684;&#x865A;&#x62DF;&#x5730;&#x5740;&#x6CA1;&#x6709;&#x6539;&#x53D8;&#xFF0C;&#x6240;&#x4EE5;&#x5176;&#x611F;&#x77E5;&#x4E0D;&#x5230;&#x8FD9;&#x4E2A;&#x53D8;&#x5316;</li>
-<li>&#x5728;&#x79FB;&#x52A8;&#x5E94;&#x7528;&#x7A0B;&#x5E8F;&#x5BF9;&#x5E94;&#x7684;&#x7269;&#x7406;&#x5185;&#x5B58;&#x65F6;&#xFF0C;&#x65B0;&#x7533;&#x8BF7;&#x7684;&#x5185;&#x5B58;&#x662F;&#x5426;&#x8FDE;&#x7EED;&#x5BF9;&#x5E94;&#x7528;&#x7A0B;&#x5E8F;&#x5E76;&#x4E0D;&#x5F71;&#x54CD;</li>
-<li>&#x7531;&#x4E8E;&#x5728;&#x79FB;&#x52A8;&#x8FC7;&#x7A0B;&#x4E2D;&#x9700;&#x8981;&#x91CD;&#x65B0;&#x4FEE;&#x6539;&#x9875;&#x8868;&#xFF0C;&#x8FD9;&#x6BB5;&#x65F6;&#x95F4;&#x5E94;&#x7528;&#x7A0B;&#x5E8F;&#x65E0;&#x6CD5;&#x64CD;&#x4F5C;&#x7269;&#x7406;&#x5185;&#x5B58;&#xFF0C;&#x4F1A;&#x6709;&#x77ED;&#x6682;&#x7684;&#x5361;&#x987F;&#x3002;</li>
+<li>在这个过程中，由于应用程序的虚拟地址没有改变，所以其感知不到这个变化</li>
+<li>在移动应用程序对应的物理内存时，新申请的内存是否连续对应用程序并不影响</li>
+<li>由于在移动过程中需要重新修改页表，这段时间应用程序无法操作物理内存，会有短暂的卡顿。</li>
 </ul></li>
-<li>&#x5C06;CMA&#x533A;&#x4EA4;&#x4ED8;&#x7ED9;DMA&#x4F7F;&#x7528;&#x3002;</li>
-<li>&#x6709;&#x5173;reserved&#x5185;&#x5B58;&#x5728;&#x8BBE;&#x5907;&#x6811;&#x4E2D;&#x7684;&#x914D;&#x7F6E;&#x6587;&#x6863;&#x4F4D;&#x4E8E; <code>Documentation/devicetree/bindings/reserved-memory/reserved-memory.txt</code></li>
+<li>将CMA区交付给DMA使用。</li>
+<li>有关reserved内存在设备树中的配置文档位于 <code>Documentation/devicetree/bindings/reserved-memory/reserved-memory.txt</code></li>
 </ol>
 
 <p>
-&#x53EF;&#x4EE5;&#x5728;menuconfig&#x4E2D;&#x914D;&#x7F6E;cma&#xFF1A;
+可以在menuconfig中配置cma：
 </p>
 <ul class="org-ul">
-<li><code>Kernel Features -&gt; Contiguous Memory Allocator</code> : &#x4F7F;&#x80FD;cma</li>
-<li><code>Device Drivers -&gt; Generic Driver Options -&gt; DMA Contiguous Mmeory Allocator</code> : &#x4F7F;&#x80FD;dma_cma</li>
+<li><code>Kernel Features -> Contiguous Memory Allocator</code> : 使能cma</li>
+<li><code>Device Drivers -> Generic Driver Options -> DMA Contiguous Mmeory Allocator</code> : 使能dma_cma</li>
 </ul>
 </div>
 </div>
 </div>
-<div id="outline-container-org6536fb6" class="outline-3">
-<h3 id="org6536fb6">&#x7B97;&#x6CD5;&#x7C92;&#x5EA6;&#x95EE;&#x9898;</h3>
-<div class="outline-text-3" id="text-org6536fb6">
+<div id="outline-container-orgd9d3cda" class="outline-3">
+<h3 id="orgd9d3cda">算法粒度问题</h3>
+<div class="outline-text-3" id="text-orgd9d3cda">
 <p>
-&#x7531;&#x4E8E;buddy&#x7B97;&#x6CD5;&#x7684;&#x57FA;&#x672C;&#x5355;&#x4F4D;&#x662F;&#x9875;&#xFF0C;&#x800C;&#x76EE;&#x524D;&#x5927;&#x90E8;&#x5206;&#x9875;&#x90FD;&#x662F;4K&#x5B57;&#x8282;&#xFF0C;&#x8FD9;&#x5C31;&#x5BFC;&#x81F4;&#x5F53;&#x4E00;&#x4E2A;&#x7528;&#x6237;&#x4EC5;&#x7533;&#x8BF7;&#x51E0;&#x4E2A;&#x5B57;&#x8282;&#x65F6;&#xFF0C;&#x5269;&#x4F59;&#x7684;3K&#x591A;&#x5B57;&#x8282;&#x5C31;&#x767D;&#x767D;&#x6D6A;&#x8D39;&#x4E86;&#xFF01;
+由于buddy算法的基本单位是页，而目前大部分页都是4K字节，这就导致当一个用户仅申请几个字节时，剩余的3K多字节就白白浪费了！
 </p>
 
 <p>
-&#x4E3A;&#x4E86;&#x89E3;&#x51B3;&#x8FD9;&#x4E2A;&#x95EE;&#x9898;&#xFF0C;Linux&#x5185;&#x6838;&#x5728;buddy&#x7684;&#x57FA;&#x7840;&#x4E4B;&#x4E0A;&#x8FDB;&#x884C;&#x4E86;&#x4E8C;&#x6B21;&#x7BA1;&#x7406;&#x3002;
+为了解决这个问题，Linux内核在buddy的基础之上进行了二次管理。
 </p>
 </div>
 </div>
-<div id="outline-container-org53b21cf" class="outline-3">
-<h3 id="org53b21cf">&#x5185;&#x5B58;&#x788E;&#x7247;</h3>
-<div class="outline-text-3" id="text-org53b21cf">
+<div id="outline-container-orga399392" class="outline-3">
+<h3 id="orga399392">内存碎片</h3>
+<div class="outline-text-3" id="text-orga399392">
 <p>
-&#x5728;&#x5185;&#x6838;&#x7A7A;&#x95F4;&#x7533;&#x8BF7;&#x7684;&#x5185;&#x5B58;&#x90FD;&#x662F;&#x4E0D;&#x53EF;&#x79FB;&#x52A8;&#x7684;&#xFF0C;&#x8FD9;&#x4E5F;&#x4F1A;&#x5BFC;&#x81F4;&#x6700;&#x7EC8;&#x7684;&#x5185;&#x5B58;&#x788E;&#x7247;&#x3002;&#x867D;&#x7136;&#x5185;&#x5B58;&#x4E2D;&#x6709;&#x8DB3;&#x591F;&#x591A;&#x7684;&#x7A7A;&#x95F4;&#xFF0C;&#x4F46;&#x8FD9;&#x4E9B;&#x7A7A;&#x95F4;&#x7531;&#x4E8E;&#x5176;&#x4E0D;&#x8FDE;&#x7EED;&#x800C;&#x5BFC;&#x81F4;&#x7533;&#x8BF7;&#x5927;&#x5185;&#x5B58;&#x5931;&#x8D25;&#x3002;
+在内核空间申请的内存都是不可移动的，这也会导致最终的内存碎片。虽然内存中有足够多的空间，但这些空间由于其不连续而导致申请大内存失败。
 </p>
 
 <p>
-&#x4E3A;&#x6B64;linux&#x5C06;&#x5185;&#x5B58;&#x7A7A;&#x95F4;&#x53C8;&#x5206;&#x4E3A;&#x4E86;&#x53EF;&#x79FB;&#x52A8;&#x7684;&#x3001;&#x4E0D;&#x53EF;&#x79FB;&#x52A8;&#x7684;&#x3001;&#x53EF;&#x56DE;&#x6536;&#x7C7B;&#x578B;&#xFF0C;&#x5185;&#x6838;&#x7A7A;&#x95F4;&#x5C31;&#x5728;&#x4E0D;&#x53EF;&#x79FB;&#x52A8;&#x5185;&#x5B58;&#x4E2D;&#x7533;&#x8BF7;&#x7A7A;&#x95F4;&#xFF0C;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x5C31;&#x5728;&#x53EF;&#x79FB;&#x52A8;&#x5185;&#x5B58;&#x4E2D;&#x7533;&#x8BF7;&#x7A7A;&#x95F4;&#x3002;&#x8FD9;&#x6837;&#x5185;&#x6838;&#x5C31;&#x53EF;&#x4EE5;&#x6574;&#x7406;&#x53EF;&#x79FB;&#x52A8;&#x7684;&#x5185;&#x5B58;&#x7A7A;&#x95F4;&#x4EE5;&#x817E;&#x51FA;&#x5927;&#x7247;&#x7684;&#x8FDE;&#x7EED;&#x5185;&#x5B58;&#x3002;
+为此linux将内存空间又分为了可移动的、不可移动的、可回收类型，内核空间就在不可移动内存中申请空间，用户空间就在可移动内存中申请空间。这样内核就可以整理可移动的内存空间以腾出大片的连续内存。
 </p>
 
 <p>
-&#x4F46;&#x8FD9;&#x4E9B;&#x7C7B;&#x578B;&#x7684;&#x5206;&#x914D;&#x90FD;&#x662F;&#x4E00;&#x4E2A;&#x52A8;&#x6001;&#x7684;&#x8FC7;&#x7A0B;&#xFF0C;&#x6700;&#x5F00;&#x59CB;&#x90FD;&#x662F;&#x53EF;&#x79FB;&#x52A8;&#x7684;&#x9875;&#x9762;&#xFF0C;&#x53EA;&#x6709;&#x5728;&#x5185;&#x6838;&#x7533;&#x8BF7;&#x65F6;&#x624D;&#x4F1A;&#x4ECE;&#x53EF;&#x79FB;&#x52A8;&#x9875;&#x9762;&#x7533;&#x8BF7;&#x4E00;&#x90E8;&#x5206;&#x4E3A;&#x4E0D;&#x53EF;&#x79FB;&#x52A8;&#x5185;&#x5B58;&#x3002;
+但这些类型的分配都是一个动态的过程，最开始都是可移动的页面，只有在内核申请时才会从可移动页面申请一部分为不可移动内存。
 </p>
 
 <div class="org-src-container">
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * This array describes the order lists are fallen back to when</span></span><br><span class="line"><span class="comment"> * the free lists for the desirable migrate type are depleted</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">int</span> fallbacks[MIGRATE_TYPES][<span class="number">4</span>] = {</span><br><span class="line">					  [MIGRATE_UNMOVABLE]   = { MIGRATE_RECLAIMABLE, MIGRATE_MOVABLE,   MIGRATE_TYPES },</span><br><span class="line">					  [MIGRATE_RECLAIMABLE] = { MIGRATE_UNMOVABLE,   MIGRATE_MOVABLE,   MIGRATE_TYPES },</span><br><span class="line">					  [MIGRATE_MOVABLE]     = { MIGRATE_RECLAIMABLE, MIGRATE_UNMOVABLE, MIGRATE_TYPES },</span><br><span class="line">#ifdef CONFIG_CMA</span><br><span class="line">					  [MIGRATE_CMA]         = { MIGRATE_TYPES }, <span class="comment">/* Never used */</span></span><br><span class="line">#endif</span><br><span class="line">#ifdef CONFIG_MEMORY_ISOLATION</span><br><span class="line">					  [MIGRATE_ISOLATE]     = { MIGRATE_TYPES }, <span class="comment">/* Never used */</span></span><br><span class="line">#endif</span><br><span class="line">};</span><br></pre></td></tr></table></figure>
 </div>
 <p>
-&#x4E0A;&#x9762;&#x7684;&#x4EE3;&#x7801;&#x5C55;&#x793A;&#x4E86;&#x4E0D;&#x540C;&#x7C7B;&#x578B;&#x7684;&#x5185;&#x5B58;&#x5728;&#x5176;&#x7A7A;&#x95F4;&#x4E0D;&#x591F;&#x7528;&#x65F6;&#x5BFB;&#x627E;&#x5185;&#x5B58;&#x7684;&#x987A;&#x5E8F;&#x3002;
+上面的代码展示了不同类型的内存在其空间不够用时寻找内存的顺序。
 </p>
 <ul class="org-ul">
-<li>&#x6BD4;&#x5982;&#x5185;&#x6838;&#x8981;&#x7533;&#x8BF7;UNMOVABLE(&#x4E0D;&#x53EF;&#x79FB;&#x52A8;)&#x5185;&#x5B58;&#x65F6;&#x5982;&#x679C;&#x5F53;&#x524D;&#x7C7B;&#x578B;&#x7A7A;&#x95F4;&#x4E0D;&#x591F;&#x4E86;&#xFF0C;&#x4F9D;&#x6B21;&#x5728;RECLAIMABLE(&#x53EF;&#x56DE;&#x6536;)&#x3001;MOVABLE(&#x53EF;&#x79FB;&#x52A8;)&#x7C7B;&#x578B;&#x4E2D;&#x5BFB;&#x627E;&#x3002;</li>
+<li>比如内核要申请UNMOVABLE(不可移动)内存时如果当前类型空间不够了，依次在RECLAIMABLE(可回收)、MOVABLE(可移动)类型中寻找。</li>
 </ul>
 
 <p>
-&#x4E3B;&#x52A8;&#x89E6;&#x53D1;&#x53EF;&#x79FB;&#x52A8;&#x9875;&#x9762;&#x6574;&#x7406;:
+主动触发可移动页面整理:
 </p>
 <pre class="example">
-echo 1 &gt; /proc/sys/vm/compact_memory</pre>
+echo 1 > /proc/sys/vm/compact_memory</pre>
 </div>
 </div>
 </div>
-<div id="outline-container-org6c2e43d" class="outline-2">
-<h2 id="org6c2e43d">buddy &#x7B97;&#x6CD5;&#x4E0E;slab,malloc&#x4E4B;&#x95F4;&#x7684;&#x5173;&#x7CFB;</h2>
-<div class="outline-text-2" id="text-org6c2e43d">
+<div id="outline-container-orgf958247" class="outline-2">
+<h2 id="orgf958247">buddy 算法与slab,malloc之间的关系</h2>
+<div class="outline-text-2" id="text-orgf958247">
 <p>
-buddy&#x7B97;&#x6CD5;&#x4E0E;slab,malloc&#x4E4B;&#x95F4;&#x7684;&#x5173;&#x7CFB;&#x53EF;&#x4EE5;&#x7B80;&#x5355;&#x7684;&#x4EE5;&#x4E0B;&#x56FE;&#x8868;&#x793A;:
+buddy算法与slab,malloc之间的关系可以简单的以下图表示:
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[mm]/skeleton/buddy_struct.jpg?raw=true" alt="buddy_struct.jpg">
 <p>
-&#x4ECE;&#x4E0A;&#x56FE;&#x53EF;&#x4EE5;&#x770B;&#x51FA;&#xFF1A;
+从上图可以看出：
 </p>
 <ol class="org-ol">
-<li>buddy&#x7B97;&#x6CD5;&#x662F;&#x9488;&#x5BF9;&#x6574;&#x4E2A;&#x5185;&#x5B58;&#x6761;&#x7684;&#xFF0C;&#x5B83;&#x5C06;&#x5185;&#x5B58;&#x6761;&#x8FDB;&#x884C;&#x7EDF;&#x4E00;&#x7684;&#x7BA1;&#x7406;&#x3002; <b>&#x800C;&#x5185;&#x6838;&#x6001;&#x6216;&#x662F;&#x7528;&#x6237;&#x6001;&#x5BF9;&#x5B83;&#x6765;&#x8BF4;&#x90FD;&#x662F;&#x5BA2;&#x6237;&#x800C;&#x5DF2;&#xFF01;</b>
+<li>buddy算法是针对整个内存条的，它将内存条进行统一的管理。 <b>而内核态或是用户态对它来说都是客户而已！</b>
 <ul class="org-ul">
-<li>&#x4E5F;&#x5C31;&#x662F;&#x8BF4;&#xFF1A;&#x5185;&#x6838;&#x548C;&#x7528;&#x6237;&#x5BF9;buddy&#x6765;&#x8BF4;&#x90FD;&#x662F;&#x5E73;&#x7EA7;&#x7684;&#xFF0C;&#x65E0;&#x8BBA;&#x662F;&#x54EA;&#x4E00;&#x65B9;&#x7533;&#x8BF7;&#x8D70;&#x4E86;&#x5185;&#x5B58;&#xFF0C;&#x53E6;&#x5916;&#x4E00;&#x65B9;&#x90FD;&#x65E0;&#x6CD5;&#x518D;&#x7533;&#x8BF7;&#x540C;&#x4E00;&#x5904;&#x5185;&#x5B58;&#x3002;</li>
+<li>也就是说：内核和用户对buddy来说都是平级的，无论是哪一方申请走了内存，另外一方都无法再申请同一处内存。</li>
 </ul></li>
-<li>&#x5728; <b>&#x5185;&#x6838;&#x7A7A;&#x95F4;</b> &#x4E2D; slab&#x7B56;&#x7565; &#x5C06;buddy&#x7684;&#x5185;&#x5B58;&#x8FDB;&#x884C;&#x4E86;&#x4E8C;&#x6B21;&#x7BA1;&#x7406;&#xFF0C;&#x5C06;&#x4ECE;buddy&#x7533;&#x8BF7;&#x7684;&#x4E00;&#x5927;&#x5757;&#x5185;&#x5B58;&#x5206;&#x6210;&#x5F88;&#x591A;&#x5C0F;&#x5757;&#x7ED9;&#x5185;&#x6838;kmalloc,kfree&#x4F7F;&#x7528;
+<li>在 <b>内核空间</b> 中 slab策略 将buddy的内存进行了二次管理，将从buddy申请的一大块内存分成很多小块给内核kmalloc,kfree使用
 <ul class="org-ul">
-<li>slab&#x5E76;&#x975E;&#x662F;&#x6BCF;&#x6B21;&#x90FD;&#x8981;&#x4E0E;buddy&#x4EA4;&#x4E92;&#xFF0C;&#x8FD9;&#x8981;&#x6839;&#x636E;&#x5185;&#x6838;&#x4E2D;&#x7533;&#x8BF7;&#x7684;&#x5185;&#x5B58;&#x5927;&#x5C0F;&#x800C;&#x5B9A;&#x3002;</li>
-<li>&#x5E76;&#x4E14;&#x53EF;&#x4EE5;&#x770B;&#x51FA; kmalloc&#x548C;kfree&#x4E0E;buddy&#x6CA1;&#x6709;&#x76F4;&#x63A5;&#x7684;&#x5173;&#x7CFB;&#xFF0C;&#x5176;&#x7533;&#x8BF7;&#x4E0E;&#x91CA;&#x653E;&#x90FD;&#x662F;&#x4E0E;slab&#x4EA4;&#x4E92;&#x7684;</li>
-<li>buddy&#x5C06;&#x5185;&#x5B58;&#x6761;&#x89C6;&#x4E3A;&#x5185;&#x5B58;&#x6C60;&#xFF0C;&#x800C;slab&#x5C06;buddy&#x89C6;&#x4E3A;&#x5185;&#x5B58;&#x6C60;&#xFF0C;&#x6240;&#x4EE5;&#x5B83;&#x4EEC;&#x5728;&#x7B97;&#x6CD5;&#x4E0A;&#x662F;&#x5BF9;&#x7B49;&#x7684;</li>
+<li>slab并非是每次都要与buddy交互，这要根据内核中申请的内存大小而定。</li>
+<li>并且可以看出 kmalloc和kfree与buddy没有直接的关系，其申请与释放都是与slab交互的</li>
+<li>buddy将内存条视为内存池，而slab将buddy视为内存池，所以它们在算法上是对等的</li>
 </ul></li>
-<li>&#x5728; <b>&#x5185;&#x6838;&#x7A7A;&#x95F4;</b> &#x4E2D;&#xFF0C;vmalloc&#x76F4;&#x63A5;&#x4E0E;buddy&#x8FDB;&#x884C;&#x4EA4;&#x4E92;&#xFF0C;&#x5E76;&#x6CA1;&#x6709;&#x4E8C;&#x7EA7;&#x7BA1;&#x7406;
+<li>在 <b>内核空间</b> 中，vmalloc直接与buddy进行交互，并没有二级管理
 <ul class="org-ul">
-<li>&#x6240;&#x4EE5;&#x7533;&#x8BF7;&#x7684;&#x6570;&#x91CF;&#x90FD;&#x662F;2&#x7684;n&#x6B21;&#x65B9;&#x9875;&#xFF0C; <b>&#x6240;&#x4EE5;&#x4F7F;&#x7528;vmalloc&#x4E0D;&#x9002;&#x5408;&#x7533;&#x8BF7;&#x5C0F;&#x5185;&#x5B58;!</b></li>
+<li>所以申请的数量都是2的n次方页， <b>所以使用vmalloc不适合申请小内存!</b></li>
 </ul></li>
-<li>&#x5728; <b>&#x7528;&#x6237;&#x7A7A;&#x95F4;</b> &#x4E2D; glibc &#x5E93;&#x901A;&#x8FC7; <code>brk,mmap</code> &#x5C06;buddy&#x7684;&#x5185;&#x5B58;&#x8FDB;&#x884C;&#x4E86;&#x4E8C;&#x6B21;&#x7BA1;&#x7406;&#xFF0C;&#x63D0;&#x4F9B;&#x7ED9;&#x7528;&#x6237;&#x51FD;&#x6570; <code>malloc,free</code> &#x4F7F;&#x7528;
+<li>在 <b>用户空间</b> 中 glibc 库通过 <code>brk,mmap</code> 将buddy的内存进行了二次管理，提供给用户函数 <code>malloc,free</code> 使用
 <ul class="org-ul">
-<li>glibc &#x4E5F;&#x5E76;&#x975E;&#x662F;&#x6BCF;&#x6B21;&#x90FD;&#x8981;&#x4E0E;buddy&#x4EA4;&#x4E92;&#xFF0C;&#x4F9D;&#x7136;&#x6839;&#x636E;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x7533;&#x8BF7;&#x7684;&#x5185;&#x5B58;&#x5927;&#x5C0F;&#x800C;&#x5B9A;</li>
-<li>malloc,free&#x5C5E;&#x4E8E;&#x662F;&#x5E93;&#x51FD;&#x6570;&#x63A5;&#x53E3;&#xFF0C;&#x4E0D;&#x662F;&#x7CFB;&#x7EDF;&#x8C03;&#x7528;</li>
+<li>glibc 也并非是每次都要与buddy交互，依然根据用户空间申请的内存大小而定</li>
+<li>malloc,free属于是库函数接口，不是系统调用</li>
 </ul></li>
 </ol>
 </div>
-<div id="outline-container-org30d65ba" class="outline-3">
-<h3 id="org30d65ba">slab&#x673A;&#x5236;(&#x5185;&#x6838;&#x7A7A;&#x95F4;)</h3>
-<div class="outline-text-3" id="text-org30d65ba">
+<div id="outline-container-orgba00af4" class="outline-3">
+<h3 id="orgba00af4">slab机制(内核空间)</h3>
+<div class="outline-text-3" id="text-orgba00af4">
 </div>
-<div id="outline-container-orgc0f472a" class="outline-4">
-<h4 id="orgc0f472a">&#x57FA;&#x672C;&#x601D;&#x60F3;</h4>
-<div class="outline-text-4" id="text-orgc0f472a">
+<div id="outline-container-orgb8c7090" class="outline-4">
+<h4 id="orgb8c7090">基本思想</h4>
+<div class="outline-text-4" id="text-orgb8c7090">
 <p>
-slab&#x5148;&#x4ECE;buddy&#x4E2D;&#x7533;&#x8BF7;&#x4E00;&#x5757;&#x5185;&#x5B58;&#xFF0C;&#x5F53;&#x5185;&#x6838;&#x7A7A;&#x95F4;&#x8981;&#x7533;&#x8BF7;&#x4E00;&#x5C0F;&#x5757;&#x5185;&#x5B58;&#x65F6;&#xFF0C;slab&#x5C06;&#x7533;&#x8BF7;&#x597D;&#x7684;&#x5185;&#x5B58;&#x5206;&#x6210;&#x591A;&#x4E2A; <b>&#x76F8;&#x540C;&#x7684;&#x5C0F;&#x5757;</b> &#xFF0C;&#x5E76;&#x5C06;&#x5176;&#x4E2D;&#x4E00;&#x5757;&#x7ED9;&#x4E88;&#x5185;&#x6838;&#x7A7A;&#x95F4;&#x3002;
-&#x5F53;&#x9884;&#x5148;&#x7533;&#x8BF7;&#x7684;&#x5185;&#x5B58;&#x4F7F;&#x7528;&#x5B8C;&#x540E;&#xFF0C;slab&#x518D;&#x4ECE;buddy&#x4E2D;&#x7533;&#x8BF7;&#x4E00;&#x5757;&#x5185;&#x5B58;&#x6765;&#x4F7F;&#x7528;&#x3002;
+slab先从buddy中申请一块内存，当内核空间要申请一小块内存时，slab将申请好的内存分成多个 <b>相同的小块</b> ，并将其中一块给予内核空间。
+当预先申请的内存使用完后，slab再从buddy中申请一块内存来使用。
 </p>
 
 <p>
-&#x8FD9;&#x4E00;&#x4E2A;&#x5C0F;&#x5757;&#xFF0C;&#x5728;slab&#x4E2D;&#x5C31;&#x79F0;&#x4E3A;&#x4E00;&#x4E2A;object.
+这一个小块，在slab中就称为一个object.
 </p>
 <ul class="org-ul">
-<li>&#x4F7F;&#x7528;&#x547D;&#x4EE4; <code>sudo cat /proc/slabinfo</code> &#x5C31;&#x53EF;&#x4EE5;&#x770B;&#x5230;&#x5185;&#x6838;&#x4E2D;slab&#x7684;&#x5206;&#x914D;&#x60C5;&#x51B5;
+<li>使用命令 <code>sudo cat /proc/slabinfo</code> 就可以看到内核中slab的分配情况
 <ul class="org-ul">
-<li>&#x8F93;&#x51FA;&#x7684;&#x524D;&#x534A;&#x90E8;&#x5206;&#xFF0C;&#x8868;&#x793A;slab&#x4E3A;&#x5185;&#x6838;&#x4E2D;&#x4E00;&#x4E9B;&#x5E38;&#x7528;&#x7684;&#x6570;&#x636E;&#x5206;&#x914D;&#x7684;&#x7A7A;&#x95F4;</li>
-<li>&#x8F93;&#x51FA;&#x7684;&#x540E;&#x534A;&#x90E8;&#x5206;&#xFF0C;&#x8868;&#x793A;slab&#x4E3A;&#x5185;&#x6838;&#x901A;&#x7528;&#x7684;&#x7528;&#x6237;&#x63D0;&#x4F9B;&#x7684;&#x53EF;&#x4EE5;&#x7533;&#x8BF7;&#x7684;&#x5185;&#x5B58;&#x5757;</li>
+<li>输出的前半部分，表示slab为内核中一些常用的数据分配的空间</li>
+<li>输出的后半部分，表示slab为内核通用的用户提供的可以申请的内存块</li>
 </ul></li>
 </ul>
 </div>
 </div>
-<div id="outline-container-org106eb00" class="outline-4">
-<h4 id="org106eb00">slab&#x7B97;&#x6CD5;&#x5206;&#x7C7B;</h4>
-<div class="outline-text-4" id="text-org106eb00">
+<div id="outline-container-orge277a40" class="outline-4">
+<h4 id="orge277a40">slab算法分类</h4>
+<div class="outline-text-4" id="text-orge277a40">
 <p>
-slab&#x673A;&#x5236;&#x5206;&#x4E3A;slab,slub,slob&#x4E09;&#x79CD;&#x7B97;&#x6CD5;&#x6765;&#x5B9E;&#x73B0;slab&#x673A;&#x5236;&#x3002;
+slab机制分为slab,slub,slob三种算法来实现slab机制。
 </p>
 </div>
 </div>
 </div>
-<div id="outline-container-org804f23c" class="outline-3">
-<h3 id="org804f23c">glibc(&#x7528;&#x6237;&#x7A7A;&#x95F4;)</h3>
-<div class="outline-text-3" id="text-org804f23c">
+<div id="outline-container-org01a1229" class="outline-3">
+<h3 id="org01a1229">glibc(用户空间)</h3>
+<div class="outline-text-3" id="text-org01a1229">
 <p>
-gblic&#x4ECE;buddy&#x5148;&#x7533;&#x8BF7;&#x5185;&#x5B58;&#xFF0C;&#x800C;&#x540E;&#x63D0;&#x4F9B;&#x63A5;&#x53E3;&#x7ED9;&#x7528;&#x6237;&#x4F7F;&#x7528;&#xFF0C;&#x8FD9;&#x6837;&#x53EF;&#x4EE5;&#x907F;&#x514D;&#x9891;&#x7E41;&#x7684;&#x7CFB;&#x7EDF;&#x8C03;&#x7528;&#xFF0C;&#x51CF;&#x5C11;CPU&#x5728;IO&#x5207;&#x6362;&#x4E0A;&#x7684;&#x6D88;&#x8017;&#xFF0C;&#x63D0;&#x9AD8;&#x7CFB;&#x7EDF;&#x541E;&#x5410;&#x91CF;&#x3002;
+gblic从buddy先申请内存，而后提供接口给用户使用，这样可以避免频繁的系统调用，减少CPU在IO切换上的消耗，提高系统吞吐量。
 </p>
 </div>
-<div id="outline-container-org69fdb93" class="outline-4">
-<h4 id="org69fdb93">&#x901A;&#x8FC7;&#x8BBE;&#x7F6E;&#x6536;&#x7F29;&#x9600;&#x503C;&#xFF0C;&#x63D0;&#x9AD8;&#x7533;&#x8BF7;&#x5185;&#x5B58;&#x901F;&#x5EA6;</h4>
-<div class="outline-text-4" id="text-org69fdb93">
+<div id="outline-container-org496a63e" class="outline-4">
+<h4 id="org496a63e">通过设置收缩阀值，提高申请内存速度</h4>
+<div class="outline-text-4" id="text-org496a63e">
 <p>
-glibc&#x4F1A;&#x5728;&#x91CA;&#x653E;&#x7684;&#x5185;&#x5B58;&#x5230;&#x8FBE;&#x4E00;&#x5B9A;&#x7684;&#x9600;&#x503C;&#x540E;&#xFF0C;&#x624D;&#x5C06;&#x5176;&#x91CA;&#x653E;&#x7ED9;buddy&#x5185;&#x5B58;&#x6C60;&#xFF0C;&#x4E0B;&#x6B21;&#x7533;&#x8BF7;&#x5927;&#x5185;&#x5B58;&#x7684;&#x65F6;&#x5019;glibc&#x53C8;&#x8981;&#x4ECE;buddy&#x7533;&#x8BF7;&#xFF0C;&#x8FD9;&#x65E0;&#x7591;&#x4F1A;&#x5F71;&#x54CD;&#x7533;&#x8BF7;&#x901F;&#x5EA6;&#x3002;
-</p>
-
-<p>
-&#x4E3A;&#x4E86;&#x63D0;&#x9AD8;&#x5185;&#x5B58;&#x7533;&#x8BF7;&#x901F;&#x5EA6;&#xFF0C;&#x53EF;&#x4EE5;&#x8BBE;&#x7F6E;glibc&#x4E0D;&#x91CA;&#x653E;&#x5185;&#x5B58;&#x7ED9;buddy&#xFF0C;&#x8FD9;&#x6837;&#x4E0B;&#x6B21;&#x518D;&#x6765;&#x7533;&#x8BF7;&#x65F6;&#xFF0C;&#x5176;&#x901F;&#x5EA6;&#x5C31;&#x4F1A;&#x5FEB;&#x5F88;&#x591A;!
+glibc会在释放的内存到达一定的阀值后，才将其释放给buddy内存池，下次申请大内存的时候glibc又要从buddy申请，这无疑会影响申请速度。
 </p>
 
 <p>
-&#x8BD5;&#x9A8C;&#x4EE3;&#x7801;&#x5982;&#x4E0B;&#xFF1A;
+为了提高内存申请速度，可以设置glibc不释放内存给buddy，这样下次再来申请时，其速度就会快很多!
+</p>
+
+<p>
+试验代码如下：
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;malloc.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/mman.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/time.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;assert.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SOME_SIZE (200 * 1024 * 1024)</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">char</span> *buffer;</span><br><span class="line">  <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">timeval</span> <span class="title">start</span>;</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">timeval</span> <span class="title">end</span>;</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> timer;</span><br><span class="line"></span><br><span class="line">  gettimeofday(&amp;start, <span class="literal">NULL</span>);</span><br><span class="line">  buffer = (<span class="keyword">unsigned</span> <span class="keyword">char</span>*)<span class="built_in">malloc</span>(SOME_SIZE);</span><br><span class="line">  assert(buffer != <span class="literal">NULL</span>);</span><br><span class="line">  <span class="built_in">memset</span>(buffer, <span class="number">0</span>, SOME_SIZE);</span><br><span class="line">  gettimeofday(&amp;end, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">  timer = <span class="number">1000000</span> * (end.tv_sec - start.tv_sec) + end.tv_usec - start.tv_usec;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;malloc bytes through normal mode: %ldus\n&quot;</span>, timer);</span><br><span class="line"></span><br><span class="line">  gettimeofday(&amp;start, <span class="literal">NULL</span>);</span><br><span class="line">  <span class="built_in">free</span>(buffer);</span><br><span class="line">  gettimeofday(&amp;end, <span class="literal">NULL</span>);</span><br><span class="line">  timer = <span class="number">1000000</span> * (end.tv_sec - start.tv_sec) + end.tv_usec - start.tv_usec;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;free bytes through normal mode: %ldus\n&quot;</span>, timer);</span><br><span class="line"></span><br><span class="line">  gettimeofday(&amp;start, <span class="literal">NULL</span>);</span><br><span class="line">  buffer = (<span class="keyword">unsigned</span> <span class="keyword">char</span>*)<span class="built_in">malloc</span>(SOME_SIZE);</span><br><span class="line">  assert(buffer != <span class="literal">NULL</span>);</span><br><span class="line">  <span class="comment">//&#x5728;&#x771F;&#x5B9E;&#x5199;&#x5165;&#x64CD;&#x4F5C;&#x65F6;&#xFF0C;glibc&#x624D;&#x4F1A;&#x5C06;&#x6B64;&#x865A;&#x62DF;&#x5185;&#x5B58;&#x6620;&#x5C04;&#x5230;&#x7269;&#x7406;&#x5185;&#x5B58;</span></span><br><span class="line">  <span class="built_in">memset</span>(buffer, <span class="number">0</span>, SOME_SIZE);</span><br><span class="line">  gettimeofday(&amp;end, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">  timer = <span class="number">1000000</span> * (end.tv_sec - start.tv_sec) + end.tv_usec - start.tv_usec;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;malloc bytes again through normal mode: %ldus\n&quot;</span>, timer);</span><br><span class="line">  <span class="built_in">free</span>(buffer);</span><br><span class="line"></span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;\n***************\n&quot;</span>);</span><br><span class="line">  <span class="keyword">if</span>(!mlockall(MCL_CURRENT | MCL_FUTURE))</span><br><span class="line">  {</span><br><span class="line">    <span class="comment">//&#x8BBE;&#x7F6E;&#x6536;&#x7F29;&#x9600;&#x503C;&#x4E3A;&#x65E0;&#x7A77;&#x5927;</span></span><br><span class="line">    mallopt(M_TRIM_THRESHOLD, <span class="number">-1U</span>L);</span><br><span class="line">  }</span><br><span class="line">  mallopt(M_MMAP_MAX, <span class="number">0</span>);</span><br><span class="line">  gettimeofday(&amp;start, <span class="literal">NULL</span>);</span><br><span class="line">  buffer = (<span class="keyword">unsigned</span> <span class="keyword">char</span>*)<span class="built_in">malloc</span>(SOME_SIZE);</span><br><span class="line">  assert(buffer != <span class="literal">NULL</span>);</span><br><span class="line">  <span class="built_in">memset</span>(buffer, <span class="number">0</span>, SOME_SIZE);</span><br><span class="line">  gettimeofday(&amp;end, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">  timer = <span class="number">1000000</span> * (end.tv_sec - start.tv_sec) + end.tv_usec - start.tv_usec;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;malloc bytes through fast mode: %ldus\n&quot;</span>, timer);</span><br><span class="line"></span><br><span class="line">  gettimeofday(&amp;start, <span class="literal">NULL</span>);</span><br><span class="line">  <span class="comment">//&#x6B64;&#x65F6;&#x7684;free&#x53EA;&#x8FD8;&#x7ED9;&#x4E86;glibc&#x4F46;&#x6CA1;&#x6709;&#x8FD8;&#x7ED9;buddy&#x5185;&#x5B58;&#x6C60;</span></span><br><span class="line">  <span class="built_in">free</span>(buffer);</span><br><span class="line">  gettimeofday(&amp;end, <span class="literal">NULL</span>);</span><br><span class="line">  timer = <span class="number">1000000</span> * (end.tv_sec - start.tv_sec) + end.tv_usec - start.tv_usec;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;free bytes through fast mode: %ldus\n&quot;</span>, timer);</span><br><span class="line"></span><br><span class="line">  gettimeofday(&amp;start, <span class="literal">NULL</span>);</span><br><span class="line">  buffer = (<span class="keyword">unsigned</span> <span class="keyword">char</span>*)<span class="built_in">malloc</span>(SOME_SIZE);</span><br><span class="line">  assert(buffer != <span class="literal">NULL</span>);</span><br><span class="line">  <span class="built_in">memset</span>(buffer, <span class="number">0</span>, SOME_SIZE);</span><br><span class="line">  gettimeofday(&amp;end, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">  timer = <span class="number">1000000</span> * (end.tv_sec - start.tv_sec) + end.tv_usec - start.tv_usec;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;malloc bytes again through fast mode: %ldus\n&quot;</span>, timer);</span><br><span class="line">  <span class="built_in">free</span>(buffer);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><malloc.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><stdio.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><string.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><sys/mman.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><sys/time.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><unistd.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><assert.h></span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SOME_SIZE (200 * 1024 * 1024)</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">char</span> *buffer;</span><br><span class="line">  <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">timeval</span> <span class="title">start</span>;</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">timeval</span> <span class="title">end</span>;</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> timer;</span><br><span class="line"></span><br><span class="line">  gettimeofday(&start, <span class="literal">NULL</span>);</span><br><span class="line">  buffer = (<span class="keyword">unsigned</span> <span class="keyword">char</span>*)<span class="built_in">malloc</span>(SOME_SIZE);</span><br><span class="line">  assert(buffer != <span class="literal">NULL</span>);</span><br><span class="line">  <span class="built_in">memset</span>(buffer, <span class="number">0</span>, SOME_SIZE);</span><br><span class="line">  gettimeofday(&end, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">  timer = <span class="number">1000000</span> * (end.tv_sec - start.tv_sec) + end.tv_usec - start.tv_usec;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"malloc bytes through normal mode: %ldus\n"</span>, timer);</span><br><span class="line"></span><br><span class="line">  gettimeofday(&start, <span class="literal">NULL</span>);</span><br><span class="line">  <span class="built_in">free</span>(buffer);</span><br><span class="line">  gettimeofday(&end, <span class="literal">NULL</span>);</span><br><span class="line">  timer = <span class="number">1000000</span> * (end.tv_sec - start.tv_sec) + end.tv_usec - start.tv_usec;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"free bytes through normal mode: %ldus\n"</span>, timer);</span><br><span class="line"></span><br><span class="line">  gettimeofday(&start, <span class="literal">NULL</span>);</span><br><span class="line">  buffer = (<span class="keyword">unsigned</span> <span class="keyword">char</span>*)<span class="built_in">malloc</span>(SOME_SIZE);</span><br><span class="line">  assert(buffer != <span class="literal">NULL</span>);</span><br><span class="line">  <span class="comment">//在真实写入操作时，glibc才会将此虚拟内存映射到物理内存</span></span><br><span class="line">  <span class="built_in">memset</span>(buffer, <span class="number">0</span>, SOME_SIZE);</span><br><span class="line">  gettimeofday(&end, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">  timer = <span class="number">1000000</span> * (end.tv_sec - start.tv_sec) + end.tv_usec - start.tv_usec;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"malloc bytes again through normal mode: %ldus\n"</span>, timer);</span><br><span class="line">  <span class="built_in">free</span>(buffer);</span><br><span class="line"></span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"\n***************\n"</span>);</span><br><span class="line">  <span class="keyword">if</span>(!mlockall(MCL_CURRENT | MCL_FUTURE))</span><br><span class="line">  {</span><br><span class="line">    <span class="comment">//设置收缩阀值为无穷大</span></span><br><span class="line">    mallopt(M_TRIM_THRESHOLD, <span class="number">-1U</span>L);</span><br><span class="line">  }</span><br><span class="line">  mallopt(M_MMAP_MAX, <span class="number">0</span>);</span><br><span class="line">  gettimeofday(&start, <span class="literal">NULL</span>);</span><br><span class="line">  buffer = (<span class="keyword">unsigned</span> <span class="keyword">char</span>*)<span class="built_in">malloc</span>(SOME_SIZE);</span><br><span class="line">  assert(buffer != <span class="literal">NULL</span>);</span><br><span class="line">  <span class="built_in">memset</span>(buffer, <span class="number">0</span>, SOME_SIZE);</span><br><span class="line">  gettimeofday(&end, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">  timer = <span class="number">1000000</span> * (end.tv_sec - start.tv_sec) + end.tv_usec - start.tv_usec;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"malloc bytes through fast mode: %ldus\n"</span>, timer);</span><br><span class="line"></span><br><span class="line">  gettimeofday(&start, <span class="literal">NULL</span>);</span><br><span class="line">  <span class="comment">//此时的free只还给了glibc但没有还给buddy内存池</span></span><br><span class="line">  <span class="built_in">free</span>(buffer);</span><br><span class="line">  gettimeofday(&end, <span class="literal">NULL</span>);</span><br><span class="line">  timer = <span class="number">1000000</span> * (end.tv_sec - start.tv_sec) + end.tv_usec - start.tv_usec;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"free bytes through fast mode: %ldus\n"</span>, timer);</span><br><span class="line"></span><br><span class="line">  gettimeofday(&start, <span class="literal">NULL</span>);</span><br><span class="line">  buffer = (<span class="keyword">unsigned</span> <span class="keyword">char</span>*)<span class="built_in">malloc</span>(SOME_SIZE);</span><br><span class="line">  assert(buffer != <span class="literal">NULL</span>);</span><br><span class="line">  <span class="built_in">memset</span>(buffer, <span class="number">0</span>, SOME_SIZE);</span><br><span class="line">  gettimeofday(&end, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">  timer = <span class="number">1000000</span> * (end.tv_sec - start.tv_sec) + end.tv_usec - start.tv_usec;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"malloc bytes again through fast mode: %ldus\n"</span>, timer);</span><br><span class="line">  <span class="built_in">free</span>(buffer);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </div>
 </div>
 </div>
 
-<div id="outline-container-orge44cc8c" class="outline-2">
-<h2 id="orge44cc8c">&#x5185;&#x5B58;&#x7533;&#x8BF7;&#x7684;&#x6D41;&#x7A0B;</h2>
-<div class="outline-text-2" id="text-orge44cc8c">
+<div id="outline-container-orgb26a104" class="outline-2">
+<h2 id="orgb26a104">内存申请的流程</h2>
+<div class="outline-text-2" id="text-orgb26a104">
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[mm]/skeleton/malloc.jpg?raw=true" alt="malloc.jpg">
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[mm]/skeleton/malloc_ex.jpg?raw=true" alt="malloc_ex.jpg">
 <p>
-&#x7531;&#x4E0A;&#x4E24;&#x5E45;&#x56FE;&#x53EF;&#x4EE5;&#x770B;&#x51FA;&#xFF1A;
+由上两幅图可以看出：
 </p>
 <ul class="org-ul">
-<li>vmalloc &#x53EF;&#x4EE5;&#x7528;&#x4E8E;&#x7533;&#x8BF7;&#x5185;&#x5B58;&#x7684;&#x4EFB;&#x4F55;&#x4F4D;&#x7F6E;&#x4EE5;&#x53CA;&#x6620;&#x5C04;&#x5BC4;&#x5B58;&#x5668;
+<li>vmalloc 可以用于申请内存的任何位置以及映射寄存器
 <ul class="org-ul">
-<li>&#x4F7F;&#x7528; <code>sudo cat /proc/vmallocinfo | grep ioremap</code> &#x53EF;&#x4EE5;&#x67E5;&#x770B;&#x5F53;&#x524D;&#x5BC4;&#x5B58;&#x5668;&#x88AB;&#x6620;&#x5C04;&#x7684;&#x60C5;&#x51B5;</li>
-<li><b>&#x901A;&#x8FC7;vmalloc&#x7533;&#x8BF7;&#x7684;&#x5730;&#x5740;&#x5176;&#x865A;&#x62DF;&#x5730;&#x5740;&#x8FDE;&#x7EED;&#x4F46;&#x7269;&#x7406;&#x5730;&#x5740;&#x4E0D;&#x4E00;&#x5B9A;&#x8FDE;&#x7EED;</b></li>
+<li>使用 <code>sudo cat /proc/vmallocinfo | grep ioremap</code> 可以查看当前寄存器被映射的情况</li>
+<li><b>通过vmalloc申请的地址其虚拟地址连续但物理地址不一定连续</b></li>
 </ul></li>
-<li>kmalloc &#x7533;&#x8BF7;&#x4F4E;&#x7AEF;&#x5185;&#x5B58;&#x65F6;&#xFF0C;&#x7531;&#x4E8E;&#x4E0D;&#x9700;&#x8981;&#x4FEE;&#x6539;&#x9875;&#x8868;&#xFF0C;&#x6240;&#x4EE5;&#x5176;&#x64CD;&#x4F5C;&#x7B80;&#x4FBF;
+<li>kmalloc 申请低端内存时，由于不需要修改页表，所以其操作简便
 <ul class="org-ul">
-<li>&#x6B63;&#x56E0;&#x4E3A;kmalloc&#x4E0E;&#x7269;&#x7406;&#x5185;&#x5B58;&#x7684;&#x7B80;&#x5355;&#x6620;&#x5C04;&#x5173;&#x7CFB;&#xFF0C;&#x6240;&#x4EE5; <b>&#x5176;&#x7269;&#x7406;&#x5730;&#x5740;&#x8FDE;&#x7EED;&#x5E76;&#x4E14;&#x5BF9;&#x5E94;&#x7684;&#x865A;&#x62DF;&#x5730;&#x5740;&#x4E5F;&#x662F;&#x8FDE;&#x7EED;&#x7684;</b></li>
+<li>正因为kmalloc与物理内存的简单映射关系，所以 <b>其物理地址连续并且对应的虚拟地址也是连续的</b></li>
 </ul></li>
-<li>&#x9AD8;&#x7AEF;&#x5185;&#x5B58;&#x6620;&#x5C04;&#x533A;&#x901A;&#x8FC7;kmap&#x5BF9;&#x5E94;&#x7533;&#x8BF7;&#x9AD8;&#x7AEF;&#x7269;&#x7406;&#x5185;&#x5B58;</li>
-<li>&#x7528;&#x6237;&#x7A7A;&#x95F4;malloc&#x5219;&#x53EF;&#x4EE5; <b>&#x7533;&#x8BF7;&#x5185;&#x5B58;&#x6761;&#x7684;&#x4EFB;&#x610F;&#x4F4D;&#x7F6E;</b>
+<li>高端内存映射区通过kmap对应申请高端物理内存</li>
+<li>用户空间malloc则可以 <b>申请内存条的任意位置</b>
 <ul class="org-ul">
-<li><b>&#x901A;&#x8FC7;malloc&#x7533;&#x8BF7;&#x7684;&#x5730;&#x5740;&#x5176;&#x865A;&#x62DF;&#x5730;&#x5740;&#x8FDE;&#x7EED;&#x4F46;&#x7269;&#x7406;&#x5730;&#x5740;&#x4E0D;&#x4E00;&#x5B9A;&#x8FDE;&#x7EED;</b></li>
+<li><b>通过malloc申请的地址其虚拟地址连续但物理地址不一定连续</b></li>
 </ul></li>
 </ul>
 </div>
 
-<div id="outline-container-org8dec05b" class="outline-3">
-<h3 id="org8dec05b">malloc &#x7533;&#x8BF7;&#x673A;&#x5236;</h3>
-<div class="outline-text-3" id="text-org8dec05b">
+<div id="outline-container-org72ce08e" class="outline-3">
+<h3 id="org72ce08e">malloc 申请机制</h3>
+<div class="outline-text-3" id="text-org72ce08e">
 <p>
-malloc&#x5728;&#x7528;&#x6237;&#x4F7F;&#x7528;&#x65F6;&#xFF0C;&#x5176;&#x5185;&#x90E8;&#x4F7F;&#x7528;&#x7684;&#x662F; lazy&#x673A;&#x5236;&#xFF1A;
+malloc在用户使用时，其内部使用的是 lazy机制：
 </p>
 <ol class="org-ol">
-<li>&#x5F53;&#x7528;&#x6237;&#x8C03;&#x7528; <code>malloc</code> &#x65F6;&#xFF0C;malloc&#x5C06;&#x5176;&#x7533;&#x8BF7;&#x7684;&#x865A;&#x62DF;&#x5730;&#x5740;&#x90FD;&#x6307;&#x5411;0&#x9875;&#xFF0C;&#x5E76;&#x4E14; <b>&#x6B64;&#x9875;&#x662F;&#x4E00;&#x4E2A;&#x53EA;&#x8BFB;&#x9875;</b>
+<li>当用户调用 <code>malloc</code> 时，malloc将其申请的虚拟地址都指向0页，并且 <b>此页是一个只读页</b>
 <ul class="org-ul">
-<li>&#x6B64;&#x65F6;&#x7528;&#x6237;&#x8FD8;&#x6CA1;&#x6709;&#x771F;&#x6B63;&#x62E5;&#x6709;&#x5185;&#x5B58;&#xFF0C;&#x5E76;&#x4E14;&#x4F7F;&#x7528;&#x4EE3;&#x7801;&#x8BFB;&#x53D6;&#x65F6;&#x8BFB;&#x5230;&#x7684;&#x90FD;&#x662F;0</li>
+<li>此时用户还没有真正拥有内存，并且使用代码读取时读到的都是0</li>
 </ul></li>
-<li>&#x5F53;&#x7528;&#x6237; <b>&#x771F;&#x6B63;&#x662F;&#x5199;&#x65F6;&#x7531;&#x4E8E;0&#x9875;&#x662F;&#x53EA;&#x8BFB;&#x9875;&#xFF0C;&#x6B64;&#x65F6;&#x53D1;&#x751F;pagefault&#xFF0C;&#x5185;&#x6838;&#x624D;&#x4F1A;&#x53BB;&#x5206;&#x914D;&#x771F;&#x6B63;&#x7684;&#x5185;&#x5B58;</b>
+<li>当用户 <b>真正是写时由于0页是只读页，此时发生pagefault，内核才会去分配真正的内存</b>
 <ul class="org-ul">
-<li>&#x4E5F;&#x5C31;&#x662F;&#x8BF4;&#x5728;&#x7528;&#x6237;&#x7B2C;&#x4E00;&#x6B21;&#x5199;&#x5BF9;&#x5E94;&#x865A;&#x62DF;&#x7A7A;&#x95F4;&#x9875;&#x65F6;&#xFF0C;&#x5185;&#x6838;&#x624D;&#x4F9D;&#x6B21;&#x7684;&#x4E3A;&#x5176;&#x5206;&#x914D;&#x5185;&#x5B58;&#x3002;</li>
-<li><b>pagefault&#x51E0;&#x4E4E;&#x662F;&#x6240;&#x6709;&#x5E94;&#x7528;&#x7A0B;&#x5E8F;&#x83B7;&#x53D6;&#x7269;&#x7406;&#x5185;&#x5B58;&#x7684;&#x9014;&#x5F84;</b>
+<li>也就是说在用户第一次写对应虚拟空间页时，内核才依次的为其分配内存。</li>
+<li><b>pagefault几乎是所有应用程序获取物理内存的途径</b>
 <ul class="org-ul">
-<li>&#x4EE3;&#x7801;&#x6BB5;&#x3001;&#x6570;&#x636E;&#x6BB5;&#x3001;&#x6808;&#x3001;&#x5806;&#x90FD;&#x662F;&#x4E00;&#x6837;&#x7684;lazy&#x673A;&#x5236;</li>
+<li>代码段、数据段、栈、堆都是一样的lazy机制</li>
 </ul></li>
 </ul></li>
 </ol>
 
 <p>
-&#x7531;&#x6B64;&#x5C31;&#x5F15;&#x51FA;&#x4E24;&#x4E2A;&#x6982;&#x5FF5;&#xFF1A;
+由此就引出两个概念：
 </p>
 <ul class="org-ul">
-<li>VSS(Virtual Set size)&#xFF1A;&#x7528;&#x6237;&#x8C03;&#x7528;malloc&#x8FD4;&#x56DE;&#x7684;&#x865A;&#x62DF;&#x5730;&#x5740;&#x7A7A;&#x95F4;&#x5927;&#x5C0F;</li>
-<li>RSS(resident set size)&#xFF1A;&#x7528;&#x6237;&#x771F;&#x6B63;&#x83B7;&#x53D6;&#x5230;&#x7684;&#x5BF9;&#x5E94;&#x7684;&#x7269;&#x7406;&#x5185;&#x5B58;&#x7A7A;&#x95F4;(&#x9A7B;&#x7559;&#x5185;&#x5B58;)&#x5927;&#x5C0F;</li>
+<li>VSS(Virtual Set size)：用户调用malloc返回的虚拟地址空间大小</li>
+<li>RSS(resident set size)：用户真正获取到的对应的物理内存空间(驻留内存)大小</li>
 </ul>
 
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[mm]/skeleton/vss_rss.jpg?raw=true" alt="vss_rss.jpg">
 </div>
-<div id="outline-container-org677ef8e" class="outline-4">
-<h4 id="org677ef8e">&#x5F15;&#x53D1;&#x7684;&#x95EE;&#x9898;</h4>
-<div class="outline-text-4" id="text-org677ef8e">
+<div id="outline-container-org92b30c1" class="outline-4">
+<h4 id="org92b30c1">引发的问题</h4>
+<div class="outline-text-4" id="text-org92b30c1">
 <p>
-&#x65E2;&#x7136;&#x5185;&#x6838;&#x7ED9;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x7684;&#x5185;&#x5B58;&#x90FD;&#x662F;lazy&#x673A;&#x5236;&#x7684;&#xFF0C;&#x90A3;&#x4E48;&#x5C31;&#x5B8C;&#x5168;&#x6709;&#x53EF;&#x80FD;&#x51FA;&#x73B0;VSS&#x5927;&#x4E8E;&#x771F;&#x6B63;&#x7684;RSS&#x7684;&#x60C5;&#x51B5;&#xFF0C;&#x5BFC;&#x81F4;&#x7528;&#x6237;&#x771F;&#x6B63;&#x5199;&#x5185;&#x5B58;&#x65F6;&#x5185;&#x5B58;&#x4E0D;&#x591F;&#x7528;&#x7684;&#x60C5;&#x51B5;&#x3002;
+既然内核给用户空间的内存都是lazy机制的，那么就完全有可能出现VSS大于真正的RSS的情况，导致用户真正写内存时内存不够用的情况。
 </p>
 
 <p>
-&#x6B64;&#x65F6;Linux&#x5C31;&#x4F1A;&#x542F;&#x52A8;OOM(out of memory)&#x673A;&#x5236;&#xFF0C; <b>&#x5C06;&#x5185;&#x5B58;&#x6253;&#x5206;&#x56E0;&#x5B50;&#x6700;&#x9AD8;</b> &#x7684;&#x5E94;&#x7528;&#x7ED9;Kill&#x6389;&#x4EE5;&#x91CA;&#x653E;&#x8DB3;&#x591F;&#x7684;&#x5185;&#x5B58;&#x3002;
+此时Linux就会启动OOM(out of memory)机制， <b>将内存打分因子最高</b> 的应用给Kill掉以释放足够的内存。
 </p>
 
 <p>
-&#x5728;&#x5185;&#x5B58;&#x4E3A;1G&#x7684;32&#x4F4D;&#x865A;&#x62DF;&#x673A;&#x4E0A;&#xFF0C;&#x6309;&#x7167;&#x5982;&#x4E0B;&#x6D41;&#x7A0B;&#x4F53;&#x9A8C;&#xFF1A;
+在内存为1G的32位虚拟机上，按照如下流程体验：
 </p>
 <pre class="example">
-#&#x4F7F;&#x7528;root&#x8EAB;&#x4EFD;&#xFF0C;&#x5173;&#x95ED;&#x4EA4;&#x6362;&#x7A7A;&#x95F4;
+#使用root身份，关闭交换空间
 swapoff -a
-echo 1 &gt; /proc/sys/vm/overcommit_memory</pre>
+echo 1 > /proc/sys/vm/overcommit_memory</pre>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;assert.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  <span class="keyword">int</span> max = <span class="number">-1</span>;</span><br><span class="line">  <span class="keyword">int</span> mb = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">char</span> *buffer;</span><br><span class="line">  <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SIZE 2000</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span> *p = <span class="built_in">malloc</span>(<span class="number">1024</span> * <span class="number">1024</span> * SIZE);</span><br><span class="line">  assert(p != <span class="literal">NULL</span>);</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;malloc buffer addr = %p\n&quot;</span>, p);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">for</span>( i = <span class="number">0</span>; i &lt; <span class="number">1024</span> * <span class="number">1024</span> * (SIZE/<span class="keyword">sizeof</span>(<span class="keyword">int</span>));i++)</span><br><span class="line">    {</span><br><span class="line">      <span class="comment">//&#x6B64;&#x65F6;&#x624D;&#x4F1A;&#x771F;&#x6B63;&#x5206;&#x914D;&#x5230;&#x7269;&#x7406;&#x5185;&#x5B58;</span></span><br><span class="line">      p[i] = <span class="number">123</span>;</span><br><span class="line">      <span class="keyword">if</span>((i &amp; <span class="number">0xfffff</span>) == <span class="number">0</span>)</span><br><span class="line">	{</span><br><span class="line">	  <span class="built_in">printf</span>(<span class="string">&quot;%d MB written\n&quot;</span>, i &gt;&gt; <span class="number">18</span>);</span><br><span class="line">	  usleep(<span class="number">100000</span>);</span><br><span class="line">	}</span><br><span class="line">    }</span><br><span class="line">  pause();</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><stdlib.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><stdio.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><string.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><assert.h></span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  <span class="keyword">int</span> max = <span class="number">-1</span>;</span><br><span class="line">  <span class="keyword">int</span> mb = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">char</span> *buffer;</span><br><span class="line">  <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SIZE 2000</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span> *p = <span class="built_in">malloc</span>(<span class="number">1024</span> * <span class="number">1024</span> * SIZE);</span><br><span class="line">  assert(p != <span class="literal">NULL</span>);</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"malloc buffer addr = %p\n"</span>, p);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">for</span>( i = <span class="number">0</span>; i < <span class="number">1024</span> * <span class="number">1024</span> * (SIZE/<span class="keyword">sizeof</span>(<span class="keyword">int</span>));i++)</span><br><span class="line">    {</span><br><span class="line">      <span class="comment">//此时才会真正分配到物理内存</span></span><br><span class="line">      p[i] = <span class="number">123</span>;</span><br><span class="line">      <span class="keyword">if</span>((i & <span class="number">0xfffff</span>) == <span class="number">0</span>)</span><br><span class="line">	{</span><br><span class="line">	  <span class="built_in">printf</span>(<span class="string">"%d MB written\n"</span>, i >> <span class="number">18</span>);</span><br><span class="line">	  usleep(<span class="number">100000</span>);</span><br><span class="line">	}</span><br><span class="line">    }</span><br><span class="line">  pause();</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 </div>
 <p>
-&#x53EF;&#x4EE5;&#x53D1;&#x73B0;&#x5E94;&#x7528;&#x4F1A;&#x88AB;&#x5185;&#x6838;&#x5F3A;&#x5236;&#x6740;&#x6B7B;,&#x5E76;&#x5728;dmesg&#x4E2D;&#x4E5F;&#x4F1A;&#x770B;&#x5230;&#x76F8;&#x5E94;&#x7684;&#x63D0;&#x793A;&#x3002;
+可以发现应用会被内核强制杀死,并在dmesg中也会看到相应的提示。
 </p>
 </div>
 </div>
-<div id="outline-container-org399de20" class="outline-4">
-<h4 id="org399de20">&#x6253;&#x5206;&#x56E0;&#x5B50;</h4>
-<div class="outline-text-4" id="text-org399de20">
+<div id="outline-container-orgdab40dd" class="outline-4">
+<h4 id="orgdab40dd">打分因子</h4>
+<div class="outline-text-4" id="text-orgdab40dd">
 <p>
-Linux&#x4F1A;&#x4E3A;&#x6BCF;&#x4E2A;&#x8FDB;&#x7A0B;&#x8FDB;&#x884C;&#x6253;&#x5206;&#xFF0C;&#x6BCF;&#x4E2A;&#x8FDB;&#x7A0B;&#x7684; oom score &#x53D6;&#x51B3;&#x4E8E;:
+Linux会为每个进程进行打分，每个进程的 oom score 取决于:
 </p>
 <ul class="org-ul">
-<li>&#x9A7B;&#x7559;&#x5185;&#x5B58;&#x3001;pagetable&#x548C;swap&#x7684;&#x4F7F;&#x7528;&#x91CF;
+<li>驻留内存、pagetable和swap的使用量
 <ul class="org-ul">
-<li>&#x91C7;&#x7528;&#x767E;&#x5206;&#x6BD4;&#x4E58;&#x4EE5;10(percent-times-tem):&#x4E00;&#x4E2A;&#x4F7F;&#x7528;&#x5168;&#x90E8;&#x5185;&#x5B58;&#x7684;&#x8FDB;&#x7A0B;&#x5F97;&#x5206;1000&#xFF0C;&#x4F7F;&#x7528;0&#x5B57;&#x8282;&#x7684;&#x8FDB;&#x7A0B;&#x5F97;&#x5206;0</li>
+<li>采用百分比乘以10(percent-times-tem):一个使用全部内存的进程得分1000，使用0字节的进程得分0</li>
 </ul></li>
-<li>root&#x7528;&#x6237;&#x8FDB;&#x7A0B;&#x51CF;&#x53BB;30&#x5206;</li>
-<li>oom_score_adj: oom_score&#x4F1A;&#x52A0;&#x4E0A;oom_score_adj&#x8FD9;&#x4E2A;&#x503C;</li>
-<li>oom_adj: -15 ~ 15 &#x7684;&#x7CFB;&#x6570;&#x8303;&#x56F4;&#x8C03;&#x6574;</li>
+<li>root用户进程减去30分</li>
+<li>oom_score_adj: oom_score会加上oom_score_adj这个值</li>
+<li>oom_adj: -15 ~ 15 的系数范围调整</li>
 </ul>
 
 <p>
-&#x8FD9;&#x90E8;&#x5206;&#x89C4;&#x5219;&#x7684;&#x4EE3;&#x7801;&#x4F4D;&#x4E8E;&#x51FD;&#x6570; <code>/mm/oom_kill.c/oom_badness()</code> &#x4E2D;:
+这部分规则的代码位于函数 <code>/mm/oom_kill.c/oom_badness()</code> 中:
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * oom_badness - heuristic function to determine which candidate task to kill</span></span><br><span class="line"><span class="comment"> * @p: task struct of which task we should calculate</span></span><br><span class="line"><span class="comment"> * @totalpages: total present RAM allowed for page allocation</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * The heuristic for determining which task to kill is made to be as simple and</span></span><br><span class="line"><span class="comment"> * predictable as possible.  The goal is to return the highest value for the</span></span><br><span class="line"><span class="comment"> * task consuming the most memory to avoid subsequent oom failures.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="title">oom_badness</span><span class="params">(struct task_struct *p, struct mem_cgroup *memcg,</span></span></span><br><span class="line"><span class="function"><span class="params">	<span class="keyword">const</span> <span class="keyword">nodemask_t</span> *nodemask, <span class="keyword">unsigned</span> <span class="keyword">long</span> totalpages)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  <span class="keyword">long</span> points;</span><br><span class="line">  <span class="keyword">long</span> adj;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (oom_unkillable_task(p, memcg, nodemask))</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  p = find_lock_task_mm(p);</span><br><span class="line">  <span class="keyword">if</span> (!p)</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  adj = (<span class="keyword">long</span>)p-&gt;signal-&gt;oom_score_adj;</span><br><span class="line">  <span class="keyword">if</span> (adj == OOM_SCORE_ADJ_MIN) {</span><br><span class="line">    task_unlock(p);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">  }</span><br><span class="line"></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">   * The baseline for the badness score is the proportion of RAM that each</span></span><br><span class="line"><span class="comment">   * task&apos;s rss, pagetable and swap space use.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  points = get_mm_rss(p-&gt;mm) + get_mm_counter(p-&gt;mm, MM_SWAPENTS) +</span><br><span class="line">    atomic_long_read(&amp;p-&gt;mm-&gt;nr_ptes) + mm_nr_pmds(p-&gt;mm);</span><br><span class="line">  task_unlock(p);</span><br><span class="line"></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">   * Root processes get 3% bonus, just like the __vm_enough_memory()</span></span><br><span class="line"><span class="comment">   * implementation used by LSMs.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="keyword">if</span> (has_capability_noaudit(p, CAP_SYS_ADMIN))</span><br><span class="line">    points -= (points * <span class="number">3</span>) / <span class="number">100</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Normalize to oom_score_adj units */</span></span><br><span class="line">  adj *= totalpages / <span class="number">1000</span>;</span><br><span class="line">  points += adj;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">   * Never return 0 for an eligible task regardless of the root bonus and</span></span><br><span class="line"><span class="comment">   * oom_score_adj (oom_score_adj can&apos;t be OOM_SCORE_ADJ_MIN here).</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="keyword">return</span> points &gt; <span class="number">0</span> ? points : <span class="number">1</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * oom_badness - heuristic function to determine which candidate task to kill</span></span><br><span class="line"><span class="comment"> * @p: task struct of which task we should calculate</span></span><br><span class="line"><span class="comment"> * @totalpages: total present RAM allowed for page allocation</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * The heuristic for determining which task to kill is made to be as simple and</span></span><br><span class="line"><span class="comment"> * predictable as possible.  The goal is to return the highest value for the</span></span><br><span class="line"><span class="comment"> * task consuming the most memory to avoid subsequent oom failures.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="title">oom_badness</span><span class="params">(struct task_struct *p, struct mem_cgroup *memcg,</span></span></span><br><span class="line"><span class="function"><span class="params">	<span class="keyword">const</span> <span class="keyword">nodemask_t</span> *nodemask, <span class="keyword">unsigned</span> <span class="keyword">long</span> totalpages)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  <span class="keyword">long</span> points;</span><br><span class="line">  <span class="keyword">long</span> adj;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (oom_unkillable_task(p, memcg, nodemask))</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  p = find_lock_task_mm(p);</span><br><span class="line">  <span class="keyword">if</span> (!p)</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  adj = (<span class="keyword">long</span>)p->signal->oom_score_adj;</span><br><span class="line">  <span class="keyword">if</span> (adj == OOM_SCORE_ADJ_MIN) {</span><br><span class="line">    task_unlock(p);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">  }</span><br><span class="line"></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">   * The baseline for the badness score is the proportion of RAM that each</span></span><br><span class="line"><span class="comment">   * task's rss, pagetable and swap space use.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  points = get_mm_rss(p->mm) + get_mm_counter(p->mm, MM_SWAPENTS) +</span><br><span class="line">    atomic_long_read(&p->mm->nr_ptes) + mm_nr_pmds(p->mm);</span><br><span class="line">  task_unlock(p);</span><br><span class="line"></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">   * Root processes get 3% bonus, just like the __vm_enough_memory()</span></span><br><span class="line"><span class="comment">   * implementation used by LSMs.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="keyword">if</span> (has_capability_noaudit(p, CAP_SYS_ADMIN))</span><br><span class="line">    points -= (points * <span class="number">3</span>) / <span class="number">100</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Normalize to oom_score_adj units */</span></span><br><span class="line">  adj *= totalpages / <span class="number">1000</span>;</span><br><span class="line">  points += adj;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">   * Never return 0 for an eligible task regardless of the root bonus and</span></span><br><span class="line"><span class="comment">   * oom_score_adj (oom_score_adj can't be OOM_SCORE_ADJ_MIN here).</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="keyword">return</span> points > <span class="number">0</span> ? points : <span class="number">1</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 </div>
 
 <p>
-&#x53EF;&#x4EE5;&#x624B;&#x52A8;&#x6765;&#x8C03;&#x6574;&#x6BCF;&#x4E2A;&#x8FDB;&#x7A0B;&#x7684;oom_score_adj&#x6216;oom_adj&#x6765;&#x6539;&#x53D8;&#x8FDB;&#x7A0B;&#x6253;&#x5206;&#xFF0C;&#x8FD9;&#x6837;&#x53EF;&#x4EE5;&#x504F;&#x5411;&#x8BA9;&#x7CFB;&#x7EDF;&#x9996;&#x5148;&#x6740;&#x6B7B;&#x8C01;&#x3002;
+可以手动来调整每个进程的oom_score_adj或oom_adj来改变进程打分，这样可以偏向让系统首先杀死谁。
 </p>
 <ul class="org-ul">
-<li>&#x5728; <code>/proc/&lt;pid&gt;/</code> &#x4E0B;&#x5C31;&#x5177;&#x6709;&#x8FD9;&#x4E9B;&#x6587;&#x4EF6;</li>
+<li>在 <code>/proc/<pid>/</code> 下就具有这些文件</li>
 </ul>
 
 <p>
-&#x5B89;&#x5353;&#x4E3B;&#x52A8;&#x5C06;&#x524D;&#x53F0;&#x8FDB;&#x7A0B;&#x7684;oom&#x8C03;&#x4F4E;&#xFF0C;&#x5C06;&#x540E;&#x53F0;&#x7684;&#x8FDB;&#x7A0B;oom&#x8C03;&#x9AD8;&#xFF0C;&#x8FD9;&#x6837;&#x4EE5;&#x4FDD;&#x8BC1;&#x53EF;&#x4EE5;&#x6740;&#x6B7B;&#x540E;&#x53F0;&#x6765;&#x7ED9;&#x4E88;&#x524D;&#x53F0;&#x66F4;&#x591A;&#x7684;&#x8FD0;&#x884C;&#x5185;&#x5B58;&#x3002;
+安卓主动将前台进程的oom调低，将后台的进程oom调高，这样以保证可以杀死后台来给予前台更多的运行内存。
 </p>
 </div>
 </div>
 
-<div id="outline-container-orgeb661ba" class="outline-4">
-<h4 id="orgeb661ba">oom&#x8C03;&#x8BD5;</h4>
-<div class="outline-text-4" id="text-orgeb661ba">
+<div id="outline-container-org36f7476" class="outline-4">
+<h4 id="org36f7476">oom调试</h4>
+<div class="outline-text-4" id="text-org36f7476">
 <p>
-&#x5C06; <code>/proc/sys/vm/panic_on_oom</code> &#x5199;1&#xFF0C;&#x8FD9;&#x6837;&#x5F53;&#x51FA;&#x73B0;oom&#x65F6;&#xFF0C;&#x5185;&#x6838;&#x4F1A;&#x5954;&#x6E83;&#xFF0C;&#x8FD9;&#x5728;&#x8C03;&#x8BD5;&#x5D4C;&#x5165;&#x5F0F;&#x7A0B;&#x5E8F;&#x662F;&#x6BD4;&#x8F83;&#x6709;&#x5E2E;&#x52A9;&#x7684;&#x3002;
+将 <code>/proc/sys/vm/panic_on_oom</code> 写1，这样当出现oom时，内核会奔溃，这在调试嵌入式程序是比较有帮助的。
 </p>
 </div>
 </div>
@@ -670,7 +670,7 @@ Linux&#x4F1A;&#x4E3A;&#x6BCF;&#x4E2A;&#x8FDB;&#x7A0B;&#x8FDB;&#x884C;&#x6253;&#x
 </div>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
 </div>
 
     </div>
@@ -756,7 +756,7 @@ Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#orgfb73958"><span class="nav-number">1.</span> <span class="nav-text">buddy &amp;#x7B97;&amp;#x6CD5;&amp;#x7F3A;&amp;#x9677;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgf31db81"><span class="nav-number">1.1.</span> <span class="nav-text">&amp;#x7B97;&amp;#x6CD5;&amp;#x9875;&amp;#x9762;&amp;#x8FDE;&amp;#x7EED;&amp;#x6027;&amp;#x7F3A;&amp;#x9677;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgd447c07"><span class="nav-number">1.2.</span> <span class="nav-text">&amp;#x9875;&amp;#x9762;&amp;#x8FDE;&amp;#x7EED;&amp;#x6027;&amp;#x95EE;&amp;#x9898;&amp;#x89E3;&amp;#x51B3;&amp;#x65B9;&amp;#x6848;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org0c5c483"><span class="nav-number">1.2.1.</span> <span class="nav-text">reserved &amp;#x5185;&amp;#x5B58;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org77188b8"><span class="nav-number">1.2.2.</span> <span class="nav-text">CMA(Contiguous Memory Allocator, &amp;#x8FDE;&amp;#x7EED;&amp;#x5185;&amp;#x5B58;&amp;#x5206;&amp;#x914D;&amp;#x5668;)</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org6536fb6"><span class="nav-number">1.3.</span> <span class="nav-text">&amp;#x7B97;&amp;#x6CD5;&amp;#x7C92;&amp;#x5EA6;&amp;#x95EE;&amp;#x9898;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org53b21cf"><span class="nav-number">1.4.</span> <span class="nav-text">&amp;#x5185;&amp;#x5B58;&amp;#x788E;&amp;#x7247;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org6c2e43d"><span class="nav-number">2.</span> <span class="nav-text">buddy &amp;#x7B97;&amp;#x6CD5;&amp;#x4E0E;slab,malloc&amp;#x4E4B;&amp;#x95F4;&amp;#x7684;&amp;#x5173;&amp;#x7CFB;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org30d65ba"><span class="nav-number">2.1.</span> <span class="nav-text">slab&amp;#x673A;&amp;#x5236;(&amp;#x5185;&amp;#x6838;&amp;#x7A7A;&amp;#x95F4;)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgc0f472a"><span class="nav-number">2.1.1.</span> <span class="nav-text">&amp;#x57FA;&amp;#x672C;&amp;#x601D;&amp;#x60F3;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org106eb00"><span class="nav-number">2.1.2.</span> <span class="nav-text">slab&amp;#x7B97;&amp;#x6CD5;&amp;#x5206;&amp;#x7C7B;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org804f23c"><span class="nav-number">2.2.</span> <span class="nav-text">glibc(&amp;#x7528;&amp;#x6237;&amp;#x7A7A;&amp;#x95F4;)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org69fdb93"><span class="nav-number">2.2.1.</span> <span class="nav-text">&amp;#x901A;&amp;#x8FC7;&amp;#x8BBE;&amp;#x7F6E;&amp;#x6536;&amp;#x7F29;&amp;#x9600;&amp;#x503C;&amp;#xFF0C;&amp;#x63D0;&amp;#x9AD8;&amp;#x7533;&amp;#x8BF7;&amp;#x5185;&amp;#x5B58;&amp;#x901F;&amp;#x5EA6;</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orge44cc8c"><span class="nav-number">3.</span> <span class="nav-text">&amp;#x5185;&amp;#x5B58;&amp;#x7533;&amp;#x8BF7;&amp;#x7684;&amp;#x6D41;&amp;#x7A0B;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org8dec05b"><span class="nav-number">3.1.</span> <span class="nav-text">malloc &amp;#x7533;&amp;#x8BF7;&amp;#x673A;&amp;#x5236;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org677ef8e"><span class="nav-number">3.1.1.</span> <span class="nav-text">&amp;#x5F15;&amp;#x53D1;&amp;#x7684;&amp;#x95EE;&amp;#x9898;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org399de20"><span class="nav-number">3.1.2.</span> <span class="nav-text">&amp;#x6253;&amp;#x5206;&amp;#x56E0;&amp;#x5B50;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgeb661ba"><span class="nav-number">3.1.3.</span> <span class="nav-text">oom&amp;#x8C03;&amp;#x8BD5;</span></a></li></ol></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#orgf748de0"><span class="nav-number">1.</span> <span class="nav-text">buddy 算法缺陷</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgfd23efc"><span class="nav-number">1.1.</span> <span class="nav-text">算法页面连续性缺陷</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orge2db2a4"><span class="nav-number">1.2.</span> <span class="nav-text">页面连续性问题解决方案</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org07ed6df"><span class="nav-number">1.2.1.</span> <span class="nav-text">reserved 内存</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org84ddd7a"><span class="nav-number">1.2.2.</span> <span class="nav-text">CMA(Contiguous Memory Allocator, 连续内存分配器)</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgd9d3cda"><span class="nav-number">1.3.</span> <span class="nav-text">算法粒度问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orga399392"><span class="nav-number">1.4.</span> <span class="nav-text">内存碎片</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgf958247"><span class="nav-number">2.</span> <span class="nav-text">buddy 算法与slab,malloc之间的关系</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgba00af4"><span class="nav-number">2.1.</span> <span class="nav-text">slab机制(内核空间)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgb8c7090"><span class="nav-number">2.1.1.</span> <span class="nav-text">基本思想</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orge277a40"><span class="nav-number">2.1.2.</span> <span class="nav-text">slab算法分类</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org01a1229"><span class="nav-number">2.2.</span> <span class="nav-text">glibc(用户空间)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org496a63e"><span class="nav-number">2.2.1.</span> <span class="nav-text">通过设置收缩阀值，提高申请内存速度</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgb26a104"><span class="nav-number">3.</span> <span class="nav-text">内存申请的流程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org72ce08e"><span class="nav-number">3.1.</span> <span class="nav-text">malloc 申请机制</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org92b30c1"><span class="nav-number">3.1.1.</span> <span class="nav-text">引发的问题</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgdab40dd"><span class="nav-number">3.1.2.</span> <span class="nav-text">打分因子</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org36f7476"><span class="nav-number">3.1.3.</span> <span class="nav-text">oom调试</span></a></li></ol></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 

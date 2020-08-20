@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="&amp;#x53C2;&amp;#x8003;&amp;#x5B8B;&amp;#x5B9D;&amp;#x534E;&amp;#x8001;&amp;#x5E08;&amp;#x7684;&amp;#x4E66; Linux&amp;#x8BBE;&amp;#x5907;&amp;#x9A71;&amp;#x52A8;&amp;#x5F00;&amp;#x53D1;&amp;#x8BE6;&amp;#x89E3; &amp;#xFF0C;&amp;#x6765;&amp;#x7406;&amp;#x89E3;Linux&amp;#x8BBE;&amp;#x5907;&amp;#">
+  <meta name="description" content="参考宋宝华老师的书 Linux设备驱动开发详解 ，来理解Linux设备驱动的总体思想。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[What]Linux设备驱动的软件架构思想">
 <meta property="og:url" content="http://kcmetercec.top/2018/03/05/linux_driver_overview_structure/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="&amp;#x53C2;&amp;#x8003;&amp;#x5B8B;&amp;#x5B9D;&amp;#x534E;&amp;#x8001;&amp;#x5E08;&amp;#x7684;&amp;#x4E66; Linux&amp;#x8BBE;&amp;#x5907;&amp;#x9A71;&amp;#x52A8;&amp;#x5F00;&amp;#x53D1;&amp;#x8BE6;&amp;#x89E3; &amp;#xFF0C;&amp;#x6765;&amp;#x7406;&amp;#x89E3;Linux&amp;#x8BBE;&amp;#x5907;&amp;#">
+<meta property="og:description" content="参考宋宝华老师的书 Linux设备驱动开发详解 ，来理解Linux设备驱动的总体思想。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2018-03-04T16:00:00.000Z">
 <meta property="article:modified_time" content="2020-08-01T01:09:06.584Z">
@@ -299,356 +299,356 @@
       
         <div id="content">
 <p>
-&#x53C2;&#x8003;&#x5B8B;&#x5B9D;&#x534E;&#x8001;&#x5E08;&#x7684;&#x4E66; <code>Linux&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#x5F00;&#x53D1;&#x8BE6;&#x89E3;</code> &#xFF0C;&#x6765;&#x7406;&#x89E3;Linux&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#x7684;&#x603B;&#x4F53;&#x601D;&#x60F3;&#x3002;
+参考宋宝华老师的书 <code>Linux设备驱动开发详解</code> ，来理解Linux设备驱动的总体思想。
 </p>
 
 <a id="more"></a>
 
 <p>
-&#x5728;&#x5B9E;&#x9645;&#x7684;linux&#x9A71;&#x52A8;&#x5E94;&#x7528;&#x4E2D;&#xFF0C;linux&#x5185;&#x6838;&#x5DF2;&#x7ECF;&#x4E3A;&#x4E0D;&#x540C;&#x7684;&#x5F00;&#x53D1;&#x8005;&#x5206;&#x597D;&#x4E86;&#x8F6F;&#x4EF6;&#x5C42;&#x6B21;&#xFF0C;&#x5176;&#x5B9E;&#x5F88;&#x591A;&#x65F6;&#x5019;&#x5F00;&#x53D1;&#x8005;&#x4EC5;&#x4EC5;&#x9700;&#x8981;&#x5173;&#x6CE8;&#x81EA;&#x5DF1;&#x4FEE;&#x6539;&#x7684;&#x90E8;&#x5206;&#x5373;&#x53EF;&#x3002;
+在实际的linux驱动应用中，linux内核已经为不同的开发者分好了软件层次，其实很多时候开发者仅仅需要关注自己修改的部分即可。
 </p>
 
-<div id="outline-container-org3adf10e" class="outline-2">
-<h2 id="org3adf10e">&#x9A71;&#x52A8;&#x7684;&#x8F6F;&#x4EF6;&#x67B6;&#x6784;&#x7684;&#x4E09;&#x5927;&#x601D;&#x60F3;</h2>
-<div class="outline-text-2" id="text-org3adf10e">
+<div id="outline-container-org24e274e" class="outline-2">
+<h2 id="org24e274e">驱动的软件架构的三大思想</h2>
+<div class="outline-text-2" id="text-org24e274e">
 </div>
-<div id="outline-container-org01ac0c9" class="outline-3">
-<h3 id="org01ac0c9">&#x603B;&#x7EBF;,&#x8BBE;&#x5907;,&#x9A71;&#x52A8;</h3>
-<div class="outline-text-3" id="text-org01ac0c9">
+<div id="outline-container-org7041727" class="outline-3">
+<h3 id="org7041727">总线,设备,驱动</h3>
+<div class="outline-text-3" id="text-org7041727">
 </div>
-<div id="outline-container-org4a23afe" class="outline-4">
-<h4 id="org4a23afe">&#x95EE;&#x9898;</h4>
-<div class="outline-text-4" id="text-org4a23afe">
+<div id="outline-container-orgf2609b1" class="outline-4">
+<h4 id="orgf2609b1">问题</h4>
+<div class="outline-text-4" id="text-orgf2609b1">
 <p>
-&#x5F53;&#x540C;&#x6837;&#x7684;&#x82AF;&#x7247;&#x4F4D;&#x4E8E;&#x4E0D;&#x540C;&#x7684;&#x5F00;&#x53D1;&#x677F;,&#x6216;&#x8005;&#x4E00;&#x4E2A;&#x5F00;&#x53D1;&#x677F;&#x5177;&#x6709;&#x51E0;&#x4E2A;&#x76F8;&#x540C;&#x7684;&#x82AF;&#x7247;,&#x9A71;&#x52A8;&#x90FD;&#x8981;&#x517C;&#x5BB9;&#x8FD9;&#x4E9B;&#x590D;&#x6742;&#x7684;&#x4E0D;&#x540C;&#x4E4B;&#x5904;&#x7684;&#x4FE1;&#x606F;,&#x8FD9;&#x4F1A;&#x9020;&#x6210;&#x9A71;&#x52A8;&#x4EE3;&#x7801;&#x8FC7;&#x4E8E;&#x81C3;&#x80BF;.
+当同样的芯片位于不同的开发板,或者一个开发板具有几个相同的芯片,驱动都要兼容这些复杂的不同之处的信息,这会造成驱动代码过于臃肿.
 </p>
 </div>
 </div>
-<div id="outline-container-orgf292b33" class="outline-4">
-<h4 id="orgf292b33">&#x89E3;&#x51B3;</h4>
-<div class="outline-text-4" id="text-orgf292b33">
+<div id="outline-container-org3b14522" class="outline-4">
+<h4 id="org3b14522">解决</h4>
+<div class="outline-text-4" id="text-org3b14522">
 <p>
-&#x4F7F;&#x7528;&#x603B;&#x7EBF;,&#x8BBE;&#x5907;&#x548C;&#x9A71;&#x52A8;&#x6A21;&#x578B;&#x53EF;&#x4EE5;&#x5C06;&#x8FD9;&#x4E9B;&#x4FE1;&#x606F;&#x5206;&#x79BB;&#x5F00;&#x6765;, &#x4F7F;&#x5F97;&#x9A71;&#x52A8;&#x53EA;&#x7BA1;&#x9A71;&#x52A8;, &#x8BBE;&#x5907;&#x53EA;&#x7BA1;&#x8BBE;&#x5907;, &#x603B;&#x7EBF;&#x8D1F;&#x8D23;&#x5339;&#x914D;&#x8BBE;&#x5907;&#x548C;&#x9A71;&#x52A8;,&#x800C;&#x9A71;&#x52A8;&#x5219;&#x4EE5;&#x6807;&#x51C6;&#x9014;&#x5F84;&#x62FF;&#x5230;&#x677F;&#x7EA7;&#x4FE1;&#x606F;,&#x8FD9;&#x6837;&#x9A71;&#x52A8;&#x5C31;&#x53D8;&#x5F97;&#x7EAF;&#x51C0;&#x4E86;.
+使用总线,设备和驱动模型可以将这些信息分离开来, 使得驱动只管驱动, 设备只管设备, 总线负责匹配设备和驱动,而驱动则以标准途径拿到板级信息,这样驱动就变得纯净了.
 </p>
 <ul class="org-ul">
-<li>&#x8BBE;&#x5907;&#xFF1A;&#x4EE5;&#x76EE;&#x524D;&#x7684;linux&#x7CFB;&#x7EDF;&#x6765;&#x8BF4;&#xFF0C;&#x8BBE;&#x5907;&#x5C31;&#x662F;&#x7528;&#x6237;&#x4EE5; <code>&#x8BBE;&#x5907;&#x6811;</code> &#x4E3A;&#x63A5;&#x53E3;&#x8F93;&#x5165;&#x8BBE;&#x5907;&#x4FE1;&#x606F;&#xFF0C;&#x800C;&#x6700;&#x7EC8;&#x5728;&#x5185;&#x6838;&#x4EE5;&#x7ED3;&#x6784;&#x4F53;&#x7684;&#x5F62;&#x5F0F;&#x5B58;&#x5728;</li>
-<li>&#x9A71;&#x52A8;&#xFF1A;&#x9A71;&#x52A8;&#x5C31;&#x662F;&#x7528;&#x4E8E;&#x64CD;&#x4F5C;&#x6570;&#x636E;&#x7684;&#x65B9;&#x6CD5;&#xFF0C;&#x800C;&#x8BBE;&#x5907;&#x5C31;&#x662F;&#x6570;&#x636E;&#x5B9E;&#x4F8B;&#xFF0C;&#x8FD9;&#x548C;&#x9762;&#x5411;&#x5BF9;&#x8C61;&#x7684;&#x601D;&#x60F3;&#x5F88;&#x7C7B;&#x4F3C;
+<li>设备：以目前的linux系统来说，设备就是用户以 <code>设备树</code> 为接口输入设备信息，而最终在内核以结构体的形式存在</li>
+<li>驱动：驱动就是用于操作数据的方法，而设备就是数据实例，这和面向对象的思想很类似
 <ul class="org-ul">
-<li>&#x4E00;&#x4E2A;&#x9A71;&#x52A8;&#x53EF;&#x4EE5;&#x7528;&#x4E8E;&#x591A;&#x4E2A;&#x540C;&#x7C7B;&#x4F46;&#x5177;&#x4F53;&#x53C2;&#x6570;&#x4E0D;&#x540C;&#x7684;&#x8BBE;&#x5907;</li>
+<li>一个驱动可以用于多个同类但具体参数不同的设备</li>
 </ul></li>
-<li>&#x603B;&#x7EBF;&#xFF1A;&#x603B;&#x7EBF;&#x901A;&#x8FC7;&#x9A71;&#x52A8;&#x548C;&#x8BBE;&#x5907;&#x4E2D;&#x7684;&#x5339;&#x914D;&#x5B57;&#x7B26;&#x4E32;(compatible)&#x6765;&#x5B9E;&#x73B0;&#x4E8C;&#x8005;&#x7684;&#x5339;&#x914D;
+<li>总线：总线通过驱动和设备中的匹配字符串(compatible)来实现二者的匹配
 <ul class="org-ul">
-<li>&#x5339;&#x914D;&#x6210;&#x529F;&#x4FBF;&#x4F1A;&#x8C03;&#x7528;&#x9A71;&#x52A8;&#x7684; <code>probe</code> &#x51FD;&#x6570;&#x5E76;&#x5C06;&#x4EE3;&#x8868;&#x8BBE;&#x5907;&#x7684;&#x6570;&#x636E;&#x4F20;&#x7ED9;&#x9A71;&#x52A8;</li>
+<li>匹配成功便会调用驱动的 <code>probe</code> 函数并将代表设备的数据传给驱动</li>
 </ul></li>
 </ul>
 </div>
 </div>
 </div>
-<div id="outline-container-org3f8112a" class="outline-3">
-<h3 id="org3f8112a">&#x9A71;&#x52A8;&#x5206;&#x5C42;</h3>
-<div class="outline-text-3" id="text-org3f8112a">
+<div id="outline-container-orgedd3660" class="outline-3">
+<h3 id="orgedd3660">驱动分层</h3>
+<div class="outline-text-3" id="text-orgedd3660">
 </div>
-<div id="outline-container-org9772a54" class="outline-4">
-<h4 id="org9772a54">&#x95EE;&#x9898;</h4>
-<div class="outline-text-4" id="text-org9772a54">
+<div id="outline-container-org8777bc0" class="outline-4">
+<h4 id="org8777bc0">问题</h4>
+<div class="outline-text-4" id="text-org8777bc0">
 <p>
-&#x5728;&#x7F16;&#x5199;&#x9A71;&#x52A8;&#x65F6;&#xFF0C;&#x5982;&#x679C;&#x4ECE;&#x5934;&#x5F00;&#x59CB;&#x7F16;&#x5199;&#xFF0C;&#x90A3;&#x4E48;&#x9700;&#x8981;&#x82B1;&#x8D39;&#x7684;&#x529F;&#x592B;&#x6BD4;&#x8F83;&#x591A;&#x5E76;&#x4E14;&#x4F1A;&#x6709;&#x5927;&#x91CF;&#x91CD;&#x590D;&#x7684;&#x4EE3;&#x7801;&#x4EA7;&#x751F;&#xFF08;&#x6BD4;&#x5982;&#x5F88;&#x591A;&#x5B57;&#x7B26;&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#x7684;&#x5F88;&#x591A;&#x4EE3;&#x7801;&#x90FD;&#x5927;&#x540C;&#x5C0F;&#x5F02;&#xFF09;&#x3002;
+在编写驱动时，如果从头开始编写，那么需要花费的功夫比较多并且会有大量重复的代码产生（比如很多字符设备驱动的很多代码都大同小异）。
 </p>
 </div>
 </div>
-<div id="outline-container-orgba95895" class="outline-4">
-<h4 id="orgba95895">&#x89E3;&#x51B3;</h4>
-<div class="outline-text-4" id="text-orgba95895">
+<div id="outline-container-orgbf33b99" class="outline-4">
+<h4 id="orgbf33b99">解决</h4>
+<div class="outline-text-4" id="text-orgbf33b99">
 <p>
-&#x5C06;&#x8F6F;&#x4EF6;&#x8FDB;&#x884C;&#x5206;&#x5C42;&#x8BBE;&#x8BA1;,&#x63D0;&#x70BC;&#x5404;&#x79CD;&#x7C7B;&#x4F3C;&#x9A71;&#x52A8;&#x7684;&#x76F8;&#x540C;&#x90E8;&#x5206;&#xFF0C;&#x5206;&#x79BB;&#x4E0D;&#x540C;&#x90E8;&#x5206;&#x3002;&#x7528;&#x6237;&#x5B9E;&#x73B0;&#x4E0D;&#x540C;&#x7684;&#x90E8;&#x5206;&#x5373;&#x53EF;&#xFF0C;&#x4F7F;&#x5F97;&#x7528;&#x6237;&#x7F16;&#x5199;&#x9A71;&#x52A8;&#x4EE3;&#x7801;&#x7684;&#x5DE5;&#x4F5C;&#x5C3D;&#x91CF;&#x7684;&#x5C11;.
+将软件进行分层设计,提炼各种类似驱动的相同部分，分离不同部分。用户实现不同的部分即可，使得用户编写驱动代码的工作尽量的少.
 </p>
 </div>
 </div>
 </div>
-<div id="outline-container-org64a10b2" class="outline-3">
-<h3 id="org64a10b2">&#x9A71;&#x52A8;&#x5206;&#x9694;</h3>
-<div class="outline-text-3" id="text-org64a10b2">
+<div id="outline-container-org873dc4f" class="outline-3">
+<h3 id="org873dc4f">驱动分隔</h3>
+<div class="outline-text-3" id="text-org873dc4f">
 </div>
-<div id="outline-container-org14d6e57" class="outline-4">
-<h4 id="org14d6e57">&#x95EE;&#x9898;</h4>
-<div class="outline-text-4" id="text-org14d6e57">
+<div id="outline-container-org8a50ea9" class="outline-4">
+<h4 id="org8a50ea9">问题</h4>
+<div class="outline-text-4" id="text-org8a50ea9">
 <p>
-&#x5F53;&#x4F7F;&#x7528;CPU&#x63A7;&#x5236;&#x5668;&#x63A7;&#x5236;&#x5916;&#x8BBE;&#x65F6;&#xFF0C;&#x6211;&#x4EEC;&#x9700;&#x8981;&#x7F16;&#x5199;&#xFF1A;
+当使用CPU控制器控制外设时，我们需要编写：
 </p>
 <ol class="org-ol">
-<li>CPU&#x5BF9;&#x5E94;&#x63A7;&#x5236;&#x5668;&#x9A71;&#x52A8;</li>
-<li>&#x5916;&#x8BBE;&#x9A71;&#x52A8;</li>
+<li>CPU对应控制器驱动</li>
+<li>外设驱动</li>
 </ol>
 
 <p>
-&#x5982;&#x679C;&#x5C06;CPU&#x4E0E;&#x5BF9;&#x5E94;&#x7684;&#x5916;&#x8BBE;&#x9A71;&#x52A8;&#x5F3A;&#x8026;&#x5408;&#x5230;&#x4E00;&#x8D77;,&#x90A3;&#x5916;&#x8BBE;&#x4EE3;&#x7801;&#x5C31;&#x65E0;&#x6CD5;&#x590D;&#x7528;&#xFF0C; &#x90A3;&#x4E5F;&#x4F1A;&#x9020;&#x6210;&#x5185;&#x6838;&#x7684;&#x81C3;&#x80BF;.
+如果将CPU与对应的外设驱动强耦合到一起,那外设代码就无法复用， 那也会造成内核的臃肿.
 </p>
 </div>
 </div>
-<div id="outline-container-org5904b56" class="outline-4">
-<h4 id="org5904b56">&#x89E3;&#x51B3;</h4>
-<div class="outline-text-4" id="text-org5904b56">
+<div id="outline-container-orgc1f7c96" class="outline-4">
+<h4 id="orgc1f7c96">解决</h4>
+<div class="outline-text-4" id="text-orgc1f7c96">
 <p>
-&#x4E3B;&#x673A;&#x5355;&#x72EC;&#x5B9E;&#x73B0;&#x81EA;&#x5DF1;&#x7684;&#x63A7;&#x5236;&#x5668;&#x9A71;&#x52A8;&#xFF0C;&#x5916;&#x8BBE;&#x4E5F;&#x5355;&#x72EC;&#x5B9E;&#x73B0;&#x81EA;&#x5DF1;&#x7684;&#x9A71;&#x52A8;&#xFF0C;&#x8FD9;&#x4E24;&#x4E2A;&#x9A71;&#x52A8;&#x901A;&#x8FC7;&#x7EDF;&#x4E00;&#x7684;&#x63A5;&#x53E3;&#x6765;&#x8FDB;&#x884C;&#x8BBF;&#x95EE;&#x3002;
+主机单独实现自己的控制器驱动，外设也单独实现自己的驱动，这两个驱动通过统一的接口来进行访问。
 </p>
 
 <p>
-&#x4E3B;&#x673A;&#x63A7;&#x5236;&#x5668;&#x9A71;&#x52A8;&#x4E0D;&#x7528;&#x5173;&#x7CFB;&#x5916;&#x8BBE;,&#x800C;&#x5916;&#x8BBE;&#x9A71;&#x52A8;&#x4E5F;&#x4E0D;&#x5173;&#x5FC3;&#x4E3B;&#x673A;,&#x5916;&#x8BBE;&#x53EA;&#x662F;&#x8BBF;&#x95EE;&#x6838;&#x5FC3;&#x5C42;&#x7684;&#x901A;&#x7528;API&#x8FDB;&#x884C;&#x6570;&#x636E;&#x4F20;&#x8F93;,&#x4E3B;&#x673A;&#x548C;&#x5916;&#x8BBE;&#x4E4B;&#x95F4;&#x53EF;&#x4EE5;&#x4EFB;&#x610F;&#x7EC4;&#x5408;.
+主机控制器驱动不用关系外设,而外设驱动也不关心主机,外设只是访问核心层的通用API进行数据传输,主机和外设之间可以任意组合.
 </p>
 </div>
 </div>
 </div>
-<div id="outline-container-org0f93bc6" class="outline-3">
-<h3 id="org0f93bc6">&#x7F16;&#x5199;&#x9A71;&#x52A8;&#x524D;&#x7684;&#x601D;&#x8003;</h3>
-<div class="outline-text-3" id="text-org0f93bc6">
+<div id="outline-container-org7f675f2" class="outline-3">
+<h3 id="org7f675f2">编写驱动前的思考</h3>
+<div class="outline-text-3" id="text-org7f675f2">
 <p>
-&#x901A;&#x8FC7;&#x4E0A;&#x9762;3&#x5927;&#x601D;&#x60F3;,&#x53EF;&#x4EE5;&#x603B;&#x7ED3;&#x51FA;&#x4F5C;&#x4E3A;&#x4E00;&#x4E2A;&#x7528;&#x6237;&#x7F16;&#x5199;&#x9A71;&#x52A8;&#x65F6;&#x7684;&#x601D;&#x8DEF;:
+通过上面3大思想,可以总结出作为一个用户编写驱动时的思路:
 </p>
 </div>
-<div id="outline-container-org9f475ec" class="outline-4">
-<h4 id="org9f475ec">&#x6211;&#x9700;&#x8981;&#x5B8C;&#x6210;&#x4EC0;&#x4E48;&#x529F;&#x80FD;&#xFF1F;</h4>
-<div class="outline-text-4" id="text-org9f475ec">
+<div id="outline-container-org645f601" class="outline-4">
+<h4 id="org645f601">我需要完成什么功能？</h4>
+<div class="outline-text-4" id="text-org645f601">
 <p>
-&#x9996;&#x5148;&#x660E;&#x786E;&#x81EA;&#x5DF1;&#x662F;&#x8981;&#x5B9E;&#x73B0;&#x4EC0;&#x4E48;&#x529F;&#x80FD;&#xFF0C;&#x4EE5;&#x786E;&#x5B9A;&#x81EA;&#x5DF1;&#x662F;&#x9700;&#x8981;&#x5B9E;&#x73B0;&#x4E00;&#x4E2A;&#x9A71;&#x52A8;&#x8FD8;&#x662F;&#x4EC5;&#x4EC5;&#x4E00;&#x4E2A;&#x8BBE;&#x5907;&#x8282;&#x70B9;&#x5373;&#x53EF;&#x3002;
+首先明确自己是要实现什么功能，以确定自己是需要实现一个驱动还是仅仅一个设备节点即可。
 </p>
 </div>
 </div>
-<div id="outline-container-orgb3dc040" class="outline-4">
-<h4 id="orgb3dc040">&#x5B9E;&#x73B0;&#x8BBE;&#x5907;&#x8282;&#x70B9;</h4>
-<div class="outline-text-4" id="text-orgb3dc040">
+<div id="outline-container-org27464a5" class="outline-4">
+<h4 id="org27464a5">实现设备节点</h4>
+<div class="outline-text-4" id="text-org27464a5">
 <p>
-&#x5982;&#x679C;&#x8BBE;&#x5907;&#x7684;&#x5382;&#x5546;&#x5DF2;&#x7ECF;&#x4E3A;&#x6B64;&#x8BBE;&#x5907;&#x63D0;&#x4F9B;&#x4E86;&#x9A71;&#x52A8;&#xFF0C;&#x90A3;&#x4E48;&#x7528;&#x6237;&#x4EC5;&#x4EC5;&#x9700;&#x8981;&#x5B8C;&#x6210;&#x8282;&#x70B9;&#x63CF;&#x8FF0;&#x5373;&#x53EF;&#x3002;
+如果设备的厂商已经为此设备提供了驱动，那么用户仅仅需要完成节点描述即可。
 </p>
 <ul class="org-ul">
-<li>&#x7B80;&#x5355;&#x8BBE;&#x5907;&#x8282;&#x70B9;
+<li>简单设备节点
 <ul class="org-ul">
-<li>&#x5148;&#x67E5;&#x770B;&#x8BBE;&#x5907;&#x7684;&#x6570;&#x636E;&#x624B;&#x518C;&#xFF0C;&#x4E86;&#x89E3;&#x5176;&#x7279;&#x6027;</li>
-<li>&#x7136;&#x540E;&#x67E5;&#x770B;&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#x8BF4;&#x660E;&#x5B8C;&#x6210;&#x8282;&#x70B9;&#xFF0C;&#x4E00;&#x822C;&#x6587;&#x6863;&#x4F4D;&#x4E8E; <code>Documentation/devicetree/bindings/</code> &#x6587;&#x4EF6;&#x5939;&#x4E0B;</li>
-<li>&#x5BF9;&#x4E8E;&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#x7684;&#x4F7F;&#x7528;&#x7EC6;&#x8282;&#xFF0C;&#x8FD8;&#x662F;&#x9700;&#x8981;&#x67E5;&#x770B;&#x4EE3;&#x7801;</li>
+<li>先查看设备的数据手册，了解其特性</li>
+<li>然后查看设备驱动说明完成节点，一般文档位于 <code>Documentation/devicetree/bindings/</code> 文件夹下</li>
+<li>对于设备驱动的使用细节，还是需要查看代码</li>
 </ul></li>
 
-<li>&#x590D;&#x6742;&#x8BBE;&#x5907;&#x8282;&#x70B9;
+<li>复杂设备节点
 <ul class="org-ul">
-<li>&#x8BBF;&#x95EE;&#x8BBE;&#x5907;&#x5B98;&#x7F51;&#xFF0C;&#x67E5;&#x770B;&#x5176;&#x53C2;&#x8003;linux&#x8BBE;&#x5907;&#x8282;&#x70B9;&#x914D;&#x7F6E;&#x53CA;&#x4F7F;&#x7528;&#x8BF4;&#x660E;</li>
-<li>&#x5982;&#x679C;&#x5B98;&#x7F51;&#x6CA1;&#x6709;&#x8BF4;&#x660E;&#x6216;&#x4E0D;&#x591F;&#x8BE6;&#x7EC6;&#xFF0C;&#x90A3;&#x4E48;&#x5C31;&#x6309;&#x7167; <code>&#x7B80;&#x5355;&#x8BBE;&#x5907;&#x8282;&#x70B9;</code> &#x7684;&#x6B65;&#x9AA4;&#x6765;&#x6DFB;&#x52A0;</li>
+<li>访问设备官网，查看其参考linux设备节点配置及使用说明</li>
+<li>如果官网没有说明或不够详细，那么就按照 <code>简单设备节点</code> 的步骤来添加</li>
 </ul></li>
 </ul>
 </div>
 </div>
-<div id="outline-container-orgeb1745d" class="outline-4">
-<h4 id="orgeb1745d">&#x5B9E;&#x73B0;&#x8BBE;&#x5907;&#x9A71;&#x52A8;</h4>
-<div class="outline-text-4" id="text-orgeb1745d">
+<div id="outline-container-org9c999d5" class="outline-4">
+<h4 id="org9c999d5">实现设备驱动</h4>
+<div class="outline-text-4" id="text-org9c999d5">
 <p>
-&#x5982;&#x679C;&#x5382;&#x5546;&#x6CA1;&#x6709;&#x63D0;&#x4F9B;&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#xFF0C;&#x6216;&#x9700;&#x8981;&#x6DF1;&#x5EA6;&#x5B9A;&#x5236;&#x9A71;&#x52A8;&#xFF0C;&#x90A3;&#x4E48;&#x5C31;&#x9700;&#x8981;&#x4EE5;&#x6E90;&#x7801;&#x7740;&#x624B;&#x3002;
+如果厂商没有提供设备驱动，或需要深度定制驱动，那么就需要以源码着手。
 </p>
 
 <p>
-&#x5728;&#x5B9E;&#x73B0;&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#x524D;&#xFF0C;&#x9700;&#x8981;&#x5F04;&#x6E05;&#x695A;&#x7684;&#x662F;&#xFF1A;
+在实现设备驱动前，需要弄清楚的是：
 </p>
 <ol class="org-ol">
-<li>&#x6B64;&#x8BBE;&#x5907;&#x9700;&#x8981;&#x4F7F;&#x7528;&#x4EC0;&#x4E48;&#x534F;&#x8BAE;&#x6765;&#x9A71;&#x52A8;&#xFF1F;</li>
-<li>&#x534F;&#x8BAE;&#x63A7;&#x5236;&#x5668;&#x9A71;&#x52A8;&#x662F;&#x5426;&#x5DF2;&#x7ECF;&#x5B9E;&#x73B0;&#xFF1F;</li>
-<li>&#x6B64;&#x8BBE;&#x5907;&#x5177;&#x4F53;&#x4F5C;&#x7528;&#x662F;&#x4EC0;&#x4E48;&#xFF0C;&#x53EF;&#x4EE5;&#x5E94;&#x7528;&#x5728;&#x54EA;&#x4E2A;&#x5B50;&#x7CFB;&#x7EDF;&#x4E0B;&#xFF1F;</li>
+<li>此设备需要使用什么协议来驱动？</li>
+<li>协议控制器驱动是否已经实现？</li>
+<li>此设备具体作用是什么，可以应用在哪个子系统下？</li>
 
-<li>&#x6839;&#x636E;&#x8BBE;&#x5907;&#x4F5C;&#x7528;&#xFF0C;&#x6765;&#x67E5;&#x770B;&#x5BF9;&#x5E94;&#x7684;&#x5B50;&#x7CFB;&#x7EDF;&#x4F7F;&#x7528;&#x8BF4;&#x660E;
+<li>根据设备作用，来查看对应的子系统使用说明
 <ul class="org-ul">
-<li>&#x901A;&#x5E38;&#x5B50;&#x7CFB;&#x7EDF;&#x5DF2;&#x7ECF;&#x5B9E;&#x73B0;&#x4E86;&#x5F88;&#x591A;&#x529F;&#x80FD;&#xFF0C;&#x6211;&#x4EEC;&#x53EA;&#x9700;&#x8981;&#x4F7F;&#x7528;&#x5B50;&#x7CFB;&#x7EDF;&#x63D0;&#x4F9B;&#x7684;&#x63A5;&#x53E3;&#x5373;&#x53EF;</li>
+<li>通常子系统已经实现了很多功能，我们只需要使用子系统提供的接口即可</li>
 </ul></li>
-<li>&#x6839;&#x636E;&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#x534F;&#x8BAE;&#xFF0C;&#x6765;&#x67E5;&#x770B;&#x5BF9;&#x5E94;&#x534F;&#x8BAE;&#x9A71;&#x52A8;&#x7684;&#x4F7F;&#x7528;&#x8BF4;&#x660E;
+<li>根据设备驱动协议，来查看对应协议驱动的使用说明
 <ul class="org-ul">
-<li>&#x7528;&#x6237;&#x53EA;&#x9700;&#x8981;&#x4F7F;&#x7528;&#x534F;&#x8BAE;&#x4E2D;&#x95F4;&#x5C42;&#x63D0;&#x4F9B;&#x7684;&#x63A5;&#x53E3;&#x5373;&#x53EF;&#x4F7F;&#x7528;&#x5BF9;&#x5E94;&#x7684;&#x63A7;&#x5236;&#x5668;&#x4EA7;&#x751F;&#x65F6;&#x5E8F;</li>
+<li>用户只需要使用协议中间层提供的接口即可使用对应的控制器产生时序</li>
 </ul></li>
-<li>&#x57FA;&#x4E8E;&#x4EE5;&#x4E0A;&#x4E24;&#x70B9;&#xFF0C;&#x67E5;&#x770B;&#x8BBE;&#x5907;&#x6570;&#x636E;&#x624B;&#x518C;&#xFF0C;&#x5B9E;&#x73B0;&#x8BBE;&#x5907;&#x9A71;&#x52A8;</li>
-<li>&#x5728;&#x8BBE;&#x5907;&#x6811;&#x4E2D;&#x589E;&#x52A0;&#x8BBE;&#x5907;&#x8282;&#x70B9;</li>
-<li>&#x9A8C;&#x8BC1;&#x5E76;&#x6D4B;&#x8BD5;</li>
+<li>基于以上两点，查看设备数据手册，实现设备驱动</li>
+<li>在设备树中增加设备节点</li>
+<li>验证并测试</li>
 </ol>
 </div>
 </div>
-<div id="outline-container-org8addb39" class="outline-4">
-<h4 id="org8addb39">&#x5B9E;&#x73B0;&#x63A7;&#x5236;&#x5668;&#x9A71;&#x52A8;</h4>
-<div class="outline-text-4" id="text-org8addb39">
+<div id="outline-container-org497d280" class="outline-4">
+<h4 id="org497d280">实现控制器驱动</h4>
+<div class="outline-text-4" id="text-org497d280">
 <ul class="org-ul">
-<li>&#x67E5;&#x770B;&#x63A7;&#x5236;&#x5668;&#x624B;&#x518C;&#x4E86;&#x89E3;&#x9A71;&#x52A8;</li>
-<li>&#x6839;&#x636E;&#x7CFB;&#x7EDF;&#x63D0;&#x4F9B;&#x7684;&#x7EDF;&#x4E00;&#x63A5;&#x53E3;&#x5B9E;&#x73B0;&#x9A71;&#x52A8;&#x4EE3;&#x7801;</li>
-<li>&#x5728;&#x8BBE;&#x5907;&#x6811;&#x4E2D;&#x589E;&#x52A0;&#x63A7;&#x5236;&#x5668;&#x8282;&#x70B9;</li>
+<li>查看控制器手册了解驱动</li>
+<li>根据系统提供的统一接口实现驱动代码</li>
+<li>在设备树中增加控制器节点</li>
 </ul>
 </div>
 </div>
 </div>
 </div>
-<div id="outline-container-org6251656" class="outline-2">
-<h2 id="org6251656">&#x5B9E;&#x4F8B;&#x9A71;&#x52A8;&#x6982;&#x89C8;</h2>
-<div class="outline-text-2" id="text-org6251656">
+<div id="outline-container-orgcd1a356" class="outline-2">
+<h2 id="orgcd1a356">实例驱动概览</h2>
+<div class="outline-text-2" id="text-orgcd1a356">
 </div>
-<div id="outline-container-orgb88f51d" class="outline-3">
-<h3 id="orgb88f51d">platform &#x8BBE;&#x5907;&#x9A71;&#x52A8;(&#x603B;&#x7EBF;&#xFF0C;&#x8BBE;&#x5907;&#xFF0C;&#x9A71;&#x52A8;&#x5B9E;&#x4F8B;)</h3>
-<div class="outline-text-3" id="text-orgb88f51d">
+<div id="outline-container-org28b2dd8" class="outline-3">
+<h3 id="org28b2dd8">platform 设备驱动(总线，设备，驱动实例)</h3>
+<div class="outline-text-3" id="text-org28b2dd8">
 <p>
-&#x5728;Linux 2.6&#x4EE5;&#x540E;&#x7684;&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#x6A21;&#x578B;&#x4E2D;, &#x9700;&#x8981;&#x5173;&#x5FC3;&#x603B;&#x7EBF;,&#x8BBE;&#x5907;&#x548C;&#x9A71;&#x52A8;&#x8FD9;3&#x4E2A;&#x5B9E;&#x4F53;,&#x603B;&#x7EBF;&#x5C06;&#x8BBE;&#x5907;&#x548C;&#x9A71;&#x52A8;&#x7ED1;&#x5B9A;.&#x5728;&#x7CFB;&#x7EDF;&#x6BCF;&#x6CE8;&#x518C;&#x4E00;&#x4E2A;&#x8BBE;&#x5907;&#x7684;&#x65F6;&#x5019;,&#x4F1A;&#x5BFB;&#x627E;&#x4E0E;&#x4E4B;&#x5339;&#x914D;&#x7684;&#x9A71;&#x52A8;.&#x76F8;&#x53CD;&#x7684;, &#x5728;&#x7CFB;&#x7EDF;&#x6BCF;&#x6CE8;&#x518C;&#x4E00;&#x4E2A;&#x9A71;&#x52A8;&#x7684;&#x65F6;&#x5019;,
-&#x4F1A;&#x5BFB;&#x627E;&#x4E0E;&#x4E4B;&#x5339;&#x914D;&#x7684;&#x8BBE;&#x5907;,&#x800C;&#x5339;&#x914D;&#x7531;&#x603B;&#x7EBF;&#x5B8C;&#x6210;.
-&#x5BF9;&#x4E8E;&#x50CF;PCI, USB, IIC, SPI&#x7B49;&#x8BBE;&#x5907;&#x800C;&#x8A00;, &#x603B;&#x7EBF;,&#x8BBE;&#x5907;,&#x9A71;&#x52A8;&#x6982;&#x5FF5;&#x6BD4;&#x8F83;&#x5BF9;&#x5E94;,&#x800C;&#x5BF9;&#x4E8E;&#x50CF; <b>&#x76F4;&#x63A5;&#x8FDE;&#x63A5;&#x5230;CPU&#x7684;&#x63A7;&#x5236;&#x5668;</b> &#x800C;&#x8A00;,&#x5C31;&#x4E0D;&#x90A3;&#x4E48;&#x76F4;&#x767D;.&#x6240;&#x4EE5;linux&#x53D1;&#x660E;&#x4E86;&#x865A;&#x62DF;&#x603B;&#x7EBF;,&#x79F0;&#x4E3A; <b>platform</b> &#x603B;&#x7EBF;, &#x76F8;&#x5E94;&#x7684;&#x8BBE;&#x5907;&#x79F0;&#x4E3A; <code>platform_device</code>,
-&#x5BF9;&#x5E94;&#x4E8E;&#x4E0A;&#x9762;&#x8BF4;&#x7684; <b>CPU&#x63A7;&#x5236;&#x5668;&#x6570;&#x636E;&#x7ED3;&#x6784;&#x63CF;&#x8FF0;</b>,&#x800C;&#x9A71;&#x52A8;&#x79F0;&#x4E3A; <code>platform_driver</code>, &#x76F8;&#x5BF9;&#x4E8E;&#x4E0A;&#x9762;&#x8BF4;&#x7684; <b>CPU&#x63A7;&#x5236;&#x5668;&#x9A71;&#x52A8;</b>.
+在Linux 2.6以后的设备驱动模型中, 需要关心总线,设备和驱动这3个实体,总线将设备和驱动绑定.在系统每注册一个设备的时候,会寻找与之匹配的驱动.相反的, 在系统每注册一个驱动的时候,
+会寻找与之匹配的设备,而匹配由总线完成.
+对于像PCI, USB, IIC, SPI等设备而言, 总线,设备,驱动概念比较对应,而对于像 <b>直接连接到CPU的控制器</b> 而言,就不那么直白.所以linux发明了虚拟总线,称为 <b>platform</b> 总线, 相应的设备称为 <code>platform_device</code>,
+对应于上面说的 <b>CPU控制器数据结构描述</b>,而驱动称为 <code>platform_driver</code>, 相对于上面说的 <b>CPU控制器驱动</b>.
 </p>
 <div class="org-src-container">
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">platform_device</span>{</span></span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">char</span>         *name;</span><br><span class="line">    <span class="keyword">int</span>                     id;</span><br><span class="line">    <span class="keyword">bool</span>                  id_auto;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span>  <span class="title">device</span>    <span class="title">dev</span>;</span></span><br><span class="line">    u32                   num_resources;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span>     <span class="title">resource</span>  *<span class="title">resource</span>;</span></span><br><span class="line">    <span class="keyword">const</span> stuct platform_device_id   *id_entry;</span><br><span class="line">    <span class="keyword">char</span> *driver_overide;<span class="comment">/*Driver name to force a match*/</span></span><br><span class="line">     <span class="comment">/*MFD cell pointer*/</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">mfd_cell</span> *<span class="title">mfd_cell</span>;</span></span><br><span class="line">   <span class="comment">/*arch specific additions*/</span></span><br><span class="line">   <span class="class"><span class="keyword">struct</span>  <span class="title">pdev_archdata</span>   <span class="title">archdata</span>;</span></span><br><span class="line">};</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">platform_driver</span>{</span></span><br><span class="line">    <span class="keyword">int</span> (*probe)(struct platform_device *);</span><br><span class="line">    <span class="keyword">int</span> (*remove)(struct platform_device *);</span><br><span class="line">    <span class="keyword">void</span> (*shutdown)(struct platform_device *);</span><br><span class="line">    <span class="keyword">int</span> (*suspend)(struct platform_device *, <span class="keyword">pm_message_t</span> state);</span><br><span class="line">    <span class="keyword">int</span> (*resume)(struct platform_device *);</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">device_driver</span> <span class="title">driver</span>;</span></span><br><span class="line">    <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">platform_device_id</span> *<span class="title">id_table</span>;</span></span><br><span class="line">    <span class="keyword">bool</span> prevent_deferred_probe;</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">device_driver</span>{</span></span><br><span class="line">   <span class="keyword">const</span> <span class="keyword">char</span> *name;</span><br><span class="line">   <span class="class"><span class="keyword">struct</span> <span class="title">bus_type</span> *<span class="title">bus</span>;</span></span><br><span class="line">   <span class="class"><span class="keyword">struct</span> <span class="title">module</span> *<span class="title">owner</span>;</span></span><br><span class="line">   <span class="keyword">const</span> <span class="keyword">char</span>   *mod_name;</span><br><span class="line">   <span class="keyword">bool</span> suppress_bind_attrs;</span><br><span class="line">   <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">of_device_id</span>  *<span class="title">of_match_table</span>;</span></span><br><span class="line">   <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">acpi_device_id</span>  *<span class="title">acpi_match_table</span>;</span></span><br><span class="line">    <span class="keyword">int</span> (*probe)(struct device *dev);</span><br><span class="line">    <span class="keyword">int</span> (*remove)(struct device *dev);</span><br><span class="line">    <span class="keyword">void</span> (*shutdown)(struct device *dev);</span><br><span class="line">    <span class="keyword">int</span> (*suspend)(struct device *dev, <span class="keyword">pm_message_t</span> state);</span><br><span class="line">    <span class="keyword">int</span> (*resume)(struct device *dev);</span><br><span class="line">    <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">dev_pm_ops</span> *<span class="title">pm</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">driver_private</span> *<span class="title">p</span>;</span></span><br><span class="line">};</span><br></pre></td></tr></table></figure>
 </div>
 <p>
-&#x4E0E;platform&#x5730;&#x4F4D;&#x5BF9;&#x7B49;&#x7684; i2c_driver, spi_driver,usb_driver,pci_driver&#x4E2D;&#x90FD;&#x5305;&#x542B;&#x4E86;device_driver&#x7ED3;&#x6784;&#x4F53;&#x5B9E;&#x4F8B;&#x6210;&#x5458;.&#x5B83;&#x5176;&#x5B9E;&#x63CF;&#x8FF0;&#x4E86;&#x5404;&#x79CD; xxx_driver &#x5728;&#x9A71;&#x52A8;&#x610F;&#x4E49;&#x4E0A;&#x7684;&#x4E00;&#x4E9B;&#x5171;&#x6027;.
-platform_device &#x548C; platform_driver &#x7684;&#x5339;&#x914D;&#x662F;&#x901A;&#x8FC7;&#x51FD;&#x6570; <code>platform_match</code> &#x6765;&#x5339;&#x914D;&#x7684;,&#x6709;4&#x79CD;&#x53EF;&#x80FD;&#x6027;:
+与platform地位对等的 i2c_driver, spi_driver,usb_driver,pci_driver中都包含了device_driver结构体实例成员.它其实描述了各种 xxx_driver 在驱动意义上的一些共性.
+platform_device 和 platform_driver 的匹配是通过函数 <code>platform_match</code> 来匹配的,有4种可能性:
 </p>
 <ol class="org-ol">
-<li>&#x57FA;&#x4E8E;&#x8BBE;&#x5907;&#x6811;&#x98CE;&#x683C;&#x7684;&#x5339;&#x914D;</li>
-<li>&#x57FA;&#x4E8E;ACPI&#x98CE;&#x683C;&#x7684;&#x5339;&#x914D;</li>
-<li>&#x5339;&#x914D;ID&#x8868;(&#x5373;platform_device &#x8BBE;&#x5907;&#x540D;&#x662F;&#x5426;&#x51FA;&#x73B0;&#x5728;platform_driver&#x7684;ID&#x8868;&#x5185;)</li>
-<li>&#x5339;&#x914D;platform_device&#x8BBE;&#x5907;&#x540D;&#x548C;&#x9A71;&#x52A8;&#x7684;&#x540D;&#x5B57;</li>
+<li>基于设备树风格的匹配</li>
+<li>基于ACPI风格的匹配</li>
+<li>匹配ID表(即platform_device 设备名是否出现在platform_driver的ID表内)</li>
+<li>匹配platform_device设备名和驱动的名字</li>
 </ol>
 </div>
-<div id="outline-container-orgb215e38" class="outline-4">
-<h4 id="orgb215e38">platform &#x8BBE;&#x5907;&#x8D44;&#x6E90;&#x548C;&#x6570;&#x636E;</h4>
-<div class="outline-text-4" id="text-orgb215e38">
+<div id="outline-container-org5ce080d" class="outline-4">
+<h4 id="org5ce080d">platform 设备资源和数据</h4>
+<div class="outline-text-4" id="text-org5ce080d">
 <p>
-&#x8BBE;&#x5907;(&#x63A7;&#x5236;&#x5668;)&#x8D44;&#x6E90;&#x672C;&#x8EAB;&#x7531; resource &#x7ED3;&#x6784;&#x4F53;&#x63CF;&#x8FF0;,&#x5B9A;&#x4E49;&#x4EE3;&#x7801;&#x5982;&#x4E0B;:
+设备(控制器)资源本身由 resource 结构体描述,定义代码如下:
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">resource</span>{</span></span><br><span class="line">	<span class="keyword">resource__size_t</span> start;<span class="comment">// &#x8D44;&#x6E90;&#x5F00;&#x59CB;&#x503C;</span></span><br><span class="line">	<span class="keyword">resource_size_t</span> end;<span class="comment">// &#x8D44;&#x6E90;&#x7ED3;&#x675F;&#x503C;</span></span><br><span class="line">	<span class="keyword">const</span> <span class="keyword">char</span> *name;</span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">long</span> flags;<span class="comment">//&#x7C7B;&#x578B; IORESOURCE_IO,IORESOURCE_MEM,IORESOURCE_IRQ,IORESOURCE_DMA </span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">resource</span> *<span class="title">parent</span>,*<span class="title">sibling</span>,*<span class="title">child</span>;</span></span><br><span class="line">};</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">resource</span>{</span></span><br><span class="line">	<span class="keyword">resource__size_t</span> start;<span class="comment">// 资源开始值</span></span><br><span class="line">	<span class="keyword">resource_size_t</span> end;<span class="comment">// 资源结束值</span></span><br><span class="line">	<span class="keyword">const</span> <span class="keyword">char</span> *name;</span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">long</span> flags;<span class="comment">//类型 IORESOURCE_IO,IORESOURCE_MEM,IORESOURCE_IRQ,IORESOURCE_DMA </span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">resource</span> *<span class="title">parent</span>,*<span class="title">sibling</span>,*<span class="title">child</span>;</span></span><br><span class="line">};</span><br></pre></td></tr></table></figure>
 </div>
 <p>
-&#x5728;&#x5177;&#x4F53;&#x7684;&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#x4E2D;,&#x901A;&#x8FC7;&#x4EE5;&#x4E0B;&#x51FD;&#x6570;&#x6765;&#x83B7;&#x53D6;&#x8D44;&#x6E90;:
+在具体的设备驱动中,通过以下函数来获取资源:
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//&#x8BBE;&#x5907;,&#x7C7B;&#x578B;,&#x5E8F;&#x5217;</span></span><br><span class="line"><span class="function">struct resource *<span class="title">platform_get_resource</span><span class="params">(struct platform_device *,<span class="keyword">unsigned</span> <span class="keyword">int</span>, <span class="keyword">unsigned</span> <span class="keyword">int</span>)</span></span>;</span><br><span class="line"><span class="comment">//&#x8BBE;&#x5907;,&#x5E8F;&#x5217;,&#x7B49;&#x540C;&#x4E8E;: platform_get_resource(dev, IORESOURCE_IRQ,num);</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">platform_get_irq</span><span class="params">(struct platform_device *dev, <span class="keyword">unsigned</span> <span class="keyword">int</span> num)</span></span>;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//设备,类型,序列</span></span><br><span class="line"><span class="function">struct resource *<span class="title">platform_get_resource</span><span class="params">(struct platform_device *,<span class="keyword">unsigned</span> <span class="keyword">int</span>, <span class="keyword">unsigned</span> <span class="keyword">int</span>)</span></span>;</span><br><span class="line"><span class="comment">//设备,序列,等同于: platform_get_resource(dev, IORESOURCE_IRQ,num);</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">platform_get_irq</span><span class="params">(struct platform_device *dev, <span class="keyword">unsigned</span> <span class="keyword">int</span> num)</span></span>;</span><br></pre></td></tr></table></figure>
 </div>
 <p>
-&#x9664;&#x6B64;&#x4E4B;&#x5916;,&#x8BBE;&#x5907;&#x53EF;&#x80FD;&#x8FD8;&#x4F1A;&#x6709;&#x4E00;&#x4E9B;&#x914D;&#x7F6E;&#x4FE1;&#x606F;,&#x8FD9;&#x4E9B;&#x4FE1;&#x606F;&#x7531; <code>platform_data</code> &#x4FDD;&#x5B58;,&#x6B64;&#x7ED3;&#x6784;&#x7684;&#x5F62;&#x5F0F;&#x7531;&#x6BCF;&#x4E2A;&#x9A71;&#x52A8;&#x81EA;&#x5B9A;&#x4E49;.
-&#x6BD4;&#x5982;&#x5728;DM9000&#x4E2D;&#x5B9A;&#x4E49;&#x4FE1;&#x606F;:
+除此之外,设备可能还会有一些配置信息,这些信息由 <code>platform_data</code> 保存,此结构的形式由每个驱动自定义.
+比如在DM9000中定义信息:
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">dm9000_plat_data</span> <span class="title">dm9000_platdata</span>={</span></span><br><span class="line">	.flags = DM9000_PLATF_16BITNOLY | DM9000_PLATF_NO_EEPROM,</span><br><span class="line">};</span><br><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">platform_device</span> <span class="title">dm9000_device</span> = {</span></span><br><span class="line">	.name = <span class="string">&quot;dm9000&quot;</span>,</span><br><span class="line">	.id   = <span class="number">0</span>,</span><br><span class="line">	.num_resources = ARRAY_SIZE(dm9000_resource),</span><br><span class="line">	.resource = dm9000_resource,</span><br><span class="line">	.dev   = {</span><br><span class="line">		.platform_data = &amp;dm9000_platdata,</span><br><span class="line">	}</span><br><span class="line">};</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">dm9000_plat_data</span> <span class="title">dm9000_platdata</span>={</span></span><br><span class="line">	.flags = DM9000_PLATF_16BITNOLY | DM9000_PLATF_NO_EEPROM,</span><br><span class="line">};</span><br><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">platform_device</span> <span class="title">dm9000_device</span> = {</span></span><br><span class="line">	.name = <span class="string">"dm9000"</span>,</span><br><span class="line">	.id   = <span class="number">0</span>,</span><br><span class="line">	.num_resources = ARRAY_SIZE(dm9000_resource),</span><br><span class="line">	.resource = dm9000_resource,</span><br><span class="line">	.dev   = {</span><br><span class="line">		.platform_data = &dm9000_platdata,</span><br><span class="line">	}</span><br><span class="line">};</span><br></pre></td></tr></table></figure>
 </div>
 <p>
-&#x800C;&#x5728;&#x53D6;&#x5F97;&#x6B64;&#x6570;&#x636E;&#x65F6;&#x5219;&#x4F7F;&#x7528;: <code>struct dm9000_plat_data *pdata = dev_get_platdata(&amp;pdev-&gt;dev);</code>
-&#x7531;&#x4E0A;&#x5206;&#x6790;&#x53EF;&#x77E5;,&#x5728;&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#x4E2D;&#x5F15;&#x5165;platform&#x7684;&#x6982;&#x5FF5;&#x81F3;&#x5C11;&#x7531;&#x5982;&#x4E0B;&#x597D;&#x5904;:
+而在取得此数据时则使用: <code>struct dm9000_plat_data *pdata = dev_get_platdata(&pdev->dev);</code>
+由上分析可知,在设备驱动中引入platform的概念至少由如下好处:
 </p>
 <ol class="org-ol">
-<li>&#x4F7F;&#x5F97;&#x8BBE;&#x5907;&#x88AB;&#x6302;&#x63A5;&#x5728;&#x4E00;&#x4E2A;&#x603B;&#x7EBF;&#x4E0A;,&#x7B26;&#x5408;linux 2.6&#x4EE5;&#x540E;&#x5185;&#x6838;&#x7684;&#x8BBE;&#x5907;&#x6A21;&#x578B;.&#x5176;&#x7ED3;&#x679C;&#x662F;&#x4F7F;&#x914D;&#x5957;&#x7684;sysfs&#x8282;&#x70B9;&#x548C;&#x8BBE;&#x5907;&#x7535;&#x6E90;&#x7BA1;&#x7406;&#x90FD;&#x6210;&#x4E3A;&#x53EF;&#x80FD;.</li>
-<li>&#x9694;&#x79BB;BSP&#x548C;&#x9A71;&#x52A8;.&#x5728;BSP&#x4E2D;&#x5B9A;&#x4E49;platform&#x8BBE;&#x5907;&#x548C;&#x8BBE;&#x5907;&#x4F7F;&#x7528;&#x7684;&#x8D44;&#x6E90;,&#x8BBE;&#x5907;&#x7684;&#x5177;&#x4F53;&#x914D;&#x7F6E;&#x4FE1;&#x606F;.&#x800C;&#x5728;&#x9A71;&#x52A8;&#x4E2D;,&#x53EA;&#x9700;&#x8981;&#x901A;&#x8FC7;&#x901A;&#x7528;&#x7684;API&#x53BB;&#x83B7;&#x53D6;&#x8D44;&#x6E90;&#x548C;&#x6570;&#x636E;,&#x505A;&#x5230;&#x4E86;&#x677F;&#x76F8;&#x5173;&#x4EE3;&#x7801;&#x548C;&#x9A71;&#x52A8;&#x4EE3;&#x7801;&#x7684;&#x5206;&#x79BB;,&#x4F7F;&#x5F97;&#x9A71;&#x52A8;&#x5177;&#x6709;&#x66F4;&#x597D;&#x7684;&#x53EF;&#x6269;&#x5C55;&#x6027;&#x548C;&#x8DE8;&#x5E73;&#x53F0;&#x6027;.</li>
-<li>&#x8BA9;&#x4E00;&#x4E2A;&#x9A71;&#x52A8;&#x652F;&#x6301;&#x591A;&#x4E2A;&#x8BBE;&#x5907;&#x5B9E;&#x4F8B;.</li>
+<li>使得设备被挂接在一个总线上,符合linux 2.6以后内核的设备模型.其结果是使配套的sysfs节点和设备电源管理都成为可能.</li>
+<li>隔离BSP和驱动.在BSP中定义platform设备和设备使用的资源,设备的具体配置信息.而在驱动中,只需要通过通用的API去获取资源和数据,做到了板相关代码和驱动代码的分离,使得驱动具有更好的可扩展性和跨平台性.</li>
+<li>让一个驱动支持多个设备实例.</li>
 </ol>
 </div>
 </div>
 </div>
-<div id="outline-container-orgcb6c13d" class="outline-3">
-<h3 id="orgcb6c13d">&#x9A71;&#x52A8;&#x5206;&#x5C42;&#x5B9E;&#x4F8B;</h3>
-<div class="outline-text-3" id="text-orgcb6c13d">
+<div id="outline-container-org742f727" class="outline-3">
+<h3 id="org742f727">驱动分层实例</h3>
+<div class="outline-text-3" id="text-org742f727">
 </div>
-<div id="outline-container-orgb75c990" class="outline-4">
-<h4 id="orgb75c990">&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#x6838;&#x5FC3;&#x5C42;&#x7684;&#x4F8B;&#x5316;</h4>
-<div class="outline-text-4" id="text-orgb75c990">
+<div id="outline-container-org6e1aece" class="outline-4">
+<h4 id="org6e1aece">设备驱动核心层的例化</h4>
+<div class="outline-text-4" id="text-org6e1aece">
 <ol class="org-ol">
-<li>&#x91CD;&#x5199;&#x6838;&#x5FC3;&#x5C42;&#x4EE3;&#x7801;</li>
+<li>重写核心层代码</li>
 </ol>
 <p>
-Linux&#x5185;&#x6838;&#x5B8C;&#x5168;&#x662F;&#x7531;C&#x8BED;&#x8A00;&#x548C;&#x6C47;&#x7F16;&#x8BED;&#x8A00;&#x5199;&#x6210;,&#x4F46;&#x662F;&#x5374;&#x9891;&#x7E41;&#x7528;&#x5230;&#x4E86;&#x9762;&#x5411;&#x5BF9;&#x8C61;&#x7684;&#x8BBE;&#x8BA1;&#x601D;&#x60F3;.&#x5728;&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#x65B9;&#x9762;,&#x5F80;&#x5F80;&#x4E3A;&#x540C;&#x7C7B;&#x7684;&#x8BBE;&#x5907;&#x8BBE;&#x8BA1;&#x4E86;&#x4E00;&#x4E2A;&#x6846;&#x67B6;,&#x800C;&#x6846;&#x67B6;&#x4E2D;&#x7684;&#x6838;&#x5FC3;&#x5C42;&#x5219;
-&#x5B9E;&#x73B0;&#x4E86;&#x8BE5;&#x8BBE;&#x5907;&#x901A;&#x7528;&#x7684;&#x4E00;&#x4E9B;&#x529F;&#x80FD;.&#x540C;&#x6837;&#x7684;, <b>&#x5982;&#x679C;&#x5177;&#x4F53;&#x7684;&#x8BBE;&#x5907;&#x4E0D;&#x60F3;&#x4F7F;&#x7528;&#x6838;&#x5FC3;&#x5C42;&#x7684;&#x51FD;&#x6570;,&#x4E5F;&#x53EF;&#x4EE5;&#x91CD;&#x5199;</b>.
+Linux内核完全是由C语言和汇编语言写成,但是却频繁用到了面向对象的设计思想.在设备驱动方面,往往为同类的设备设计了一个框架,而框架中的核心层则
+实现了该设备通用的一些功能.同样的, <b>如果具体的设备不想使用核心层的函数,也可以重写</b>.
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">return_type <span class="title">core_funca</span><span class="params">(xxx_device *bootm_dev, param1_type param1, param2_type param2)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	<span class="keyword">if</span>(bootm_dev-&gt;funca)</span><br><span class="line">		<span class="keyword">return</span> bootm_dev-&gt;funca(param1, param2);</span><br><span class="line">	<span class="comment">/*&#x6838;&#x5FC3;&#x5C42;&#x901A;&#x7528;&#x7684;funca&#x4EE3;&#x7801;*/</span></span><br><span class="line">	...</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">return_type <span class="title">core_funca</span><span class="params">(xxx_device *bootm_dev, param1_type param1, param2_type param2)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	<span class="keyword">if</span>(bootm_dev->funca)</span><br><span class="line">		<span class="keyword">return</span> bootm_dev->funca(param1, param2);</span><br><span class="line">	<span class="comment">/*核心层通用的funca代码*/</span></span><br><span class="line">	...</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 </div>
 <p>
-&#x7531;&#x4E0A;&#x9762;&#x7684;&#x4EE3;&#x7801;&#x53EF;&#x4EE5;&#x770B;&#x51FA;, &#x5982;&#x679C;&#x7528;&#x6237;&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#x5B9E;&#x73B0;&#x4E86;&#x51FD;&#x6570; funca ,&#x90A3;&#x4E48;&#x5C31;&#x4F7F;&#x7528;&#x7528;&#x6237;&#x5B9A;&#x4E49;&#x7684;&#x51FD;&#x6570;,&#x5426;&#x5219;&#x4F7F;&#x7528;&#x6838;&#x5FC3;&#x5C42;&#x7684;&#x4EE3;&#x7801;.&#x8FD9;&#x6837;&#x5927;&#x90E8;&#x4EFD;&#x8BBE;&#x5907;&#x4E0D;&#x9700;&#x8981;&#x91CD;&#x5199;&#x6B64;&#x90E8;&#x5206;&#x4EE3;&#x7801;,
-&#x53EA;&#x6709;&#x5C11;&#x6570;&#x7279;&#x6B8A;&#x8BBE;&#x5907;&#x9700;&#x8981;&#x91CD;&#x65B0;&#x5B9E;&#x73B0;.&#x5927;&#x5927;&#x63D0;&#x9AD8;&#x4E86;&#x4EE3;&#x7801;&#x7684;&#x53EF;&#x91CD;&#x7528;&#x6027;.
+由上面的代码可以看出, 如果用户设备驱动实现了函数 funca ,那么就使用用户定义的函数,否则使用核心层的代码.这样大部份设备不需要重写此部分代码,
+只有少数特殊设备需要重新实现.大大提高了代码的可重用性.
 </p>
 <ol class="org-ol">
-<li>&#x6838;&#x5FC3;&#x5C42;&#x540C;&#x7C7B;&#x4EE3;&#x7801;</li>
+<li>核心层同类代码</li>
 </ol>
 <p>
-&#x6838;&#x5FC3;&#x5C42;&#x53EF;&#x4EE5;&#x5C06;&#x540C;&#x7C7B;&#x8BBE;&#x5907;&#x7684;&#x8FD0;&#x884C;&#x6D41;&#x7A0B;&#x63D0;&#x53D6;&#x51FA;&#x6765;,&#x8FD9;&#x6837;&#x5C31;&#x4E0D;&#x7528;&#x7528;&#x6237;&#x518D;&#x53BB;&#x91CD;&#x590D;&#x5B9E;&#x73B0;&#x8FD9;&#x7C7B;&#x4EE3;&#x7801;,&#x800C;&#x4EC5;&#x4EC5;&#x9700;&#x8981;&#x5173;&#x5FC3;&#x5176;&#x5E95;&#x5C42;&#x64CD;&#x4F5C;&#x5373;&#x53EF;.
+核心层可以将同类设备的运行流程提取出来,这样就不用用户再去重复实现这类代码,而仅仅需要关心其底层操作即可.
 </p>
 
 <p>
-&#x6BD4;&#x5982;&#xFF1A;&#x5BF9;&#x4E8E;&#x5916;&#x8BBE;&#x7684;&#x57FA;&#x672C;&#x63A7;&#x5236;&#xFF0C;&#x6709;&#x534F;&#x8BAE;&#x5C42;&#x7684;&#x9A71;&#x52A8;&#xFF0C;&#x800C;&#x5728;&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#x4E4B;&#x4E0A;&#x8FD8;&#x6709;&#x5B50;&#x7CFB;&#x7EDF;&#x7684;&#x5206;&#x5C42;&#x3002;&#x7528;&#x6237;&#x5B9E;&#x73B0;&#x63A5;&#x53E3;&#x5373;&#x53EF;&#x3002;
+比如：对于外设的基本控制，有协议层的驱动，而在设备驱动之上还有子系统的分层。用户实现接口即可。
 </p>
 </div>
 </div>
-<div id="outline-container-org2f67cc2" class="outline-4">
-<h4 id="org2f67cc2">&#x8F93;&#x5165;&#x8BBE;&#x5907;&#x9A71;&#x52A8;</h4>
-<div class="outline-text-4" id="text-org2f67cc2">
+<div id="outline-container-org9b264cb" class="outline-4">
+<h4 id="org9b264cb">输入设备驱动</h4>
+<div class="outline-text-4" id="text-org9b264cb">
 <p>
-&#x8F93;&#x5165;&#x8BBE;&#x5907;(&#x5982;&#x952E;&#x76D8;,&#x6309;&#x952E;,&#x89E6;&#x6478;&#x5C4F;,&#x9F20;&#x6807;&#x7B49;)&#x662F;&#x5178;&#x578B;&#x7684;&#x5B57;&#x7B26;&#x8BBE;&#x5907;,&#x5176;&#x4E00;&#x822C;&#x7684;&#x5DE5;&#x4F5C;&#x673A;&#x7406;&#x662F;&#x5E95;&#x5C42;&#x5728;&#x6309;&#x952E;,&#x89E6;&#x6478;&#x7B49;&#x52A8;&#x4F5C;&#x53D1;&#x751F;&#x65F6;&#x4EA7;&#x751F;&#x4E00;&#x4E2A;&#x4E2D;&#x65AD;(&#x6216;&#x9A71;&#x52A8;&#x901A;&#x8FC7;Timer&#x5B9A;&#x65F6;&#x67E5;&#x8BE2;),
-&#x7136;&#x540E;CPU&#x901A;&#x8FC7;SPI,IIC&#x6216;&#x5916;&#x90E8;&#x5B58;&#x50A8;&#x5668;&#x603B;&#x7EBF;&#x8BFB;&#x53D6;&#x952E;&#x503C;,&#x5750;&#x6807;&#x7B49;&#x6570;&#x636E;,&#x5E76;&#x5C06;&#x5B83;&#x4EEC;&#x653E;&#x5165;&#x4E00;&#x4E2A;&#x7F13;&#x51B2;&#x533A;,&#x5B57;&#x7B26;&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#x7BA1;&#x7406;&#x8BE5;&#x7F13;&#x51B2;&#x533A;,&#x800C;&#x9A71;&#x52A8;&#x7684;read()&#x63A5;&#x53E3;&#x8BA9;&#x7528;&#x6237;&#x53EF;&#x4EE5;&#x8BFB;&#x53D6;&#x952E;&#x503C;,&#x5750;&#x6807;&#x7B49;&#x6570;&#x636E;.
-&#x8FD9;&#x4E9B;&#x5DE5;&#x4F5C;&#x4E2D;&#x53EA;&#x6709;&#x4E2D;&#x65AD;,&#x8BFB;&#x503C;&#x4E0E;&#x8BBE;&#x5907;&#x76F8;&#x5173;,&#x800C;&#x8F93;&#x5165;&#x4E8B;&#x4EF6;&#x7684;&#x7F13;&#x51B2;&#x533A;&#x7BA1;&#x7406;&#x4EE5;&#x53CA;&#x5B57;&#x7B26;&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#x7684; <code>file_operations</code> &#x63A5;&#x53E3;&#x5219;&#x5BF9;&#x8F93;&#x5165;&#x8BBE;&#x5907;&#x662F;&#x901A;&#x7528;&#x7684;,&#x6240;&#x4EE5;&#x5185;&#x6838;&#x8BBE;&#x8BA1;&#x4E86;&#x8F93;&#x5165;&#x5B50;&#x7CFB;&#x7EDF;,&#x7531;&#x6838;&#x5FC3;&#x5C42;&#x5904;&#x7406;&#x516C;&#x5171;&#x7684;&#x5DE5;&#x4F5C;.
+输入设备(如键盘,按键,触摸屏,鼠标等)是典型的字符设备,其一般的工作机理是底层在按键,触摸等动作发生时产生一个中断(或驱动通过Timer定时查询),
+然后CPU通过SPI,IIC或外部存储器总线读取键值,坐标等数据,并将它们放入一个缓冲区,字符设备驱动管理该缓冲区,而驱动的read()接口让用户可以读取键值,坐标等数据.
+这些工作中只有中断,读值与设备相关,而输入事件的缓冲区管理以及字符设备驱动的 <code>file_operations</code> 接口则对输入设备是通用的,所以内核设计了输入子系统,由核心层处理公共的工作.
 </p>
 </div>
 </div>
-<div id="outline-container-org55d85da" class="outline-4">
-<h4 id="org55d85da">RTC&#x8BBE;&#x5907;&#x9A71;&#x52A8;</h4>
-<div class="outline-text-4" id="text-org55d85da">
+<div id="outline-container-org2b13aac" class="outline-4">
+<h4 id="org2b13aac">RTC设备驱动</h4>
+<div class="outline-text-4" id="text-org2b13aac">
 <p>
-RTC&#x501F;&#x52A9;&#x7535;&#x6C60;&#x4F9B;&#x7535;,&#x5728;&#x7CFB;&#x7EDF;&#x6389;&#x7535;&#x7684;&#x60C5;&#x51B5;&#x4E0B;&#x4F9D;&#x7136;&#x53EF;&#x4EE5;&#x6B63;&#x5E38;&#x8BA1;&#x65F6;.&#x5728;&#x901A;&#x5E38;&#x8FD8;&#x5177;&#x6709;&#x4EA7;&#x751F;&#x5468;&#x671F;&#x6027;&#x4E2D;&#x65AD;&#x4EE5;&#x53CA;&#x95F9;&#x949F;&#x4E2D;&#x65AD;&#x7684;&#x80FD;&#x529B;,&#x662F;&#x4E00;&#x79CD;&#x5178;&#x578B;&#x7684;&#x5B57;&#x7B26;&#x8BBE;&#x5907;.&#x505A;&#x4E3A;&#x4E00;&#x79CD;&#x5B57;&#x7B26;&#x8BBE;&#x5907;&#x9A71;&#x52A8;,
-RTC&#x9700;&#x8981;&#x6709; <code>file_operations</code> &#x4E2D;&#x63A5;&#x53E3;&#x51FD;&#x6570;&#x7684;&#x5B9E;&#x73B0;,&#x800C;&#x5178;&#x578B;&#x7684; IOCTL &#x5305;&#x62EC; RTC_SET_TIME,RTC_ALM_READ,RTC_ALM_SET,RTC_IRQP_SET&#x7B49;,&#x8FD9;&#x4E9B;&#x5BF9;&#x4E8E;&#x6240;&#x6709;&#x7684;RTC&#x662F;&#x901A;&#x7528;&#x7684;,&#x53EA;&#x6709;&#x5E95;&#x5C42;&#x7684;&#x5177;&#x4F53;&#x5B9E;&#x73B0;&#x4E0E;&#x8BBE;&#x5907;&#x6709;&#x5173;.
+RTC借助电池供电,在系统掉电的情况下依然可以正常计时.在通常还具有产生周期性中断以及闹钟中断的能力,是一种典型的字符设备.做为一种字符设备驱动,
+RTC需要有 <code>file_operations</code> 中接口函数的实现,而典型的 IOCTL 包括 RTC_SET_TIME,RTC_ALM_READ,RTC_ALM_SET,RTC_IRQP_SET等,这些对于所有的RTC是通用的,只有底层的具体实现与设备有关.
 </p>
 </div>
 </div>
-<div id="outline-container-orgbf53fb6" class="outline-4">
-<h4 id="orgbf53fb6">misc&#x8BBE;&#x5907;&#x9A71;&#x52A8;</h4>
-<div class="outline-text-4" id="text-orgbf53fb6">
+<div id="outline-container-org4a342b1" class="outline-4">
+<h4 id="org4a342b1">misc设备驱动</h4>
+<div class="outline-text-4" id="text-org4a342b1">
 <p>
-<b>&#x7531;&#x4E8E;linux&#x9A71;&#x52A8;&#x503E;&#x5411;&#x4E8E;&#x5206;&#x5C42;&#x8BBE;&#x8BA1;,&#x6240;&#x4EE5;&#x5404;&#x4E2A;&#x5177;&#x4F53;&#x7684;&#x8BBE;&#x5907;&#x90FD;&#x53EF;&#x4EE5;&#x627E;&#x5230;&#x5B83;&#x5F52;&#x5C5E;&#x7684;&#x7C7B;&#x578B;,&#x4ECE;&#x800C;&#x5957;&#x5230;&#x5B83;&#x76F8;&#x5E94;&#x7684;&#x67B6;&#x6784;&#x91CC;&#x9762;&#x53BB;,&#x5E76;&#x4E14;&#x53EA;&#x9700;&#x8981;&#x5B9E;&#x73B0;&#x6700;&#x5E95;&#x5C42;&#x7684;&#x90A3;&#x4E00;&#x90E8;&#x5206;.</b>
-&#x4F46;&#x662F;&#x4E5F;&#x6709;&#x90E8;&#x5206;&#x8BBE;&#x5907;&#x4E0D;&#x77E5;&#x9053;&#x5B83;&#x5C5E;&#x4E8E;&#x4EC0;&#x4E48;&#x7C7B;&#x578B;,&#x5219;&#x4E00;&#x822C;&#x91C7;&#x7528; <code>miscdevice</code> &#x6846;&#x67B6;&#x7ED3;&#x6784;. miscdevice&#x672C;&#x8D28;&#x4E0A;&#x4E5F;&#x662F;&#x5B57;&#x7B26;&#x8BBE;&#x5907;,&#x53EA;&#x662F;&#x5728;miscdevice&#x6838;&#x5FC3;&#x5C42;&#x7684;misc_init()&#x51FD;&#x6570;&#x4E2D;,
-&#x901A;&#x8FC7; <code>register_chrdev(MISC_MAJOR,&quot;misc&quot;,&amp;misc_fops)</code> &#x6CE8;&#x518C;&#x4E86;&#x5B57;&#x7B26;&#x8BBE;&#x5907;,&#x800C;&#x5177;&#x4F53;miscdevice&#x5B9E;&#x4F8B;&#x8C03;&#x7528; misc_register()&#x7684;&#x65F6;&#x5019;&#x81EA;&#x52A8;&#x5B8C;&#x6210;&#x4E86; device_create(),&#x83B7;&#x53D6;&#x52A8;&#x6001;&#x6B21;&#x8BBE;&#x5907;&#x53F7;&#x7684;&#x52A8;&#x4F5C;.
-&#x901A;&#x8FC7;&#x4E0A;&#x8FF0;&#x5B9E;&#x4F8B;,&#x53EF;&#x4EE5;&#x5F52;&#x7EB3;&#x51FA;&#x6838;&#x5FC3;&#x5C42;&#x80A9;&#x8D1F;&#x7684;3&#x5927;&#x804C;&#x8D23;:
+<b>由于linux驱动倾向于分层设计,所以各个具体的设备都可以找到它归属的类型,从而套到它相应的架构里面去,并且只需要实现最底层的那一部分.</b>
+但是也有部分设备不知道它属于什么类型,则一般采用 <code>miscdevice</code> 框架结构. miscdevice本质上也是字符设备,只是在miscdevice核心层的misc_init()函数中,
+通过 <code>register_chrdev(MISC_MAJOR,"misc",&misc_fops)</code> 注册了字符设备,而具体miscdevice实例调用 misc_register()的时候自动完成了 device_create(),获取动态次设备号的动作.
+通过上述实例,可以归纳出核心层肩负的3大职责:
 </p>
 <ol class="org-ol">
-<li>&#x5BF9;&#x4E0A;&#x63D0;&#x4F9B;&#x63A5;&#x53E3; file_operations &#x7684;&#x8BFB;&#x5199;&#x548C;ioctl&#x90FD;&#x88AB;&#x4E2D;&#x95F4;&#x5C42;&#x641E;&#x5B9A;,&#x5404;&#x79CD;I/O&#x6A21;&#x578B;&#x4E5F;&#x88AB;&#x5904;&#x7406;&#x6389;&#x4E86;.</li>
-<li>&#x4E2D;&#x95F4;&#x5C42;&#x5B9E;&#x73B0; <b>&#x901A;&#x7528;</b> &#x903B;&#x8F91;.&#x53EF;&#x4EE5;&#x88AB;&#x5E95;&#x5C42;&#x5404;&#x79CD;&#x5B9E;&#x4F8B;&#x5171;&#x4EAB;&#x7684;&#x4EE3;&#x7801;&#x90FD;&#x88AB;&#x4E2D;&#x95F4;&#x5C42;&#x641E;&#x5B9A;,&#x907F;&#x514D;&#x5E95;&#x5C42;&#x91CD;&#x590D;&#x5B9E;&#x73B0;.</li>
-<li>&#x5BF9;&#x4E0B;&#x5B9A;&#x4E49;&#x6846;&#x67B6;.&#x5E95;&#x5C42;&#x7684;&#x9A71;&#x52A8;&#x4E0D;&#x9700;&#x8981;&#x5173;&#x5FC3;LINUX&#x5185;&#x6838;VFS&#x63A5;&#x53E3;&#x548C;&#x5404;&#x79CD;&#x53EF;&#x80FD;&#x7684;I/O&#x6A21;&#x578B;,&#x800C;&#x53EA;&#x9700;&#x8981;&#x5904;&#x7406;&#x4E0E;&#x5177;&#x4F53;&#x786C;&#x4EF6;&#x76F8;&#x5173;&#x7684;&#x8BBF;&#x95EE;.</li>
+<li>对上提供接口 file_operations 的读写和ioctl都被中间层搞定,各种I/O模型也被处理掉了.</li>
+<li>中间层实现 <b>通用</b> 逻辑.可以被底层各种实例共享的代码都被中间层搞定,避免底层重复实现.</li>
+<li>对下定义框架.底层的驱动不需要关心LINUX内核VFS接口和各种可能的I/O模型,而只需要处理与具体硬件相关的访问.</li>
 </ol>
 
 <p>
-&#x8FD9;&#x79CD;&#x5206;&#x5C42;&#x6709;&#x65F6;&#x5019;&#x8FD8;&#x4E0D;&#x662F;&#x4E24;&#x5C42;,&#x53EF;&#x4EE5;&#x6709;&#x66F4;&#x591A;&#x7684;&#x5C42;,&#x5728;&#x8F6F;&#x4EF6;&#x4E0A;&#x5448;&#x73B0;&#x4E3A;&#x9762;&#x5411;&#x5BF9;&#x8C61;&#x91CC;&#x7EE7;&#x627F;&#x548C;&#x591A;&#x6001;&#x7684;&#x601D;&#x60F3;.
+这种分层有时候还不是两层,可以有更多的层,在软件上呈现为面向对象里继承和多态的思想.
 </p>
 </div>
 </div>
 </div>
-<div id="outline-container-org174959a" class="outline-3">
-<h3 id="org174959a">&#x4E3B;&#x673A;&#x9A71;&#x52A8;&#x4E0E;&#x5916;&#x8BBE;&#x9A71;&#x52A8;&#x5206;&#x79BB;</h3>
-<div class="outline-text-3" id="text-org174959a">
+<div id="outline-container-org738f124" class="outline-3">
+<h3 id="org738f124">主机驱动与外设驱动分离</h3>
+<div class="outline-text-3" id="text-org738f124">
 <p>
-Linux&#x4E2D;&#x7684;SPI,I2C,USB&#x7B49;&#x5B50;&#x7CFB;&#x7EDF;&#x90FD;&#x5229;&#x7528;&#x4E86;&#x5178;&#x578B;&#x7684;&#x628A;&#x4E3B;&#x673A;&#x9A71;&#x52A8;&#x548C;&#x5916;&#x8BBE;&#x9A71;&#x52A8;&#x5206;&#x79BB;&#x7684;&#x60F3;&#x6CD5;:
-<b>&#x8BA9;&#x4E3B;&#x673A;&#x7AEF;&#x53EA;&#x8D1F;&#x8D23;&#x4EA7;&#x751F;&#x603B;&#x7EBF;&#x4E0A;&#x7684;&#x4F20;&#x8F93;&#x6CE2;&#x5F62;,&#x800C;&#x5916;&#x8BBE;&#x7AEF;&#x53EA;&#x662F;&#x901A;&#x8FC7;&#x6807;&#x51C6;&#x7684;API&#x6765;&#x8BA9;&#x4E3B;&#x673A;&#x7AEF;&#x4EE5;&#x9002;&#x5F53;&#x7684;&#x6CE2;&#x5F62;&#x8BBF;&#x95EE;&#x81EA;&#x8EAB;.</b>
-&#x56E0;&#x6B64;&#x8FD9;&#x91CC;&#x9762;&#x5C31;&#x6D89;&#x53CA;&#x4E86;4&#x4E2A;&#x8F6F;&#x4EF6;&#x6A21;&#x5757;:
+Linux中的SPI,I2C,USB等子系统都利用了典型的把主机驱动和外设驱动分离的想法:
+<b>让主机端只负责产生总线上的传输波形,而外设端只是通过标准的API来让主机端以适当的波形访问自身.</b>
+因此这里面就涉及了4个软件模块:
 </p>
 <ol class="org-ol">
-<li>&#x4E3B;&#x673A;&#x7AEF;&#x9A71;&#x52A8;</li>
+<li>主机端驱动</li>
 </ol>
 <p>
-&#x6839;&#x636E;&#x5177;&#x4F53;&#x7684;&#x63A7;&#x5236;&#x5668;&#x786C;&#x4EF6;&#x624B;&#x518C;&#x64CD;&#x4F5C;,&#x4EA7;&#x751F;&#x603B;&#x7EBF;&#x6CE2;&#x5F62;.
+根据具体的控制器硬件手册操作,产生总线波形.
 </p>
 <ol class="org-ol">
-<li>&#x8FDE;&#x63A5;&#x4E3B;&#x673A;&#x548C;&#x5916;&#x8BBE;&#x7684;&#x7EBD;&#x5E26;</li>
+<li>连接主机和外设的纽带</li>
 </ol>
 <p>
-&#x5916;&#x8BBE;&#x4E0D;&#x76F4;&#x63A5;&#x8C03;&#x7528;&#x4E3B;&#x673A;&#x7AEF;&#x7684;&#x9A71;&#x52A8;&#x6765;&#x4EA7;&#x751F;&#x6CE2;&#x5F62;,&#x800C;&#x662F;&#x8C03;&#x7528;&#x4E00;&#x4E2A;&#x6807;&#x51C6;&#x7684;API.&#x7531;&#x8FD9;&#x4E2A;&#x6807;&#x51C6;&#x7684;API&#x628A;&#x8FD9;&#x4E2A;&#x6CE2;&#x5F62;&#x7684;&#x4F20;&#x8F93;&#x8BF7;&#x6C42;&#x95F4;&#x63A5;&#x8F6C;&#x53D1;&#x7ED9;&#x5177;&#x4F53;&#x7684;&#x4E3B;&#x673A;&#x7AEF;&#x9A71;&#x52A8;.
+外设不直接调用主机端的驱动来产生波形,而是调用一个标准的API.由这个标准的API把这个波形的传输请求间接转发给具体的主机端驱动.
 </p>
 <ol class="org-ol">
-<li>&#x5916;&#x8BBE;&#x9A71;&#x52A8;</li>
+<li>外设驱动</li>
 </ol>
 <p>
-&#x5916;&#x8BBE;&#x63A5;&#x5728;I2C,SPI,USB&#x8FD9;&#x6837;&#x7684;&#x603B;&#x7EBF;&#x4E0A;,&#x4F46;&#x662F;&#x5B83;&#x4EEC;&#x672C;&#x8EAB;&#x53EF;&#x4EE5;&#x662F;&#x89E6;&#x6478;&#x5C4F;,&#x7F51;&#x5361;,&#x58F0;&#x5361;&#x6216;&#x8005;&#x4EFB;&#x610F;&#x4E00;&#x79CD;&#x7C7B;&#x578B;&#x7684;&#x8BBE;&#x5907;.&#x6211;&#x4EEC;&#x5728;&#x76F8;&#x5173;&#x7684; i2c_driver,spi_driver,usb_driver&#x8FD9;&#x79CD;
-xxx_driver&#x7684;probe()&#x51FD;&#x6570;&#x4E2D;&#x53BB;&#x6CE8;&#x518C;&#x5B83;&#x7684;&#x5177;&#x4F53;&#x7C7B;&#x578B;.&#x5F53;&#x8FD9;&#x4E9B;&#x5916;&#x8BBE;&#x8981;&#x6C42;I2C,SPI,USB&#x7B49;&#x53BB;&#x8BBF;&#x95EE;&#x5B83;&#x7684;&#x65F6;&#x5019;,&#x5B83;&#x8C03;&#x7528;&quot;&#x8FDE;&#x63A5;&#x4E3B;&#x673A;&#x548C;&#x5916;&#x8BBE;&#x7684;&#x7EBD;&#x5E26;&quot;&#x6A21;&#x5757;&#x7684;&#x6807;&#x51C6;API.
+外设接在I2C,SPI,USB这样的总线上,但是它们本身可以是触摸屏,网卡,声卡或者任意一种类型的设备.我们在相关的 i2c_driver,spi_driver,usb_driver这种
+xxx_driver的probe()函数中去注册它的具体类型.当这些外设要求I2C,SPI,USB等去访问它的时候,它调用"连接主机和外设的纽带"模块的标准API.
 </p>
 <ol class="org-ol">
-<li>&#x677F;&#x7EA7;&#x903B;&#x8F91;</li>
+<li>板级逻辑</li>
 </ol>
 <p>
-&#x677F;&#x7EA7;&#x903B;&#x8F91;&#x7528;&#x6765;&#x63CF;&#x8FF0;&#x4E3B;&#x673A;&#x548C;&#x5916;&#x8BBE;&#x662F;&#x5982;&#x4F55;&#x4E92;&#x8054;&#x7684;,&#x76F8;&#x5F53;&#x4E8E;&#x4E00;&#x4E2A;&quot;&#x8DEF;&#x7531;&#x8868;&quot;.&#x5B9E;&#x9645;&#x7531;&#x8BBE;&#x5907;&#x6811;&#x6765;&#x5B8C;&#x6210;.
+板级逻辑用来描述主机和外设是如何互联的,相当于一个"路由表".实际由设备树来完成.
 </p>
 </div>
 </div>
 </div>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
 </div>
 
     </div>
@@ -734,7 +734,7 @@ Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org3adf10e"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x9A71;&amp;#x52A8;&amp;#x7684;&amp;#x8F6F;&amp;#x4EF6;&amp;#x67B6;&amp;#x6784;&amp;#x7684;&amp;#x4E09;&amp;#x5927;&amp;#x601D;&amp;#x60F3;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org01ac0c9"><span class="nav-number">1.1.</span> <span class="nav-text">&amp;#x603B;&amp;#x7EBF;,&amp;#x8BBE;&amp;#x5907;,&amp;#x9A71;&amp;#x52A8;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org4a23afe"><span class="nav-number">1.1.1.</span> <span class="nav-text">&amp;#x95EE;&amp;#x9898;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgf292b33"><span class="nav-number">1.1.2.</span> <span class="nav-text">&amp;#x89E3;&amp;#x51B3;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org3f8112a"><span class="nav-number">1.2.</span> <span class="nav-text">&amp;#x9A71;&amp;#x52A8;&amp;#x5206;&amp;#x5C42;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org9772a54"><span class="nav-number">1.2.1.</span> <span class="nav-text">&amp;#x95EE;&amp;#x9898;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgba95895"><span class="nav-number">1.2.2.</span> <span class="nav-text">&amp;#x89E3;&amp;#x51B3;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org64a10b2"><span class="nav-number">1.3.</span> <span class="nav-text">&amp;#x9A71;&amp;#x52A8;&amp;#x5206;&amp;#x9694;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org14d6e57"><span class="nav-number">1.3.1.</span> <span class="nav-text">&amp;#x95EE;&amp;#x9898;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org5904b56"><span class="nav-number">1.3.2.</span> <span class="nav-text">&amp;#x89E3;&amp;#x51B3;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org0f93bc6"><span class="nav-number">1.4.</span> <span class="nav-text">&amp;#x7F16;&amp;#x5199;&amp;#x9A71;&amp;#x52A8;&amp;#x524D;&amp;#x7684;&amp;#x601D;&amp;#x8003;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org9f475ec"><span class="nav-number">1.4.1.</span> <span class="nav-text">&amp;#x6211;&amp;#x9700;&amp;#x8981;&amp;#x5B8C;&amp;#x6210;&amp;#x4EC0;&amp;#x4E48;&amp;#x529F;&amp;#x80FD;&amp;#xFF1F;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgb3dc040"><span class="nav-number">1.4.2.</span> <span class="nav-text">&amp;#x5B9E;&amp;#x73B0;&amp;#x8BBE;&amp;#x5907;&amp;#x8282;&amp;#x70B9;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgeb1745d"><span class="nav-number">1.4.3.</span> <span class="nav-text">&amp;#x5B9E;&amp;#x73B0;&amp;#x8BBE;&amp;#x5907;&amp;#x9A71;&amp;#x52A8;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org8addb39"><span class="nav-number">1.4.4.</span> <span class="nav-text">&amp;#x5B9E;&amp;#x73B0;&amp;#x63A7;&amp;#x5236;&amp;#x5668;&amp;#x9A71;&amp;#x52A8;</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org6251656"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x5B9E;&amp;#x4F8B;&amp;#x9A71;&amp;#x52A8;&amp;#x6982;&amp;#x89C8;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgb88f51d"><span class="nav-number">2.1.</span> <span class="nav-text">platform &amp;#x8BBE;&amp;#x5907;&amp;#x9A71;&amp;#x52A8;(&amp;#x603B;&amp;#x7EBF;&amp;#xFF0C;&amp;#x8BBE;&amp;#x5907;&amp;#xFF0C;&amp;#x9A71;&amp;#x52A8;&amp;#x5B9E;&amp;#x4F8B;)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgb215e38"><span class="nav-number">2.1.1.</span> <span class="nav-text">platform &amp;#x8BBE;&amp;#x5907;&amp;#x8D44;&amp;#x6E90;&amp;#x548C;&amp;#x6570;&amp;#x636E;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgcb6c13d"><span class="nav-number">2.2.</span> <span class="nav-text">&amp;#x9A71;&amp;#x52A8;&amp;#x5206;&amp;#x5C42;&amp;#x5B9E;&amp;#x4F8B;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgb75c990"><span class="nav-number">2.2.1.</span> <span class="nav-text">&amp;#x8BBE;&amp;#x5907;&amp;#x9A71;&amp;#x52A8;&amp;#x6838;&amp;#x5FC3;&amp;#x5C42;&amp;#x7684;&amp;#x4F8B;&amp;#x5316;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org2f67cc2"><span class="nav-number">2.2.2.</span> <span class="nav-text">&amp;#x8F93;&amp;#x5165;&amp;#x8BBE;&amp;#x5907;&amp;#x9A71;&amp;#x52A8;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org55d85da"><span class="nav-number">2.2.3.</span> <span class="nav-text">RTC&amp;#x8BBE;&amp;#x5907;&amp;#x9A71;&amp;#x52A8;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgbf53fb6"><span class="nav-number">2.2.4.</span> <span class="nav-text">misc&amp;#x8BBE;&amp;#x5907;&amp;#x9A71;&amp;#x52A8;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org174959a"><span class="nav-number">2.3.</span> <span class="nav-text">&amp;#x4E3B;&amp;#x673A;&amp;#x9A71;&amp;#x52A8;&amp;#x4E0E;&amp;#x5916;&amp;#x8BBE;&amp;#x9A71;&amp;#x52A8;&amp;#x5206;&amp;#x79BB;</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org24e274e"><span class="nav-number">1.</span> <span class="nav-text">驱动的软件架构的三大思想</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org7041727"><span class="nav-number">1.1.</span> <span class="nav-text">总线,设备,驱动</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgf2609b1"><span class="nav-number">1.1.1.</span> <span class="nav-text">问题</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org3b14522"><span class="nav-number">1.1.2.</span> <span class="nav-text">解决</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgedd3660"><span class="nav-number">1.2.</span> <span class="nav-text">驱动分层</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org8777bc0"><span class="nav-number">1.2.1.</span> <span class="nav-text">问题</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgbf33b99"><span class="nav-number">1.2.2.</span> <span class="nav-text">解决</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org873dc4f"><span class="nav-number">1.3.</span> <span class="nav-text">驱动分隔</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org8a50ea9"><span class="nav-number">1.3.1.</span> <span class="nav-text">问题</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgc1f7c96"><span class="nav-number">1.3.2.</span> <span class="nav-text">解决</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org7f675f2"><span class="nav-number">1.4.</span> <span class="nav-text">编写驱动前的思考</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org645f601"><span class="nav-number">1.4.1.</span> <span class="nav-text">我需要完成什么功能？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org27464a5"><span class="nav-number">1.4.2.</span> <span class="nav-text">实现设备节点</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org9c999d5"><span class="nav-number">1.4.3.</span> <span class="nav-text">实现设备驱动</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org497d280"><span class="nav-number">1.4.4.</span> <span class="nav-text">实现控制器驱动</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgcd1a356"><span class="nav-number">2.</span> <span class="nav-text">实例驱动概览</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org28b2dd8"><span class="nav-number">2.1.</span> <span class="nav-text">platform 设备驱动(总线，设备，驱动实例)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org5ce080d"><span class="nav-number">2.1.1.</span> <span class="nav-text">platform 设备资源和数据</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org742f727"><span class="nav-number">2.2.</span> <span class="nav-text">驱动分层实例</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org6e1aece"><span class="nav-number">2.2.1.</span> <span class="nav-text">设备驱动核心层的例化</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org9b264cb"><span class="nav-number">2.2.2.</span> <span class="nav-text">输入设备驱动</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org2b13aac"><span class="nav-number">2.2.3.</span> <span class="nav-text">RTC设备驱动</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org4a342b1"><span class="nav-number">2.2.4.</span> <span class="nav-text">misc设备驱动</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org738f124"><span class="nav-number">2.3.</span> <span class="nav-text">主机驱动与外设驱动分离</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 

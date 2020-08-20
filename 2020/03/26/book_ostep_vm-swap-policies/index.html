@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="&amp;#x7406;&amp;#x89E3;&amp;#x4EA4;&amp;#x6362;&amp;#x7B56;&amp;#x7565;&amp;#xFF0C;&amp;#x5F53;&amp;#x5185;&amp;#x5B58;&amp;#x5403;&amp;#x7D27;&amp;#x65F6;&amp;#xFF0C;&amp;#x7CFB;&amp;#x7EDF;&amp;#x662F;&amp;#x5982;&amp;#x4F55;&amp;#x51B3;&amp;#x5B9A;&amp;#x54EA;&amp;#x4E2A;&amp;#x5185;&amp;#x5B5">
+  <meta name="description" content="理解交换策略，当内存吃紧时，系统是如何决定哪个内存页面应该被置换到交换分区中的？">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[What]swapping:Policies">
 <meta property="og:url" content="http://kcmetercec.top/2020/03/26/book_ostep_vm-swap-policies/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="&amp;#x7406;&amp;#x89E3;&amp;#x4EA4;&amp;#x6362;&amp;#x7B56;&amp;#x7565;&amp;#xFF0C;&amp;#x5F53;&amp;#x5185;&amp;#x5B58;&amp;#x5403;&amp;#x7D27;&amp;#x65F6;&amp;#xFF0C;&amp;#x7CFB;&amp;#x7EDF;&amp;#x662F;&amp;#x5982;&amp;#x4F55;&amp;#x51B3;&amp;#x5B9A;&amp;#x54EA;&amp;#x4E2A;&amp;#x5185;&amp;#x5B5">
+<meta property="og:description" content="理解交换策略，当内存吃紧时，系统是如何决定哪个内存页面应该被置换到交换分区中的？">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/swap/AMAT.jpg?raw=true">
 <meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/swap/policy_cmp.jpg?raw=true">
@@ -301,69 +301,69 @@
       
         <div id="content">
 <p>
-&#x7406;&#x89E3;&#x4EA4;&#x6362;&#x7B56;&#x7565;&#xFF0C;&#x5F53;&#x5185;&#x5B58;&#x5403;&#x7D27;&#x65F6;&#xFF0C;&#x7CFB;&#x7EDF;&#x662F;&#x5982;&#x4F55;&#x51B3;&#x5B9A;&#x54EA;&#x4E2A;&#x5185;&#x5B58;&#x9875;&#x9762;&#x5E94;&#x8BE5;&#x88AB;&#x7F6E;&#x6362;&#x5230;&#x4EA4;&#x6362;&#x5206;&#x533A;&#x4E2D;&#x7684;&#xFF1F;
+理解交换策略，当内存吃紧时，系统是如何决定哪个内存页面应该被置换到交换分区中的？
 </p>
 <a id="more"></a>
-<div id="outline-container-orgf7d13e2" class="outline-2">
-<h2 id="orgf7d13e2">page cache &#x7BA1;&#x7406;</h2>
-<div class="outline-text-2" id="text-orgf7d13e2">
+<div id="outline-container-org640e7e2" class="outline-2">
+<h2 id="org640e7e2">page cache 管理</h2>
+<div class="outline-text-2" id="text-org640e7e2">
 <p>
-&#x4E3B;&#x5B58;&#x4E8E;&#x786C;&#x76D8;&#x6765;&#x8BB2;&#x5C31;&#x662F;&#x4E00;&#x4E2A; cache&#xFF0C;&#x5F53;&#x4F7F;&#x7528;&#x7F6E;&#x6362;&#x7B56;&#x7565;&#x65F6;&#xFF0C;&#x76EE;&#x6807;&#x5F53;&#x7136;&#x662F;&#x6700;&#x5927;&#x7684;&#x4FDD;&#x8BC1; page cache hit&#xFF0C;&#x800C;&#x907F;&#x514D; page cache miss&#x3002;
+主存于硬盘来讲就是一个 cache，当使用置换策略时，目标当然是最大的保证 page cache hit，而避免 page cache miss。
 </p>
 
 <p>
-&#x6709;&#x4E2A;&#x6307;&#x6807;&#x53EB;&#x505A; <b>&#x5185;&#x5B58;&#x5E73;&#x5747;&#x8BBF;&#x95EE;&#x65F6;&#x95F4;&#xFF08;average memory access time, AMAT&#xFF09;</b> &#x7528;&#x4E8E;&#x8BA1;&#x7B97; page cache hit &#x548C; page cache miss&#xFF1A;
+有个指标叫做 <b>内存平均访问时间（average memory access time, AMAT）</b> 用于计算 page cache hit 和 page cache miss：
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/swap/AMAT.jpg?raw=true" alt="mempic/swap/AMAT.jpg">
 <ul class="org-ul">
-<li>TM : &#x8BBF;&#x95EE;&#x5185;&#x5B58;&#x6D88;&#x8017;&#x65F6;&#x95F4;</li>
-<li>TD : &#x8BBF;&#x95EE;&#x786C;&#x76D8;&#x6D88;&#x8017;&#x65F6;&#x95F4;</li>
-<li>PMiss : &#x8981;&#x8BBF;&#x95EE;&#x7684;&#x9875;&#x9762;&#x672A;&#x9A7B;&#x7559;&#x4E8E;&#x5185;&#x5B58;&#x7684;&#x7CFB;&#x6570;&#xFF0C;&#x53D6;&#x503C;&#x8303;&#x56F4; 0.0 ~ 1.0</li>
+<li>TM : 访问内存消耗时间</li>
+<li>TD : 访问硬盘消耗时间</li>
+<li>PMiss : 要访问的页面未驻留于内存的系数，取值范围 0.0 ~ 1.0</li>
 </ul>
 
 <p>
-&#x4E0A;&#x9762;&#x8FD9;&#x4E2A;&#x516C;&#x5F0F;&#x7684;&#x610F;&#x601D;&#x662F;&#xFF1A;&#x5F53;&#x672A;&#x51FA;&#x73B0; page cache miss &#x65F6;&#xFF0C;&#x8BBF;&#x95EE;&#x5185;&#x5B58;&#x7684;&#x65F6;&#x95F4;&#x5C31;&#x662F;&#x8BBF;&#x95EE;&#x7269;&#x7406;&#x5185;&#x5B58;&#x7684;&#x65F6;&#x95F4;&#x3002;
-&#x800C;&#x5F53;&#x51FA;&#x73B0; page cache miss &#x65F6;&#xFF0C;&#x5C31;&#x662F;&#x8BBF;&#x95EE;&#x7269;&#x7406;&#x5185;&#x5B58;&#x7684;&#x65F6;&#x95F4;&#x52A0;&#x4E0A;&#x8BBF;&#x95EE;&#x786C;&#x76D8;&#x7684;&#x65F6;&#x95F4;&#x3002;
+上面这个公式的意思是：当未出现 page cache miss 时，访问内存的时间就是访问物理内存的时间。
+而当出现 page cache miss 时，就是访问物理内存的时间加上访问硬盘的时间。
 </p>
 
 <p>
-&#x5047;&#x8BBE;&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x7684;&#x865A;&#x62DF;&#x5730;&#x5740;&#x7A7A;&#x95F4;&#x662F; 4KB&#xFF0C;&#x9875;&#x5927;&#x5C0F;&#x4E3A; 256 &#x5B57;&#x8282;&#xFF0C;&#x90A3;&#x4E48;&#x5C31;&#x9700;&#x8981;&#x9AD8; 4 &#x4F4D;&#x8868;&#x793A;&#x9875;&#x7D22;&#x5F15;&#xFF0C;&#x4F4E; 8 &#x4F4D;&#x8868;&#x793A;&#x9875;&#x5185;&#x504F;&#x79FB;&#x3002;
+假设一个进程的虚拟地址空间是 4KB，页大小为 256 字节，那么就需要高 4 位表示页索引，低 8 位表示页内偏移。
 </p>
 
 <p>
-&#x5047;&#x8BBE;&#x8BE5;&#x8FDB;&#x7A0B;&#x4F9D;&#x6B21;&#x8BBF;&#x95EE;&#x865A;&#x62DF;&#x5730;&#x5740;&#xFF1A;0x000,0x100,0x200,&#x2026;.,0x900&#xFF0C;&#x90A3;&#x4E48;&#x5176;&#x5C31;&#x662F;&#x4EE5;&#x6B64;&#x8BBF;&#x95EE;&#x7B2C; 1 &#x9875; &#xFF5E; &#x7B2C; 10 &#x9875;&#x7684;&#x7B2C; 1 &#x4E2A;&#x5B57;&#x8282;&#x3002;
+假设该进程依次访问虚拟地址：0x000,0x100,0x200,….,0x900，那么其就是以此访问第 1 页 ～ 第 10 页的第 1 个字节。
 </p>
 
 <p>
-&#x518D;&#x5047;&#x8BBE;&#x865A;&#x62DF;&#x9875;&#x9762; 3 &#x5BF9;&#x5E94;&#x7684;&#x5185;&#x5BB9;&#x5E76;&#x6CA1;&#x6709;&#x88AB;&#x8BFB;&#x5165;&#x5230;&#x5185;&#x5B58;&#xFF0C;&#x800C;&#x662F;&#x9700;&#x8981;&#x4ECE;&#x786C;&#x76D8;&#x8BFB;&#x53D6;&#xFF0C;&#x800C;&#x5176;&#x4ED6;&#x9875;&#x9762;&#x90FD;&#x9A7B;&#x7559;&#x5728;&#x4E86;&#x5185;&#x5B58;&#xFF0C;&#x90A3;&#x4E48;&#x5176; PMiss &#x5C31;&#x662F; 0.1&#xFF08;10 &#x6B21;&#x4E2D;&#x6709; 1 &#x6B21; miss&#xFF09;&#x3002;
+再假设虚拟页面 3 对应的内容并没有被读入到内存，而是需要从硬盘读取，而其他页面都驻留在了内存，那么其 PMiss 就是 0.1（10 次中有 1 次 miss）。
 </p>
 
 <p>
-&#x5047;&#x8BBE;&#x8BBF;&#x95EE;&#x4E00;&#x6B21;&#x5185;&#x5B58;&#x7684;&#x65F6;&#x95F4;&#x662F; 100 ns&#xFF0C;&#x8BBF;&#x95EE;&#x4E00;&#x6B21;&#x786C;&#x76D8;&#x7684;&#x65F6;&#x95F4;&#x662F; 10 ms&#xFF0C;&#x90A3;&#x4E48;&#x53EF;&#x4EE5;&#x8BA1;&#x7B97;&#x51FA;&#x5176; AMAT &#x503C;&#x4E3A; 1.0001 ms&#x3002;
+假设访问一次内存的时间是 100 ns，访问一次硬盘的时间是 10 ms，那么可以计算出其 AMAT 值为 1.0001 ms。
 </p>
 
 <p>
-&#x53EF;&#x4EE5;&#x770B;&#x5230;&#x867D;&#x7136;&#x4EC5;&#x6709; 10 % &#x7684; page cache miss&#xFF0C;&#x4F46;&#x5176;&#x4F1A;&#x6781;&#x5927;&#x7684;&#x5F71;&#x54CD;&#x5185;&#x5B58;&#x5E73;&#x5747;&#x8BBF;&#x95EE;&#x65F6;&#x95F4;&#x3002;
+可以看到虽然仅有 10 % 的 page cache miss，但其会极大的影响内存平均访问时间。
 </p>
 
 <p>
-&#x5047;&#x8BBE; PMiss &#x662F; 0.001 &#xFF0C;&#x90A3;&#x4E48;&#x6700;&#x7EC8;&#x7684; AMAT &#x503C;&#x4E3A; 10.1 us&#xFF0C;&#x76F8;&#x6BD4;&#x524D;&#x9762;&#x65F6;&#x95F4;&#x4E5F;&#x51CF;&#x5C11;&#x4E86; 100 &#x500D;&#x3002;
+假设 PMiss 是 0.001 ，那么最终的 AMAT 值为 10.1 us，相比前面时间也减少了 100 倍。
 </p>
 
 <p>
-&#x6240;&#x4EE5;&#x8981;&#x5C3D;&#x91CF;&#x7684;&#x964D;&#x4F4E; PMiss&#xFF0C;&#x56E0;&#x4E3A;&#x5B83;&#x4F1A;&#x5185;&#x5B58;&#x5E73;&#x5747;&#x8BBF;&#x95EE;&#x65F6;&#x95F4;&#x5F71;&#x54CD;&#x663E;&#x8457;&#xFF0C;&#x8FD9;&#x4E2A;&#x5C31;&#x662F;&#x7F6E;&#x6362;&#x7B56;&#x7565;&#x9700;&#x8981;&#x8003;&#x8651;&#x7684;&#x4E8B;&#x4E86;&#x3002;
+所以要尽量的降低 PMiss，因为它会内存平均访问时间影响显著，这个就是置换策略需要考虑的事了。
 </p>
 </div>
 </div>
-<div id="outline-container-org5186a90" class="outline-2">
-<h2 id="org5186a90">&#x6700;&#x4F73;&#x7406;&#x60F3;&#x7F6E;&#x6362;&#x7B56;&#x7565;</h2>
-<div class="outline-text-2" id="text-org5186a90">
+<div id="outline-container-org9d79853" class="outline-2">
+<h2 id="org9d79853">最佳理想置换策略</h2>
+<div class="outline-text-2" id="text-org9d79853">
 <p>
-&#x65E2;&#x7136;&#x662F;&#x7406;&#x60F3;&#x7F6E;&#x6362;&#x7B56;&#x7565;&#xFF0C;&#x4E5F;&#x5C31;&#x662F;&#x8BF4;&#x8FD9;&#x4E2A;&#x7B56;&#x7565;&#x53EF;&#x4EE5;&#x8FBE;&#x5230;&#x6700;&#x5C0F;&#x7684; page cache miss&#xFF1A;&#x66FF;&#x6362;&#x6389;&#x5C06;&#x6765;&#x6700;&#x5C11;&#x4F7F;&#x7528;&#x7684;&#x5185;&#x5B58;&#x9875;&#x9762;&#x3002;
+既然是理想置换策略，也就是说这个策略可以达到最小的 page cache miss：替换掉将来最少使用的内存页面。
 </p>
 
 <p>
-&#x5047;&#x8BBE; page cache &#x53EF;&#x5B58; 3 &#x4E2A;&#x9875;&#x9762;&#xFF0C;&#x6B64;&#x7B56;&#x7565;&#x6267;&#x884C;&#x903B;&#x8F91;&#x5982;&#x4E0B;&#x8868;&#xFF1A;
+假设 page cache 可存 3 个页面，此策略执行逻辑如下表：
 </p>
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
@@ -379,45 +379,45 @@
 </colgroup>
 <thead>
 <tr>
-<th scope="col" class="org-right">&#x8BBF;&#x95EE;&#x7684;&#x9875;&#x9762;</th>
-<th scope="col" class="org-left">&#x662F;&#x5426;&#x547D;&#x4E2D;</th>
-<th scope="col" class="org-right">&#x7F6E;&#x6362;</th>
-<th scope="col" class="org-left">&#x5F53;&#x524D;&#x7684; page cache</th>
+<th scope="col" class="org-right">访问的页面</th>
+<th scope="col" class="org-left">是否命中</th>
+<th scope="col" class="org-right">置换</th>
+<th scope="col" class="org-left">当前的 page cache</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td class="org-right">0</td>
 <td class="org-left">miss</td>
-<td class="org-right">&#xA0;</td>
+<td class="org-right"> </td>
 <td class="org-left">0</td>
 </tr>
 
 <tr>
 <td class="org-right">1</td>
 <td class="org-left">miss</td>
-<td class="org-right">&#xA0;</td>
+<td class="org-right"> </td>
 <td class="org-left">0,1</td>
 </tr>
 
 <tr>
 <td class="org-right">2</td>
 <td class="org-left">miss</td>
-<td class="org-right">&#xA0;</td>
+<td class="org-right"> </td>
 <td class="org-left">0,1,2</td>
 </tr>
 
 <tr>
 <td class="org-right">0</td>
 <td class="org-left">hit</td>
-<td class="org-right">&#xA0;</td>
+<td class="org-right"> </td>
 <td class="org-left">0,1,2</td>
 </tr>
 
 <tr>
 <td class="org-right">1</td>
 <td class="org-left">hit</td>
-<td class="org-right">&#xA0;</td>
+<td class="org-right"> </td>
 <td class="org-left">0,1,2</td>
 </tr>
 
@@ -431,21 +431,21 @@
 <tr>
 <td class="org-right">0</td>
 <td class="org-left">hit</td>
-<td class="org-right">&#xA0;</td>
+<td class="org-right"> </td>
 <td class="org-left">0,1,3</td>
 </tr>
 
 <tr>
 <td class="org-right">3</td>
 <td class="org-left">hit</td>
-<td class="org-right">&#xA0;</td>
+<td class="org-right"> </td>
 <td class="org-left">0,1,3</td>
 </tr>
 
 <tr>
 <td class="org-right">1</td>
 <td class="org-left">hit</td>
-<td class="org-right">&#xA0;</td>
+<td class="org-right"> </td>
 <td class="org-left">0,1,3</td>
 </tr>
 
@@ -459,35 +459,35 @@
 <tr>
 <td class="org-right">1</td>
 <td class="org-left">hit</td>
-<td class="org-right">&#xA0;</td>
+<td class="org-right"> </td>
 <td class="org-left">0,1,2</td>
 </tr>
 </tbody>
 </table>
 
 <p>
-&#x5982;&#x4E0A;&#x6807;&#x6240;&#x793A;&#xFF1A;
+如上标所示：
 </p>
 <ul class="org-ul">
-<li>&#x521A;&#x5F00;&#x59CB;&#x7531;&#x4E8E;&#x5185;&#x5B58;&#x4E2D;&#x5E76;&#x6CA1;&#x6709;&#x9A7B;&#x7559;&#x5BF9;&#x5E94;&#x7684; page cache&#xFF0C;&#x6240;&#x4EE5;&#x524D; 3 &#x6B21;&#x90FD;&#x4F1A;&#x9020;&#x6210; page cache miss</li>
-<li>&#x7136;&#x540E;&#x518D;&#x6B21;&#x8BBF;&#x95EE; 0,1 &#x9875;&#x9762;&#x540E;&#xFF0C;&#x9884;&#x6D4B;&#x63A5;&#x4E0B;&#x6765;&#x8BBF;&#x95EE;&#x9875;&#x9762; 2, &#x4F46;&#x5B9E;&#x9645;&#x4E0A;&#x8BBF;&#x95EE;&#x9875;&#x9762; 3&#xFF0C;&#x6240;&#x4EE5;&#x7F6E;&#x6362;&#x51FA;&#x9875;&#x9762; 2</li>
-<li>&#x518D;&#x6765;&#x5230;&#x4E0B;&#x4E00;&#x6B21;&#x8BBF;&#x95EE;&#x9875;&#x9762; 2,&#x9884;&#x6D4B;&#x63A5;&#x4E0B;&#x6765;&#x8BBF;&#x95EE;&#x9875;&#x9762; 3, &#x4F46;&#x5B9E;&#x9645;&#x4E0A;&#x8BBF;&#x95EE;&#x9875;&#x9762; 2&#xFF0C;&#x6240;&#x4EE5;&#x7F6E;&#x6362;&#x51FA;&#x9875;&#x9762; 3</li>
+<li>刚开始由于内存中并没有驻留对应的 page cache，所以前 3 次都会造成 page cache miss</li>
+<li>然后再次访问 0,1 页面后，预测接下来访问页面 2, 但实际上访问页面 3，所以置换出页面 2</li>
+<li>再来到下一次访问页面 2,预测接下来访问页面 3, 但实际上访问页面 2，所以置换出页面 3</li>
 </ul>
 
 <p>
-&#x4E0A;&#x9762;&#x8FD9;&#x4E2A;&#x7406;&#x60F3;&#x7B56;&#x7565;&#x7684;&#x96BE;&#x70B9;&#x5C31;&#x5728;&#x4E8E;&#x5982;&#x679C;&#x5B9E;&#x73B0;&#x9884;&#x6D4B;&#x63A5;&#x4E0B;&#x6765;&#x4F1A;&#x8BBF;&#x95EE;&#x54EA;&#x4E2A;&#x9875;&#x9762;&#x3002;
+上面这个理想策略的难点就在于如果实现预测接下来会访问哪个页面。
 </p>
 </div>
 </div>
-<div id="outline-container-orgc6e777f" class="outline-2">
-<h2 id="orgc6e777f">&#x7B80;&#x6613;&#x7B56;&#x7565;&#xFF1A;FIFO</h2>
-<div class="outline-text-2" id="text-orgc6e777f">
+<div id="outline-container-org10c8de8" class="outline-2">
+<h2 id="org10c8de8">简易策略：FIFO</h2>
+<div class="outline-text-2" id="text-org10c8de8">
 <p>
-FIFO &#x7B56;&#x7565;&#x5C31;&#x662F;&#x5C06;&#x6700;&#x5148;&#x8FDB;&#x5165;&#x961F;&#x5217;&#x7684;&#x9875;&#x9762;&#x7F6E;&#x6362;&#x51FA;&#x53BB;&#x3002;
+FIFO 策略就是将最先进入队列的页面置换出去。
 </p>
 
 <p>
-&#x8FD8;&#x662F;&#x57FA;&#x4E8E;&#x4E0A;&#x9762;&#x7684;&#x5047;&#x8BBE;&#xFF0C;&#x4F7F;&#x7528; FIFO &#x7B56;&#x7565;&#x7684;&#x7F6E;&#x6362;&#x903B;&#x8F91;&#x5982;&#x4E0B;&#x8868;&#xFF1A;
+还是基于上面的假设，使用 FIFO 策略的置换逻辑如下表：
 </p>
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
@@ -503,45 +503,45 @@ FIFO &#x7B56;&#x7565;&#x5C31;&#x662F;&#x5C06;&#x6700;&#x5148;&#x8FDB;&#x5165;&#x
 </colgroup>
 <thead>
 <tr>
-<th scope="col" class="org-right">&#x8BBF;&#x95EE;&#x7684;&#x9875;&#x9762;</th>
-<th scope="col" class="org-left">&#x662F;&#x5426;&#x547D;&#x4E2D;</th>
-<th scope="col" class="org-right">&#x7F6E;&#x6362;</th>
-<th scope="col" class="org-left">&#x5F53;&#x524D;&#x7684; page cache</th>
+<th scope="col" class="org-right">访问的页面</th>
+<th scope="col" class="org-left">是否命中</th>
+<th scope="col" class="org-right">置换</th>
+<th scope="col" class="org-left">当前的 page cache</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td class="org-right">0</td>
 <td class="org-left">miss</td>
-<td class="org-right">&#xA0;</td>
+<td class="org-right"> </td>
 <td class="org-left">0</td>
 </tr>
 
 <tr>
 <td class="org-right">1</td>
 <td class="org-left">miss</td>
-<td class="org-right">&#xA0;</td>
+<td class="org-right"> </td>
 <td class="org-left">0,1</td>
 </tr>
 
 <tr>
 <td class="org-right">2</td>
 <td class="org-left">miss</td>
-<td class="org-right">&#xA0;</td>
+<td class="org-right"> </td>
 <td class="org-left">0,1,2</td>
 </tr>
 
 <tr>
 <td class="org-right">0</td>
 <td class="org-left">hit</td>
-<td class="org-right">&#xA0;</td>
+<td class="org-right"> </td>
 <td class="org-left">0,1,2</td>
 </tr>
 
 <tr>
 <td class="org-right">1</td>
 <td class="org-left">hit</td>
-<td class="org-right">&#xA0;</td>
+<td class="org-right"> </td>
 <td class="org-left">0,1,2</td>
 </tr>
 
@@ -562,7 +562,7 @@ FIFO &#x7B56;&#x7565;&#x5C31;&#x662F;&#x5C06;&#x6700;&#x5148;&#x8FDB;&#x5165;&#x
 <tr>
 <td class="org-right">3</td>
 <td class="org-left">hit</td>
-<td class="org-right">&#xA0;</td>
+<td class="org-right"> </td>
 <td class="org-left">2,3,0</td>
 </tr>
 
@@ -583,45 +583,45 @@ FIFO &#x7B56;&#x7565;&#x5C31;&#x662F;&#x5C06;&#x6700;&#x5148;&#x8FDB;&#x5165;&#x
 <tr>
 <td class="org-right">1</td>
 <td class="org-left">hit</td>
-<td class="org-right">&#xA0;</td>
+<td class="org-right"> </td>
 <td class="org-left">0,1,2</td>
 </tr>
 </tbody>
 </table>
 
 <p>
-&#x53EF;&#x4EE5;&#x770B;&#x5230; FIFO &#x7B56;&#x7565;&#x6BD4;&#x7406;&#x60F3;&#x7B56;&#x7565;&#x591A;&#x4E86;&#x4E24;&#x6B21; miss&#xFF0C;&#x4F46;&#x662F;&#x5176;&#x7B97;&#x6CD5;&#x5B9E;&#x73B0;&#x8D77;&#x6765;&#x5F88;&#x7B80;&#x5355;&#x3002;
+可以看到 FIFO 策略比理想策略多了两次 miss，但是其算法实现起来很简单。
 </p>
 </div>
 </div>
-<div id="outline-container-orgbd2c9ba" class="outline-2">
-<h2 id="orgbd2c9ba">&#x53E6;&#x4E00;&#x4E2A;&#x7B80;&#x6613;&#x7B56;&#x7565;&#xFF1A;&#x968F;&#x673A;&#x5316;</h2>
-<div class="outline-text-2" id="text-orgbd2c9ba">
+<div id="outline-container-org6541ef3" class="outline-2">
+<h2 id="org6541ef3">另一个简易策略：随机化</h2>
+<div class="outline-text-2" id="text-org6541ef3">
 <p>
-&#x968F;&#x673A;&#x5316;&#x7B56;&#x7565;&#x5C31;&#x662F;&#x968F;&#x673A;&#x7684;&#x53D6;&#x51FA;&#x4E00;&#x4E2A;&#x9875;&#x9762;&#x7F6E;&#x6362;&#x51FA;&#x53BB;&#x3002;
-</p>
-
-<p>
-&#x5176;&#x5B9E;&#x73B0;&#x65B9;&#x5F0F;&#x4E5F;&#x6BD4;&#x8F83;&#x7B80;&#x5355;&#xFF0C;&#x4F46;&#x662F;&#x5176;&#x6548;&#x679C;&#x4E5F;&#x662F;&#x968F;&#x673A;&#x7684;&#x3002;
-</p>
-</div>
-</div>
-<div id="outline-container-orgef243fa" class="outline-2">
-<h2 id="orgef243fa">&#x4F7F;&#x7528;&#x5386;&#x53F2;&#x7684;&#x7B56;&#x7565;&#xFF1A;LRU</h2>
-<div class="outline-text-2" id="text-orgef243fa">
-<p>
-LRU &#x7B56;&#x7565;&#x7684;&#x6838;&#x5FC3;&#x5728;&#x4E8E;&#x5176;&#x5047;&#x8BBE;&#xFF1A;&#x5982;&#x679C;&#x4E00;&#x4E2A;&#x9875;&#x9762;&#x6700;&#x8FD1;&#x8BBF;&#x95EE;&#x4E86;&#xFF0C;&#x90A3;&#x4E48;&#x5B83;&#x65E2;&#x6709;&#x53EF;&#x80FD;&#x5C06;&#x6765;&#x8FD8;&#x4F1A;&#x88AB;&#x8BBF;&#x95EE;&#x5230;&#xFF0C;&#x8FD9;&#x548C;&#x65F6;&#x95F4;&#x5C40;&#x90E8;&#x6027;&#x539F;&#x7406;&#x4E00;&#x6837;&#x3002;
+随机化策略就是随机的取出一个页面置换出去。
 </p>
 
 <p>
-LRU &#x901A;&#x8FC7;&#x8BB0;&#x5F55;&#x4E00;&#x4E2A;&#x9875;&#x9762;&#x7684;&#x8BBF;&#x95EE;&#x987A;&#x5E8F;&#xFF0C;&#x6765;&#x9009;&#x62E9;&#x51FA;&#x6700;&#x8FD1;&#x6700;&#x5C11;&#x4F7F;&#x7528;&#xFF08;Least-Recently-Used,LRU&#xFF09;&#x7684;&#x9875;&#x9762;&#x7F6E;&#x6362;&#x51FA;&#x53BB;&#x3002;
+其实现方式也比较简单，但是其效果也是随机的。
+</p>
+</div>
+</div>
+<div id="outline-container-orgce6dca0" class="outline-2">
+<h2 id="orgce6dca0">使用历史的策略：LRU</h2>
+<div class="outline-text-2" id="text-orgce6dca0">
+<p>
+LRU 策略的核心在于其假设：如果一个页面最近访问了，那么它既有可能将来还会被访问到，这和时间局部性原理一样。
+</p>
+
+<p>
+LRU 通过记录一个页面的访问顺序，来选择出最近最少使用（Least-Recently-Used,LRU）的页面置换出去。
 </p>
 <ul class="org-ul">
-<li>&#x5BF9;&#x5E94;&#x7684;&#x8FD8;&#x6709; LFU &#x901A;&#x8FC7;&#x8BB0;&#x5F55;&#x9875;&#x9762;&#x7684;&#x8BBF;&#x95EE;&#x9891;&#x7387;&#xFF0C;&#x6765;&#x9009;&#x62E9;&#x51FA;&#x6700;&#x8FD1;&#x4F7F;&#x7528;&#x9891;&#x7387;&#x6700;&#x5C11;&#xFF08;Least-Frequently-Used,LFU&#xFF09;&#x7684;&#x9875;&#x9762;&#x7F6E;&#x6362;&#x51FA;&#x53BB;&#x3002;</li>
+<li>对应的还有 LFU 通过记录页面的访问频率，来选择出最近使用频率最少（Least-Frequently-Used,LFU）的页面置换出去。</li>
 </ul>
 
 <p>
-&#x4F7F;&#x7528; LRU &#x540E;&#x7684;&#x7F6E;&#x6362;&#x903B;&#x8F91;&#x5982;&#x4E0B;&#x8868;&#xFF1A;
+使用 LRU 后的置换逻辑如下表：
 </p>
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
@@ -637,45 +637,45 @@ LRU &#x901A;&#x8FC7;&#x8BB0;&#x5F55;&#x4E00;&#x4E2A;&#x9875;&#x9762;&#x7684;&#x8
 </colgroup>
 <thead>
 <tr>
-<th scope="col" class="org-right">&#x8BBF;&#x95EE;&#x7684;&#x9875;&#x9762;</th>
-<th scope="col" class="org-left">&#x662F;&#x5426;&#x547D;&#x4E2D;</th>
-<th scope="col" class="org-right">&#x7F6E;&#x6362;</th>
-<th scope="col" class="org-left">&#x5F53;&#x524D;&#x7684; page cache</th>
+<th scope="col" class="org-right">访问的页面</th>
+<th scope="col" class="org-left">是否命中</th>
+<th scope="col" class="org-right">置换</th>
+<th scope="col" class="org-left">当前的 page cache</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td class="org-right">0</td>
 <td class="org-left">miss</td>
-<td class="org-right">&#xA0;</td>
+<td class="org-right"> </td>
 <td class="org-left">0</td>
 </tr>
 
 <tr>
 <td class="org-right">1</td>
 <td class="org-left">miss</td>
-<td class="org-right">&#xA0;</td>
+<td class="org-right"> </td>
 <td class="org-left">0,1</td>
 </tr>
 
 <tr>
 <td class="org-right">2</td>
 <td class="org-left">miss</td>
-<td class="org-right">&#xA0;</td>
+<td class="org-right"> </td>
 <td class="org-left">0,1,2</td>
 </tr>
 
 <tr>
 <td class="org-right">0</td>
 <td class="org-left">hit</td>
-<td class="org-right">&#xA0;</td>
+<td class="org-right"> </td>
 <td class="org-left">1,2,0</td>
 </tr>
 
 <tr>
 <td class="org-right">1</td>
 <td class="org-left">hit</td>
-<td class="org-right">&#xA0;</td>
+<td class="org-right"> </td>
 <td class="org-left">2,0,1</td>
 </tr>
 
@@ -689,21 +689,21 @@ LRU &#x901A;&#x8FC7;&#x8BB0;&#x5F55;&#x4E00;&#x4E2A;&#x9875;&#x9762;&#x7684;&#x8
 <tr>
 <td class="org-right">0</td>
 <td class="org-left">hit</td>
-<td class="org-right">&#xA0;</td>
+<td class="org-right"> </td>
 <td class="org-left">1,3,0</td>
 </tr>
 
 <tr>
 <td class="org-right">3</td>
 <td class="org-left">hit</td>
-<td class="org-right">&#xA0;</td>
+<td class="org-right"> </td>
 <td class="org-left">1,0,3</td>
 </tr>
 
 <tr>
 <td class="org-right">1</td>
 <td class="org-left">hit</td>
-<td class="org-right">&#xA0;</td>
+<td class="org-right"> </td>
 <td class="org-left">0,3,1</td>
 </tr>
 
@@ -717,157 +717,157 @@ LRU &#x901A;&#x8FC7;&#x8BB0;&#x5F55;&#x4E00;&#x4E2A;&#x9875;&#x9762;&#x7684;&#x8
 <tr>
 <td class="org-right">1</td>
 <td class="org-left">hit</td>
-<td class="org-right">&#xA0;</td>
+<td class="org-right"> </td>
 <td class="org-left">3,2,1</td>
 </tr>
 </tbody>
 </table>
 
 <p>
-&#x53EF;&#x4EE5;&#x770B;&#x5230;&#xFF0C;LRU &#x7B56;&#x7565;&#x7684;&#x6548;&#x679C;&#x5728;&#x8FD9;&#x4E2A;&#x4F8B;&#x5B50;&#x4E2D;&#x5DF2;&#x7ECF;&#x548C;&#x7406;&#x60F3;&#x7B56;&#x7565;&#x4E00;&#x81F4;&#x4E86;&#xFF0C;&#x771F;&#x662F;&#x4F18;&#x79C0;&#xFF01;
+可以看到，LRU 策略的效果在这个例子中已经和理想策略一致了，真是优秀！
 </p>
 </div>
 </div>
-<div id="outline-container-org59b8b7c" class="outline-2">
-<h2 id="org59b8b7c">&#x591A;&#x7B56;&#x7565;&#x6BD4;&#x8F83;</h2>
-<div class="outline-text-2" id="text-org59b8b7c">
+<div id="outline-container-orgf0c1aae" class="outline-2">
+<h2 id="orgf0c1aae">多策略比较</h2>
+<div class="outline-text-2" id="text-orgf0c1aae">
 </div>
-<div id="outline-container-org3195f08" class="outline-3">
-<h3 id="org3195f08">&#x968F;&#x673A;&#x8BBF;&#x95EE;</h3>
-<div class="outline-text-3" id="text-org3195f08">
+<div id="outline-container-orgafc1c27" class="outline-3">
+<h3 id="orgafc1c27">随机访问</h3>
+<div class="outline-text-3" id="text-orgafc1c27">
 <p>
-&#x5047;&#x8BBE;&#x968F;&#x673A;&#x7684;&#x8BBF;&#x95EE; 100 &#x4E2A;&#x9875;&#x9762;&#xFF0C;&#x4E00;&#x5171;&#x8BBF;&#x95EE; 10000 &#x6B21;&#xFF0C;&#x800C; page cache &#x7684;&#x5927;&#x5C0F;&#x4ECE; 1 &#x5230; 100,&#x90A3;&#x4E48;&#x6D4B;&#x8BD5;&#x7ED3;&#x679C;&#x5982;&#x4E0B;&#xFF1A;
+假设随机的访问 100 个页面，一共访问 10000 次，而 page cache 的大小从 1 到 100,那么测试结果如下：
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/swap/policy_cmp.jpg?raw=true" alt="mempic/swap/policy_cmp.jpg">
 <p>
-&#x53EF;&#x4EE5;&#x770B;&#x5230;&#xFF0C;&#x5728;&#x968F;&#x673A;&#x8BBF;&#x95EE;&#x9875;&#x9762;&#x7684;&#x60C5;&#x51B5;&#x4E0B;&#xFF1A;
+可以看到，在随机访问页面的情况下：
 </p>
 <ul class="org-ul">
-<li>&#x5404;&#x79CD;&#x7B56;&#x7565;&#x7684; cache hit &#x6548;&#x7387;&#x90FD;&#x51E0;&#x4E4E;&#x4E00;&#x81F4;&#xFF0C;&#x53EA;&#x4E0E; page cache &#x7684;&#x5927;&#x5C0F;&#x76F8;&#x5173;</li>
-<li>&#x5F53; page cache &#x5927;&#x5C0F;&#x7B49;&#x4E8E;&#x8BBF;&#x95EE;&#x9875;&#x9762;&#x5927;&#x5C0F;&#x65F6;&#xFF0C;&#x5176;&#x6548;&#x7387;&#x4FBF;&#x4E0E;&#x7406;&#x8BBA;&#x6548;&#x7387;&#x4E00;&#x81F4;&#x4E86;</li>
+<li>各种策略的 cache hit 效率都几乎一致，只与 page cache 的大小相关</li>
+<li>当 page cache 大小等于访问页面大小时，其效率便与理论效率一致了</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-orgb097bbb" class="outline-3">
-<h3 id="orgb097bbb">&#x6709;&#x89C4;&#x5F8B;&#x7684;&#x8BBF;&#x95EE;</h3>
-<div class="outline-text-3" id="text-orgb097bbb">
+<div id="outline-container-org888bf2c" class="outline-3">
+<h3 id="org888bf2c">有规律的访问</h3>
+<div class="outline-text-3" id="text-org888bf2c">
 <p>
-&#x4E0B;&#x9762;&#x5047;&#x8BBE; 80% &#x7684;&#x8BBF;&#x95EE;&#x90FD;&#x805A;&#x96C6;&#x5728; 20% &#x7684;&#x9875;&#x9762;&#xFF0C;&#x800C; 20% &#x7684;&#x8BBF;&#x95EE;&#x90FD;&#x5206;&#x6563;&#x5728; 80% &#x7684;&#x9875;&#x9762;&#xFF0C;&#x6D4B;&#x8BD5;&#x7ED3;&#x679C;&#x5982;&#x4E0B;&#xFF1A;
+下面假设 80% 的访问都聚集在 20% 的页面，而 20% 的访问都分散在 80% 的页面，测试结果如下：
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/swap/policy_cmp2.jpg?raw=true" alt="mempic/swap/policy_cmp2.jpg">
 <p>
-&#x53EF;&#x4EE5;&#x770B;&#x5230;&#xFF0C;&#x5728;&#x6709;&#x89C4;&#x5F8B;&#x7684;&#x8BBF;&#x95EE;&#x9875;&#x9762;&#x7684;&#x60C5;&#x51B5;&#x4E0B;&#xFF1A;
+可以看到，在有规律的访问页面的情况下：
 </p>
 <ul class="org-ul">
-<li>FIFO &#x548C;&#x968F;&#x673A;&#x7B56;&#x7565;&#x7684;&#x6548;&#x7387;&#x5DEE;&#x4E0D;&#x591A;&#xFF0C;&#x800C; LRU &#x6548;&#x679C;&#x786E;&#x5B9E;&#x9AD8;&#x4E8E;&#x524D;&#x9762;&#x4E24;&#x8005;</li>
-<li>&#x53EA;&#x6709;&#x5728; page cache &#x5927;&#x5C0F;&#x8FBE;&#x5230;&#x4E00;&#x5B9A;&#x6570;&#x91CF;&#x65F6;&#xFF0C;LRU &#x7B56;&#x7565;&#x624D;&#x6709;&#x660E;&#x663E;&#x4F18;&#x52BF;&#x3002;</li>
+<li>FIFO 和随机策略的效率差不多，而 LRU 效果确实高于前面两者</li>
+<li>只有在 page cache 大小达到一定数量时，LRU 策略才有明显优势。</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-org551773c" class="outline-3">
-<h3 id="org551773c">&#x5FAA;&#x73AF;&#x8BBF;&#x95EE;</h3>
-<div class="outline-text-3" id="text-org551773c">
+<div id="outline-container-org6ed705c" class="outline-3">
+<h3 id="org6ed705c">循环访问</h3>
+<div class="outline-text-3" id="text-org6ed705c">
 <p>
-&#x5047;&#x8BBE;&#x6211;&#x4EEC;&#x5148;&#x603B;&#x5171;&#x53EA;&#x8BBF;&#x95EE; 50 &#x4E2A;&#x9875;&#x9762;&#xFF0C;&#x4F46;&#x662F;&#x662F;&#x4F9D;&#x6B21;&#x4ECE; 0 &#xFF5E; 49 &#x8FD9;&#x6837;&#x987A;&#x5E8F;&#x8BBF;&#x95EE;&#xFF0C;&#x4E00;&#x5171;&#x8BBF;&#x95EE; 10000 &#x6B21;&#xFF0C;&#x968F;&#x7740; pagecache &#x7684;&#x589E;&#x5927;&#xFF0C;&#x5176;&#x66F2;&#x7EBF;&#x5982;&#x4E0B;&#xFF1A;
+假设我们先总共只访问 50 个页面，但是是依次从 0 ～ 49 这样顺序访问，一共访问 10000 次，随着 pagecache 的增大，其曲线如下：
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/swap/policy_cmp3.jpg?raw=true" alt="mempic/swap/policy_cmp3.jpg">
 <p>
-&#x53EF;&#x4EE5;&#x770B;&#x5230;&#xFF1A;
+可以看到：
 </p>
 <ul class="org-ul">
-<li>&#x5728; pagecache &#x9875;&#x9762;&#x5C0F;&#x4E8E; 50 &#x65F6;&#x7684;&#x987A;&#x5E8F;&#x8BBF;&#x95EE;&#xFF0C;LRU &#x548C; FIFO &#x7B56;&#x7565;&#x7684;&#x6548;&#x7387;&#x90FD;&#x4E3A; 0&#xFF0C;&#x800C;&#x968F;&#x673A;&#x7B56;&#x7565;&#x968F;&#x7740; pagecache &#x589E;&#x5927;&#x800C;&#x589E;&#x5927;</li>
-<li>&#x5F53; pagecache &#x9875;&#x9762;&#x5927;&#x4E8E;&#x6216;&#x7B49;&#x4E8E; 50 &#x65F6;&#xFF0C;&#x7531;&#x4E8E; pagecace &#x9875;&#x9762;&#x53EF;&#x4EE5;&#x88C5;&#x4E0B;&#x6240;&#x6709;&#x9875;&#x9762;&#xFF0C;&#x6240;&#x4EE5;&#x6548;&#x7387;&#x5230;&#x4E86; 100%</li>
-<li>&#x7531;&#x4E8E;&#x987A;&#x5E8F;&#x6267;&#x884C;&#xFF0C;&#x5176;&#x9884;&#x6D4B;&#x4E0E;&#x5B9E;&#x9645;&#x4E00;&#x81F4;&#xFF0C;&#x6240;&#x4EE5;&#x7406;&#x8BBA;&#x6548;&#x7387;&#x968F;&#x7740; pagecache &#x589E;&#x52A0;&#x800C;&#x7EBF;&#x6027;&#x589E;&#x52A0;&#x3002;</li>
+<li>在 pagecache 页面小于 50 时的顺序访问，LRU 和 FIFO 策略的效率都为 0，而随机策略随着 pagecache 增大而增大</li>
+<li>当 pagecache 页面大于或等于 50 时，由于 pagecace 页面可以装下所有页面，所以效率到了 100%</li>
+<li>由于顺序执行，其预测与实际一致，所以理论效率随着 pagecache 增加而线性增加。</li>
 </ul>
 
 <p>
-&#x8FD9;&#x4E9B;&#x6D4B;&#x8BD5;&#x7ED3;&#x679C;&#x4E5F;&#x8BF4;&#x660E;&#x4E86;&#xFF1A;&#x4E0D;&#x662F;&#x5728;&#x4EFB;&#x4F55;&#x60C5;&#x51B5;&#x4E0B;&#xFF0C;LRU &#x90FD;&#x662F;&#x6700;&#x4F18;&#x7B56;&#x7565;&#x3002;
+这些测试结果也说明了：不是在任何情况下，LRU 都是最优策略。
 </p>
 </div>
 </div>
 </div>
-<div id="outline-container-org6ec07eb" class="outline-2">
-<h2 id="org6ec07eb">&#x5B9E;&#x73B0;&#x5386;&#x53F2;&#x7B97;&#x6CD5;</h2>
-<div class="outline-text-2" id="text-org6ec07eb">
+<div id="outline-container-org3a4e511" class="outline-2">
+<h2 id="org3a4e511">实现历史算法</h2>
+<div class="outline-text-2" id="text-org3a4e511">
 <p>
-&#x4E3A;&#x4E86;&#x5B9E;&#x73B0; LRU &#x7B97;&#x6CD5;&#xFF0C;&#x6211;&#x4EEC;&#x9700;&#x8981;&#xFF1A;
+为了实现 LRU 算法，我们需要：
 </p>
 <ul class="org-ul">
-<li>&#x5C06;&#x8BBF;&#x95EE;&#x7684;&#x9875;&#x9762;&#x653E;&#x5165;&#x4E00;&#x4E2A;&#x5217;&#x8868;&#x4E2D;&#xFF0C;&#x5F53;&#x6709;&#x7F6E;&#x6362;&#x8981;&#x6C42;&#x65F6;&#x53D6;&#x51FA;&#x5217;&#x8868;&#x5934;&#xFF0C;&#x5F53;&#x6709;&#x65B0;&#x9875;&#x9762;&#x52A0;&#x5165;&#x65F6;&#xFF0C;&#x653E;&#x5165;&#x5217;&#x8868;&#x5C3E;</li>
-<li>&#x8BB0;&#x5F55;&#x6BCF;&#x6B21;&#x5185;&#x5B58;&#x9875;&#x9762;&#x7684;&#x8BBF;&#x95EE;&#xFF0C;&#x8FD9;&#x6837;&#x624D;&#x80FD;&#x4E3A;&#x5217;&#x8868;&#x6392;&#x5E8F;
+<li>将访问的页面放入一个列表中，当有置换要求时取出列表头，当有新页面加入时，放入列表尾</li>
+<li>记录每次内存页面的访问，这样才能为列表排序
 <ul class="org-ul">
-<li>&#x8FD9;&#x6837;&#x4E00;&#x5B9A;&#x4F1A;&#x964D;&#x4F4E;&#x6027;&#x80FD;</li>
+<li>这样一定会降低性能</li>
 </ul></li>
 </ul>
 
 <p>
-&#x4E3A;&#x4E86;&#x63D0;&#x9AD8;&#x6027;&#x80FD;&#xFF0C;&#x53EF;&#x4EE5;&#x8BA9;&#x786C;&#x4EF6;&#x6765;&#x5B8C;&#x6210;&#x6BCF;&#x6B21;&#x8BBF;&#x95EE;&#x9875;&#x9762;&#x7684;&#x65F6;&#x95F4;&#x8BB0;&#x5F55;&#xFF0C;&#x6BD4;&#x5982;&#x786C;&#x4EF6;&#x53EF;&#x4EE5;&#x5237;&#x65B0;&#x8BE5;&#x9875;&#x5BF9;&#x5E94;&#x7684;&#x9875;&#x8868;&#x9879;&#x4E2D;&#x7684;&#x65F6;&#x95F4;&#x57DF;
+为了提高性能，可以让硬件来完成每次访问页面的时间记录，比如硬件可以刷新该页对应的页表项中的时间域
 </p>
 <ul class="org-ul">
-<li>&#x8FD9;&#x6837;&#x5728;&#x8FDB;&#x884C;&#x9875;&#x9762;&#x7F6E;&#x6362;&#x65F6;&#xFF0C;&#x7CFB;&#x7EDF;&#x53EF;&#x4EE5;&#x67E5;&#x627E;&#x51FA;&#x6700;&#x8FD1;&#x6700;&#x5C11;&#x4F7F;&#x7528;&#x7684;&#x9875;&#x8868;&#x9879;&#xFF0C;&#x800C;&#x7F6E;&#x6362;&#x8BE5;&#x7269;&#x7406;&#x9875;&#x9762;</li>
+<li>这样在进行页面置换时，系统可以查找出最近最少使用的页表项，而置换该物理页面</li>
 </ul>
 
 <p>
-&#x4F46;&#x662F;&#x67E5;&#x627E;&#x8FD9;&#x4E48;&#x591A;&#x9875;&#x9762;&#x6240;&#x9700;&#x8981;&#x7684; CPU &#x65F6;&#x95F4;&#x4E5F;&#x662F;&#x4E0D;&#x5BB9;&#x5FFD;&#x89C6;&#x7684;&#xFF01;
+但是查找这么多页面所需要的 CPU 时间也是不容忽视的！
 </p>
 </div>
 </div>
-<div id="outline-container-org4b4889c" class="outline-2">
-<h2 id="org4b4889c">&#x8FD1;&#x4F3C; LRU</h2>
-<div class="outline-text-2" id="text-org4b4889c">
+<div id="outline-container-orga074d72" class="outline-2">
+<h2 id="orga074d72">近似 LRU</h2>
+<div class="outline-text-2" id="text-orga074d72">
 <p>
-&#x5B9E;&#x9645;&#x4E0A;&#x7684;&#x5B9E;&#x73B0;&#x662F;&#xFF1A;&#x5728;&#x9875;&#x8868;&#x9879;&#x4E2D;&#x4F7F;&#x7528;&#x4E00;&#x4E2A;&#x4F4D;&#xFF08;use bit / reference bit&#xFF09;&#x6765;&#x8868;&#x793A;&#x8BE5;&#x9875;&#x9762;&#x662F;&#x5426;&#x88AB;&#x8BBF;&#x95EE;&#x8FC7;&#xFF0C;&#x5982;&#x679C;&#x88AB;&#x8BBF;&#x95EE;&#x5219;&#x7531;&#x786C;&#x4EF6;&#x4E3B;&#x52A8;&#x5C06;&#x6B64;&#x4F4D;&#x7F6E; 1&#x3002;
+实际上的实现是：在页表项中使用一个位（use bit / reference bit）来表示该页面是否被访问过，如果被访问则由硬件主动将此位置 1。
 </p>
 
 <p>
-&#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;&#x6709;&#x4E00;&#x4E2A;&#x6307;&#x9488;&#x6307;&#x5411;&#x4E86;&#x8BE5;&#x8FDB;&#x7A0B;&#x7684;&#x9875;&#x8868;&#x9879;&#x3002;
-&#x5728;&#x9047;&#x5230;&#x9700;&#x8981;&#x7F6E;&#x6362;&#x7684;&#x573A;&#x666F;&#x65F6;&#xFF0C;&#x5224;&#x65AD;&#x5F53;&#x524D;&#x9875;&#x8868;&#x9879;&#x7684;&#x8BBF;&#x95EE;&#x4F4D;&#x662F;&#x5426;&#x7F6E; 1,&#x5982;&#x679C;&#x4E3A; 1 &#x5219;&#x4EE3;&#x8868;&#x8BE5;&#x9875;&#x9762;&#x6700;&#x8FD1;&#x88AB;&#x4F7F;&#x7528;&#x8FC7;&#xFF0C;&#x90A3;&#x4E48;&#x5C06;&#x5176;&#x4F4D;&#x6E05;&#x96F6;&#x3002;
-&#x7136;&#x540E;&#x7EE7;&#x7EED;&#x5BFB;&#x627E;&#x4E0B;&#x4E00;&#x4E2A;&#xFF0C;&#x76F4;&#x5230;&#x627E;&#x5230;&#x8BBF;&#x95EE;&#x4F4D;&#x4E3A; 0 &#x7684;&#x9875;&#x8868;&#x9879;&#xFF0C;&#x7136;&#x540E;&#x5C06;&#x5BF9;&#x5E94;&#x7684;&#x7269;&#x7406;&#x5185;&#x5B58;&#x7F6E;&#x6362;&#x51FA;&#x53BB;&#x3002;
+操作系统有一个指针指向了该进程的页表项。
+在遇到需要置换的场景时，判断当前页表项的访问位是否置 1,如果为 1 则代表该页面最近被使用过，那么将其位清零。
+然后继续寻找下一个，直到找到访问位为 0 的页表项，然后将对应的物理内存置换出去。
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/swap/policy_cmp4.jpg?raw=true" alt="mempic/swap/policy_cmp4.jpg">
 <p>
-&#x4E0A;&#x56FE;&#x53EF;&#x4EE5;&#x770B;&#x51FA;&#x8FD9;&#x79CD;&#x8FD1;&#x4F3C; LRU &#x7B97;&#x6CD5;&#x7684;&#x6548;&#x7387;&#x63A5;&#x8FD1;&#x7406;&#x8BBA;&#x4E0A;&#x7684; LRU &#x7B97;&#x6CD5;&#x3002;
+上图可以看出这种近似 LRU 算法的效率接近理论上的 LRU 算法。
 </p>
 </div>
 </div>
-<div id="outline-container-orge16f22f" class="outline-2">
-<h2 id="orge16f22f">&#x8003;&#x8651;&#x810F;&#x9875;</h2>
-<div class="outline-text-2" id="text-orge16f22f">
+<div id="outline-container-orgd1c83ad" class="outline-2">
+<h2 id="orgd1c83ad">考虑脏页</h2>
+<div class="outline-text-2" id="text-orgd1c83ad">
 <p>
-&#x5F53;&#x8FDB;&#x884C;&#x7F6E;&#x6362;&#x65F6;&#xFF0C;&#x5982;&#x679C;&#x5F53;&#x524D;&#x7684;&#x5185;&#x5B58;&#x9875;&#x5DF2;&#x7ECF;&#x88AB;&#x5199;&#x8FC7;&#x4E86;&#xFF0C;&#x90A3;&#x4E48;&#x9700;&#x8981;&#x5C06;&#x5176;&#x5185;&#x5BB9;&#x5199;&#x56DE;&#x81F3;&#x786C;&#x76D8;&#xFF0C;&#x8FD9;&#x79CD; I/O &#x64CD;&#x4F5C;&#x6BD4;&#x8F83;&#x8017;&#x65F6;&#x3002;
-&#x5982;&#x679C;&#x9875;&#x6CA1;&#x6709;&#x88AB;&#x4FEE;&#x6539;&#x8FC7;&#xFF0C;&#x90A3;&#x4E48;&#x5E76;&#x4E0D;&#x9700;&#x8981;&#x5B9E;&#x9645;&#x7684; I/O &#x64CD;&#x4F5C;&#xFF0C;&#x8FD9;&#x79CD;&#x7F6E;&#x6362;&#x5C31;&#x76F8;&#x5BF9;&#x7701;&#x65F6;&#x5F97;&#x591A;&#x3002;
+当进行置换时，如果当前的内存页已经被写过了，那么需要将其内容写回至硬盘，这种 I/O 操作比较耗时。
+如果页没有被修改过，那么并不需要实际的 I/O 操作，这种置换就相对省时得多。
 </p>
 <ul class="org-ul">
-<li>&#x4F46;&#x5982;&#x679C;&#x4E00;&#x4E2A;&#x9875;&#x9762;&#x4E0D;&#x662F; file backend&#xFF0C;&#x5E76;&#x4E14;&#x5728;&#x4EA4;&#x6362;&#x7A7A;&#x95F4;&#x4E2D;&#x6CA1;&#x6709;&#x5907;&#x4EFD;&#xFF0C;&#x90A3;&#x4E48;&#x5373;&#x4F7F;&#x8BE5;&#x9875;&#x9762;&#x6CA1;&#x6709;&#x88AB;&#x4FEE;&#x6539;&#x8FC7;&#xFF0C;&#x4E5F;&#x4F1A;&#x5728;&#x7F6E;&#x6362;&#x8BE5;&#x9875;&#x9762;&#x65F6;&#x53D1;&#x751F; I/O &#x64CD;&#x4F5C;&#x3002;</li>
-<li>&#x5728;&#x9875;&#x8868;&#x9879;&#x4E2D;&#x5C31;&#x5177;&#x6709;&#x4E00;&#x4F4D; <code>modified bit</code> (dirty bit) &#x6765;&#x8868;&#x793A;&#x8BE5;&#x9875;&#x662F;&#x5426;&#x88AB;&#x5199;&#x8FC7;</li>
+<li>但如果一个页面不是 file backend，并且在交换空间中没有备份，那么即使该页面没有被修改过，也会在置换该页面时发生 I/O 操作。</li>
+<li>在页表项中就具有一位 <code>modified bit</code> (dirty bit) 来表示该页是否被写过</li>
 </ul>
 
 <p>
-&#x90A3;&#x4E48;&#x5BF9;&#x4E8E;&#x7F6E;&#x6362;&#x7B56;&#x7565;&#x6765;&#x8BB2;&#xFF0C;&#x5F53;&#x7136;&#x662F;&#x5728;&#x6700;&#x8FD1;&#x6700;&#x5C11;&#x4F7F;&#x7528;&#x7684;&#x9875;&#x9762;&#x4E2D;&#xFF0C;&#x9009;&#x51FA;&#x90A3;&#x4E9B;&#x6CA1;&#x6709;&#x88AB;&#x4FEE;&#x6539;&#x8FC7;&#x7684;&#x9875;&#x9762;&#x6765;&#x7F6E;&#x6362;&#xFF0C;&#x8FD9;&#x6837;&#x6548;&#x7387;&#x624D;&#x6700;&#x9AD8;&#x3002;
+那么对于置换策略来讲，当然是在最近最少使用的页面中，选出那些没有被修改过的页面来置换，这样效率才最高。
 </p>
 </div>
 </div>
-<div id="outline-container-orga8f572c" class="outline-2">
-<h2 id="orga8f572c">&#x5176;&#x4ED6;&#x7B56;&#x7565;</h2>
-<div class="outline-text-2" id="text-orga8f572c">
+<div id="outline-container-orgde86de4" class="outline-2">
+<h2 id="orgde86de4">其他策略</h2>
+<div class="outline-text-2" id="text-orgde86de4">
 <p>
-&#x76EE;&#x524D;&#x53EA;&#x8BB2;&#x5230;&#x4E86;&#x57FA;&#x672C;&#x7684;&#x4EA4;&#x6362;&#x7B56;&#x7565;&#xFF0C;&#x8FD8;&#x6709;&#x5176;&#x4ED6;&#x5F88;&#x591A;&#x65B9;&#x9762;&#x7684;&#x7B56;&#x7565;&#xFF1A;
+目前只讲到了基本的交换策略，还有其他很多方面的策略：
 </p>
 <ul class="org-ul">
-<li>&#x9875;&#x56DE;&#x8BFB;&#xFF1A;&#x7CFB;&#x7EDF;&#x5C06;&#x786C;&#x76D8;&#x4E0A;&#x7684;&#x9875;&#x9762;&#x56DE;&#x8BFB;&#x5230;&#x5185;&#x5B58;&#x7684;&#x7B56;&#x7565;
+<li>页回读：系统将硬盘上的页面回读到内存的策略
 <ul class="org-ul">
-<li>&#x6BD4;&#x5982;&#x5F53;&#x4E00;&#x4E2A;&#x9875;&#x9762;&#x88AB;&#x8BBF;&#x95EE;&#xFF0C;&#x90A3;&#x4E48;&#x7CFB;&#x7EDF;&#x4F1A;&#x9884;&#x8BFB;&#x591A;&#x4E2A;&#x9875;&#x9762;&#x4EE5;&#x63D0;&#x9AD8;&#x6548;&#x7387;</li>
+<li>比如当一个页面被访问，那么系统会预读多个页面以提高效率</li>
 </ul></li>
-<li>&#x9875;&#x56DE;&#x5199;&#xFF1A;&#x7CFB;&#x7EDF;&#x4EC0;&#x4E48;&#x65F6;&#x5019;&#x5C06;&#x88AB;&#x4FEE;&#x6539;&#x8FC7;&#x7684;&#x9875;&#x9762;&#x5199;&#x56DE;&#x786C;&#x76D8;
+<li>页回写：系统什么时候将被修改过的页面写回硬盘
 <ul class="org-ul">
-<li>&#x4E00;&#x822C;&#x662F;&#x5C06;&#x591A;&#x4E2A;&#x5199;&#x8BF7;&#x6C42;&#x5408;&#x5E76;&#x4E3A;&#x4E00;&#x4E2A;&#x8BF7;&#x6C42;&#x7136;&#x540E;&#x4E00;&#x6B21;&#x6027;&#x7684;&#x5199;&#x5165;&#x4EE5;&#x63D0;&#x9AD8;&#x6548;&#x7387;</li>
+<li>一般是将多个写请求合并为一个请求然后一次性的写入以提高效率</li>
 </ul></li>
 </ul>
 </div>
 </div>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
 </div>
 
     </div>
@@ -953,7 +953,7 @@ Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#orgf7d13e2"><span class="nav-number">1.</span> <span class="nav-text">page cache &amp;#x7BA1;&amp;#x7406;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org5186a90"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x6700;&amp;#x4F73;&amp;#x7406;&amp;#x60F3;&amp;#x7F6E;&amp;#x6362;&amp;#x7B56;&amp;#x7565;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgc6e777f"><span class="nav-number">3.</span> <span class="nav-text">&amp;#x7B80;&amp;#x6613;&amp;#x7B56;&amp;#x7565;&amp;#xFF1A;FIFO</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgbd2c9ba"><span class="nav-number">4.</span> <span class="nav-text">&amp;#x53E6;&amp;#x4E00;&amp;#x4E2A;&amp;#x7B80;&amp;#x6613;&amp;#x7B56;&amp;#x7565;&amp;#xFF1A;&amp;#x968F;&amp;#x673A;&amp;#x5316;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgef243fa"><span class="nav-number">5.</span> <span class="nav-text">&amp;#x4F7F;&amp;#x7528;&amp;#x5386;&amp;#x53F2;&amp;#x7684;&amp;#x7B56;&amp;#x7565;&amp;#xFF1A;LRU</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org59b8b7c"><span class="nav-number">6.</span> <span class="nav-text">&amp;#x591A;&amp;#x7B56;&amp;#x7565;&amp;#x6BD4;&amp;#x8F83;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org3195f08"><span class="nav-number">6.1.</span> <span class="nav-text">&amp;#x968F;&amp;#x673A;&amp;#x8BBF;&amp;#x95EE;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgb097bbb"><span class="nav-number">6.2.</span> <span class="nav-text">&amp;#x6709;&amp;#x89C4;&amp;#x5F8B;&amp;#x7684;&amp;#x8BBF;&amp;#x95EE;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org551773c"><span class="nav-number">6.3.</span> <span class="nav-text">&amp;#x5FAA;&amp;#x73AF;&amp;#x8BBF;&amp;#x95EE;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org6ec07eb"><span class="nav-number">7.</span> <span class="nav-text">&amp;#x5B9E;&amp;#x73B0;&amp;#x5386;&amp;#x53F2;&amp;#x7B97;&amp;#x6CD5;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org4b4889c"><span class="nav-number">8.</span> <span class="nav-text">&amp;#x8FD1;&amp;#x4F3C; LRU</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orge16f22f"><span class="nav-number">9.</span> <span class="nav-text">&amp;#x8003;&amp;#x8651;&amp;#x810F;&amp;#x9875;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orga8f572c"><span class="nav-number">10.</span> <span class="nav-text">&amp;#x5176;&amp;#x4ED6;&amp;#x7B56;&amp;#x7565;</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org640e7e2"><span class="nav-number">1.</span> <span class="nav-text">page cache 管理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org9d79853"><span class="nav-number">2.</span> <span class="nav-text">最佳理想置换策略</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org10c8de8"><span class="nav-number">3.</span> <span class="nav-text">简易策略：FIFO</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org6541ef3"><span class="nav-number">4.</span> <span class="nav-text">另一个简易策略：随机化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgce6dca0"><span class="nav-number">5.</span> <span class="nav-text">使用历史的策略：LRU</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgf0c1aae"><span class="nav-number">6.</span> <span class="nav-text">多策略比较</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgafc1c27"><span class="nav-number">6.1.</span> <span class="nav-text">随机访问</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org888bf2c"><span class="nav-number">6.2.</span> <span class="nav-text">有规律的访问</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org6ed705c"><span class="nav-number">6.3.</span> <span class="nav-text">循环访问</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org3a4e511"><span class="nav-number">7.</span> <span class="nav-text">实现历史算法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orga074d72"><span class="nav-number">8.</span> <span class="nav-text">近似 LRU</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgd1c83ad"><span class="nav-number">9.</span> <span class="nav-text">考虑脏页</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgde86de4"><span class="nav-number">10.</span> <span class="nav-text">其他策略</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 

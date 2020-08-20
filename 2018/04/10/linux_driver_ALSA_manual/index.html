@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="&amp;#x53C2;&amp;#x8003;&amp;#x6587;&amp;#x6863;: writing an alsa driver    &amp;#x53C2;&amp;#x8003;&amp;#x5B98;&amp;#x65B9;&amp;#x6587;&amp;#x6863;&amp;#xFF0C;&amp;#x6574;&amp;#x7406;&amp;#x9A71;&amp;#x52A8;&amp;#x7F16;&amp;#x5199;&amp;#x7EC6;&amp;#x5219;&amp;#x3002;">
+  <meta name="description" content="参考文档: writing an alsa driver    参考官方文档，整理驱动编写细则。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[What]linux -&gt; ALSA 驱动手册">
 <meta property="og:url" content="http://kcmetercec.top/2018/04/10/linux_driver_ALSA_manual/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="&amp;#x53C2;&amp;#x8003;&amp;#x6587;&amp;#x6863;: writing an alsa driver    &amp;#x53C2;&amp;#x8003;&amp;#x5B98;&amp;#x65B9;&amp;#x6587;&amp;#x6863;&amp;#xFF0C;&amp;#x6574;&amp;#x7406;&amp;#x9A71;&amp;#x52A8;&amp;#x7F16;&amp;#x5199;&amp;#x7EC6;&amp;#x5219;&amp;#x3002;">
+<meta property="og:description" content="参考文档: writing an alsa driver    参考官方文档，整理驱动编写细则。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2018-04-09T16:00:00.000Z">
 <meta property="article:modified_time" content="2020-08-01T01:09:06.588Z">
@@ -299,160 +299,160 @@
       
         <div id="content">
 <p>
-&#x53C2;&#x8003;&#x6587;&#x6863;: <code>writing an alsa driver</code>
+参考文档: <code>writing an alsa driver</code>
 </p>
 
 <p>
-&#x53C2;&#x8003;&#x5B98;&#x65B9;&#x6587;&#x6863;&#xFF0C;&#x6574;&#x7406;&#x9A71;&#x52A8;&#x7F16;&#x5199;&#x7EC6;&#x5219;&#x3002;
+参考官方文档，整理驱动编写细则。
 </p>
 
 <a id="more"></a>
 
-<div id="outline-container-orgaaaf450" class="outline-2">
-<h2 id="orgaaaf450">snd_pcm_hardware &#x586B;&#x5145;</h2>
-<div class="outline-text-2" id="text-orgaaaf450">
+<div id="outline-container-orgdcf3af6" class="outline-2">
+<h2 id="orgdcf3af6">snd_pcm_hardware 填充</h2>
+<div class="outline-text-2" id="text-orgdcf3af6">
 <p>
-&#x6B64;&#x7ED3;&#x6784;&#x4F53;&#x7684;&#x586B;&#x5145;&#x4E0E;&#x786C;&#x4EF6;&#x606F;&#x606F;&#x76F8;&#x5173;&#xFF0C;&#x9700;&#x8981;&#x4E86;&#x89E3;ALSA&#x7684;&#x6570;&#x636E;&#x53D1;&#x9001;&#x6D41;&#x7A0B;&#x3002;
+此结构体的填充与硬件息息相关，需要了解ALSA的数据发送流程。
 </p>
 </div>
 
-<div id="outline-container-org0df335b" class="outline-3">
-<h3 id="org0df335b">&#x6570;&#x636E;&#x7ED3;&#x6784;</h3>
-<div class="outline-text-3" id="text-org0df335b">
+<div id="outline-container-orge26c12e" class="outline-3">
+<h3 id="orge26c12e">数据结构</h3>
+<div class="outline-text-3" id="text-orge26c12e">
 <ul class="org-ul">
-<li>&#x9996;&#x5148;ALSA&#x7684;&#x7F13;&#x5B58;(buffer)&#x6570;&#x636E;&#x662F;&#x4E00;&#x4E2A;&#x73AF;&#x5F62;&#x961F;&#x5217;&#xFF0C;ALSA&#x5C06;&#x961F;&#x5217;&#x5206;&#x4E3A;&#x4E00;&#x4E2A;&#x4E2A;&#x5C0F;&#x6BB5;(period)</li>
-<li>&#x4E00;&#x4E2A;&#x5C0F;&#x6BB5;&#x4E2D;&#x5305;&#x542B;&#x4E86;N&#x4E2A;frame&#x6570;&#x636E;</li>
-<li>&#x4E00;&#x4E2A;frame&#x6570;&#x636E;&#x4EE3;&#x8868;&#x4E00;&#x6B21;&#x91C7;&#x6837;&#x7684;&#x503C;
+<li>首先ALSA的缓存(buffer)数据是一个环形队列，ALSA将队列分为一个个小段(period)</li>
+<li>一个小段中包含了N个frame数据</li>
+<li>一个frame数据代表一次采样的值
 <ul class="org-ul">
-<li>&#x6BD4;&#x5982;&#x4E00;&#x4E2A;16&#x4F4D;&#x53CC;&#x58F0;&#x9053;&#xFF0C;&#x90A3;&#x4E48;&#x4E00;&#x4E2A;frame&#x5C31;&#x662F; 16bit / 8 &#xD7; 2 = 4byte</li>
+<li>比如一个16位双声道，那么一个frame就是 16bit / 8 × 2 = 4byte</li>
 </ul></li>
 </ul>
 
 <p>
-<b>&#x9700;&#x8981;&#x6CE8;&#x610F;&#x7684;&#x662F;&#xFF1A;</b>
+<b>需要注意的是：</b>
 </p>
 <ol class="org-ol">
-<li>&#x4E0A;&#x5C42;&#x7F16;&#x7A0B;&#x90FD;&#x662F;&#x4EE5;&#x4E00;&#x4E2A;frame&#x4E3A;&#x5355;&#x4F4D;</li>
-<li>&#x9A71;&#x52A8;&#x63D0;&#x4F9B;&#x7684;&#x8FD9;&#x4E2A;&#x6570;&#x636E;&#x662F;&#x4E00;&#x4E2A;&#x8303;&#x56F4;&#x9650;&#x5B9A;&#xFF0C;&#x771F;&#x6B63;&#x7684;&#x5177;&#x4F53;&#x8BBE;&#x7F6E;&#x9700;&#x8981;&#x5728;&#x5E94;&#x7528;&#x5C42;&#x6307;&#x5B9A;!</li>
+<li>上层编程都是以一个frame为单位</li>
+<li>驱动提供的这个数据是一个范围限定，真正的具体设置需要在应用层指定!</li>
 </ol>
 </div>
 </div>
-<div id="outline-container-org875dcb6" class="outline-3">
-<h3 id="org875dcb6">&#x6D41;&#x7A0B;</h3>
-<div class="outline-text-3" id="text-org875dcb6">
+<div id="outline-container-orgf520464" class="outline-3">
+<h3 id="orgf520464">流程</h3>
+<div class="outline-text-3" id="text-orgf520464">
 <p>
-&#x5728;&#x64AD;&#x653E;&#x65F6;&#xFF0C;ALSA&#x5148;&#x5C06;&#x7F13;&#x5B58;(buffer)&#x53D1;&#x9001;&#x7ED9;&#x9A71;&#x52A8;&#xFF0C;&#x9A71;&#x52A8;&#x6BCF;&#x5B8C;&#x6210;&#x4E00;&#x4E2A;&#x5C0F;&#x6BB5;(period)&#x4FBF;&#x4F1A;&#x4E3B;&#x52A8;&#x901A;&#x77E5;&#x4E0A;&#x5C42;&#xFF0C;
-&#x8FD9;&#x6837;ALSA&#x5C31;&#x5C06;&#x7A7A;&#x95F2;&#x7684;&#x6BB5;&#x586B;&#x5145;&#x65B0;&#x7684;&#x6570;&#x636E;&#x3002;
+在播放时，ALSA先将缓存(buffer)发送给驱动，驱动每完成一个小段(period)便会主动通知上层，
+这样ALSA就将空闲的段填充新的数据。
 </p>
 
 <p>
-&#x5728;&#x5F55;&#x97F3;&#x65F6;&#xFF0C;&#x65B9;&#x5411;&#x76F8;&#x53CD;&#xFF0C;&#x5F53;&#x9A71;&#x52A8;&#x6BCF;&#x5B8C;&#x6210;&#x4E00;&#x4E2A;&#x5C0F;&#x6BB5;&#xFF0C;&#x4E0A;&#x5C42;&#x9700;&#x8981;&#x53CA;&#x65F6;&#x7684;&#x8BFB;&#x8D70;&#x3002;
+在录音时，方向相反，当驱动每完成一个小段，上层需要及时的读走。
 </p>
 
 <p>
-&#x5728;&#x8FD9;&#x4E2A;&#x8FC7;&#x7A0B;&#x4E2D;&#x9A71;&#x52A8;DMA&#x662F;&#x4E00;&#x76F4;&#x5FAA;&#x73AF;&#x7684;&#x4F9D;&#x6B21;&#x53D1;&#x9001;&#x4E00;&#x4E2A;&#x5C0F;&#x6BB5;&#x7ED9;I2S&#x63A7;&#x5236;&#x5668;(&#x6216;&#x4ECE;I2S&#x8BFB;&#x53D6;&#x4E00;&#x5C0F;&#x6BB5;)&#x3002;
+在这个过程中驱动DMA是一直循环的依次发送一个小段给I2S控制器(或从I2S读取一小段)。
 </p>
 </div>
 </div>
-<div id="outline-container-org521b392" class="outline-3">
-<h3 id="org521b392">&#x7ED3;&#x6784;&#x4F53;&#x63CF;&#x8FF0;</h3>
-<div class="outline-text-3" id="text-org521b392">
+<div id="outline-container-orgb01daa6" class="outline-3">
+<h3 id="orgb01daa6">结构体描述</h3>
+<div class="outline-text-3" id="text-orgb01daa6">
 <p>
-&#x73B0;&#x5728;&#x518D;&#x6765;&#x770B;&#x7ED3;&#x6784;&#x4F53;&#x5B9A;&#x4E49;&#x53CA;&#x63CF;&#x8FF0;&#x5C31;&#x6E05;&#x695A;&#x4E86;&#x3002;
+现在再来看结构体定义及描述就清楚了。
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> *  Hardware (lowlevel) section</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">snd_pcm_hardware</span> {</span></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">int</span> info;<span class="comment">/* SNDRV_PCM_INFO_* */</span></span><br><span class="line">	u64 formats;<span class="comment">/* SNDRV_PCM_FMTBIT_* */</span></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">int</span> rates;<span class="comment">/* SNDRV_PCM_RATE_* */</span></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">int</span> rate_min;<span class="comment">/* min rate */</span></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">int</span> rate_max;<span class="comment">/* max rate */</span></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">int</span> channels_min;<span class="comment">/* min channels */</span></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">int</span> channels_max;<span class="comment">/* max channels */</span></span><br><span class="line">	<span class="keyword">size_t</span> buffer_bytes_max;<span class="comment">/* &#x7F13;&#x5B58;&#x6570;&#x636E;&#x652F;&#x6301;&#x7684;&#x6700;&#x5927;&#x5B57;&#x8282;&#x5927;&#x5C0F; */</span></span><br><span class="line">	<span class="keyword">size_t</span> period_bytes_min;<span class="comment">/* &#x4E00;&#x4E2A;&#x6BB5;&#x7684;&#x6700;&#x5C0F;&#x5B57;&#x8282;&#x5927;&#x5C0F; */</span></span><br><span class="line">	<span class="keyword">size_t</span> period_bytes_max;<span class="comment">/* &#x4E00;&#x4E2A;&#x6BB5;&#x7684;&#x6700;&#x5927;&#x5B57;&#x8282;&#x5927;&#x5C0F; */</span></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">int</span> periods_min;<span class="comment">/* &#x7F13;&#x5B58;&#x5305;&#x542B;&#x7684;&#x6700;&#x5C0F;&#x6BB5;&#x4E2A;&#x6570; */</span></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">int</span> periods_max;<span class="comment">/* &#x7F13;&#x5B58;&#x5305;&#x542B;&#x7684;&#x6700;&#x5927;&#x6BB5;&#x4E2A;&#x6570; */</span></span><br><span class="line">	<span class="keyword">size_t</span> fifo_size;<span class="comment">/* fifo size in bytes */</span></span><br><span class="line">};</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> *  Hardware (lowlevel) section</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">snd_pcm_hardware</span> {</span></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">int</span> info;<span class="comment">/* SNDRV_PCM_INFO_* */</span></span><br><span class="line">	u64 formats;<span class="comment">/* SNDRV_PCM_FMTBIT_* */</span></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">int</span> rates;<span class="comment">/* SNDRV_PCM_RATE_* */</span></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">int</span> rate_min;<span class="comment">/* min rate */</span></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">int</span> rate_max;<span class="comment">/* max rate */</span></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">int</span> channels_min;<span class="comment">/* min channels */</span></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">int</span> channels_max;<span class="comment">/* max channels */</span></span><br><span class="line">	<span class="keyword">size_t</span> buffer_bytes_max;<span class="comment">/* 缓存数据支持的最大字节大小 */</span></span><br><span class="line">	<span class="keyword">size_t</span> period_bytes_min;<span class="comment">/* 一个段的最小字节大小 */</span></span><br><span class="line">	<span class="keyword">size_t</span> period_bytes_max;<span class="comment">/* 一个段的最大字节大小 */</span></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">int</span> periods_min;<span class="comment">/* 缓存包含的最小段个数 */</span></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">int</span> periods_max;<span class="comment">/* 缓存包含的最大段个数 */</span></span><br><span class="line">	<span class="keyword">size_t</span> fifo_size;<span class="comment">/* fifo size in bytes */</span></span><br><span class="line">};</span><br></pre></td></tr></table></figure>
 </div>
 <p>
-&#x5176;&#x4E2D; buffer_bytes_max = period_bytes_max * periods_max;
+其中 buffer_bytes_max = period_bytes_max * periods_max;
 </p>
 
 <p>
-<b>&#x8FD9;&#x91CC;&#x6709;&#x4E00;&#x4E2A;&#x7591;&#x95EE;</b> &#xFF1A; &#x5047;&#x8BBE;&#x97F3;&#x9891;&#x901F;&#x7387;&#x662F;44.1KHz&#xFF0C;&#x5F53;&#x6211;&#x5C06; period_bytes_max &#x8BBE;&#x5F97;&#x6BD4;&#x8F83;&#x5927;&#x65F6;&#xFF0C;
-&#x6570;&#x636E;&#x4F20;&#x8F93;&#x901F;&#x7387;&#x5C31;&#x8FDC;&#x8FDC;&#x9AD8;&#x4E8E; 44.1KHz &#xFF0C;&#x76EE;&#x524D;&#x8FD8;&#x4E0D;&#x77E5;&#x9053;&#x4E3A;&#x4EC0;&#x4E48;&#x3002;&#x3002;&#x3002;
+<b>这里有一个疑问</b> ： 假设音频速率是44.1KHz，当我将 period_bytes_max 设得比较大时，
+数据传输速率就远远高于 44.1KHz ，目前还不知道为什么。。。
 </p>
 </div>
 </div>
-<div id="outline-container-org590592d" class="outline-3">
-<h3 id="org590592d">&#x503C;&#x7684;&#x9009;&#x5B9A;</h3>
-<div class="outline-text-3" id="text-org590592d">
+<div id="outline-container-org01b2245" class="outline-3">
+<h3 id="org01b2245">值的选定</h3>
+<div class="outline-text-3" id="text-org01b2245">
 <p>
-&#x6B64;&#x503C;&#x9700;&#x8981;&#x6839;&#x636E;DMA&#x7684;&#x5904;&#x7406;&#x80FD;&#x529B;&#xFF0C;&#x4E5F;&#x5C31;&#x662F;&#x4E00;&#x6B21;&#x5904;&#x7406;&#x4E00;&#x6BB5;&#x7684;&#x5B57;&#x8282;&#x6570;&#x6765;&#x5B9A;&#xFF0C;&#x5982;&#x679C;&#x503C;&#x8BBE;&#x5F97;&#x592A;&#x5C0F;&#x5C31;&#x4F1A;&#x51FA;&#x73B0; Overrun &#x6216; underrun.
+此值需要根据DMA的处理能力，也就是一次处理一段的字节数来定，如果值设得太小就会出现 Overrun 或 underrun.
 </p>
 <ul class="org-ul">
-<li>Overrun: &#x5F55;&#x97F3;&#x65F6;&#x5982;&#x679C;&#x4E0A;&#x5C42;&#x6CA1;&#x6709;&#x53CA;&#x65F6;&#x8BFB;&#x53D6;&#x4E00;&#x4E2A;&#x6BB5;&#x6570;&#x636E;&#xFF0C;&#x90A3;&#x4E48;&#x5C31;&#x4F1A;&#x88AB;&#x8986;&#x76D6;&#x3002;</li>
-<li>underrun: &#x64AD;&#x653E;&#x65F6;&#x5982;&#x679C;&#x4E0A;&#x5C42;&#x6CA1;&#x6709;&#x53CA;&#x65F6;&#x7684;&#x586B;&#x5145;&#x7A7A;&#x6BB5;&#xFF0C;&#x90A3;&#x4E48;&#x7F13;&#x5B58;&#x6570;&#x636E;&#x5C06;&#x4E3A;&#x7A7A;&#x3002;</li>
+<li>Overrun: 录音时如果上层没有及时读取一个段数据，那么就会被覆盖。</li>
+<li>underrun: 播放时如果上层没有及时的填充空段，那么缓存数据将为空。</li>
 </ul>
 </div>
 </div>
 </div>
-<div id="outline-container-org3b9f6e9" class="outline-2">
-<h2 id="org3b9f6e9">&#x9A71;&#x52A8;PCM&#x6D41;&#x7684;&#x64CD;&#x4F5C;</h2>
-<div class="outline-text-2" id="text-org3b9f6e9">
+<div id="outline-container-orge38089a" class="outline-2">
+<h2 id="orge38089a">驱动PCM流的操作</h2>
+<div class="outline-text-2" id="text-orge38089a">
 <p>
-&#x7ED3;&#x6784;&#x4F53; <code>snd_pcm_ops</code> &#x6307;&#x5B9A;&#x4E86;PCM&#x6D41;&#x7684;&#x64CD;&#x4F5C;&#x65B9;&#x5F0F;&#xFF0C;ALSA&#x4EE5;&#x56DE;&#x8C03;&#x7684;&#x65B9;&#x5F0F;&#x64CD;&#x4F5C;&#x8FD9;&#x4E9B;&#x65B9;&#x6CD5;&#x3002;
+结构体 <code>snd_pcm_ops</code> 指定了PCM流的操作方式，ALSA以回调的方式操作这些方法。
 </p>
 
 <div class="org-src-container">
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">snd_pcm_ops</span> {</span></span><br><span class="line"><span class="keyword">int</span> (*open)(struct snd_pcm_substream *substream);</span><br><span class="line"><span class="keyword">int</span> (*close)(struct snd_pcm_substream *substream);</span><br><span class="line"><span class="keyword">int</span> (*ioctl)(struct snd_pcm_substream * substream,</span><br><span class="line">     <span class="keyword">unsigned</span> <span class="keyword">int</span> cmd, <span class="keyword">void</span> *arg);</span><br><span class="line"><span class="keyword">int</span> (*hw_params)(struct snd_pcm_substream *substream,</span><br><span class="line"> struct snd_pcm_hw_params *params);</span><br><span class="line"><span class="keyword">int</span> (*hw_free)(struct snd_pcm_substream *substream);</span><br><span class="line"><span class="keyword">int</span> (*prepare)(struct snd_pcm_substream *substream);</span><br><span class="line"><span class="keyword">int</span> (*trigger)(struct snd_pcm_substream *substream, <span class="keyword">int</span> cmd);</span><br><span class="line"><span class="keyword">snd_pcm_uframes_t</span> (*pointer)(struct snd_pcm_substream *substream);</span><br><span class="line"><span class="keyword">int</span> (*get_time_info)(struct snd_pcm_substream *substream,</span><br><span class="line">struct timespec *system_ts, struct timespec *audio_ts,</span><br><span class="line">struct snd_pcm_audio_tstamp_config *audio_tstamp_config,</span><br><span class="line">struct snd_pcm_audio_tstamp_report *audio_tstamp_report);</span><br><span class="line"><span class="keyword">int</span> (*copy)(struct snd_pcm_substream *substream, <span class="keyword">int</span> channel,</span><br><span class="line">    <span class="keyword">snd_pcm_uframes_t</span> pos,</span><br><span class="line">    <span class="keyword">void</span> __user *buf, <span class="keyword">snd_pcm_uframes_t</span> count);</span><br><span class="line"><span class="keyword">int</span> (*silence)(struct snd_pcm_substream *substream, <span class="keyword">int</span> channel, </span><br><span class="line">       <span class="keyword">snd_pcm_uframes_t</span> pos, <span class="keyword">snd_pcm_uframes_t</span> count);</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">page</span> *(*<span class="title">page</span>)(<span class="title">struct</span> <span class="title">snd_pcm_substream</span> *<span class="title">substream</span>,</span></span><br><span class="line"><span class="class">     <span class="title">unsigned</span> <span class="title">long</span> <span class="title">offset</span>);</span></span><br><span class="line"><span class="keyword">int</span> (*mmap)(struct snd_pcm_substream *substream, struct vm_area_struct *vma);</span><br><span class="line"><span class="keyword">int</span> (*ack)(struct snd_pcm_substream *substream);</span><br><span class="line">};</span><br></pre></td></tr></table></figure>
 </div>
 </div>
-<div id="outline-container-orgd1f0b3d" class="outline-3">
-<h3 id="orgd1f0b3d">&#x7EDF;&#x4E00;&#x64CD;&#x4F5C;&#x65B9;&#x6CD5;</h3>
-<div class="outline-text-3" id="text-orgd1f0b3d">
+<div id="outline-container-orge07cc16" class="outline-3">
+<h3 id="orge07cc16">统一操作方法</h3>
+<div class="outline-text-3" id="text-orge07cc16">
 <p>
-&#x8FD9;&#x4E9B;&#x65B9;&#x6CD5;&#x4E2D;&#x90FD;&#x5177;&#x6709;&#x5165;&#x53E3;&#x53C2;&#x6570; <code>struct snd_pcm_substream</code> ,&#x901A;&#x8FC7;&#x6B64;&#x7ED3;&#x6784;&#x4F53;&#x5C31;&#x53EF;&#x4EE5;&#x83B7;&#x53D6;ALSA&#x5F53;&#x524D;&#x6240;&#x64CD;&#x4F5C;&#x6D41;&#x7684;&#x5F88;&#x591A;&#x4FE1;&#x606F;&#x3002;
+这些方法中都具有入口参数 <code>struct snd_pcm_substream</code> ,通过此结构体就可以获取ALSA当前所操作流的很多信息。
 </p>
 </div>
-<div id="outline-container-org33d167c" class="outline-4">
-<h4 id="org33d167c">&#x79C1;&#x6709;&#x6570;&#x636E;&#x7684;&#x5B58;&#x53D6;</h4>
-<div class="outline-text-4" id="text-org33d167c">
+<div id="outline-container-orgabd0341" class="outline-4">
+<h4 id="orgabd0341">私有数据的存取</h4>
+<div class="outline-text-4" id="text-orgabd0341">
 <p>
-&#x5728;&#x7F16;&#x5199;PCM&#x6D41;&#x9A71;&#x52A8;&#x65F6;&#xFF0C;&#x4E00;&#x822C;&#x662F;platform&#x9A71;&#x52A8;(&#x7528;&#x4E8E;&#x63A7;&#x5236;I2S&#x63A7;&#x5236;&#x5668;&#x548C;DMA&#x5F15;&#x64CE;&#x5BA2;&#x6237;&#x7AEF;&#x64CD;&#x4F5C;)&#x3002;
-&#x4E8E;&#x6B64;&#x540C;&#x65F6;&#x4E00;&#x822C;&#x4F1A;&#x5B9A;&#x4E49;&#x79C1;&#x6709;&#x6570;&#x636E;&#xFF0C;&#x6240;&#x6709;&#x9700;&#x8981;&#x4FDD;&#x5B58;&#x8FD9;&#x4E9B;&#x6570;&#x636E;&#x6307;&#x9488;&#x4EE5;&#x4FBF;&#x8C03;&#x7528;&#x3002;
-</p>
-
-<p>
-&#x6CE8;&#x610F;&#xFF1A;&#x5728;machine driver&#x4E2D;&#x9700;&#x8981;&#x521D;&#x59CB;&#x5316;platform_of_node(&#x83B7;&#x53D6;devicetree&#x4E2D;&#x7684;&#x8282;&#x70B9;)&#xFF0C;&#x4EE5;&#x4F20;&#x9012;platform device&#x5730;&#x5740;&#x3002;
+在编写PCM流驱动时，一般是platform驱动(用于控制I2S控制器和DMA引擎客户端操作)。
+于此同时一般会定义私有数据，所有需要保存这些数据指针以便调用。
 </p>
 
 <p>
-&#x6BD4;&#x5982;:
+注意：在machine driver中需要初始化platform_of_node(获取devicetree中的节点)，以传递platform device地址。
+</p>
+
+<p>
+比如:
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">axi_i2s_probe</span><span class="params">(struct platform_device *pdev)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">axi_i2s</span> *<span class="title">i2s</span>;</span></span><br><span class="line">	<span class="keyword">int</span> rc = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	i2s = devm_kzalloc(&amp;pdev-&gt;dev, <span class="keyword">sizeof</span>(struct axi_i2s), GFP_KERNEL);</span><br><span class="line">	<span class="keyword">if</span>(i2s == <span class="literal">NULL</span>)</span><br><span class="line">	{</span><br><span class="line">		dev_err(&amp;pdev-&gt;dev, <span class="string">&quot;alloc memory failed!\n&quot;</span>);</span><br><span class="line">		rc = -ENOMEM;</span><br><span class="line">		<span class="keyword">goto</span> quick_out;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	<span class="comment">//&#x4FDD;&#x5B58;&#x6570;&#x636E;&#x5730;&#x5740;</span></span><br><span class="line">	dev_set_drvdata(&amp;pdev-&gt;dev, i2s);</span><br><span class="line"></span><br><span class="line">quick_out:</span><br><span class="line">	<span class="keyword">return</span> rc;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">i2s_pcm_trigger</span><span class="params">(struct snd_pcm_substream *ss, <span class="keyword">int</span> cmd)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	<span class="comment">//machine platform &#x9A71;&#x52A8;&#x7684;&#x8BBE;&#x5907;&#x5730;&#x5740;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">device</span> *<span class="title">card_dev</span> = <span class="title">ss</span>-&gt;<span class="title">pcm</span>-&gt;<span class="title">card</span>-&gt;<span class="title">dev</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">snd_soc_card</span> *<span class="title">soc_card</span> = <span class="title">card_dev</span>-&gt;<span class="title">driver_data</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">device_node</span> *<span class="title">platform_node</span> = <span class="title">soc_card</span>-&gt;<span class="title">dai_link</span>-&gt;<span class="title">platform_of_node</span>;</span></span><br><span class="line">	<span class="comment">//&#x8FD9;&#x4E2A;&#x624D;&#x662F;&#x5F53;&#x524D;&#x5E73;&#x53F0;&#x8BBE;&#x5907;&#x5730;&#x5740;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">device</span> *<span class="title">dev</span> = &amp;<span class="title">of_find_device_by_node</span>(<span class="title">platform_node</span>)-&gt;<span class="title">dev</span>;</span></span><br><span class="line">	<span class="comment">//&#x83B7;&#x53D6;&#x6570;&#x636E;&#x5730;&#x5740;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">axi_i2s</span> *<span class="title">i2s</span> = <span class="title">dev_get_drvdata</span>(<span class="title">dev</span>);</span></span><br><span class="line">	...</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">axi_i2s_probe</span><span class="params">(struct platform_device *pdev)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">axi_i2s</span> *<span class="title">i2s</span>;</span></span><br><span class="line">	<span class="keyword">int</span> rc = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	i2s = devm_kzalloc(&pdev->dev, <span class="keyword">sizeof</span>(struct axi_i2s), GFP_KERNEL);</span><br><span class="line">	<span class="keyword">if</span>(i2s == <span class="literal">NULL</span>)</span><br><span class="line">	{</span><br><span class="line">		dev_err(&pdev->dev, <span class="string">"alloc memory failed!\n"</span>);</span><br><span class="line">		rc = -ENOMEM;</span><br><span class="line">		<span class="keyword">goto</span> quick_out;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	<span class="comment">//保存数据地址</span></span><br><span class="line">	dev_set_drvdata(&pdev->dev, i2s);</span><br><span class="line"></span><br><span class="line">quick_out:</span><br><span class="line">	<span class="keyword">return</span> rc;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">i2s_pcm_trigger</span><span class="params">(struct snd_pcm_substream *ss, <span class="keyword">int</span> cmd)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	<span class="comment">//machine platform 驱动的设备地址</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">device</span> *<span class="title">card_dev</span> = <span class="title">ss</span>-><span class="title">pcm</span>-><span class="title">card</span>-><span class="title">dev</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">snd_soc_card</span> *<span class="title">soc_card</span> = <span class="title">card_dev</span>-><span class="title">driver_data</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">device_node</span> *<span class="title">platform_node</span> = <span class="title">soc_card</span>-><span class="title">dai_link</span>-><span class="title">platform_of_node</span>;</span></span><br><span class="line">	<span class="comment">//这个才是当前平台设备地址</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">device</span> *<span class="title">dev</span> = &<span class="title">of_find_device_by_node</span>(<span class="title">platform_node</span>)-><span class="title">dev</span>;</span></span><br><span class="line">	<span class="comment">//获取数据地址</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">axi_i2s</span> *<span class="title">i2s</span> = <span class="title">dev_get_drvdata</span>(<span class="title">dev</span>);</span></span><br><span class="line">	...</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </div>
-<div id="outline-container-org69a8b78" class="outline-4">
-<h4 id="org69a8b78">&#x6D41;&#x65B9;&#x5411;&#x7684;&#x5224;&#x65AD;</h4>
-<div class="outline-text-4" id="text-org69a8b78">
+<div id="outline-container-org510d889" class="outline-4">
+<h4 id="org510d889">流方向的判断</h4>
+<div class="outline-text-4" id="text-org510d889">
 <p>
-&#x9700;&#x8981;&#x660E;&#x786E;&#x7684;&#x662F;&#xFF1A;&#x4E00;&#x4E2A;PCM&#x6D41;&#x5177;&#x5907;&#x8F93;&#x5165;&#x6D41;&#x548C;&#x8F93;&#x51FA;&#x6D41;&#x4E24;&#x4E2A;&#x65B9;&#x5411;&#xFF0C;&#x6240;&#x4EE5;&#x5728;&#x8FD9;&#x4E9B;&#x65B9;&#x6CD5;&#x4E2D;&#x90FD;&#x9700;&#x8981;&#x5224;&#x65AD;&#x6D41;&#x7684;&#x65B9;&#x5411;&#xFF0C;&#x4EE5;&#x786E;&#x5B9A;&#x64CD;&#x4F5C;&#x54EA;&#x4E2A;DMA&#x901A;&#x9053;&#x3002;
+需要明确的是：一个PCM流具备输入流和输出流两个方向，所以在这些方法中都需要判断流的方向，以确定操作哪个DMA通道。
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">i2s_pcm_trigger</span><span class="params">(struct snd_pcm_substream *ss, <span class="keyword">int</span> cmd)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">...</span><br><span class="line">    <span class="comment">//&#x64AD;&#x653E;&#x6D41;</span></span><br><span class="line">    <span class="keyword">if</span>(ss-&gt;stream == SNDRV_PCM_STREAM_PLAYBACK)</span><br><span class="line">    {</span><br><span class="line">	    <span class="comment">//&#x7533;&#x8BF7;dma&#x53D1;&#x9001;&#x901A;&#x9053;</span></span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">else</span><span class="comment">//&#x5F55;&#x97F3;&#x6D41;</span></span><br><span class="line">    {</span><br><span class="line">	    <span class="comment">//&#x7533;&#x8BF7;dma&#x63A5;&#x6536;&#x901A;&#x9053;</span></span><br><span class="line">    }</span><br><span class="line">...</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">i2s_pcm_trigger</span><span class="params">(struct snd_pcm_substream *ss, <span class="keyword">int</span> cmd)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">...</span><br><span class="line">    <span class="comment">//播放流</span></span><br><span class="line">    <span class="keyword">if</span>(ss->stream == SNDRV_PCM_STREAM_PLAYBACK)</span><br><span class="line">    {</span><br><span class="line">	    <span class="comment">//申请dma发送通道</span></span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">else</span><span class="comment">//录音流</span></span><br><span class="line">    {</span><br><span class="line">	    <span class="comment">//申请dma接收通道</span></span><br><span class="line">    }</span><br><span class="line">...</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </div>
 </div>
-<div id="outline-container-orgf7be0b5" class="outline-3">
-<h3 id="orgf7be0b5">open callback</h3>
-<div class="outline-text-3" id="text-orgf7be0b5">
+<div id="outline-container-org6e22047" class="outline-3">
+<h3 id="org6e22047">open callback</h3>
+<div class="outline-text-3" id="text-org6e22047">
 <p>
-&#x5F53;&#x4E0A;&#x5C42;&#x6253;&#x5F00;&#x4E00;&#x4E2A;PCM&#x5B50;&#x6D41;&#x65F6;, open() &#x65B9;&#x6CD5;&#x4F1A;&#x88AB;&#x8C03;&#x7528;&#xFF0C;&#x6B64;&#x65B9;&#x6CD5;&#x4E3B;&#x8981;&#x6709;&#x4EE5;&#x4E0B;&#x4F5C;&#x7528;&#xFF1A;
+当上层打开一个PCM子流时, open() 方法会被调用，此方法主要有以下作用：
 </p>
 <ol class="org-ol">
-<li>&#x5411;&#x4E0A;&#x5C42;&#x53CD;&#x5E94;&#x6B64;&#x5B50;&#x6D41;&#x7684;&#x4FE1;&#x606F;&#x53C2;&#x6570;</li>
-<li>&#x4E3A;&#x6B64;&#x5B50;&#x6D41;&#x8BBE;&#x7F6E;&#x4E00;&#x4E2A;&#x79C1;&#x6709;&#x6570;&#x636E;&#x5E76;&#x4FDD;&#x5B58;</li>
-<li>&#x786C;&#x4EF6;&#x7684;&#x76F8;&#x5173;&#x7EA6;&#x675F;&#x8BBE;&#x7F6E;</li>
+<li>向上层反应此子流的信息参数</li>
+<li>为此子流设置一个私有数据并保存</li>
+<li>硬件的相关约束设置</li>
 </ol>
 </div>
 </div>
 </div>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
 </div>
 
     </div>
@@ -538,7 +538,7 @@ Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#orgaaaf450"><span class="nav-number">1.</span> <span class="nav-text">snd_pcm_hardware &amp;#x586B;&amp;#x5145;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org0df335b"><span class="nav-number">1.1.</span> <span class="nav-text">&amp;#x6570;&amp;#x636E;&amp;#x7ED3;&amp;#x6784;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org875dcb6"><span class="nav-number">1.2.</span> <span class="nav-text">&amp;#x6D41;&amp;#x7A0B;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org521b392"><span class="nav-number">1.3.</span> <span class="nav-text">&amp;#x7ED3;&amp;#x6784;&amp;#x4F53;&amp;#x63CF;&amp;#x8FF0;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org590592d"><span class="nav-number">1.4.</span> <span class="nav-text">&amp;#x503C;&amp;#x7684;&amp;#x9009;&amp;#x5B9A;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org3b9f6e9"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x9A71;&amp;#x52A8;PCM&amp;#x6D41;&amp;#x7684;&amp;#x64CD;&amp;#x4F5C;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgd1f0b3d"><span class="nav-number">2.1.</span> <span class="nav-text">&amp;#x7EDF;&amp;#x4E00;&amp;#x64CD;&amp;#x4F5C;&amp;#x65B9;&amp;#x6CD5;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org33d167c"><span class="nav-number">2.1.1.</span> <span class="nav-text">&amp;#x79C1;&amp;#x6709;&amp;#x6570;&amp;#x636E;&amp;#x7684;&amp;#x5B58;&amp;#x53D6;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org69a8b78"><span class="nav-number">2.1.2.</span> <span class="nav-text">&amp;#x6D41;&amp;#x65B9;&amp;#x5411;&amp;#x7684;&amp;#x5224;&amp;#x65AD;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgf7be0b5"><span class="nav-number">2.2.</span> <span class="nav-text">open callback</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#orgdcf3af6"><span class="nav-number">1.</span> <span class="nav-text">snd_pcm_hardware 填充</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orge26c12e"><span class="nav-number">1.1.</span> <span class="nav-text">数据结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgf520464"><span class="nav-number">1.2.</span> <span class="nav-text">流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgb01daa6"><span class="nav-number">1.3.</span> <span class="nav-text">结构体描述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org01b2245"><span class="nav-number">1.4.</span> <span class="nav-text">值的选定</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orge38089a"><span class="nav-number">2.</span> <span class="nav-text">驱动PCM流的操作</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orge07cc16"><span class="nav-number">2.1.</span> <span class="nav-text">统一操作方法</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgabd0341"><span class="nav-number">2.1.1.</span> <span class="nav-text">私有数据的存取</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org510d889"><span class="nav-number">2.1.2.</span> <span class="nav-text">流方向的判断</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org6e22047"><span class="nav-number">2.2.</span> <span class="nav-text">open callback</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 

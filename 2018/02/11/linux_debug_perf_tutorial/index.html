@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="perf &amp;#x662F;Linux(2.6+)&amp;#x5185;&amp;#x7F6E;&amp;#x7684;&amp;#x5F3A;&amp;#x5927;&amp;#x7684;&amp;#x5206;&amp;#x6790;&amp;#x5DE5;&amp;#x5177;&amp;#xFF0C;&amp;#x6240;&amp;#x4EE5;&amp;#x5176;&amp;#x65E2;&amp;#x53EF;&amp;#x4EE5;&amp;#x7528;&amp;#x4E8E;PC&amp;#x4E5F;&amp;#x53EF;&amp;#x4">
+  <meta name="description" content="perf 是Linux(2.6+)内置的强大的分析工具，所以其既可以用于PC也可以用于嵌入式Linux。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[What]perf 基本使用">
 <meta property="og:url" content="http://kcmetercec.top/2018/02/11/linux_debug_perf_tutorial/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="perf &amp;#x662F;Linux(2.6+)&amp;#x5185;&amp;#x7F6E;&amp;#x7684;&amp;#x5F3A;&amp;#x5927;&amp;#x7684;&amp;#x5206;&amp;#x6790;&amp;#x5DE5;&amp;#x5177;&amp;#xFF0C;&amp;#x6240;&amp;#x4EE5;&amp;#x5176;&amp;#x65E2;&amp;#x53EF;&amp;#x4EE5;&amp;#x7528;&amp;#x4E8E;PC&amp;#x4E5F;&amp;#x53EF;&amp;#x4">
+<meta property="og:description" content="perf 是Linux(2.6+)内置的强大的分析工具，所以其既可以用于PC也可以用于嵌入式Linux。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2018-02-10T16:00:00.000Z">
 <meta property="article:modified_time" content="2020-08-01T01:09:06.536Z">
@@ -299,31 +299,31 @@
       
         <div id="content">
 <p>
-perf &#x662F;Linux(2.6+)&#x5185;&#x7F6E;&#x7684;&#x5F3A;&#x5927;&#x7684;&#x5206;&#x6790;&#x5DE5;&#x5177;&#xFF0C;&#x6240;&#x4EE5;&#x5176;&#x65E2;&#x53EF;&#x4EE5;&#x7528;&#x4E8E;PC&#x4E5F;&#x53EF;&#x4EE5;&#x7528;&#x4E8E;&#x5D4C;&#x5165;&#x5F0F;Linux&#x3002;
+perf 是Linux(2.6+)内置的强大的分析工具，所以其既可以用于PC也可以用于嵌入式Linux。
 </p>
 
 <a id="more"></a>
 
-<div id="outline-container-orgb39a52d" class="outline-2">
-<h2 id="orgb39a52d">&#x76EE;&#x6807;&#x673A;&#x5B89;&#x88C5;</h2>
-<div class="outline-text-2" id="text-orgb39a52d">
+<div id="outline-container-org4bac5ae" class="outline-2">
+<h2 id="org4bac5ae">目标机安装</h2>
+<div class="outline-text-2" id="text-org4bac5ae">
 <p>
-&#x4F46;&#x5728;&#x7F16;&#x8BD1;&#x8FC7;&#x7A0B;&#x4E2D;&#x53D1;&#x73B0;&#x4EA4;&#x53C9;&#x7F16;&#x8BD1;&#x5668;&#x6709;&#x5F88;&#x591A;&#x7684;&#x5E93;&#x63D0;&#x793A;&#x6CA1;&#x6709;&#x5B89;&#x88C5;&#xFF0C;&#x4E0B;&#x9762;&#x8FDB;&#x884C;&#x4E00;&#x4E00;&#x5B89;&#x88C5;( <b>&#x5982;&#x679C;&#x5FFD;&#x7565;&#x8FD9;&#x4E9B;&#x8B66;&#x544A;&#xFF0C;&#x5C31;&#x4F1A;&#x51FA;&#x73B0;perf&#x8F93;&#x51FA;&#x6587;&#x4EF6;&#x4E2D;&#x5F88;&#x591A;&#x7B26;&#x53F7;&#x90FD;&#x662F; [unknown] &#x7684;&#x60C5;&#x51B5;&#xFF0C;&#x5373;&#x4F7F;&#x5E94;&#x7528;&#x7F16;&#x8BD1;&#x65F6;&#x4F7F;&#x7528;&#x4E86; <code>-g</code> &#x9009;&#x9879;</b>):
+但在编译过程中发现交叉编译器有很多的库提示没有安装，下面进行一一安装( <b>如果忽略这些警告，就会出现perf输出文件中很多符号都是 [unknown] 的情况，即使应用编译时使用了 <code>-g</code> 选项</b>):
 </p>
 <ul class="org-ul">
-<li>&#x5176;&#x4E2D;&#x6700;&#x4E3A;&#x91CD;&#x8981;&#x7684;&#x5C31;&#x662F; <b>elf,binutils,unwind</b> &#x5E93;</li>
-<li>&#x7F16;&#x8BD1;&#x5668;&#x4F7F;&#x7528;&#x7684;&#x5E93;&#x8DEF;&#x5F84;&#x4E00;&#x822C;&#x5728;&#x5176;&#x5B89;&#x88C5;&#x5728;&#x5176;&#x76EE;&#x5F55;&#x4E0B;&#x7684; <code>/libc/usr/</code> &#x3002;</li>
-<li>&#x800C;&#x76EE;&#x6807;&#x673A;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x8DEF;&#x5F84;&#x4E00;&#x822C;&#x5B89;&#x88C5;&#x5728; <code>/usr</code> &#x76EE;&#x5F55;&#x4E0B;</li>
+<li>其中最为重要的就是 <b>elf,binutils,unwind</b> 库</li>
+<li>编译器使用的库路径一般在其安装在其目录下的 <code>/libc/usr/</code> 。</li>
+<li>而目标机文件系统路径一般安装在 <code>/usr</code> 目录下</li>
 </ul>
 </div>
-<div id="outline-container-org52fffbb" class="outline-3">
-<h3 id="org52fffbb">&#x5B89;&#x88C5;zlib(elfutils&#x4F9D;&#x8D56;)</h3>
-<div class="outline-text-3" id="text-org52fffbb">
+<div id="outline-container-org4aaeea2" class="outline-3">
+<h3 id="org4aaeea2">安装zlib(elfutils依赖)</h3>
+<div class="outline-text-3" id="text-org4aaeea2">
 <p>
-&#x5728;<a href="https://sourceforge.net/projects/libpng/files/zlib/1.2.11/zlib-1.2.11.tar.gz/download?use_mirror=jaist&amp;download=" target="_blank" rel="noopener">sourceforge</a>&#x4E0B;&#x8F7D;&#x6E90;&#x7801;&#x3002;
+在<a href="https://sourceforge.net/projects/libpng/files/zlib/1.2.11/zlib-1.2.11.tar.gz/download?use_mirror=jaist&download=" target="_blank" rel="noopener">sourceforge</a>下载源码。
 </p>
 <ul class="org-ul">
-<li><b>&#x5B89;&#x88C5;&#x5230;&#x7F16;&#x8BD1;&#x5668;&#x8DEF;&#x5F84;</b></li>
+<li><b>安装到编译器路径</b></li>
 </ul>
 <pre class="example">
 tar -xzf zlib-1.2.11.tar.gz
@@ -332,25 +332,25 @@ CC=arm-linux-gnueabihf-gcc ./configure --prefix=/opt/Xilinx/SDK/2016.2/gnu/aarch
 make
 make install</pre>
 <ul class="org-ul">
-<li><b>&#x5B89;&#x88C5;&#x5230;&#x76EE;&#x6807;&#x673A;&#x6839;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;</b> (&#x53EF;&#x4F7F;&#x7528;busybox&#x4E2D;&#x7684;&#x5E93;&#x4EE3;&#x66FF;&#x8FD9;&#x79CD;&#x65B9;&#x5F0F;&#xFF0C;&#x4EE5;&#x51CF;&#x5C0F;image&#x5927;&#x5C0F;)</li>
+<li><b>安装到目标机根文件系统</b> (可使用busybox中的库代替这种方式，以减小image大小)</li>
 </ul>
 <pre class="example">
 CC=arm-linux-gnueabihf-gcc ./configure --prefix=/usr
 make
 make install DESTDIR=/home/cec/zlib</pre>
 <p>
-&#x6700;&#x540E;&#x5C06;&#x6B64;&#x6587;&#x4EF6;&#x5939;&#x5185;&#x5BB9;&#x62F7;&#x5165;&#x6839;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF; <code>/usr</code> &#x5373;&#x53EF;&#x3002;
+最后将此文件夹内容拷入根文件系统 <code>/usr</code> 即可。
 </p>
 </div>
 </div>
-<div id="outline-container-orgc738eb9" class="outline-3">
-<h3 id="orgc738eb9">&#x5B89;&#x88C5;libc6(elfutils&#x4F9D;&#x8D56;)</h3>
-<div class="outline-text-3" id="text-orgc738eb9">
+<div id="outline-container-org08e7897" class="outline-3">
+<h3 id="org08e7897">安装libc6(elfutils依赖)</h3>
+<div class="outline-text-3" id="text-org08e7897">
 <p>
-&#x5728;<a href="https://packages.debian.org/search?keywords=libc6" target="_blank" rel="noopener">Debian</a>&#x627E;&#x5230;&#x4EA4;&#x53C9;&#x7F16;&#x8BD1;&#x7248;&#x672C;&#x7684;libc6&#x3002;
+在<a href="https://packages.debian.org/search?keywords=libc6" target="_blank" rel="noopener">Debian</a>找到交叉编译版本的libc6。
 </p>
 <ul class="org-ul">
-<li><b>&#x5B89;&#x88C5;&#x5230;&#x7F16;&#x8BD1;&#x5668;&#x8DEF;&#x5F84;</b></li>
+<li><b>安装到编译器路径</b></li>
 </ul>
 <pre class="example">
 mkdir libc6
@@ -358,51 +358,51 @@ dpkg-deb -x libc6-armel-cross_2.24-10cross1_all.deb libc6
 cd libc6
 cp -R usr/arm-linux-gnueabi/lib/** /opt/Xilinx/SDK/2016.2/gnu/aarch32/lin/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/lib/</pre>
 <ul class="org-ul">
-<li><b>&#x5B89;&#x88C5;&#x5230;&#x76EE;&#x6807;&#x673A;&#x6839;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;</b> (&#x53EF;&#x4F7F;&#x7528;busybox&#x4E2D;&#x7684;&#x5E93;&#x4EE3;&#x66FF;&#x8FD9;&#x79CD;&#x65B9;&#x5F0F;&#xFF0C;&#x4EE5;&#x51CF;&#x5C0F;image&#x5927;&#x5C0F;)</li>
+<li><b>安装到目标机根文件系统</b> (可使用busybox中的库代替这种方式，以减小image大小)</li>
 </ul>
 <p>
-&#x6700;&#x540E;&#x5C06;&#x6B64;&#x6587;&#x4EF6;&#x5939;&#x5185;&#x5BB9;&#x62F7;&#x5165;&#x6839;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF; <code>/usr</code> &#x5373;&#x53EF;&#x3002;
+最后将此文件夹内容拷入根文件系统 <code>/usr</code> 即可。
 </p>
 </div>
 </div>
-<div id="outline-container-org82cf3e8" class="outline-3">
-<h3 id="org82cf3e8">&#x5B89;&#x88C5;elfutils</h3>
-<div class="outline-text-3" id="text-org82cf3e8">
+<div id="outline-container-org17c6422" class="outline-3">
+<h3 id="org17c6422">安装elfutils</h3>
+<div class="outline-text-3" id="text-org17c6422">
 <p>
-&#x6839;&#x636E;&#x7F16;&#x8BD1;&#x63D0;&#x793A;&#xFF0C;&#x5728;<a href="https://sourceware.org/elfutils/" target="_blank" rel="noopener">&#x4E0B;&#x8F7D;&#x7AD9;</a>&#x4E0B;&#x8F7D;&#x4E0E;&#x4E4B;&#x66F4;&#x65B0;&#x7684;&#x7248;&#x672C;&#x3002;
+根据编译提示，在<a href="https://sourceware.org/elfutils/" target="_blank" rel="noopener">下载站</a>下载与之更新的版本。
 </p>
 <ul class="org-ul">
-<li><b>&#x5B89;&#x88C5;&#x5230;&#x7F16;&#x8BD1;&#x5668;&#x8DEF;&#x5F84;</b></li>
+<li><b>安装到编译器路径</b></li>
 </ul>
 <pre class="example">
-#&#x4E0B;&#x8F7D;&#x53CA;&#x89E3;&#x538B;
+#下载及解压
 axel -n 20 https://sourceware.org/elfutils/ftp/0.172/elfutils-0.172.tar.bz2
 tar -xjf elfutils-0.172.tar.bz2
 cd elfutils-0.172/
-#&#x67E5;&#x770B;&#x5176;INSTALL&#x6587;&#x4EF6;&#x5F97;&#x51FA;&#x5176;&#x914D;&#x7F6E;&#x547D;&#x4EE4;
+#查看其INSTALL文件得出其配置命令
 CC=arm-linux-gnueabihf-gcc ./configure --host=arm --prefix=/opt/Xilinx/SDK/2016.2/gnu/aarch32/lin/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr
 make
 make install</pre>
 <ul class="org-ul">
-<li><b>&#x5B89;&#x88C5;&#x5230;&#x76EE;&#x6807;&#x673A;&#x6839;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;</b> (&#x53EF;&#x4F7F;&#x7528;busybox&#x4E2D;&#x7684;&#x5E93;&#x4EE3;&#x66FF;&#x8FD9;&#x79CD;&#x65B9;&#x5F0F;&#xFF0C;&#x4EE5;&#x51CF;&#x5C0F;image&#x5927;&#x5C0F;)</li>
+<li><b>安装到目标机根文件系统</b> (可使用busybox中的库代替这种方式，以减小image大小)</li>
 </ul>
 <pre class="example">
 CC=arm-linux-gnueabihf-gcc ./configure --host=arm --prefix=/usr
 make
 make install DESTDIR=/home/cec/elflib</pre>
 <p>
-&#x6700;&#x540E;&#x5C06;&#x6B64;&#x6587;&#x4EF6;&#x5939;&#x5185;&#x5BB9;&#x62F7;&#x5165;&#x6839;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF; <code>/usr</code> &#x5373;&#x53EF;&#x3002;
+最后将此文件夹内容拷入根文件系统 <code>/usr</code> 即可。
 </p>
 </div>
 </div>
-<div id="outline-container-orgcfc0f80" class="outline-3">
-<h3 id="orgcfc0f80">&#x5B89;&#x88C5;liblzma(libunwind &#x4F9D;&#x8D56;)</h3>
-<div class="outline-text-3" id="text-orgcfc0f80">
+<div id="outline-container-org09f1148" class="outline-3">
+<h3 id="org09f1148">安装liblzma(libunwind 依赖)</h3>
+<div class="outline-text-3" id="text-org09f1148">
 <p>
-&#x5728;<a href="https://tukaani.org/xz/" target="_blank" rel="noopener">&#x5B98;&#x7F51;&#x4E0B;&#x8F7D;</a>&#x6E90;&#x7801;&#x3002;
+在<a href="https://tukaani.org/xz/" target="_blank" rel="noopener">官网下载</a>源码。
 </p>
 <ul class="org-ul">
-<li><b>&#x5B89;&#x88C5;&#x5230;&#x7F16;&#x8BD1;&#x5668;&#x8DEF;&#x5F84;</b></li>
+<li><b>安装到编译器路径</b></li>
 </ul>
 <pre class="example">
 CC=arm-linux-gnueabihf-gcc ./configure --host=arm-linux-gnueabihf --prefix=/opt/Xilinx/SDK/2016.2/gnu/aarch32/lin/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr --enable-shared=yes
@@ -411,63 +411,63 @@ make install</pre>
 </div>
 </div>
 
-<div id="outline-container-org255fd12" class="outline-3">
-<h3 id="org255fd12">&#x5B89;&#x88C5;libunwind</h3>
-<div class="outline-text-3" id="text-org255fd12">
+<div id="outline-container-org5c1aae2" class="outline-3">
+<h3 id="org5c1aae2">安装libunwind</h3>
+<div class="outline-text-3" id="text-org5c1aae2">
 </div>
-<div id="outline-container-orgaf17d4b" class="outline-4">
-<h4 id="orgaf17d4b">bug&#x4FEE;&#x590D;</h4>
-<div class="outline-text-4" id="text-orgaf17d4b">
+<div id="outline-container-org8dd8d74" class="outline-4">
+<h4 id="org8dd8d74">bug修复</h4>
+<div class="outline-text-4" id="text-org8dd8d74">
 <p>
-&#x76EE;&#x524D;libunwind&#x8FD8;&#x6709;&#x4E00;&#x4E2A;bug&#x9020;&#x6210;&#x51FD;&#x6570; <code>arm_search_unwind_table</code> &#x91CD;&#x590D;&#x5B9A;&#x4E49;&#xFF0C;&#x89E3;&#x51B3;&#x65B9;&#x6848;<a href="https://www.mail-archive.com/libunwind-devel@nongnu.org/msg02617.html" target="_blank" rel="noopener">&#x5728;&#x6B64;patch</a>
+目前libunwind还有一个bug造成函数 <code>arm_search_unwind_table</code> 重复定义，解决方案<a href="https://www.mail-archive.com/libunwind-devel@nongnu.org/msg02617.html" target="_blank" rel="noopener">在此patch</a>
 </p>
 </div>
 </div>
-<div id="outline-container-orgfabe203" class="outline-4">
-<h4 id="orgfabe203">&#x7F16;&#x8BD1;&#x53CA;&#x5B89;&#x88C5;</h4>
-<div class="outline-text-4" id="text-orgfabe203">
+<div id="outline-container-org2fee266" class="outline-4">
+<h4 id="org2fee266">编译及安装</h4>
+<div class="outline-text-4" id="text-org2fee266">
 <ul class="org-ul">
-<li><b>&#x5B89;&#x88C5;&#x5230;&#x7F16;&#x8BD1;&#x5668;&#x8DEF;&#x5F84;</b></li>
+<li><b>安装到编译器路径</b></li>
 </ul>
 <pre class="example">
 git clone git://git.sv.gnu.org/libunwind.git
 cd libunwind/
-#&#x67E5;&#x770B;README
+#查看README
 ./autogen.sh 
 CC=arm-linux-gnueabihf-gcc ./configure --host=arm-linux-gnueabihf --prefix=/opt/Xilinx/SDK/2016.2/gnu/aarch32/lin/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr --enable-shared=yes
 make
 make install</pre>
 <p>
-<b>&#x8BF4;&#x660E;&#xFF1A;</b> &#x6B64;&#x6B65;&#x51FA;&#x73B0;&#x9519;&#x8BEF; <code>undefined reference to `_Uarm_is_signal_frame&apos;</code> &#x8FD8;&#x672A;&#x89E3;&#x51B3;&#x3002;
+<b>说明：</b> 此步出现错误 <code>undefined reference to `_Uarm_is_signal_frame'</code> 还未解决。
 </p>
 <ul class="org-ul">
-<li><b>&#x5B89;&#x88C5;&#x5230;&#x76EE;&#x6807;&#x673A;&#x6839;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;</b></li>
+<li><b>安装到目标机根文件系统</b></li>
 </ul>
 </div>
 </div>
 </div>
-<div id="outline-container-org5a70635" class="outline-3">
-<h3 id="org5a70635">&#x5B89;&#x88C5;libaudit(&#x5931;&#x8D25;,&#x4F46;&#x4E0D;&#x5F71;&#x54CD;&#x4F7F;&#x7528;,&#x53EF;&#x5FFD;&#x7565;)</h3>
-<div class="outline-text-3" id="text-org5a70635">
+<div id="outline-container-org83e020f" class="outline-3">
+<h3 id="org83e020f">安装libaudit(失败,但不影响使用,可忽略)</h3>
+<div class="outline-text-3" id="text-org83e020f">
 <ul class="org-ul">
-<li><b>&#x5B89;&#x88C5;&#x5230;&#x7F16;&#x8BD1;&#x5668;&#x8DEF;&#x5F84;</b></li>
+<li><b>安装到编译器路径</b></li>
 </ul>
 <pre class="example">
 git clone https://github.com/linux-audit/audit-userspace
 cd audit-userspace/</pre>
 <ul class="org-ul">
-<li><b>&#x5B89;&#x88C5;&#x5230;&#x76EE;&#x6807;&#x673A;&#x6839;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;</b></li>
+<li><b>安装到目标机根文件系统</b></li>
 </ul>
 </div>
 </div>
-<div id="outline-container-orge6daff3" class="outline-3">
-<h3 id="orge6daff3">&#x5B89;&#x88C5;libiberty(binutils&#x4F9D;&#x8D56;)</h3>
-<div class="outline-text-3" id="text-orge6daff3">
+<div id="outline-container-orga58cb37" class="outline-3">
+<h3 id="orga58cb37">安装libiberty(binutils依赖)</h3>
+<div class="outline-text-3" id="text-orga58cb37">
 <p>
-libiberty &#x662F;gcc&#x9879;&#x76EE;&#x4E2D;<a href="https://github.com/gcc-mirror/gcc/tree/master/libiberty" target="_blank" rel="noopener">&#x81EA;&#x5E26;&#x7684;&#x5E93;</a>&#xFF0C;&#x5176;&#x5B89;&#x88C5;&#x8BF4;&#x660E;&#x4F4D;&#x4E8E;<a href="https://gcc.gnu.org/onlinedocs/libiberty/Using.html" target="_blank" rel="noopener">&#x5B98;&#x7F51;</a>&#xFF0C; <b>&#x9700;&#x8981;&#x6839;&#x636E;&#x5F53;&#x524D;&#x7684;&#x7F16;&#x8BD1;&#x5668;&#x7248;&#x672C;&#x62F7;&#x8D1D;&#x5BF9;&#x5E94;&#x7248;&#x672C;&#x7684;&#x4EE3;&#x7801;&#x8FDB;&#x884C;&#x7F16;&#x8BD1;&#xFF01;&#xFF01;&#xFF01;</b>
+libiberty 是gcc项目中<a href="https://github.com/gcc-mirror/gcc/tree/master/libiberty" target="_blank" rel="noopener">自带的库</a>，其安装说明位于<a href="https://gcc.gnu.org/onlinedocs/libiberty/Using.html" target="_blank" rel="noopener">官网</a>， <b>需要根据当前的编译器版本拷贝对应版本的代码进行编译！！！</b>
 </p>
 <ul class="org-ul">
-<li><b>&#x5B89;&#x88C5;&#x5230;&#x7F16;&#x8BD1;&#x5668;&#x8DEF;&#x5F84;</b></li>
+<li><b>安装到编译器路径</b></li>
 </ul>
 <pre class="example">
 CC=arm-linux-gnueabihf-gcc ./configure --host=arm --target=arm --prefix=/opt/Xilinx/SDK/2016.2/gnu/aarch32/lin/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr --enable-install-libiberty
@@ -475,14 +475,14 @@ make
 make install</pre>
 </div>
 </div>
-<div id="outline-container-org340eb94" class="outline-3">
-<h3 id="org340eb94">&#x5B89;&#x88C5;binutils</h3>
-<div class="outline-text-3" id="text-org340eb94">
+<div id="outline-container-org8ed737c" class="outline-3">
+<h3 id="org8ed737c">安装binutils</h3>
+<div class="outline-text-3" id="text-org8ed737c">
 <ul class="org-ul">
-<li><b>&#x5B89;&#x88C5;&#x5230;&#x7F16;&#x8BD1;&#x5668;&#x8DEF;&#x5F84;</b></li>
+<li><b>安装到编译器路径</b></li>
 </ul>
 <p>
-&#x5728;<a href="http://ftp.gnu.org/gnu/binutils/" target="_blank" rel="noopener">&#x5B98;&#x7F51;</a>&#x4E0B;&#x8F7D;&#x6E90;&#x7801;&#x3002;
+在<a href="http://ftp.gnu.org/gnu/binutils/" target="_blank" rel="noopener">官网</a>下载源码。
 </p>
 <pre class="example">
 tar -xjf binutils-2.25.tar.bz2
@@ -493,50 +493,50 @@ CC=arm-linux-gnueabihf-gcc ../configure --host=arm-linux-gnueabihf --target=arm-
 make
 make install</pre>
 <ul class="org-ul">
-<li><b>&#x5B89;&#x88C5;&#x5230;&#x76EE;&#x6807;&#x673A;&#x6839;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;</b> (&#x53EF;&#x4F7F;&#x7528;busybox&#x4E2D;&#x7684;&#x5E93;&#x4EE3;&#x66FF;&#x8FD9;&#x79CD;&#x65B9;&#x5F0F;&#xFF0C;&#x4EE5;&#x51CF;&#x5C0F;image&#x5927;&#x5C0F;)</li>
+<li><b>安装到目标机根文件系统</b> (可使用busybox中的库代替这种方式，以减小image大小)</li>
 </ul>
 <pre class="example">
 CC=arm-linux-gnueabihf-gcc ../configure --host=arm-linux-gnueabihf --target=arm-linux-gnueabihf --prefix=/usr --enable-shared=yes
 make install DESTDIR=/home/cec/binutils</pre>
 <p>
-&#x6700;&#x540E;&#x5C06;&#x6B64;&#x6587;&#x4EF6;&#x5939;&#x5185;&#x5BB9;&#x62F7;&#x5165;&#x6839;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF; <code>/usr</code> &#x5373;&#x53EF;&#x3002;
+最后将此文件夹内容拷入根文件系统 <code>/usr</code> 即可。
 </p>
 </div>
 </div>
-<div id="outline-container-org8692c23" class="outline-3">
-<h3 id="org8692c23">&#x5B89;&#x88C5;perf</h3>
-<div class="outline-text-3" id="text-org8692c23">
+<div id="outline-container-orgb461cc5" class="outline-3">
+<h3 id="orgb461cc5">安装perf</h3>
+<div class="outline-text-3" id="text-orgb461cc5">
 <p>
-perf &#x662F;&#x5728; <code>tools/perf</code> &#x6587;&#x4EF6;&#x4E2D;&#x7684;&#x4E00;&#x4E2A;&#x72EC;&#x7ACB;&#x5E94;&#x7528;&#x8F6F;&#x4EF6;&#xFF0C;&#x6240;&#x4EE5;&#x9700;&#x8981;&#x5148;&#x7F16;&#x8BD1;&#x5B83;&#x4EE5;&#x53EF;&#x4EE5;&#x7528;&#x5728;&#x76EE;&#x6807;&#x673A;&#x4E0A;&#x3002;
+perf 是在 <code>tools/perf</code> 文件中的一个独立应用软件，所以需要先编译它以可以用在目标机上。
 </p>
 
 <p>
-&#x5728;&#x6B64;&#x76EE;&#x5F55;&#x4E0B;&#x67E5;&#x770B;&#x6587;&#x4EF6; <code>Makefile.perf</code> &#x53D1;&#x73B0;&#x6709;&#x5982;&#x4E0B;&#x51E0;&#x884C;:
+在此目录下查看文件 <code>Makefile.perf</code> 发现有如下几行:
 </p>
 <pre class="example">
 Define ARCH as name of target architecture if you want cross-builds.
 Define CROSS_COMPILE as prefix name of compiler if you want cross-builds.</pre>
 <p>
-&#x53EF;&#x4EE5;&#x901A;&#x8FC7;&#x8FD9;&#x4E24;&#x4E2A;&#x9009;&#x9879;&#x6765;&#x6307;&#x5B9A;&#x7F16;&#x8BD1;&#x5668;&#x548C;&#x7F16;&#x8BD1;&#x67B6;&#x6784;:
+可以通过这两个选项来指定编译器和编译架构:
 </p>
 <pre class="example">
-#&#x4E5F;&#x53EF;&#x4EE5;&#x4F7F;&#x7528;&#x9759;&#x6001;&#x7F16;&#x8BD1;&#x7684;&#x65B9;&#x5F0F;&#xFF0C;&#x8FD9;&#x6837;&#x524D;&#x9762;&#x7684;&#x5E93;&#x4E5F;&#x5C31;&#x4E0D;&#x7528;&#x52A0;&#x5165;&#x6839;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x4E86;&#xFF0C;
-#&#x9700;&#x8981;&#x5728;&#x4E0B;&#x9762;&#x547D;&#x4EE4;&#x7684;&#x57FA;&#x7840;&#x4E0A;&#x52A0;&#x4E0A;&#x9009;&#x9879; &quot;LDFLAGS=-static&quot; ,&#x66F4;&#x591A;&#x9009;&#x9879;&#x9700;&#x53C2;&#x8003;Makefile.perf
+#也可以使用静态编译的方式，这样前面的库也就不用加入根文件系统了，
+#需要在下面命令的基础上加上选项 "LDFLAGS=-static" ,更多选项需参考Makefile.perf
 make CROSS_COMPILE=arm-linux-gnueabihf- ARCH=arm</pre>
 <ul class="org-ul">
-<li><b>&#x5B89;&#x88C5;&#x5230;&#x76EE;&#x6807;&#x673A;&#x6839;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;</b></li>
+<li><b>安装到目标机根文件系统</b></li>
 </ul>
 <p>
-&#x5C06;&#x7F16;&#x8BD1;&#x51FA;&#x7684;&#x53EF;&#x6267;&#x884C;&#x6587;&#x4EF6;&#x62F7;&#x8D1D;&#x8FDB;&#x76EE;&#x6807;&#x673A; <code>/usr/bin/</code> &#x5373;&#x53EF;&#x3002;
+将编译出的可执行文件拷贝进目标机 <code>/usr/bin/</code> 即可。
 </p>
 </div>
 </div>
 </div>
-<div id="outline-container-orgbeab161" class="outline-2">
-<h2 id="orgbeab161">&#x5168;&#x5C40;&#x6982;&#x89C8;</h2>
-<div class="outline-text-2" id="text-orgbeab161">
+<div id="outline-container-orgdcb7d81" class="outline-2">
+<h2 id="orgdcb7d81">全局概览</h2>
+<div class="outline-text-2" id="text-orgdcb7d81">
 <p>
-&#x5728;shell&#x4E2D;&#x8F93;&#x5165; <code>perf</code> &#x4FBF;&#x53EF;&#x5217;&#x51FA;&#x5176;&#x53EF;&#x6267;&#x884C;&#x7684;&#x6240;&#x6709;&#x547D;&#x4EE4;&#xFF1A;
+在shell中输入 <code>perf</code> 便可列出其可执行的所有命令：
 </p>
 <pre class="example">
 cec@box:~/github/lepd$ perf
@@ -554,7 +554,7 @@ cec@box:~/github/lepd$ perf
  data            Data file related processing
  diff            Read perf.data files and display the differential profile
  evlist          List the event names in a perf.data file
- ftrace          simple wrapper for kernel&apos;s ftrace functionality
+ ftrace          simple wrapper for kernel's ftrace functionality
  inject          Filter to augment the events stream with additional information
  kallsyms        Searches running kernel for symbols
  kmem            Tool to trace/measure kernel memory properties
@@ -573,35 +573,35 @@ cec@box:~/github/lepd$ perf
  probe           Define new dynamic tracepoints
  trace           strace inspired tool
 
- #&#x4F7F;&#x7528;&#x8FD9;&#x79CD;&#x65B9;&#x5F0F;&#x4F1A;&#x8FDB;&#x5165;&#x4E00;&#x4E2A;&#x547D;&#x4EE4;&#x7684;&#x624B;&#x518C;&#x8FDB;&#x884C;&#x8BE6;&#x7EC6;&#x89E3;&#x8BF4;&#xFF0C;
- #&#x4E5F;&#x53EF;&#x4EE5;&#x4F7F;&#x7528; perf COMMAND -h &#x6765;&#x7B80;&#x7565;&#x5217;&#x51FA;&#x547D;&#x4EE4;&#x8BF4;&#x660E;
- See &apos;perf help COMMAND&apos; for more information on a specific command.</pre>
+ #使用这种方式会进入一个命令的手册进行详细解说，
+ #也可以使用 perf COMMAND -h 来简略列出命令说明
+ See 'perf help COMMAND' for more information on a specific command.</pre>
 </div>
 </div>
-<div id="outline-container-org61c9955" class="outline-2">
-<h2 id="org61c9955">&#x547D;&#x4EE4;&#x7B80;&#x7565;&#x8BF4;&#x660E;</h2>
-<div class="outline-text-2" id="text-org61c9955">
+<div id="outline-container-orgd84ac4a" class="outline-2">
+<h2 id="orgd84ac4a">命令简略说明</h2>
+<div class="outline-text-2" id="text-orgd84ac4a">
 </div>
-<div id="outline-container-org89697f7" class="outline-3">
-<h3 id="org89697f7">perf list (&#x7CFB;&#x7EDF;&#x4E8B;&#x4EF6;&#x6355;&#x6349;&#x5217;&#x8868;)</h3>
-<div class="outline-text-3" id="text-org89697f7">
+<div id="outline-container-orgf5c9337" class="outline-3">
+<h3 id="orgf5c9337">perf list (系统事件捕捉列表)</h3>
+<div class="outline-text-3" id="text-orgf5c9337">
 <p>
-&#x7CFB;&#x7EDF;&#x4E8B;&#x4EF6;&#x5206;&#x4E3A;&#xFF1A;
+系统事件分为：
 </p>
 <ul class="org-ul">
-<li>&#x8F6F;&#x4EF6;&#x4E8B;&#x4EF6;(Software Event):&#x504F;&#x5411;&#x7CFB;&#x7EDF;&#x53CA;&#x7528;&#x6237;&#x8FD0;&#x884C;&#x8F6F;&#x4EF6;&#x7684;&#x4E8B;&#x4EF6;&#xFF0C;&#x4E0E;&#x5177;&#x4F53;&#x7684;CPU&#x7C7B;&#x578B;&#x65E0;&#x5173;</li>
-<li>&#x786C;&#x4EF6;&#x4E8B;&#x4EF6;(Performance Monitoring Unit,PMU): &#x4E0E;CPU&#x76F8;&#x5173;&#x7684;&#x4E8B;&#x4EF6;&#xFF0C;&#x9700;&#x8981;&#x53C2;&#x8003;CPU&#x76F8;&#x5173;&#x624B;&#x518C;</li>
-<li>&#x6355;&#x6349;&#x70B9;&#x4E8B;&#x4EF6;(Tracepoint event): &#x5185;&#x6838;&#x4E2D;&#x7684; tracepoint &#x4E8B;&#x4EF6;&#x76F8;&#x5173;</li>
+<li>软件事件(Software Event):偏向系统及用户运行软件的事件，与具体的CPU类型无关</li>
+<li>硬件事件(Performance Monitoring Unit,PMU): 与CPU相关的事件，需要参考CPU相关手册</li>
+<li>捕捉点事件(Tracepoint event): 内核中的 tracepoint 事件相关</li>
 </ul>
 </div>
 
-<div id="outline-container-org328f258" class="outline-4">
-<h4 id="org328f258">&#x4F7F;&#x7528;</h4>
-<div class="outline-text-4" id="text-org328f258">
+<div id="outline-container-org0aa65d7" class="outline-4">
+<h4 id="org0aa65d7">使用</h4>
+<div class="outline-text-4" id="text-org0aa65d7">
 <ul class="org-ul">
-<li>&#x6839;&#x636E;&#x81EA;&#x8EAB;&#x9700;&#x6C42;&#x786E;&#x5B9A;&#x9700;&#x8981;&#x6355;&#x6349;&#x54EA;&#x79CD;&#x4E8B;&#x4EF6;</li>
-<li>&#x8F93;&#x5165; <code>perf list</code> &#x6839;&#x636E;&#x5176;&#x5217;&#x51FA;&#x7684;&#x4E8B;&#x4EF6;&#x540D;&#x5217;&#x8868;&#x4EE5;&#x53CA;&#x8BF4;&#x660E;&#x786E;&#x5B9A;&#x9700;&#x8981;&#x4F7F;&#x7528;&#x7684;&#x4E8B;&#x4EF6;&#x540D;</li>
-<li>&#x4F7F;&#x7528; <code>sudo perf top -e &lt;event name1&gt;[,&lt;event name2&gt;]</code> &#x6765;&#x786E;&#x5B9A;&#x6355;&#x6349;&#x54EA;&#x4E9B;&#x4E8B;&#x4EF6;</li>
+<li>根据自身需求确定需要捕捉哪种事件</li>
+<li>输入 <code>perf list</code> 根据其列出的事件名列表以及说明确定需要使用的事件名</li>
+<li>使用 <code>sudo perf top -e <event name1>[,<event name2>]</code> 来确定捕捉哪些事件</li>
 </ul>
 </div>
 </div>
@@ -609,7 +609,7 @@ cec@box:~/github/lepd$ perf
 </div>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
 </div>
 
     </div>
@@ -695,7 +695,7 @@ Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#orgb39a52d"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x76EE;&amp;#x6807;&amp;#x673A;&amp;#x5B89;&amp;#x88C5;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org52fffbb"><span class="nav-number">1.1.</span> <span class="nav-text">&amp;#x5B89;&amp;#x88C5;zlib(elfutils&amp;#x4F9D;&amp;#x8D56;)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgc738eb9"><span class="nav-number">1.2.</span> <span class="nav-text">&amp;#x5B89;&amp;#x88C5;libc6(elfutils&amp;#x4F9D;&amp;#x8D56;)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org82cf3e8"><span class="nav-number">1.3.</span> <span class="nav-text">&amp;#x5B89;&amp;#x88C5;elfutils</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgcfc0f80"><span class="nav-number">1.4.</span> <span class="nav-text">&amp;#x5B89;&amp;#x88C5;liblzma(libunwind &amp;#x4F9D;&amp;#x8D56;)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org255fd12"><span class="nav-number">1.5.</span> <span class="nav-text">&amp;#x5B89;&amp;#x88C5;libunwind</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgaf17d4b"><span class="nav-number">1.5.1.</span> <span class="nav-text">bug&amp;#x4FEE;&amp;#x590D;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgfabe203"><span class="nav-number">1.5.2.</span> <span class="nav-text">&amp;#x7F16;&amp;#x8BD1;&amp;#x53CA;&amp;#x5B89;&amp;#x88C5;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org5a70635"><span class="nav-number">1.6.</span> <span class="nav-text">&amp;#x5B89;&amp;#x88C5;libaudit(&amp;#x5931;&amp;#x8D25;,&amp;#x4F46;&amp;#x4E0D;&amp;#x5F71;&amp;#x54CD;&amp;#x4F7F;&amp;#x7528;,&amp;#x53EF;&amp;#x5FFD;&amp;#x7565;)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orge6daff3"><span class="nav-number">1.7.</span> <span class="nav-text">&amp;#x5B89;&amp;#x88C5;libiberty(binutils&amp;#x4F9D;&amp;#x8D56;)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org340eb94"><span class="nav-number">1.8.</span> <span class="nav-text">&amp;#x5B89;&amp;#x88C5;binutils</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org8692c23"><span class="nav-number">1.9.</span> <span class="nav-text">&amp;#x5B89;&amp;#x88C5;perf</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgbeab161"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x5168;&amp;#x5C40;&amp;#x6982;&amp;#x89C8;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org61c9955"><span class="nav-number">3.</span> <span class="nav-text">&amp;#x547D;&amp;#x4EE4;&amp;#x7B80;&amp;#x7565;&amp;#x8BF4;&amp;#x660E;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org89697f7"><span class="nav-number">3.1.</span> <span class="nav-text">perf list (&amp;#x7CFB;&amp;#x7EDF;&amp;#x4E8B;&amp;#x4EF6;&amp;#x6355;&amp;#x6349;&amp;#x5217;&amp;#x8868;)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org328f258"><span class="nav-number">3.1.1.</span> <span class="nav-text">&amp;#x4F7F;&amp;#x7528;</span></a></li></ol></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org4bac5ae"><span class="nav-number">1.</span> <span class="nav-text">目标机安装</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org4aaeea2"><span class="nav-number">1.1.</span> <span class="nav-text">安装zlib(elfutils依赖)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org08e7897"><span class="nav-number">1.2.</span> <span class="nav-text">安装libc6(elfutils依赖)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org17c6422"><span class="nav-number">1.3.</span> <span class="nav-text">安装elfutils</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org09f1148"><span class="nav-number">1.4.</span> <span class="nav-text">安装liblzma(libunwind 依赖)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org5c1aae2"><span class="nav-number">1.5.</span> <span class="nav-text">安装libunwind</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org8dd8d74"><span class="nav-number">1.5.1.</span> <span class="nav-text">bug修复</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org2fee266"><span class="nav-number">1.5.2.</span> <span class="nav-text">编译及安装</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org83e020f"><span class="nav-number">1.6.</span> <span class="nav-text">安装libaudit(失败,但不影响使用,可忽略)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orga58cb37"><span class="nav-number">1.7.</span> <span class="nav-text">安装libiberty(binutils依赖)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org8ed737c"><span class="nav-number">1.8.</span> <span class="nav-text">安装binutils</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgb461cc5"><span class="nav-number">1.9.</span> <span class="nav-text">安装perf</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgdcb7d81"><span class="nav-number">2.</span> <span class="nav-text">全局概览</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgd84ac4a"><span class="nav-number">3.</span> <span class="nav-text">命令简略说明</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgf5c9337"><span class="nav-number">3.1.</span> <span class="nav-text">perf list (系统事件捕捉列表)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org0aa65d7"><span class="nav-number">3.1.1.</span> <span class="nav-text">使用</span></a></li></ol></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 

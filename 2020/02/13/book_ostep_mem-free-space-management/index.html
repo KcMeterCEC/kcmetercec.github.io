@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="&amp;#x7406;&amp;#x89E3;&amp;#x5185;&amp;#x5B58;&amp;#x7BA1;&amp;#x7406;&amp;#x7684;&amp;#x4E00;&amp;#x4E9B;&amp;#x7EC6;&amp;#x8282;&amp;#xFF0C;&amp;#x5982;&amp;#x4F55;&amp;#x5C3D;&amp;#x91CF;&amp;#x907F;&amp;#x514D;&amp;#x5185;&amp;#x5B58;&amp;#x788E;&amp;#x7247;&amp;#x53C8;&amp;#x8981;&amp;#x4FD">
+  <meta name="description" content="理解内存管理的一些细节，如何尽量避免内存碎片又要保持内存申请和释放的高效率？    外部碎片（external fragmentaion）：指的是当被申请的内存空间遍布内存各个位置，导致剩下很多小的空闲内存，从而形成碎片  这就会出现总空闲内存虽然远大于申请内存，但申请内存依然会失败的情况  内部碎片（internal fragmentation）：当内存管理器返回的内存大小大于申请的大小时，">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[What]Free-Space Management">
 <meta property="og:url" content="http://kcmetercec.top/2020/02/13/book_ostep_mem-free-space-management/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="&amp;#x7406;&amp;#x89E3;&amp;#x5185;&amp;#x5B58;&amp;#x7BA1;&amp;#x7406;&amp;#x7684;&amp;#x4E00;&amp;#x4E9B;&amp;#x7EC6;&amp;#x8282;&amp;#xFF0C;&amp;#x5982;&amp;#x4F55;&amp;#x5C3D;&amp;#x91CF;&amp;#x907F;&amp;#x514D;&amp;#x5185;&amp;#x5B58;&amp;#x788E;&amp;#x7247;&amp;#x53C8;&amp;#x8981;&amp;#x4FD">
+<meta property="og:description" content="理解内存管理的一些细节，如何尽量避免内存碎片又要保持内存申请和释放的高效率？    外部碎片（external fragmentaion）：指的是当被申请的内存空间遍布内存各个位置，导致剩下很多小的空闲内存，从而形成碎片  这就会出现总空闲内存虽然远大于申请内存，但申请内存依然会失败的情况  内部碎片（internal fragmentation）：当内存管理器返回的内存大小大于申请的大小时，">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/free_space_management/heap1.jpg?raw=true">
 <meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/free_space_management/list1.jpg?raw=true">
@@ -311,319 +311,319 @@
       
         <div id="content">
 <p>
-&#x7406;&#x89E3;&#x5185;&#x5B58;&#x7BA1;&#x7406;&#x7684;&#x4E00;&#x4E9B;&#x7EC6;&#x8282;&#xFF0C;&#x5982;&#x4F55;&#x5C3D;&#x91CF;&#x907F;&#x514D;&#x5185;&#x5B58;&#x788E;&#x7247;&#x53C8;&#x8981;&#x4FDD;&#x6301;&#x5185;&#x5B58;&#x7533;&#x8BF7;&#x548C;&#x91CA;&#x653E;&#x7684;&#x9AD8;&#x6548;&#x7387;&#xFF1F;
+理解内存管理的一些细节，如何尽量避免内存碎片又要保持内存申请和释放的高效率？
 </p>
 
 <ul class="org-ul">
-<li>&#x5916;&#x90E8;&#x788E;&#x7247;&#xFF08;external fragmentaion&#xFF09;&#xFF1A;&#x6307;&#x7684;&#x662F;&#x5F53;&#x88AB;&#x7533;&#x8BF7;&#x7684;&#x5185;&#x5B58;&#x7A7A;&#x95F4;&#x904D;&#x5E03;&#x5185;&#x5B58;&#x5404;&#x4E2A;&#x4F4D;&#x7F6E;&#xFF0C;&#x5BFC;&#x81F4;&#x5269;&#x4E0B;&#x5F88;&#x591A;&#x5C0F;&#x7684;&#x7A7A;&#x95F2;&#x5185;&#x5B58;&#xFF0C;&#x4ECE;&#x800C;&#x5F62;&#x6210;&#x788E;&#x7247;
+<li>外部碎片（external fragmentaion）：指的是当被申请的内存空间遍布内存各个位置，导致剩下很多小的空闲内存，从而形成碎片
 <ul class="org-ul">
-<li>&#x8FD9;&#x5C31;&#x4F1A;&#x51FA;&#x73B0;&#x603B;&#x7A7A;&#x95F2;&#x5185;&#x5B58;&#x867D;&#x7136;&#x8FDC;&#x5927;&#x4E8E;&#x7533;&#x8BF7;&#x5185;&#x5B58;&#xFF0C;&#x4F46;&#x7533;&#x8BF7;&#x5185;&#x5B58;&#x4F9D;&#x7136;&#x4F1A;&#x5931;&#x8D25;&#x7684;&#x60C5;&#x51B5;</li>
+<li>这就会出现总空闲内存虽然远大于申请内存，但申请内存依然会失败的情况</li>
 </ul></li>
-<li>&#x5185;&#x90E8;&#x788E;&#x7247;&#xFF08;internal fragmentation&#xFF09;&#xFF1A;&#x5F53;&#x5185;&#x5B58;&#x7BA1;&#x7406;&#x5668;&#x8FD4;&#x56DE;&#x7684;&#x5185;&#x5B58;&#x5927;&#x5C0F;&#x5927;&#x4E8E;&#x7533;&#x8BF7;&#x7684;&#x5927;&#x5C0F;&#x65F6;&#xFF0C;&#x591A;&#x4E8E;&#x7684;&#x90E8;&#x5206;&#x7A0B;&#x5E8F;&#x4E0D;&#x4F1A;&#x4F7F;&#x7528;&#xFF0C;&#x4E5F;&#x5C31;&#x6D6A;&#x8D39;&#x4E86;
+<li>内部碎片（internal fragmentation）：当内存管理器返回的内存大小大于申请的大小时，多于的部分程序不会使用，也就浪费了
 <ul class="org-ul">
-<li>&#x8FD9;&#x662F;&#x56E0;&#x4E3A;&#x5185;&#x5B58;&#x7BA1;&#x7406;&#x5668;&#x4EE5;&#x5757;&#x4E3A;&#x5355;&#x4F4D;&#x7BA1;&#x7406;&#x5185;&#x5B58;&#x7A7A;&#x95F4;&#xFF0C;&#x7533;&#x8BF7;&#x5F97;&#x5230;&#x7684;&#x5185;&#x5B58;&#x603B;&#x662F;&#x5757;&#x5927;&#x5C0F;&#x7684;&#x6574;&#x6570;&#x500D;</li>
+<li>这是因为内存管理器以块为单位管理内存空间，申请得到的内存总是块大小的整数倍</li>
 </ul></li>
 </ul>
 <a id="more"></a>
-<div id="outline-container-org7971de8" class="outline-2">
-<h2 id="org7971de8">&#x5E95;&#x5C42;&#x673A;&#x5236;</h2>
-<div class="outline-text-2" id="text-org7971de8">
+<div id="outline-container-org4230df3" class="outline-2">
+<h2 id="org4230df3">底层机制</h2>
+<div class="outline-text-2" id="text-org4230df3">
 </div>
-<div id="outline-container-orgcd2bd3b" class="outline-3">
-<h3 id="orgcd2bd3b">&#x7A7A;&#x95F2;&#x7A7A;&#x95F4;&#x7684;&#x5206;&#x6563;&#x4E0E;&#x805A;&#x5408;</h3>
-<div class="outline-text-3" id="text-orgcd2bd3b">
+<div id="outline-container-orgf64eba2" class="outline-3">
+<h3 id="orgf64eba2">空闲空间的分散与聚合</h3>
+<div class="outline-text-3" id="text-orgf64eba2">
 <p>
-&#x73B0;&#x5728;&#x5148;&#x7AD9;&#x5728;&#x5185;&#x5B58;&#x7BA1;&#x7406;&#x5E93;&#xFF08;&#x6BD4;&#x5982; glibc&#xFF09;&#x7684;&#x89D2;&#x5EA6;&#x6765;&#x770B;&#x5806;&#x7684;&#x5185;&#x5B58;&#x7BA1;&#x7406;&#x3002;
+现在先站在内存管理库（比如 glibc）的角度来看堆的内存管理。
 </p>
 
 <p>
-&#x4F7F;&#x7528;&#x4E00;&#x4E2A;&#x7A7A;&#x95F2;&#x94FE;&#x8868;&#x6765;&#x4FDD;&#x5B58;&#x7A7A;&#x95F2;&#x90E8;&#x5206;&#x7684;&#x5730;&#x5740;&#x548C;&#x5927;&#x5C0F;&#xFF0C;&#x6BD4;&#x5982;&#x4E00;&#x4E2A;&#x5806;&#x7684;&#x4F7F;&#x7528;&#x60C5;&#x51B5;&#x5982;&#x4E0B;&#xFF1A;
+使用一个空闲链表来保存空闲部分的地址和大小，比如一个堆的使用情况如下：
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/free_space_management/heap1.jpg?raw=true" alt="mempic/free_space_management/heap1.jpg">
 <p>
-&#x90A3;&#x4E48;&#x5BF9;&#x5E94;&#x7684;&#x94FE;&#x8868;&#x7ED3;&#x6784;&#x5982;&#x4E0B;&#xFF1A;
+那么对应的链表结构如下：
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/free_space_management/list1.jpg?raw=true" alt="mempic/free_space_management/list1.jpg">
 <p>
-&#x5982;&#x4E0A;&#x56FE;&#x6240;&#x793A;&#xFF0C;&#x5F53;&#x7528;&#x6237;&#x8981;&#x7533;&#x8BF7;&#x7684;&#x5185;&#x5B58;&#x5927;&#x4E8E; 10 &#x5B57;&#x8282;&#x65F6;&#xFF0C;&#x7531;&#x4E8E;&#x5916;&#x90E8;&#x5185;&#x5B58;&#x788E;&#x7247;&#xFF0C;&#x4FBF;&#x4F1A;&#x5931;&#x8D25;&#x3002;
+如上图所示，当用户要申请的内存大于 10 字节时，由于外部内存碎片，便会失败。
 </p>
 </div>
 
-<div id="outline-container-orge60578a" class="outline-4">
-<h4 id="orge60578a">&#x5206;&#x6563;</h4>
-<div class="outline-text-4" id="text-orge60578a">
+<div id="outline-container-orgf0458b8" class="outline-4">
+<h4 id="orgf0458b8">分散</h4>
+<div class="outline-text-4" id="text-orgf0458b8">
 <p>
-&#x5047;&#x8BBE;&#x7528;&#x6237;&#x4EC5;&#x7533;&#x8BF7; 1 &#x5B57;&#x8282;&#xFF0C;&#x5E76;&#x4E14;&#x5185;&#x5B58;&#x7BA1;&#x7406;&#x5668;&#x4E5F;&#x662F;&#x4EE5; 1 &#x5B57;&#x8282;&#x4E3A;&#x6700;&#x5C0F;&#x5207;&#x5272;&#x5355;&#x4F4D;&#xFF0C;&#x90A3;&#x4E48;&#x7533;&#x8BF7;&#x540E;&#x7684;&#x7A7A;&#x95F2;&#x94FE;&#x8868;&#x5C31;&#x53EF;&#x80FD;&#x662F;&#x8FD9;&#x6837;&#xFF1A;
+假设用户仅申请 1 字节，并且内存管理器也是以 1 字节为最小切割单位，那么申请后的空闲链表就可能是这样：
 </p>
 
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/free_space_management/list2.jpg?raw=true" alt="mempic/free_space_management/list2.jpg">
 <p>
-&#x8FD9;&#x6837;&#x5C31;&#x76F8;&#x5F53;&#x4E8E;&#x94FE;&#x8868;&#x9009;&#x62E9;&#x4E86;&#x7B2C;&#x4E8C;&#x4E2A;&#x7A7A;&#x95F2;&#x90E8;&#x5206;&#xFF0C;malloc() &#x8FD4;&#x56DE;&#x7684;&#x5730;&#x5740;&#x662F; 20&#xFF0C;&#x5E76;&#x4E14;&#x6B64;&#x65F6;&#x7B2C;&#x4E8C;&#x4E2A;&#x7A7A;&#x95F2;&#x90E8;&#x5206;&#x76F8;&#x5F53;&#x4E8E;&#x88AB;&#x5207;&#x5272;&#x4E86; 1 &#x5B57;&#x8282;&#x4E0B;&#x6765;&#x3002;
+这样就相当于链表选择了第二个空闲部分，malloc() 返回的地址是 20，并且此时第二个空闲部分相当于被切割了 1 字节下来。
 </p>
 </div>
 </div>
-<div id="outline-container-org1c1bdd3" class="outline-4">
-<h4 id="org1c1bdd3">&#x805A;&#x5408;</h4>
-<div class="outline-text-4" id="text-org1c1bdd3">
+<div id="outline-container-org0863f9a" class="outline-4">
+<h4 id="org0863f9a">聚合</h4>
+<div class="outline-text-4" id="text-org0863f9a">
 <p>
-&#x5047;&#x8BBE;&#x7528;&#x6237;&#x91CA;&#x653E;&#x4E2D;&#x95F4;&#x7684; 10 &#x5B57;&#x8282;&#x5806;&#x7A7A;&#x95F4;&#xFF0C;&#x90A3;&#x4E48;&#x91CA;&#x653E;&#x540E;&#x7684;&#x5185;&#x5B58;&#x7A7A;&#x95F4;&#x94FE;&#x8868;&#x5C31;&#x662F;&#x8FD9;&#x6837;&#xFF1A;
+假设用户释放中间的 10 字节堆空间，那么释放后的内存空间链表就是这样：
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/free_space_management/list3.jpg?raw=true" alt="mempic/free_space_management/list3.jpg">
 <p>
-&#x4F46;&#x5982;&#x679C;&#x662F;&#x8FD9;&#x6837;&#x7684;&#x8BDD;&#xFF0C;&#x7528;&#x6237;&#x8981;&#x4E00;&#x6B21;&#x6027;&#x7533;&#x8BF7;&#x5927;&#x4E8E; 10 &#x5B57;&#x8282;&#x7A7A;&#x95F4;&#x65F6;&#xFF0C;&#x4F9D;&#x7136;&#x4E5F;&#x4F1A;&#x5931;&#x8D25;&#xFF0C;&#x56E0;&#x4E3A;&#x6BCF;&#x4E2A;&#x5757;&#x7684;&#x5927;&#x5C0F;&#x53EA;&#x6709; 10 &#x5B57;&#x8282;&#x3002;
+但如果是这样的话，用户要一次性申请大于 10 字节空间时，依然也会失败，因为每个块的大小只有 10 字节。
 </p>
 
 <p>
-&#x6240;&#x4EE5;&#x6211;&#x4EEC;&#x9700;&#x8981;&#x805A;&#x5408;&#x7A7A;&#x95F2;&#x5757;&#xFF1A;&#x5F53;&#x53D1;&#x751F;&#x4E00;&#x6B21;&#x5185;&#x5B58;&#x91CA;&#x653E;&#x540E;&#xFF0C;&#x67E5;&#x627E;&#x5176;&#x7D27;&#x8FDE;&#x90BB;&#x5C45;&#x8282;&#x70B9;&#x662F;&#x5426;&#x6709;&#x7A7A;&#x95F2;&#xFF0C;&#x5982;&#x679C;&#x6709;&#x7A7A;&#x95F2;&#x5219;&#x6574;&#x4E2A;&#x4E3A;&#x4E00;&#x4E2A;&#x8282;&#x70B9;&#x3002;
-&#x6574;&#x5408;&#x540E;&#x7684;&#x7A7A;&#x95F2;&#x94FE;&#x8868;&#x5982;&#x4E0B;&#xFF1A;
+所以我们需要聚合空闲块：当发生一次内存释放后，查找其紧连邻居节点是否有空闲，如果有空闲则整个为一个节点。
+整合后的空闲链表如下：
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/free_space_management/list4.jpg?raw=true" alt="mempic/free_space_management/list4.jpg">
 </div>
 </div>
 </div>
-<div id="outline-container-org5c9ca74" class="outline-3">
-<h3 id="org5c9ca74">&#x5DF2;&#x7533;&#x8BF7;&#x7A7A;&#x95F4;&#x7684;&#x4FDD;&#x5B58;</h3>
-<div class="outline-text-3" id="text-org5c9ca74">
+<div id="outline-container-org02a68ee" class="outline-3">
+<h3 id="org02a68ee">已申请空间的保存</h3>
+<div class="outline-text-3" id="text-org02a68ee">
 <p>
-&#x5F53;&#x6211;&#x4EEC;&#x4F7F;&#x7528; free() &#x65F6;&#xFF0C;&#x63A5;&#x53E3;&#x4EC5;&#x63D0;&#x4F9B;&#x4E86;&#x5185;&#x5B58;&#x7684;&#x9996;&#x5730;&#x5740;&#xFF0C;&#x90A3;&#x5C31;&#x8BF4;&#x660E;&#x5185;&#x5B58;&#x7BA1;&#x7406;&#x5668;&#x4FDD;&#x5B58;&#x4E86;&#x5176;&#x7533;&#x8BF7;&#x7A7A;&#x95F4;&#x7684;&#x5927;&#x5C0F;&#x3002;
+当我们使用 free() 时，接口仅提供了内存的首地址，那就说明内存管理器保存了其申请空间的大小。
 </p>
 
 <p>
-&#x4EE5;&#x4E00;&#x4E2A;&#x7B80;&#x5355;&#x7684;&#x793A;&#x4F8B;&#x8BF4;&#x660E;&#xFF0C;&#x5B9E;&#x9645;&#x4E0A;&#x7528;&#x6237;&#x7533;&#x8BF7; N &#x5B57;&#x8282;&#x5185;&#x5B58;&#xFF0C; <b>&#x5185;&#x5B58;&#x7BA1;&#x7406;&#x5668;&#x771F;&#x6B63;&#x7533;&#x8BF7;&#x662F;&#x5927;&#x4E8E; N &#x5B57;&#x8282;&#x5185;&#x5B58;&#x7684;&#xFF0C;&#x56E0;&#x4E3A;&#x8FD8;&#x9700;&#x8981;&#x4E00;&#x4E2A;&#x5934;&#x6765;&#x4FDD;&#x5B58;&#x8FD9;&#x5757;&#x5185;&#x5B58;&#x7684;&#x4FE1;&#x606F;</b> &#xFF1A;
+以一个简单的示例说明，实际上用户申请 N 字节内存， <b>内存管理器真正申请是大于 N 字节内存的，因为还需要一个头来保存这块内存的信息</b> ：
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/free_space_management/heap2.jpg?raw=true" alt="mempic/free_space_management/heap2.jpg">
 <p>
-&#x5982;&#x4E0A;&#x56FE;&#x6240;&#x793A;&#xFF0C;&#x7528;&#x6237;&#x901A;&#x8FC7; malloc() &#x5F97;&#x5230;&#x7684;&#x662F; ptr&#xFF0C;&#x5B9E;&#x9645;&#x4E0A;&#x7BA1;&#x7406;&#x5668;&#x8FD8;&#x7528;&#x4E86; hptr &#x4FDD;&#x5B58;&#x4E86;&#x7533;&#x8BF7;&#x7A7A;&#x95F4;&#x7684;&#x5927;&#x5C0F;&#x8FD8;&#x6709;&#x5BF9;&#x5E94;&#x7684;&#x9B54;&#x6570;&#x4EE5;&#x9A8C;&#x8BC1;&#x5730;&#x5740;&#x7684;&#x6B63;&#x786E;&#x6027;&#x3002;
+如上图所示，用户通过 malloc() 得到的是 ptr，实际上管理器还用了 hptr 保存了申请空间的大小还有对应的魔数以验证地址的正确性。
 </p>
 
 <p>
-&#x5F53;&#x7528;&#x6237;&#x901A;&#x8FC7; free() &#x91CA;&#x653E;&#x5185;&#x5B58;&#x65F6;&#xFF0C;&#x5185;&#x5B58;&#x7BA1;&#x7406;&#x5668;&#x7684;&#x5927;&#x81F4;&#x6D41;&#x7A0B;&#x5982;&#x4E0B;&#xFF1A;
+当用户通过 free() 释放内存时，内存管理器的大致流程如下：
 </p>
 <ol class="org-ol">
-<li>&#x901A;&#x8FC7; ptr &#x51CF;&#x53BB;&#x56FA;&#x5B9A;&#x503C;&#x5F97;&#x5230; hptr</li>
-<li>&#x9996;&#x5148;&#x9A8C;&#x8BC1; hptr-&gt;magic &#x662F;&#x5426;&#x6B63;&#x786E;&#xFF0C;&#x4EE5;&#x786E;&#x8BA4;&#x7528;&#x6237;&#x91CA;&#x653E;&#x7684;&#x5730;&#x5740;&#x65E0;&#x8BEF;</li>
-<li>&#x7136;&#x540E;&#x5F00;&#x59CB;&#x91CA;&#x653E; <code>hptr-&gt;size + sizeof(header)</code> &#x8FD9;&#x4E48;&#x591A;&#x5B57;&#x8282;&#x7684;&#x5185;&#x5B58;</li>
+<li>通过 ptr 减去固定值得到 hptr</li>
+<li>首先验证 hptr->magic 是否正确，以确认用户释放的地址无误</li>
+<li>然后开始释放 <code>hptr->size + sizeof(header)</code> 这么多字节的内存</li>
 </ol>
 </div>
 </div>
 
-<div id="outline-container-org27bcdf2" class="outline-3">
-<h3 id="org27bcdf2">&#x6574;&#x4F53;&#x6D41;&#x7A0B;</h3>
-<div class="outline-text-3" id="text-org27bcdf2">
+<div id="outline-container-org9e44067" class="outline-3">
+<h3 id="org9e44067">整体流程</h3>
+<div class="outline-text-3" id="text-org9e44067">
 <p>
-&#x5B9E;&#x9645;&#x4E0A;&#x65E0;&#x8BBA;&#x662F;&#x7A7A;&#x95F2;&#x94FE;&#x8868;&#x7684;&#x6BCF;&#x4E2A;&#x8282;&#x70B9;&#x8FD8;&#x662F;&#x5DF2;&#x7533;&#x8BF7;&#x7A7A;&#x95F4;&#x7684;&#x6BCF;&#x4E2A;&#x5757;&#x90FD;&#x9700;&#x8981;&#x4E00;&#x4E2A;&#x5934;&#x6765;&#x4FDD;&#x5B58;&#x5F53;&#x524D;&#x5185;&#x5B58;&#x5757;&#x7684;&#x4FE1;&#x606F;&#xFF0C;&#x8FD9;&#x5C31;&#x7C7B;&#x4F3C;&#x4E8E;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x7684; metadata &#x548C; block &#x4E00;&#x6837;&#x3002;
+实际上无论是空闲链表的每个节点还是已申请空间的每个块都需要一个头来保存当前内存块的信息，这就类似于文件系统的 metadata 和 block 一样。
 </p>
 </div>
-<div id="outline-container-org071a059" class="outline-4">
-<h4 id="org071a059">&#x6700;&#x5F00;&#x59CB;&#x7684;&#x7A7A;&#x95F2;&#x94FE;&#x8868;</h4>
-<div class="outline-text-4" id="text-org071a059">
+<div id="outline-container-orga2b42b3" class="outline-4">
+<h4 id="orga2b42b3">最开始的空闲链表</h4>
+<div class="outline-text-4" id="text-orga2b42b3">
 <p>
-&#x4E0B;&#x9762;&#x5047;&#x8BBE;&#x6709; 4 KB &#x7684;&#x5185;&#x5B58;&#x7A7A;&#x95F4;&#xFF0C;&#x6700;&#x5F00;&#x59CB;&#x5168;&#x90E8;&#x7A7A;&#x95F2;&#xFF0C;&#x90A3;&#x4E48;&#x4F7F;&#x7528;&#x7A7A;&#x95F2;&#x94FE;&#x8868;&#x540E;&#x7684;&#x5806;&#x5185;&#x5B58;&#x5982;&#x4E0B;&#xFF08;&#x5047;&#x8BBE;&#x5934;&#x5927;&#x5C0F;&#x4E3A; 8 &#x5B57;&#x8282;&#xFF09;&#xFF1A;
+下面假设有 4 KB 的内存空间，最开始全部空闲，那么使用空闲链表后的堆内存如下（假设头大小为 8 字节）：
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/free_space_management/process1.jpg?raw=true" alt="mempic/free_space_management/process1.jpg">
 <p>
-&#x53EF;&#x4EE5;&#x770B;&#x5230;&#xFF0C;&#x9664;&#x5F00;&#x5934;&#x7684; 8 &#x5B57;&#x8282;&#x540E;&#xFF0C;&#x771F;&#x6B63;&#x7528;&#x6237;&#x80FD;&#x591F;&#x7533;&#x8BF7;&#x7684;&#x7A7A;&#x95F4;&#x53EA;&#x6709; 4088 &#x5B57;&#x8282;&#x3002;
+可以看到，除开头的 8 字节后，真正用户能够申请的空间只有 4088 字节。
 </p>
 </div>
 </div>
-<div id="outline-container-orgad975f9" class="outline-4">
-<h4 id="orgad975f9">&#x7533;&#x8BF7;&#x5185;&#x5B58;</h4>
-<div class="outline-text-4" id="text-orgad975f9">
+<div id="outline-container-orgfedd541" class="outline-4">
+<h4 id="orgfedd541">申请内存</h4>
+<div class="outline-text-4" id="text-orgfedd541">
 <p>
-&#x5F53;&#x7528;&#x6237;&#x7533;&#x8BF7;&#x4E00;&#x4E2A; 100 &#x5B57;&#x8282;&#x7684;&#x7A7A;&#x95F4;&#x540E;&#xFF0C;&#x9664;&#x4E86;&#x771F;&#x6B63;&#x7684; 100 &#x5B57;&#x8282;&#x7A7A;&#x95F4;&#x8FD8;&#x9700;&#x8981;&#x5934;&#x6765;&#x4FDD;&#x5B58;&#x8FD9;&#x5757;&#x5185;&#x5B58;&#x4FE1;&#x606F;&#xFF1A;
+当用户申请一个 100 字节的空间后，除了真正的 100 字节空间还需要头来保存这块内存信息：
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/free_space_management/process2.jpg?raw=true" alt="mempic/free_space_management/process2.jpg">
 <p>
-&#x63A5;&#x4E0B;&#x6765;&#x518D;&#x8FDE;&#x7EED;&#x7533;&#x8BF7;&#xFF1A;
+接下来再连续申请：
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/free_space_management/process3.jpg?raw=true" alt="mempic/free_space_management/process3.jpg">
 </div>
 </div>
-<div id="outline-container-org41d9107" class="outline-4">
-<h4 id="org41d9107">&#x91CA;&#x653E;&#x5185;&#x5B58;</h4>
-<div class="outline-text-4" id="text-org41d9107">
+<div id="outline-container-org891330f" class="outline-4">
+<h4 id="org891330f">释放内存</h4>
+<div class="outline-text-4" id="text-org891330f">
 <p>
-&#x91CA;&#x653E;&#x4E2D;&#x95F4;&#x5730;&#x5740;&#x540E;&#x5C06;&#x5176;&#x63D2;&#x5165;&#x7A7A;&#x95F2;&#x5217;&#x8868;&#x5934;&#xFF1A;
+释放中间地址后将其插入空闲列表头：
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/free_space_management/process4.jpg?raw=true" alt="mempic/free_space_management/process4.jpg">
 <p>
-&#x63A5;&#x4E0B;&#x6765;&#x91CA;&#x653E;&#x5176;&#x4ED6;&#x6240;&#x6709;&#x7A7A;&#x95F4;&#xFF1A;
+接下来释放其他所有空间：
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/free_space_management/process5.jpg?raw=true" alt="mempic/free_space_management/process5.jpg">
 <p>
-&#x53EF;&#x4EE5;&#x770B;&#x5230;&#x5F53;&#x6CA1;&#x6709;&#x4F7F;&#x7528;&#x805A;&#x5408;&#x7684;&#x60C5;&#x51B5;&#x4E0B;&#xFF0C;&#x8FD9;&#x7A7A;&#x95F2;&#x5185;&#x5B58;&#x5C31;&#x5206;&#x4E3A;&#x4E86;&#x597D;&#x51E0;&#x4E2A;&#x5C0F;&#x5757;&#x3002;
+可以看到当没有使用聚合的情况下，这空闲内存就分为了好几个小块。
 </p>
 </div>
 </div>
 </div>
-<div id="outline-container-org859cfc7" class="outline-3">
-<h3 id="org859cfc7">&#x7533;&#x8BF7;&#x66F4;&#x5927;&#x7684;&#x5185;&#x5B58;</h3>
-<div class="outline-text-3" id="text-org859cfc7">
+<div id="outline-container-org096c5c1" class="outline-3">
+<h3 id="org096c5c1">申请更大的内存</h3>
+<div class="outline-text-3" id="text-org096c5c1">
 <p>
-&#x4E00;&#x822C;&#x5185;&#x5B58;&#x7BA1;&#x7406;&#x5E93;&#x6700;&#x5F00;&#x59CB;&#x4E3A;&#x5411;&#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;&#x7533;&#x8BF7;&#x4E00;&#x5757;&#x5185;&#x5B58;&#x7528;&#x4E8E;&#x7528;&#x6237;&#x7533;&#x8BF7;&#x3002;
+一般内存管理库最开始为向操作系统申请一块内存用于用户申请。
 </p>
 
 <p>
-&#x5F53;&#x7533;&#x8BF7;&#x7684;&#x5185;&#x5B58;&#x8FC7;&#x5927;&#x65F6;&#xFF0C;&#x5185;&#x5B58;&#x7BA1;&#x7406;&#x5E93;&#x53C8;&#x4F1A;&#x518D;&#x6B21;&#x5411;&#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;&#x7533;&#x8BF7;&#x4E00;&#x5927;&#x5757;&#x5185;&#x5B58;&#xFF0C;&#x7136;&#x540E;&#x6B64;&#x65F6;&#x7533;&#x8BF7;&#x5185;&#x5B58;&#x7684; API &#x624D;&#x8FD4;&#x56DE;&#x6210;&#x529F;&#x3002;
+当申请的内存过大时，内存管理库又会再次向操作系统申请一大块内存，然后此时申请内存的 API 才返回成功。
 </p>
 </div>
 </div>
-<div id="outline-container-org7475c82" class="outline-3">
-<h3 id="org7475c82">&#x793A;&#x4F8B;&#x7A0B;&#x5E8F;</h3>
-<div class="outline-text-3" id="text-org7475c82">
+<div id="outline-container-org9ab4b91" class="outline-3">
+<h3 id="org9ab4b91">示例程序</h3>
+<div class="outline-text-3" id="text-org9ab4b91">
 <p>
-&#x4E0B;&#x9762;&#x8FD9;&#x6BB5;&#x793A;&#x4F8B;&#x4EE3;&#x7801;&#x4FBF;&#x662F;&#x5F88;&#x597D;&#x7684;&#x5C55;&#x793A;&#x4E86;&#x5185;&#x5B58;&#x788E;&#x7247;&#x662F;&#x5982;&#x4F55;&#x4EA7;&#x751F;&#x7684;&#xFF1A;
+下面这段示例代码便是很好的展示了内存碎片是如何产生的：
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;assert.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/mman.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdint.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MEM_SIZE    (4096)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MAGIC       (0x12345678)</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> __SIZEOF_POINTER == 4</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT_TYPE    int32_t</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT_TYPE    int64_t</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> __<span class="title">node_t</span></span></span><br><span class="line"><span class="class">{</span></span><br><span class="line">    INT_TYPE size;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> __<span class="title">node_t</span> *<span class="title">next</span>;</span></span><br><span class="line">}<span class="keyword">node_t</span>;</span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span>{</span></span><br><span class="line">    INT_TYPE size;</span><br><span class="line">    INT_TYPE magic;</span><br><span class="line">}<span class="keyword">header_t</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">node_t</span> *free_head;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">print_mem</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;-----------------\n&quot;</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;The free spaces of memory are:\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">node_t</span> *node = free_head;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">uint8_t</span> free_cnt = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">do</span></span><br><span class="line">    {</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;free node &lt;%d&gt; at %p with %ld bytes\n&quot;</span>, </span><br><span class="line">		free_cnt++, node, node-&gt;size);</span><br><span class="line">	node = node-&gt;next;</span><br><span class="line">    }<span class="keyword">while</span>(node);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;-----------------\n&quot;</span>);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">create_mem</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    free_head = mmap(<span class="literal">NULL</span>, MEM_SIZE, PROT_READ | PROT_WRITE,</span><br><span class="line">	    MAP_ANON | MAP_PRIVATE, <span class="number">-1</span>, <span class="number">0</span>);</span><br><span class="line">    assert(free_head);</span><br><span class="line"></span><br><span class="line">    free_head-&gt;size = MEM_SIZE - <span class="keyword">sizeof</span>(<span class="keyword">node_t</span>);</span><br><span class="line">    free_head-&gt;next = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    print_mem();</span><br><span class="line">}</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">my_free</span><span class="params">(<span class="keyword">void</span> *ptr)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="keyword">header_t</span> *use_head = ptr - <span class="keyword">sizeof</span>(<span class="keyword">header_t</span>);</span><br><span class="line">    assert(use_head-&gt;magic == MAGIC);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">node_t</span> *node = free_head;</span><br><span class="line">    <span class="keyword">while</span>(node-&gt;next)</span><br><span class="line">    {</span><br><span class="line">	node = node-&gt;next;</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">node_t</span> *new_node = (<span class="keyword">node_t</span> *)use_head;</span><br><span class="line">    new_node-&gt;next = <span class="literal">NULL</span>;</span><br><span class="line">    node-&gt;next = new_node;</span><br><span class="line"></span><br><span class="line">    print_mem();</span><br><span class="line">}</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> *<span class="title">my_malloc</span><span class="params">(<span class="keyword">int</span> size)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="keyword">void</span> *ptr = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">node_t</span> *node = free_head;</span><br><span class="line">    <span class="keyword">node_t</span> *prev = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;finding free space...\n&quot;</span>);</span><br><span class="line">    <span class="keyword">while</span>(node)</span><br><span class="line">    {</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;find node %p, with space %ld, next-&gt; %p\n&quot;</span>,</span><br><span class="line">		node, node-&gt;size, node-&gt;next);</span><br><span class="line">	<span class="keyword">if</span>(node-&gt;size &gt;= size)</span><br><span class="line">	{</span><br><span class="line">	    <span class="comment">//move or insert a new node</span></span><br><span class="line">	    <span class="keyword">uint16_t</span> offset = <span class="keyword">sizeof</span>(<span class="keyword">node_t</span>) + size;</span><br><span class="line">	    <span class="keyword">uint16_t</span> free_size = node-&gt;size - size - <span class="keyword">sizeof</span>(<span class="keyword">node_t</span>);</span><br><span class="line">	    <span class="built_in">printf</span>(<span class="string">&quot;offset = %d\n&quot;</span>, offset);</span><br><span class="line">	    <span class="keyword">if</span>(node == free_head)</span><br><span class="line">	    {</span><br><span class="line">		free_head = (<span class="keyword">node_t</span> *)((<span class="keyword">uint8_t</span> *)free_head + offset);</span><br><span class="line">		free_head-&gt;size = free_size;</span><br><span class="line">	    }</span><br><span class="line">	    <span class="keyword">else</span></span><br><span class="line">	    {</span><br><span class="line">		<span class="keyword">node_t</span> *new_node = (<span class="keyword">node_t</span> *)((<span class="keyword">uint8_t</span> *)node + offset);</span><br><span class="line">		new_node-&gt;size = free_size;</span><br><span class="line">		new_node-&gt;next = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">		prev-&gt;next = new_node;</span><br><span class="line">	    }</span><br><span class="line"></span><br><span class="line">	    <span class="keyword">header_t</span> *use_head = (<span class="keyword">header_t</span> *)node;</span><br><span class="line">	    use_head-&gt;magic = MAGIC;</span><br><span class="line">	    use_head-&gt;size = size;</span><br><span class="line"></span><br><span class="line">	    ptr = (<span class="keyword">void</span> *)((<span class="keyword">uint8_t</span> *)use_head + <span class="keyword">sizeof</span>(<span class="keyword">header_t</span>));</span><br><span class="line"></span><br><span class="line">	    <span class="built_in">printf</span>(<span class="string">&quot;used header : addr %p, size %ld\n&quot;</span>,</span><br><span class="line">		    use_head, use_head-&gt;size);</span><br><span class="line"></span><br><span class="line">	    <span class="keyword">break</span>;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	prev = node;</span><br><span class="line">	node = node-&gt;next;</span><br><span class="line">    }</span><br><span class="line">    print_mem();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(!ptr)</span><br><span class="line">    {</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;error: Sorry, I didn&apos;t find free space!\n&quot;</span>);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    {</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;The address of malloc space is %p\n&quot;</span>, ptr);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> ptr;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    create_mem();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">uint8_t</span> *m1 = (<span class="keyword">uint8_t</span> *)my_malloc(<span class="number">1000</span>);</span><br><span class="line">    assert(m1);</span><br><span class="line">    <span class="built_in">memset</span>(m1, <span class="number">1</span>, <span class="number">1000</span>);</span><br><span class="line">    <span class="keyword">uint8_t</span> *m2 = (<span class="keyword">uint8_t</span> *)my_malloc(<span class="number">1000</span>);</span><br><span class="line">    assert(m2);</span><br><span class="line">    <span class="built_in">memset</span>(m2, <span class="number">2</span>, <span class="number">1000</span>);</span><br><span class="line">    <span class="keyword">uint8_t</span> *m3 = (<span class="keyword">uint8_t</span> *)my_malloc(<span class="number">1000</span>);</span><br><span class="line">    assert(m3);</span><br><span class="line">    <span class="built_in">memset</span>(m3, <span class="number">3</span>, <span class="number">1000</span>);</span><br><span class="line">    <span class="keyword">uint8_t</span> *m4 = (<span class="keyword">uint8_t</span> *)my_malloc(<span class="number">1000</span>);</span><br><span class="line">    assert(m4);</span><br><span class="line">    <span class="built_in">memset</span>(m4, <span class="number">4</span>, <span class="number">1000</span>);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;\nfree memory:\n&quot;</span>);</span><br><span class="line">    my_free(m2);</span><br><span class="line">    my_free(m4);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">uint8_t</span> *m5 = (<span class="keyword">uint8_t</span> *)my_malloc(<span class="number">2000</span>);</span><br><span class="line">    assert(m5);</span><br><span class="line">    <span class="built_in">memset</span>(m5, <span class="number">5</span>, <span class="number">1000</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><stdio.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><assert.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><sys/mman.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><stdint.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><string.h></span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MEM_SIZE    (4096)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MAGIC       (0x12345678)</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> __SIZEOF_POINTER == 4</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT_TYPE    int32_t</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT_TYPE    int64_t</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> __<span class="title">node_t</span></span></span><br><span class="line"><span class="class">{</span></span><br><span class="line">    INT_TYPE size;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> __<span class="title">node_t</span> *<span class="title">next</span>;</span></span><br><span class="line">}<span class="keyword">node_t</span>;</span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span>{</span></span><br><span class="line">    INT_TYPE size;</span><br><span class="line">    INT_TYPE magic;</span><br><span class="line">}<span class="keyword">header_t</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">node_t</span> *free_head;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">print_mem</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"-----------------\n"</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"The free spaces of memory are:\n"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">node_t</span> *node = free_head;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">uint8_t</span> free_cnt = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">do</span></span><br><span class="line">    {</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"free node <%d> at %p with %ld bytes\n"</span>, </span><br><span class="line">		free_cnt++, node, node->size);</span><br><span class="line">	node = node->next;</span><br><span class="line">    }<span class="keyword">while</span>(node);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"-----------------\n"</span>);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">create_mem</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    free_head = mmap(<span class="literal">NULL</span>, MEM_SIZE, PROT_READ | PROT_WRITE,</span><br><span class="line">	    MAP_ANON | MAP_PRIVATE, <span class="number">-1</span>, <span class="number">0</span>);</span><br><span class="line">    assert(free_head);</span><br><span class="line"></span><br><span class="line">    free_head->size = MEM_SIZE - <span class="keyword">sizeof</span>(<span class="keyword">node_t</span>);</span><br><span class="line">    free_head->next = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    print_mem();</span><br><span class="line">}</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">my_free</span><span class="params">(<span class="keyword">void</span> *ptr)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="keyword">header_t</span> *use_head = ptr - <span class="keyword">sizeof</span>(<span class="keyword">header_t</span>);</span><br><span class="line">    assert(use_head->magic == MAGIC);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">node_t</span> *node = free_head;</span><br><span class="line">    <span class="keyword">while</span>(node->next)</span><br><span class="line">    {</span><br><span class="line">	node = node->next;</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">node_t</span> *new_node = (<span class="keyword">node_t</span> *)use_head;</span><br><span class="line">    new_node->next = <span class="literal">NULL</span>;</span><br><span class="line">    node->next = new_node;</span><br><span class="line"></span><br><span class="line">    print_mem();</span><br><span class="line">}</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> *<span class="title">my_malloc</span><span class="params">(<span class="keyword">int</span> size)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="keyword">void</span> *ptr = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">node_t</span> *node = free_head;</span><br><span class="line">    <span class="keyword">node_t</span> *prev = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"finding free space...\n"</span>);</span><br><span class="line">    <span class="keyword">while</span>(node)</span><br><span class="line">    {</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"find node %p, with space %ld, next-> %p\n"</span>,</span><br><span class="line">		node, node->size, node->next);</span><br><span class="line">	<span class="keyword">if</span>(node->size >= size)</span><br><span class="line">	{</span><br><span class="line">	    <span class="comment">//move or insert a new node</span></span><br><span class="line">	    <span class="keyword">uint16_t</span> offset = <span class="keyword">sizeof</span>(<span class="keyword">node_t</span>) + size;</span><br><span class="line">	    <span class="keyword">uint16_t</span> free_size = node->size - size - <span class="keyword">sizeof</span>(<span class="keyword">node_t</span>);</span><br><span class="line">	    <span class="built_in">printf</span>(<span class="string">"offset = %d\n"</span>, offset);</span><br><span class="line">	    <span class="keyword">if</span>(node == free_head)</span><br><span class="line">	    {</span><br><span class="line">		free_head = (<span class="keyword">node_t</span> *)((<span class="keyword">uint8_t</span> *)free_head + offset);</span><br><span class="line">		free_head->size = free_size;</span><br><span class="line">	    }</span><br><span class="line">	    <span class="keyword">else</span></span><br><span class="line">	    {</span><br><span class="line">		<span class="keyword">node_t</span> *new_node = (<span class="keyword">node_t</span> *)((<span class="keyword">uint8_t</span> *)node + offset);</span><br><span class="line">		new_node->size = free_size;</span><br><span class="line">		new_node->next = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">		prev->next = new_node;</span><br><span class="line">	    }</span><br><span class="line"></span><br><span class="line">	    <span class="keyword">header_t</span> *use_head = (<span class="keyword">header_t</span> *)node;</span><br><span class="line">	    use_head->magic = MAGIC;</span><br><span class="line">	    use_head->size = size;</span><br><span class="line"></span><br><span class="line">	    ptr = (<span class="keyword">void</span> *)((<span class="keyword">uint8_t</span> *)use_head + <span class="keyword">sizeof</span>(<span class="keyword">header_t</span>));</span><br><span class="line"></span><br><span class="line">	    <span class="built_in">printf</span>(<span class="string">"used header : addr %p, size %ld\n"</span>,</span><br><span class="line">		    use_head, use_head->size);</span><br><span class="line"></span><br><span class="line">	    <span class="keyword">break</span>;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	prev = node;</span><br><span class="line">	node = node->next;</span><br><span class="line">    }</span><br><span class="line">    print_mem();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(!ptr)</span><br><span class="line">    {</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"error: Sorry, I didn't find free space!\n"</span>);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    {</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"The address of malloc space is %p\n"</span>, ptr);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> ptr;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    create_mem();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">uint8_t</span> *m1 = (<span class="keyword">uint8_t</span> *)my_malloc(<span class="number">1000</span>);</span><br><span class="line">    assert(m1);</span><br><span class="line">    <span class="built_in">memset</span>(m1, <span class="number">1</span>, <span class="number">1000</span>);</span><br><span class="line">    <span class="keyword">uint8_t</span> *m2 = (<span class="keyword">uint8_t</span> *)my_malloc(<span class="number">1000</span>);</span><br><span class="line">    assert(m2);</span><br><span class="line">    <span class="built_in">memset</span>(m2, <span class="number">2</span>, <span class="number">1000</span>);</span><br><span class="line">    <span class="keyword">uint8_t</span> *m3 = (<span class="keyword">uint8_t</span> *)my_malloc(<span class="number">1000</span>);</span><br><span class="line">    assert(m3);</span><br><span class="line">    <span class="built_in">memset</span>(m3, <span class="number">3</span>, <span class="number">1000</span>);</span><br><span class="line">    <span class="keyword">uint8_t</span> *m4 = (<span class="keyword">uint8_t</span> *)my_malloc(<span class="number">1000</span>);</span><br><span class="line">    assert(m4);</span><br><span class="line">    <span class="built_in">memset</span>(m4, <span class="number">4</span>, <span class="number">1000</span>);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"\nfree memory:\n"</span>);</span><br><span class="line">    my_free(m2);</span><br><span class="line">    my_free(m4);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">uint8_t</span> *m5 = (<span class="keyword">uint8_t</span> *)my_malloc(<span class="number">2000</span>);</span><br><span class="line">    assert(m5);</span><br><span class="line">    <span class="built_in">memset</span>(m5, <span class="number">5</span>, <span class="number">1000</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </div>
 </div>
-<div id="outline-container-org1f38f7e" class="outline-2">
-<h2 id="org1f38f7e">&#x57FA;&#x7840;&#x7B56;&#x7565;</h2>
-<div class="outline-text-2" id="text-org1f38f7e">
+<div id="outline-container-orgfe57df0" class="outline-2">
+<h2 id="orgfe57df0">基础策略</h2>
+<div class="outline-text-2" id="text-orgfe57df0">
 <p>
-&#x4E3A;&#x4E86;&#x66F4;&#x597D;&#x7684;&#x7BA1;&#x7406;&#x7A7A;&#x95F2;&#x7A7A;&#x95F4;&#xFF0C;&#x6709;&#x4E0B;&#x9762;&#x8FD9;&#x4E9B;&#x57FA;&#x7840;&#x7B56;&#x7565;&#x3002;
+为了更好的管理空闲空间，有下面这些基础策略。
 </p>
 </div>
-<div id="outline-container-org9aa97e8" class="outline-3">
-<h3 id="org9aa97e8">best fit</h3>
-<div class="outline-text-3" id="text-org9aa97e8">
+<div id="outline-container-orgfa1f7f9" class="outline-3">
+<h3 id="orgfa1f7f9">best fit</h3>
+<div class="outline-text-3" id="text-orgfa1f7f9">
 <p>
-&#x5C06;&#x5185;&#x5B58;&#x7A7A;&#x95F4;&#x9884;&#x9009;&#x5206;&#x9694;&#x4E3A;&#x5927;&#x5C0F;&#x4E0D;&#x540C;&#x7684;&#x591A;&#x79CD;&#x5757;&#xFF0C;&#x5F53;&#x7528;&#x6237;&#x7533;&#x8BF7;&#x5185;&#x5B58;&#x65F6;&#xFF0C;&#x4ECE;&#x904D;&#x5386;&#x7A7A;&#x95F2;&#x5217;&#x8868;&#xFF0C;&#x4ECE;&#x7A7A;&#x95F2;&#x5757;&#x4E2D;&#x627E;&#x51FA;&#x6700;&#x5C0F;&#x80FD;&#x6EE1;&#x8DB3;&#x7533;&#x8BF7;&#x9700;&#x6C42;&#x7684;&#x4E00;&#x5757;&#x3002;
+将内存空间预选分隔为大小不同的多种块，当用户申请内存时，从遍历空闲列表，从空闲块中找出最小能满足申请需求的一块。
 </p>
 
 <ul class="org-ul">
-<li>&#x4F18;&#x70B9;&#xFF1A;&#x5C3D;&#x91CF;&#x7684;&#x907F;&#x514D;&#x5185;&#x5B58;&#x6D6A;&#x8D39;</li>
-<li>&#x7F3A;&#x70B9;&#xFF1A;&#x6BCF;&#x6B21;&#x67E5;&#x627E;&#x6700;&#x5C0F;&#x5757;&#x6240;&#x8017;&#x8D39;&#x7684;&#x65F6;&#x95F4;&#x8F83;&#x957F;</li>
+<li>优点：尽量的避免内存浪费</li>
+<li>缺点：每次查找最小块所耗费的时间较长</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-org614aa1a" class="outline-3">
-<h3 id="org614aa1a">worst fit</h3>
-<div class="outline-text-3" id="text-org614aa1a">
+<div id="outline-container-orgebf4362" class="outline-3">
+<h3 id="orgebf4362">worst fit</h3>
+<div class="outline-text-3" id="text-orgebf4362">
 <p>
-&#x4E0E; <code>best fit</code> &#x4E0D;&#x540C;&#xFF0C;&#x5F53;&#x7528;&#x6237;&#x7533;&#x8BF7;&#x5185;&#x5B58;&#x65F6;&#xFF0C;&#x4ECE;&#x7A7A;&#x95F2;&#x5757;&#x4E2D;&#x627E;&#x51FA;&#x6700;&#x5927;&#x7684;&#x4E00;&#x5757;&#x5185;&#x5B58;&#xFF0C;&#x7136;&#x540E;&#x5C06;&#x5269;&#x4F59;&#x7684;&#x5185;&#x5B58;&#x653E;&#x5165;&#x7A7A;&#x95F2;&#x5217;&#x8868;&#x3002;
+与 <code>best fit</code> 不同，当用户申请内存时，从空闲块中找出最大的一块内存，然后将剩余的内存放入空闲列表。
 </p>
 
 <ul class="org-ul">
-<li>&#x4F18;&#x70B9;&#xFF1A;&#x76F8;&#x6BD4; <code>best fit</code> &#x66F4;&#x80FD;&#x907F;&#x514D;&#x5185;&#x5B58;&#x6D6A;&#x8D39;&#xFF0C;&#x56E0;&#x4E3A; <code>best fit</code> &#x627E;&#x5230;&#x6700;&#x5C0F;&#x5757;&#x540E;&#x5269;&#x4F59;&#x7684;&#x7A7A;&#x95F2;&#x90E8;&#x5206;&#x6709;&#x5F88;&#x5927;&#x6982;&#x7387;&#x4E0D;&#x4F1A;&#x6EE1;&#x8DB3;&#x4ECA;&#x540E;&#x7684;&#x7533;&#x8BF7;&#x5927;&#x5C0F;&#x9700;&#x6C42;&#x4E86;</li>
-<li>&#x7F3A;&#x70B9;&#xFF1A;&#x6BCF;&#x6B21;&#x67E5;&#x627E;&#x6700;&#x5927;&#x5757;&#x6240;&#x8017;&#x8D39;&#x7684;&#x65F6;&#x95F4;&#x8F83;&#x957F;</li>
+<li>优点：相比 <code>best fit</code> 更能避免内存浪费，因为 <code>best fit</code> 找到最小块后剩余的空闲部分有很大概率不会满足今后的申请大小需求了</li>
+<li>缺点：每次查找最大块所耗费的时间较长</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-orgeefcce0" class="outline-3">
-<h3 id="orgeefcce0">first fit</h3>
-<div class="outline-text-3" id="text-orgeefcce0">
+<div id="outline-container-org6fee07b" class="outline-3">
+<h3 id="org6fee07b">first fit</h3>
+<div class="outline-text-3" id="text-org6fee07b">
 <p>
-&#x5F53;&#x7528;&#x6237;&#x7533;&#x8BF7;&#x5185;&#x5B58;&#x65F6;&#xFF0C;&#x627E;&#x5230;&#x7B2C;&#x4E00;&#x4E2A;&#x53EF;&#x4EE5;&#x6EE1;&#x8DB3;&#x8981;&#x6C42;&#x7684;&#x5185;&#x5B58;&#x5757;&#xFF0C;&#x5269;&#x4F59;&#x7684;&#x90E8;&#x5206;&#x653E;&#x56DE;&#x7A7A;&#x95F2;&#x5217;&#x8868;&#x3002;
+当用户申请内存时，找到第一个可以满足要求的内存块，剩余的部分放回空闲列表。
 </p>
 
 <ul class="org-ul">
-<li>&#x4F18;&#x70B9;&#xFF1A;&#x67E5;&#x8BE2;&#x901F;&#x5EA6;&#x76F8;&#x6BD4;&#x524D;&#x4E24;&#x8005;&#x8981;&#x5FEB;&#x5F97;&#x591A;</li>
-<li>&#x7F3A;&#x70B9;&#xFF1A;&#x8FD9;&#x79CD;&#x65B9;&#x5F0F;&#x5C06;&#x4F1A;&#x4EA7;&#x751F;&#x5F88;&#x591A;&#x5C0F;&#x7684;&#x5185;&#x5B58;&#x5757;
+<li>优点：查询速度相比前两者要快得多</li>
+<li>缺点：这种方式将会产生很多小的内存块
 <ul class="org-ul">
-<li>&#x5982;&#x679C;&#x5185;&#x5B58;&#x5217;&#x8868;&#x662F;&#x6309;&#x7167;&#x5730;&#x5740;&#x4F9D;&#x6B21;&#x6392;&#x5217;&#x7684;&#x8BDD;&#xFF0C;&#x53EF;&#x4EE5;&#x5C06;&#x5730;&#x5740;&#x8FDE;&#x7EED;&#x7684;&#x5C0F;&#x5185;&#x5B58;&#x5757;&#x548C;&#x540E;&#x9762;&#x7684;&#x4E00;&#x4E2A;&#x5757;&#x8FDB;&#x884C;&#x5408;&#x5E76;&#xFF0C;&#x4EE5;&#x51CF;&#x5C11;&#x788E;&#x7247;</li>
+<li>如果内存列表是按照地址依次排列的话，可以将地址连续的小内存块和后面的一个块进行合并，以减少碎片</li>
 </ul></li>
 </ul>
 </div>
 </div>
-<div id="outline-container-orgeaba3df" class="outline-3">
-<h3 id="orgeaba3df">next fit</h3>
-<div class="outline-text-3" id="text-orgeaba3df">
+<div id="outline-container-org0be74a4" class="outline-3">
+<h3 id="org0be74a4">next fit</h3>
+<div class="outline-text-3" id="text-org0be74a4">
 <p>
-&#x4F7F;&#x7528;&#x4E00;&#x4E2A;&#x6307;&#x9488;&#x4FDD;&#x5B58;&#x4E0A;&#x4E00;&#x6B21;&#x641C;&#x5BFB;&#x5230;&#x7684;&#x4F4D;&#x7F6E;&#xFF0C;&#x4E0B;&#x4E00;&#x6B21;&#x7528;&#x6237;&#x7533;&#x8BF7;&#x65F6;&#xFF0C;&#x4FBF;&#x4ECE;&#x6B64;&#x5904;&#x7EE7;&#x7EED;&#x5F80;&#x540E;&#x641C;&#x5BFB;&#x3002;
+使用一个指针保存上一次搜寻到的位置，下一次用户申请时，便从此处继续往后搜寻。
 </p>
 
 <ul class="org-ul">
-<li>&#x4F18;&#x70B9;&#xFF1A;&#x76F8;&#x6BD4; <code>first fit</code> &#xFF0C;&#x8FD9;&#x79CD;&#x65B9;&#x5F0F;&#x907F;&#x514D;&#x5728;&#x7A7A;&#x95F2;&#x5217;&#x8868;&#x5F00;&#x5934;&#x7684;&#x90E8;&#x5206;&#x5B58;&#x5728;&#x5F88;&#x591A;&#x788E;&#x7247;&#xFF0C;&#x800C;&#x662F;&#x4F7F;&#x5176;&#x5747;&#x5300;&#x5206;&#x5E03;</li>
-<li>&#x7F3A;&#x70B9;&#xFF1A;&#x4F9D;&#x7136;&#x4F1A;&#x6709;&#x5408;&#x5E76;&#x5185;&#x5B58;&#x788E;&#x7247;&#x7684;&#x9700;&#x6C42;</li>
+<li>优点：相比 <code>first fit</code> ，这种方式避免在空闲列表开头的部分存在很多碎片，而是使其均匀分布</li>
+<li>缺点：依然会有合并内存碎片的需求</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-org6038eac" class="outline-3">
-<h3 id="org6038eac">&#x793A;&#x4F8B;</h3>
-<div class="outline-text-3" id="text-org6038eac">
+<div id="outline-container-orgd265dfe" class="outline-3">
+<h3 id="orgd265dfe">示例</h3>
+<div class="outline-text-3" id="text-orgd265dfe">
 <p>
-&#x5047;&#x8BBE;&#x7A7A;&#x95F2;&#x5185;&#x5B58;&#x5217;&#x8868;&#x5982;&#x4E0B;&#xFF0C;&#x7528;&#x6237;&#x9700;&#x8981;&#x7533;&#x8BF7; 15 &#x5B57;&#x8282;&#x7684;&#x5185;&#x5B58;&#xFF1A;
+假设空闲内存列表如下，用户需要申请 15 字节的内存：
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/free_space_management/fit_normal.jpg?raw=true" alt="mempic/free_space_management/fit_normal.jpg">
 <p>
-&#x90A3;&#x4E48;&#x6309;&#x7167; <code>best fit</code> &#x7684;&#x7B56;&#x7565;&#xFF0C;&#x5148;&#x904D;&#x5386;&#x5217;&#x8868;&#xFF0C;&#x627E;&#x51FA;&#x6700;&#x5C0F;&#x6EE1;&#x8DB3;&#x5757;&#xFF0C;&#x90A3;&#x4E48;&#x5C31;&#x4F1A;&#x9009;&#x62E9;&#x7B2C;&#x4E09;&#x5757;&#x7A7A;&#x95F2;&#x5757;&#xFF0C;&#x6700;&#x7EC8;&#x7684;&#x7A7A;&#x95F2;&#x5217;&#x8868;&#x5982;&#x4E0B;&#xFF1A;
+那么按照 <code>best fit</code> 的策略，先遍历列表，找出最小满足块，那么就会选择第三块空闲块，最终的空闲列表如下：
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/free_space_management/fit_best.jpg?raw=true" alt="mempic/free_space_management/fit_best.jpg">
 <p>
-&#x8FD9;&#x6837;&#x5982;&#x679C;&#x7528;&#x6237;&#x8FD8;&#x60F3;&#x7EE7;&#x7EED;&#x518D;&#x7533;&#x8BF7;&#x4E24;&#x4E2A; 15 &#x5B57;&#x8282;&#x5185;&#x5B58;&#x7684;&#x8BDD;&#xFF0C;&#x8FD9;&#x5F20;&#x5217;&#x8868;&#x53EA;&#x80FD;&#x6210;&#x529F;&#x7533;&#x8BF7;&#x4E00;&#x6B21;&#x4E86;&#x3002;
+这样如果用户还想继续再申请两个 15 字节内存的话，这张列表只能成功申请一次了。
 </p>
 
 <p>
-&#x6309;&#x7167; <code>worst fit</code> &#x7684;&#x7B56;&#x7565;&#xFF0C;&#x5148;&#x904D;&#x5386;&#x5217;&#x8868;&#xFF0C;&#x627E;&#x51FA;&#x6700;&#x5927;&#x6EE1;&#x8DB3;&#x5757;&#xFF0C;&#x90A3;&#x4E48;&#x5C31;&#x4F1A;&#x9009;&#x62E9;&#x7B2C;&#x4E8C;&#x5757;&#x7A7A;&#x95F2;&#x5757;&#xFF0C;&#x6700;&#x7EC8;&#x7684;&#x7A7A;&#x95F2;&#x5217;&#x8868;&#x5982;&#x4E0B;&#xFF1A;
+按照 <code>worst fit</code> 的策略，先遍历列表，找出最大满足块，那么就会选择第二块空闲块，最终的空闲列表如下：
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/free_space_management/fit_worst.jpg?raw=true" alt="mempic/free_space_management/fit_worst.jpg">
 <p>
-&#x53EF;&#x4EE5;&#x770B;&#x5230;&#xFF0C;&#x5982;&#x679C;&#x8FD9;&#x65F6;&#x7528;&#x6237;&#x8FD8;&#x60F3;&#x7EE7;&#x7EED;&#x518D;&#x7533;&#x8BF7;&#x4E24;&#x4E2A; 15 &#x5B57;&#x8282;&#x5185;&#x5B58;&#x7684;&#x8BDD;&#xFF0C;&#x8FD9;&#x5F20;&#x5217;&#x8868;&#x662F;&#x53EF;&#x4EE5;&#x6EE1;&#x8DB3;&#x4E86;&#xFF0C;&#x56E0;&#x4E3A; <code>worst fit</code> &#x7B56;&#x7565;&#x53EF;&#x4EE5;&#x5C3D;&#x91CF;&#x4FDD;&#x8BC1;&#x7A7A;&#x95F2;&#x5757;&#x5C3D;&#x91CF;&#x7684;&#x5927;&#xFF0C;&#x800C;&#x4E0D;&#x662F;&#x5F88;&#x591A;&#x65E0;&#x6548;&#x7684;&#x5C0F;&#x5757;&#x3002;
+可以看到，如果这时用户还想继续再申请两个 15 字节内存的话，这张列表是可以满足了，因为 <code>worst fit</code> 策略可以尽量保证空闲块尽量的大，而不是很多无效的小块。
 </p>
 
 <p>
-&#x6309;&#x7167; <code>first fit</code> &#x7B56;&#x7565;&#x7684;&#x641C;&#x5BFB;&#x7ED3;&#x679C;&#x548C; <code>worst fit</code> &#x4E00;&#x81F4;&#xFF0C;&#x4F46;&#x662F; <code>first fit</code> &#x53EA;&#x8981;&#x627E;&#x5230;&#x4E86;&#x4FBF;&#x505C;&#x6B62;&#x641C;&#x5BFB;&#x4E86;&#xFF0C;&#x6548;&#x7387;&#x4F1A;&#x9AD8;&#x5F88;&#x591A;&#x3002;
-&#x800C; <code>next fit</code> &#x4E0B;&#x4E00;&#x6B21;&#x5BFB;&#x627E;&#x5C31;&#x4F1A;&#x7D27;&#x63A5;&#x7740; <code>first fit</code> &#x8FDB;&#x884C;&#x3002;
+按照 <code>first fit</code> 策略的搜寻结果和 <code>worst fit</code> 一致，但是 <code>first fit</code> 只要找到了便停止搜寻了，效率会高很多。
+而 <code>next fit</code> 下一次寻找就会紧接着 <code>first fit</code> 进行。
 </p>
 </div>
 </div>
 </div>
-<div id="outline-container-org4d4c993" class="outline-2">
-<h2 id="org4d4c993">&#x5176;&#x4ED6;&#x7B56;&#x7565;</h2>
-<div class="outline-text-2" id="text-org4d4c993">
+<div id="outline-container-org22fafea" class="outline-2">
+<h2 id="org22fafea">其他策略</h2>
+<div class="outline-text-2" id="text-org22fafea">
 </div>
-<div id="outline-container-org2314bdf" class="outline-3">
-<h3 id="org2314bdf">&#x5206;&#x79BB;&#x5217;&#x8868;</h3>
-<div class="outline-text-3" id="text-org2314bdf">
+<div id="outline-container-org1867982" class="outline-3">
+<h3 id="org1867982">分离列表</h3>
+<div class="outline-text-3" id="text-org1867982">
 <p>
-&#x5F53;&#x5E94;&#x7528;&#x7ECF;&#x5E38;&#x9891;&#x7E41;&#x7684;&#x7533;&#x8BF7;&#x76F8;&#x540C;&#x7684;&#x5927;&#x5C0F;&#x5757;&#x5185;&#x5B58;&#x65F6;&#xFF0C;&#x53EF;&#x4EE5;&#x7279;&#x5730;&#x5206;&#x914D;&#x4E00;&#x5927;&#x5757;&#x5185;&#x5B58;&#xFF0C;&#x5185;&#x5B58;&#x4E2D;&#x7684;&#x6BCF;&#x4E00;&#x4E2A;&#x5C0F;&#x5757;&#x7684;&#x5927;&#x5C0F;&#x5373;&#x4E3A;&#x5E38;&#x7528;&#x7533;&#x8BF7;&#x5757;&#x5927;&#x5C0F;&#x3002;
+当应用经常频繁的申请相同的大小块内存时，可以特地分配一大块内存，内存中的每一个小块的大小即为常用申请块大小。
 </p>
 
 <p>
-&#x8FD9;&#x6837;&#x505A;&#x6709;&#x4EE5;&#x4E0B;&#x4E24;&#x70B9;&#x597D;&#x5904;&#xFF1A;
+这样做有以下两点好处：
 </p>
 <ol class="org-ol">
-<li>&#x7531;&#x4E8E;&#x7533;&#x8BF7;&#x7684;&#x5185;&#x5B58;&#x5927;&#x5C0F;&#x548C;&#x5757;&#x4E00;&#x6837;&#x7684;&#xFF0C;&#x6240;&#x4EE5;&#x4E0D;&#x4F1A;&#x51FA;&#x73B0;&#x5185;&#x5B58;&#x788E;&#x7247;</li>
-<li>&#x7531;&#x4E8E;&#x7A7A;&#x95F2;&#x5217;&#x8868;&#x4E0A;&#x5757;&#x7684;&#x5927;&#x5C0F;&#x4E00;&#x81F4;&#xFF0C;&#x6240;&#x4EE5;&#x4E5F;&#x4E0D;&#x9700;&#x8981;&#x67E5;&#x627E;&#x4E86;</li>
+<li>由于申请的内存大小和块一样的，所以不会出现内存碎片</li>
+<li>由于空闲列表上块的大小一致，所以也不需要查找了</li>
 </ol>
 
 <p>
-kernel &#x4F1A;&#x5728;&#x6700;&#x5F00;&#x59CB;&#x4E3A;&#x5E38;&#x7528;&#x7684;&#x6570;&#x636E;&#x7ED3;&#x6784;&#x7533;&#x8BF7;&#x5BF9;&#x5E94;&#x7684;&#x5927;&#x5C0F;&#x7684;&#x5757;&#x5217;&#x8868;&#xFF0C;&#x5F53;&#x5BF9;&#x4E8E;&#x5217;&#x8868;&#x88AB;&#x7528;&#x5B8C;&#x65F6;&#xFF0C;&#x53C8;&#x4F1A;&#x7533;&#x8BF7;&#x4E00;&#x5927;&#x5757;&#x5185;&#x5B58;&#x3002;
+kernel 会在最开始为常用的数据结构申请对应的大小的块列表，当对于列表被用完时，又会申请一大块内存。
 </p>
 </div>
 </div>
-<div id="outline-container-orgd9d630f" class="outline-3">
-<h3 id="orgd9d630f">buddy &#x5206;&#x914D;&#x5668;</h3>
-<div class="outline-text-3" id="text-orgd9d630f">
+<div id="outline-container-org77801f1" class="outline-3">
+<h3 id="org77801f1">buddy 分配器</h3>
+<div class="outline-text-3" id="text-org77801f1">
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/free_space_management/buddy.jpg?raw=true" alt="mempic/free_space_management/buddy.jpg">
 <p>
-buddy &#x5206;&#x914D;&#x5668;&#x7684;&#x6BCF;&#x4E00;&#x5757;&#x7A7A;&#x95F2;&#x7A7A;&#x95F4;&#x7684;&#x5927;&#x5C0F;&#x662F; 2^N &#x5B57;&#x8282;&#x3002;
-&#x5F53;&#x6709;&#x7533;&#x8BF7;&#x5185;&#x5B58;&#x7684;&#x8BF7;&#x6C42;&#x53D1;&#x51FA;&#x65F6;&#xFF0C;buddy &#x9012;&#x5F52;&#x7684;&#x5C06;&#x7A7A;&#x95F2;&#x7A7A;&#x95F4;&#x4E00;&#x5206;&#x4E3A;&#x4E8C;&#xFF0C;&#x76F4;&#x5230;&#x627E;&#x5230;&#x4E00;&#x5757;&#x80FD;&#x6700;&#x5C0F;&#x6EE1;&#x8DB3;&#x8BE5;&#x8BF7;&#x6C42;&#x7684;&#x5185;&#x5B58;&#x5757;&#x3002;
+buddy 分配器的每一块空闲空间的大小是 2^N 字节。
+当有申请内存的请求发出时，buddy 递归的将空闲空间一分为二，直到找到一块能最小满足该请求的内存块。
 </p>
 <ul class="org-ul">
-<li>&#x6BD4;&#x5982;&#x4E0A;&#x8FF0;&#x6709; 64KB &#x7A7A;&#x95F2;&#x7A7A;&#x95F4;&#xFF0C;&#x5F53;&#x7528;&#x6237;&#x8981;&#x7533;&#x8BF7; 7KB &#x7A7A;&#x95F4;&#x65F6;&#xFF0C;64KB &#x5148;&#x5206;&#x4E3A;&#x4E24;&#x4E2A; 32 KB&#xFF0C;&#x7136;&#x540E;&#x662F; 16KB&#xFF0C;&#x6700;&#x540E;&#x627E;&#x5230; 8KB &#x53EF;&#x4EE5;&#x6EE1;&#x8DB3;&#x6700;&#x5C0F;&#x5757;&#x3002;</li>
+<li>比如上述有 64KB 空闲空间，当用户要申请 7KB 空间时，64KB 先分为两个 32 KB，然后是 16KB，最后找到 8KB 可以满足最小块。</li>
 </ul>
 
 <p>
-&#x5F53;&#x7528;&#x6237;&#x91CA;&#x653E;&#x88AB;&#x7533;&#x8BF7;&#x7684;&#x7A7A;&#x95F4;&#x540E;&#xFF0C;&#x8FD9;&#x5757;&#x7A7A;&#x95F4;&#x4FBF;&#x4F1A;&#x770B;&#x5B83;&#x65C1;&#x8FB9;&#x7684;&#x5757;&#x662F;&#x5426;&#x7A7A;&#x95F2;&#xFF0C;&#x5982;&#x679C;&#x4E5F;&#x662F;&#x7A7A;&#x95F2;&#x7684;&#x4FBF;&#x5408;&#x5E76;&#x4E8C;&#x8005;&#xFF0C;&#x8FD9;&#x6837;&#x4E00;&#x76F4;&#x9012;&#x5F52;&#x5408;&#x5E76;&#xFF0C;&#x76F4;&#x5230;&#x5408;&#x5E76;&#x5B8C;&#x6BD5;&#x6216;&#x9047;&#x5230;&#x4F19;&#x4F34;&#x5757;&#x4E0D;&#x7A7A;&#x95F2;&#x3002;
+当用户释放被申请的空间后，这块空间便会看它旁边的块是否空闲，如果也是空闲的便合并二者，这样一直递归合并，直到合并完毕或遇到伙伴块不空闲。
 </p>
 <ul class="org-ul">
-<li>&#x6BD4;&#x5982;&#x521A;&#x521A;&#x7533;&#x8BF7;&#x7684;&#x5757;&#x91CA;&#x653E;&#xFF0C;&#x90A3;&#x4E48;&#x4F1A;&#x548C; 8KB &#x5408;&#x5E76;&#x4E3A; 16KB&#xFF0C;16KB &#x53C8;&#x4F1A;&#x548C;&#x5176; buddy &#x5408;&#x5E76;&#x4E3A; 32KB&#xFF0C;&#x6700;&#x7EC8;&#x53C8;&#x4F1A;&#x5408;&#x5E76;&#x4E3A; 64 KB &#x7684;&#x7A7A;&#x95F2;&#x7A7A;&#x95F4;&#x3002;</li>
+<li>比如刚刚申请的块释放，那么会和 8KB 合并为 16KB，16KB 又会和其 buddy 合并为 32KB，最终又会合并为 64 KB 的空闲空间。</li>
 </ul>
 
 <p>
-&#x8FD9;&#x79CD;&#x65B9;&#x5F0F;&#x907F;&#x514D;&#x4E86;&#x5185;&#x90E8;&#x7684;&#x5185;&#x5B58;&#x788E;&#x7247;&#x3002;
+这种方式避免了内部的内存碎片。
 </p>
 </div>
 </div>
 </div>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
 </div>
 
     </div>
@@ -709,7 +709,7 @@ Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org7971de8"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x5E95;&amp;#x5C42;&amp;#x673A;&amp;#x5236;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgcd2bd3b"><span class="nav-number">1.1.</span> <span class="nav-text">&amp;#x7A7A;&amp;#x95F2;&amp;#x7A7A;&amp;#x95F4;&amp;#x7684;&amp;#x5206;&amp;#x6563;&amp;#x4E0E;&amp;#x805A;&amp;#x5408;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orge60578a"><span class="nav-number">1.1.1.</span> <span class="nav-text">&amp;#x5206;&amp;#x6563;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org1c1bdd3"><span class="nav-number">1.1.2.</span> <span class="nav-text">&amp;#x805A;&amp;#x5408;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org5c9ca74"><span class="nav-number">1.2.</span> <span class="nav-text">&amp;#x5DF2;&amp;#x7533;&amp;#x8BF7;&amp;#x7A7A;&amp;#x95F4;&amp;#x7684;&amp;#x4FDD;&amp;#x5B58;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org27bcdf2"><span class="nav-number">1.3.</span> <span class="nav-text">&amp;#x6574;&amp;#x4F53;&amp;#x6D41;&amp;#x7A0B;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org071a059"><span class="nav-number">1.3.1.</span> <span class="nav-text">&amp;#x6700;&amp;#x5F00;&amp;#x59CB;&amp;#x7684;&amp;#x7A7A;&amp;#x95F2;&amp;#x94FE;&amp;#x8868;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgad975f9"><span class="nav-number">1.3.2.</span> <span class="nav-text">&amp;#x7533;&amp;#x8BF7;&amp;#x5185;&amp;#x5B58;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org41d9107"><span class="nav-number">1.3.3.</span> <span class="nav-text">&amp;#x91CA;&amp;#x653E;&amp;#x5185;&amp;#x5B58;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org859cfc7"><span class="nav-number">1.4.</span> <span class="nav-text">&amp;#x7533;&amp;#x8BF7;&amp;#x66F4;&amp;#x5927;&amp;#x7684;&amp;#x5185;&amp;#x5B58;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org7475c82"><span class="nav-number">1.5.</span> <span class="nav-text">&amp;#x793A;&amp;#x4F8B;&amp;#x7A0B;&amp;#x5E8F;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org1f38f7e"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x57FA;&amp;#x7840;&amp;#x7B56;&amp;#x7565;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org9aa97e8"><span class="nav-number">2.1.</span> <span class="nav-text">best fit</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org614aa1a"><span class="nav-number">2.2.</span> <span class="nav-text">worst fit</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgeefcce0"><span class="nav-number">2.3.</span> <span class="nav-text">first fit</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgeaba3df"><span class="nav-number">2.4.</span> <span class="nav-text">next fit</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org6038eac"><span class="nav-number">2.5.</span> <span class="nav-text">&amp;#x793A;&amp;#x4F8B;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org4d4c993"><span class="nav-number">3.</span> <span class="nav-text">&amp;#x5176;&amp;#x4ED6;&amp;#x7B56;&amp;#x7565;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org2314bdf"><span class="nav-number">3.1.</span> <span class="nav-text">&amp;#x5206;&amp;#x79BB;&amp;#x5217;&amp;#x8868;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgd9d630f"><span class="nav-number">3.2.</span> <span class="nav-text">buddy &amp;#x5206;&amp;#x914D;&amp;#x5668;</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org4230df3"><span class="nav-number">1.</span> <span class="nav-text">底层机制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgf64eba2"><span class="nav-number">1.1.</span> <span class="nav-text">空闲空间的分散与聚合</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgf0458b8"><span class="nav-number">1.1.1.</span> <span class="nav-text">分散</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org0863f9a"><span class="nav-number">1.1.2.</span> <span class="nav-text">聚合</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org02a68ee"><span class="nav-number">1.2.</span> <span class="nav-text">已申请空间的保存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org9e44067"><span class="nav-number">1.3.</span> <span class="nav-text">整体流程</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orga2b42b3"><span class="nav-number">1.3.1.</span> <span class="nav-text">最开始的空闲链表</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgfedd541"><span class="nav-number">1.3.2.</span> <span class="nav-text">申请内存</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org891330f"><span class="nav-number">1.3.3.</span> <span class="nav-text">释放内存</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org096c5c1"><span class="nav-number">1.4.</span> <span class="nav-text">申请更大的内存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org9ab4b91"><span class="nav-number">1.5.</span> <span class="nav-text">示例程序</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgfe57df0"><span class="nav-number">2.</span> <span class="nav-text">基础策略</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgfa1f7f9"><span class="nav-number">2.1.</span> <span class="nav-text">best fit</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgebf4362"><span class="nav-number">2.2.</span> <span class="nav-text">worst fit</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org6fee07b"><span class="nav-number">2.3.</span> <span class="nav-text">first fit</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org0be74a4"><span class="nav-number">2.4.</span> <span class="nav-text">next fit</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgd265dfe"><span class="nav-number">2.5.</span> <span class="nav-text">示例</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org22fafea"><span class="nav-number">3.</span> <span class="nav-text">其他策略</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org1867982"><span class="nav-number">3.1.</span> <span class="nav-text">分离列表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org77801f1"><span class="nav-number">3.2.</span> <span class="nav-text">buddy 分配器</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 

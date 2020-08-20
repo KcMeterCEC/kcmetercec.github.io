@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="&amp;#x5B66;&amp;#x4E60;&amp;#x7F16;&amp;#x8BD1;&amp;#x53CA;&amp;#x94FE;&amp;#x63A5;&amp;#x7684;&amp;#x5927;&amp;#x4F53;&amp;#x8FC7;&amp;#x7A0B;&amp;#x3002;">
+  <meta name="description" content="学习编译及链接的大体过程。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[What]链接、装载与库 --&gt; 编译和链接">
 <meta property="og:url" content="http://kcmetercec.top/2018/11/15/book_linker_chapter_2/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="&amp;#x5B66;&amp;#x4E60;&amp;#x7F16;&amp;#x8BD1;&amp;#x53CA;&amp;#x94FE;&amp;#x63A5;&amp;#x7684;&amp;#x5927;&amp;#x4F53;&amp;#x8FC7;&amp;#x7A0B;&amp;#x3002;">
+<meta property="og:description" content="学习编译及链接的大体过程。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2018-11-14T16:00:00.000Z">
 <meta property="article:modified_time" content="2020-08-01T01:09:06.472Z">
@@ -295,149 +295,149 @@
       
         <div id="content">
 <p>
-&#x5B66;&#x4E60;&#x7F16;&#x8BD1;&#x53CA;&#x94FE;&#x63A5;&#x7684;&#x5927;&#x4F53;&#x8FC7;&#x7A0B;&#x3002;
+学习编译及链接的大体过程。
 </p>
 <a id="more"></a>
-<div id="outline-container-org70de7d7" class="outline-2">
-<h2 id="org70de7d7">&#x9884;&#x5904;&#x7406;(Preprocessing)</h2>
-<div class="outline-text-2" id="text-org70de7d7">
+<div id="outline-container-org4b820bd" class="outline-2">
+<h2 id="org4b820bd">预处理(Preprocessing)</h2>
+<div class="outline-text-2" id="text-org4b820bd">
 <p>
-&#x5C06;&#x6E90;&#x7801;&#x6587;&#x4EF6;&#x53CA;&#x5176;&#x76F8;&#x5173;&#x5934;&#x6587;&#x4EF6;&#x88AB;cpp&#x9884;&#x7F16;&#x8BD1;&#x6210;&#x4E00;&#x4E2A; <code>.i</code> &#x6587;&#x4EF6;&#x3002;
+将源码文件及其相关头文件被cpp预编译成一个 <code>.i</code> 文件。
 </p>
 <ul class="org-ul">
-<li>&#x5BF9;&#x4E8E;c++&#x6765;&#x8BF4;&#x662F;&#x88AB;&#x9884;&#x7F16;&#x8BD1;&#x4E3A; <code>.ii</code> &#x6587;&#x4EF6;</li>
+<li>对于c++来说是被预编译为 <code>.ii</code> 文件</li>
 </ul>
 
 <p>
-&#x9884;&#x7F16;&#x8BD1;&#x7684;&#x5904;&#x7406;&#x89C4;&#x5219;&#x5982;&#x4E0B;:
+预编译的处理规则如下:
 </p>
 <ul class="org-ul">
-<li>&#x5C06;&#x6240;&#x6709; &quot;#define&quot; &#x5220;&#x9664;&#xFF0C;&#x5E76;&#x4E14;&#x5C55;&#x5F00;&#x6240;&#x6709;&#x7684;&#x5B8F;&#x5B9A;&#x4E49;</li>
-<li>&#x5904;&#x7406;&#x6240;&#x6709;&#x6761;&#x4EF6;&#x9884;&#x7F16;&#x8BD1;&#x6307;&#x4EE4;&#xFF0C;&#x6BD4;&#x5982; &quot;#if, #ifdef, #elif, #else, #endif&quot;</li>
-<li>&#x5904;&#x7406; &quot;#include&quot; &#x9884;&#x7F16;&#x8BD1;&#x6307;&#x4EE4;&#xFF0C;&#x5C06;&#x88AB;&#x5305;&#x542B;&#x7684;&#x6587;&#x4EF6; <b>&#x63D2;&#x5165;&#x5230;&#x8BE5;&#x9884;&#x7F16;&#x8BD1;&#x6307;&#x4EE4;&#x7684;&#x4F4D;&#x7F6E;</b>
+<li>将所有 "#define" 删除，并且展开所有的宏定义</li>
+<li>处理所有条件预编译指令，比如 "#if, #ifdef, #elif, #else, #endif"</li>
+<li>处理 "#include" 预编译指令，将被包含的文件 <b>插入到该预编译指令的位置</b>
 <ul class="org-ul">
-<li>&#x8FD9;&#x4E2A;&#x8FC7;&#x7A0B;&#x662F;&#x9012;&#x5F52;&#x8FDB;&#x884C;&#x7684;&#xFF0C;&#x5982;&#x679C;&#x88AB;&#x5305;&#x542B;&#x6587;&#x4EF6;&#x8FD8;&#x5305;&#x542B;&#x5176;&#x4ED6;&#x6587;&#x4EF6;&#xFF0C;&#x4E5F;&#x4F1A;&#x4F9D;&#x6B21;&#x5C55;&#x5F00;</li>
+<li>这个过程是递归进行的，如果被包含文件还包含其他文件，也会依次展开</li>
 </ul></li>
-<li>&#x5220;&#x9664;&#x6240;&#x6709;&#x7684;&#x4EE3;&#x7801;&#x6CE8;&#x91CA;</li>
-<li>&#x6DFB;&#x52A0;&#x884C;&#x53F7;&#x548C;&#x6587;&#x4EF6;&#x540D;&#x6807;&#x8BC6;&#xFF0C;&#x4FBF;&#x4E8E;&#x7F16;&#x8BD1;&#x65F6;&#x7F16;&#x8BD1;&#x5668;&#x4EA7;&#x751F;&#x8C03;&#x8BD5;&#x7528;&#x7684;&#x7B26;&#x53F7;&#x4FE1;&#x606F;&#x548C;&#x9519;&#x8BEF;&#x6216;&#x8B66;&#x544A;&#x65F6;&#x7684;&#x63D0;&#x9192;</li>
-<li>&#x4FDD;&#x7559;&#x6240;&#x6709;&#x7684; &quot;#pragma&quot; &#x7F16;&#x8BD1;&#x5668;&#x6307;&#x4EE4;&#xFF0C;&#x5728;&#x7F16;&#x8BD1;&#x9636;&#x6BB5;&#x88AB;&#x4F7F;&#x7528;</li>
+<li>删除所有的代码注释</li>
+<li>添加行号和文件名标识，便于编译时编译器产生调试用的符号信息和错误或警告时的提醒</li>
+<li>保留所有的 "#pragma" 编译器指令，在编译阶段被使用</li>
 </ul>
 
 <p>
-&#x901A;&#x8FC7;&#x67E5;&#x770B;&#x9884;&#x7F16;&#x8BD1;&#x540E;&#x7684;&#x6587;&#x4EF6;&#xFF0C;&#x53EF;&#x4EE5;&#x68C0;&#x67E5;&#x5B8F;&#x662F;&#x5426;&#x6B63;&#x786E;&#x4EE5;&#x53CA;&#x6587;&#x4EF6;&#x5305;&#x542B;&#x662F;&#x5426;&#x6B63;&#x786E;&#x3002;
+通过查看预编译后的文件，可以检查宏是否正确以及文件包含是否正确。
 </p>
 </div>
 </div>
-<div id="outline-container-orgbd6d6d8" class="outline-2">
-<h2 id="orgbd6d6d8">&#x7F16;&#x8BD1;(Compilation)</h2>
-<div class="outline-text-2" id="text-orgbd6d6d8">
+<div id="outline-container-orgb7622bd" class="outline-2">
+<h2 id="orgb7622bd">编译(Compilation)</h2>
+<div class="outline-text-2" id="text-orgb7622bd">
 <p>
-&#x7F16;&#x8BD1;&#x7684;&#x8FC7;&#x7A0B;&#x5C31;&#x662F;&#x628A;&#x9884;&#x5904;&#x7406;&#x5B8C;&#x7684;&#x6587;&#x4EF6;&#x8FDB;&#x884C;&#x4E00;&#x7CFB;&#x5217;&#x7684;&#x8BCD;&#x6CD5;&#x5206;&#x6790;,&#x8BED;&#x6CD5;&#x5206;&#x6790;,&#x8BED;&#x4E49;&#x5206;&#x6790;&#x4EE5;&#x53CA;&#x4F18;&#x5316;&#x540E;&#x751F;&#x6210;&#x76F8;&#x5E94;&#x7684;&#x6C47;&#x7F16;&#x4EE3;&#x7801;&#x6587;&#x4EF6;.
+编译的过程就是把预处理完的文件进行一系列的词法分析,语法分析,语义分析以及优化后生成相应的汇编代码文件.
 </p>
 
 <p>
-&#x5728;gcc&#x4E2D;,&#x5C06;&#x4ECE;&#x9884;&#x7F16;&#x8BD1;&#x5230;&#x7F16;&#x8BD1;&#x4F7F;&#x7528;&#x547D;&#x4EE4; <code>gcc -S hello.i -o hello.s</code>,&#x4E5F;&#x53EF;&#x4EE5;&#x4F7F;&#x7528; cc1 &#x6765;&#x5B8C;&#x6210;&#x9884;&#x5904;&#x7406;&#x548C;&#x7F16;&#x8BD1;.
+在gcc中,将从预编译到编译使用命令 <code>gcc -S hello.i -o hello.s</code>,也可以使用 cc1 来完成预处理和编译.
 </p>
 
 <p>
-&#x7F16;&#x8BD1;&#x8FC7;&#x7A0B;&#x4E00;&#x822C;&#x53EF;&#x4EE5;&#x5206;&#x4E3A;6&#x6B65;:&#x626B;&#x63CF;,&#x8BED;&#x6CD5;&#x5206;&#x6790;,&#x8BED;&#x4E49;&#x5206;&#x6790;,&#x6E90;&#x4EE3;&#x7801;&#x4F18;&#x5316;,&#x4EE3;&#x7801;&#x751F;&#x6210;,&#x76EE;&#x6807;&#x4EE3;&#x7801;&#x4F18;&#x5316;.
+编译过程一般可以分为6步:扫描,语法分析,语义分析,源代码优化,代码生成,目标代码优化.
 </p>
 </div>
-<div id="outline-container-org34cef65" class="outline-3">
-<h3 id="org34cef65">&#x626B;&#x63CF;&#x5668;(&#x8BCD;&#x6CD5;&#x5206;&#x6790;)</h3>
-<div class="outline-text-3" id="text-org34cef65">
+<div id="outline-container-org915b2b2" class="outline-3">
+<h3 id="org915b2b2">扫描器(词法分析)</h3>
+<div class="outline-text-3" id="text-org915b2b2">
 <p>
-&#x6E90;&#x4EE3;&#x7801;&#x7A0B;&#x5E8F;&#x9996;&#x5148;&#x88AB;&#x8F93;&#x5165;&#x5230; <b>&#x626B;&#x63CF;&#x5668;(Scanner)</b>,&#x626B;&#x63CF;&#x5668;&#x7684;&#x4EFB;&#x52A1;&#x5F88;&#x7B80;&#x5355;,&#x53EA;&#x662F;&#x7B80;&#x5355;&#x7684;&#x8FDB;&#x884C;&#x8BCD;&#x6CD5;&#x5206;&#x6790;,
-&#x8FD0;&#x7528;&#x4E00;&#x79CD;&#x7C7B;&#x4F3C;&#x4E8E; <b>&#x6709;&#x9650;&#x72B6;&#x6001;&#x673A;(Finite State Machine)</b> &#x53EF;&#x4EE5;&#x5F88;&#x8F7B;&#x677E;&#x7684;&#x5C06;&#x6E90;&#x4EE3;&#x7801;&#x7684; <b>&#x975E;&#x7A7A;&#x683C;&#x5B57;&#x7B26;</b> &#x5E8F;&#x5217;&#x5206;&#x5272;&#x6210;&#x4E00;&#x7CFB;&#x5217;&#x7684; <b>&#x8BB0;&#x53F7;(Token)</b>.
-&#x8BF4;&#x7B80;&#x5355;&#x70B9;&#x5C31;&#x662F;&#x628A;&#x5404;&#x4E2A;&#x5C0F;&#x5B57;&#x7B26;&#x63D0;&#x53D6;&#x6210;&#x4E00;&#x5F20;&#x8868;.&#x8FD9;&#x4E00;&#x8FC7;&#x7A0B;&#x548C;<a href="https:github.com/KcMeterCEC/tools/tree/master/shell%5D%5D" target="_blank" rel="noopener">&#x7B80;&#x6613;&#x547D;&#x4EE4;&#x884C;shell</a> &#x7684;&#x626B;&#x63CF;&#x547D;&#x4EE4;&#x5185;&#x5BB9;&#x8FC7;&#x7A0B;&#x5F88;&#x76F8;&#x4F3C;.
-</p>
-
-<p>
-&#x8BCD;&#x6CD5;&#x5206;&#x6790;&#x4EA7;&#x751F;&#x7684;&#x8BB0;&#x53F7;&#x4E00;&#x822C;&#x53EF;&#x4EE5;&#x5206;&#x4E3A;&#x5982;&#x4E0B;&#x51E0;&#x7C7B;:&#x5173;&#x952E;&#x5B57;,&#x6807;&#x8BC6;&#x7B26;,&#x5B57;&#x9762;&#x91CF;(&#x6570;&#x5B57;,&#x5B57;&#x7B26;&#x4E32;&#x7B49;)&#x548C;&#x7279;&#x6B8A;&#x7B26;&#x53F7;(&#x52A0;&#x53F7;,&#x7B49;&#x53F7;&#x7B49;)&#x5728;&#x8BC6;&#x522B;&#x8BB0;&#x53F7;&#x7684;&#x540C;&#x65F6;,&#x626B;&#x63CF;&#x5668;&#x4E5F;&#x5B8C;&#x6210;&#x5E93;&#x5176;&#x4ED6;&#x5DE5;&#x4F5C;,&#x6BD4;&#x5982;&#x5C06;&#x6807;&#x8BC6;&#x7B26;&#x5B58;&#x653E;&#x5230;&#x7B26;&#x53F7;&#x8868;,&#x5C06;&#x6570;&#x5B57;,&#x5B57;&#x7B26;&#x4E32;&#x5E38;&#x91CF;&#x5B58;&#x653E;&#x5230;&#x6587;&#x5B57;&#x8868;&#x7B49;.
+源代码程序首先被输入到 <b>扫描器(Scanner)</b>,扫描器的任务很简单,只是简单的进行词法分析,
+运用一种类似于 <b>有限状态机(Finite State Machine)</b> 可以很轻松的将源代码的 <b>非空格字符</b> 序列分割成一系列的 <b>记号(Token)</b>.
+说简单点就是把各个小字符提取成一张表.这一过程和<a href="https:github.com/KcMeterCEC/tools/tree/master/shell%5D%5D" target="_blank" rel="noopener">简易命令行shell</a> 的扫描命令内容过程很相似.
 </p>
 
 <p>
-&#x626B;&#x63CF;&#x5668;&#x7684;&#x7A0B;&#x5E8F;&#x5DE5;&#x5177;&#x53EB;&#x505A; <b>lex</b>.
-</p>
-</div>
-</div>
-<div id="outline-container-org324666d" class="outline-3">
-<h3 id="org324666d">&#x8BED;&#x6CD5;&#x5206;&#x6790;(Grammar Parser)</h3>
-<div class="outline-text-3" id="text-org324666d">
-<p>
-&#x5BF9;&#x626B;&#x63CF;&#x5668;&#x4EA7;&#x751F;&#x7684;&#x8BB0;&#x53F7;&#x8FDB;&#x884C;&#x8BED;&#x6CD5;&#x5206;&#x6790;,&#x4ECE;&#x800C; <b>&#x4EA7;&#x751F;&#x8BED;&#x6CD5;&#x6811;(Syntax Tree)</b> ,&#x6574;&#x4E2A;&#x5206;&#x6790;&#x8FC7;&#x7A0B;&#x91C7;&#x7528;&#x4E86; <b>&#x4E0A;&#x4E0B;&#x6587;&#x65E0;&#x5173;&#x8BED;&#x6CD5;(Context-free Grammar)</b> &#x7684;&#x5206;&#x6790;&#x624B;&#x6BB5;.
+词法分析产生的记号一般可以分为如下几类:关键字,标识符,字面量(数字,字符串等)和特殊符号(加号,等号等)在识别记号的同时,扫描器也完成库其他工作,比如将标识符存放到符号表,将数字,字符串常量存放到文字表等.
 </p>
 
 <p>
-&#x8BED;&#x6CD5;&#x5206;&#x6790;&#x5668;&#x7684;&#x5DE5;&#x5177;&#x53EB;&#x505A; yacc(Yet Another Compiler Compiler).
+扫描器的程序工具叫做 <b>lex</b>.
 </p>
 </div>
 </div>
-<div id="outline-container-org67bb8b2" class="outline-3">
-<h3 id="org67bb8b2">&#x8BED;&#x4E49;&#x5206;&#x6790;(Semantic Analyzer)</h3>
-<div class="outline-text-3" id="text-org67bb8b2">
+<div id="outline-container-org673ae7f" class="outline-3">
+<h3 id="org673ae7f">语法分析(Grammar Parser)</h3>
+<div class="outline-text-3" id="text-org673ae7f">
 <p>
-&#x8BED;&#x6CD5;&#x5206;&#x6790;&#x4EC5;&#x4EC5;&#x5B8C;&#x6210;&#x4E86;&#x5BF9;&#x8868;&#x8FBE;&#x5F0F;&#x7684;&#x8BED;&#x6CD5;&#x5C42;&#x9762;&#x5206;&#x6790;,&#x4F46;&#x662F;&#x5B83;&#x5E76;&#x4E0D;&#x4E86;&#x89E3;&#x8FD9;&#x4E2A;&#x8BED;&#x53E5;&#x662F;&#x5426;&#x771F;&#x6B63;&#x6709;&#x610F;&#x4E49;.
-</p>
-
-<p>
-&#x7F16;&#x8BD1;&#x5668;&#x6240;&#x80FD;&#x5206;&#x6790;&#x7684;&#x662F; <b>&#x9759;&#x6001;&#x8BED;&#x4E49;(Static Semantic)</b>,&#x662F;&#x6307;&#x5728;&#x7F16;&#x8BD1;&#x65F6;&#x53EF;&#x4EE5;&#x786E;&#x5B9A;&#x7684;&#x8BED;&#x4E49;,&#x4E0E;&#x4E4B;&#x5BF9;&#x5E94;&#x7684;&#x662F; <b>&#x52A8;&#x6001;&#x8BED;&#x4E49;(Dynaic Semantic)</b> &#x5C31;&#x662F;&#x53EA;&#x6709;&#x5728;&#x8FD0;&#x884C;&#x671F;&#x624D;&#x80FD;&#x786E;&#x5B9A;&#x7684;&#x8BED;&#x4E49;.
-&#x7ECF;&#x8FC7;&#x8BED;&#x4E49;&#x5206;&#x6790;&#x540E;,&#x8BED;&#x6CD5;&#x6811;&#x7684;&#x8868;&#x8FBE;&#x5F0F;&#x90FD;&#x88AB;&#x6807;&#x8BC6;&#x4E86;&#x7C7B;&#x578B;,&#x5982;&#x679C;&#x6709;&#x4E9B;&#x7C7B;&#x578B;&#x9700;&#x8981;&#x4F5C;&#x9690;&#x5F0F;&#x8F6C;&#x6362;,&#x8BED;&#x4E49;&#x5206;&#x6790;&#x7A0B;&#x5E8F;&#x4F1A;&#x5728;&#x8BED;&#x6CD5;&#x6811;&#x4E2D;&#x63D2;&#x5165;&#x76F8;&#x5E94;&#x7684;&#x8F6C;&#x6362;&#x8282;&#x70B9;.
-</p>
-</div>
-</div>
-<div id="outline-container-org8cf551c" class="outline-3">
-<h3 id="org8cf551c">&#x4E2D;&#x95F4;&#x8BED;&#x8A00;&#x751F;&#x6210;</h3>
-<div class="outline-text-3" id="text-org8cf551c">
-<p>
-<b>&#x6E90;&#x4EE3;&#x7801;&#x4F18;&#x5316;&#x5668;(Source Code Optimizer)</b> &#x5728;&#x6E90;&#x4EE3;&#x7801;&#x7EA7;&#x522B;&#x8FDB;&#x884C;&#x4F18;&#x5316;,&#x4F46;&#x662F;&#x7531;&#x4E8E;&#x76F4;&#x63A5;&#x5728;&#x8BED;&#x6CD5;&#x6811;&#x4E0A;&#x505A;&#x4F18;&#x5316;&#x6BD4;&#x8F83;&#x56F0;&#x96BE;,
-&#x6240;&#x4EE5;&#x6E90;&#x4EE3;&#x7801;&#x4F18;&#x5316;&#x5668;&#x5F80;&#x5F80;&#x5C06;&#x6574;&#x4E2A;&#x8BED;&#x6CD5;&#x6811;&#x8F6C;&#x6362;&#x6210; <b>&#x4E2D;&#x95F4;&#x4EE3;&#x7801;(Intermediate Code)</b>, &#x5B83;&#x662F;&#x8BED;&#x6CD5;&#x6811;&#x7684;&#x987A;&#x5E8F;&#x8868;&#x793A;.
-&#x4E2D;&#x95F4;&#x4EE3;&#x7801;&#x6709;&#x5F88;&#x591A;&#x79CD;&#x5F62;&#x5F0F;,&#x5728;&#x4E0D;&#x540C;&#x7684;&#x7F16;&#x8BD1;&#x5668;&#x4E2D;&#x6709;&#x7740;&#x4E0D;&#x540C;&#x7684;&#x5F62;&#x5F0F;,&#x6BD4;&#x8F83;&#x5E38;&#x89C1;&#x7684;&#x6709;: <b>&#x4E09;&#x5730;&#x5740;&#x7801;(Three-address Code)</b> &#x548C; <b>P-&#x4EE3;&#x7801;(P-Code)</b>.
+对扫描器产生的记号进行语法分析,从而 <b>产生语法树(Syntax Tree)</b> ,整个分析过程采用了 <b>上下文无关语法(Context-free Grammar)</b> 的分析手段.
 </p>
 
 <p>
-&#x4E2D;&#x95F4;&#x4EE3;&#x7801;&#x4F7F;&#x5F97;&#x7F16;&#x8BD1;&#x5668;&#x53EF;&#x4EE5;&#x88AB;&#x5206;&#x4E3A;&#x524D;&#x7AEF;&#x548C;&#x540E;&#x7AEF;,&#x7F16;&#x8BD1;&#x5668;&#x524D;&#x7AEF;&#x8D1F;&#x8D23;&#x4EA7;&#x751F;&#x673A;&#x5668;&#x65E0;&#x5173;&#x7684;&#x4E2D;&#x95F4;&#x4EE3;&#x7801;,&#x540E;&#x7AEF;&#x5C06;&#x4E2D;&#x95F4;&#x4EE3;&#x7801;&#x8F6C;&#x6362;&#x6210;&#x76EE;&#x6807;&#x673A;&#x5668;&#x7801;.
-&#x8FD9;&#x6837;&#x5BF9;&#x4E8E;&#x4E00;&#x4E9B;&#x8DE8;&#x5E73;&#x53F0;&#x7684;&#x7F16;&#x8BD1;&#x5668;&#x800C;&#x8A00;,&#x5B83;&#x4EEC;&#x53EF;&#x4EE5;&#x9488;&#x5BF9;&#x4E0D;&#x540C;&#x7684;&#x5E73;&#x53F0;&#x4F7F;&#x7528;&#x540C;&#x4E00;&#x4E2A;&#x524D;&#x7AEF;&#x548C;&#x4E0D;&#x540C;&#x7684;&#x540E;&#x7AEF;.
+语法分析器的工具叫做 yacc(Yet Another Compiler Compiler).
 </p>
 </div>
 </div>
-<div id="outline-container-org6eea129" class="outline-3">
-<h3 id="org6eea129">&#x76EE;&#x6807;&#x4EE3;&#x7801;&#x751F;&#x6210;&#x4E0E;&#x4F18;&#x5316;</h3>
-<div class="outline-text-3" id="text-org6eea129">
+<div id="outline-container-org449da81" class="outline-3">
+<h3 id="org449da81">语义分析(Semantic Analyzer)</h3>
+<div class="outline-text-3" id="text-org449da81">
 <p>
-&#x6E90;&#x4EE3;&#x7801;&#x7EA7;&#x4F18;&#x5316;&#x5668;&#x4EA7;&#x751F;&#x4E2D;&#x95F4;&#x4EE3;&#x7801;&#x6807;&#x5FD7;&#x7740;&#x4E0B;&#x9762;&#x7684;&#x8FC7;&#x7A0B;&#x90FD;&#x5C5E;&#x4E8E;&#x540E;&#x7AEF;,&#x540E;&#x7AEF;&#x4E3B;&#x8981;&#x5305;&#x62EC; <b>&#x4EE3;&#x7801;&#x751F;&#x6210;&#x5668;(Code Generator)</b> &#x548C; <b>&#x76EE;&#x6807;&#x4EE3;&#x7801;&#x4F18;&#x5316;&#x5668;(Target Code Optimizer)</b>.
-&#x4EE3;&#x7801;&#x751F;&#x6210;&#x5668;&#x5C06;&#x4E2D;&#x95F4;&#x4EE3;&#x7801;&#x8F6C;&#x6362;&#x4E3A;&#x76EE;&#x6807;&#x673A;&#x5668;&#x7801;,&#x8FD9;&#x4E2A;&#x8FC7;&#x7A0B;&#x5341;&#x5206;&#x4F9D;&#x8D56;&#x4E8E;&#x76EE;&#x6807;&#x673A;&#x5668;.
-</p>
-</div>
-</div>
-</div>
-<div id="outline-container-org0ce6c89" class="outline-2">
-<h2 id="org0ce6c89">&#x6C47;&#x7F16;(Assembly)</h2>
-<div class="outline-text-2" id="text-org0ce6c89">
-<p>
-&#x5C06;&#x7F16;&#x8BD1;&#x540E;&#x7684;&#x6C47;&#x7F16;&#x4EE3;&#x7801;&#x8F6C;&#x53D8;&#x4E3A;&#x4E8C;&#x8FDB;&#x5236;&#x6587;&#x4EF6;,&#x56E0;&#x4E3A;&#x6C47;&#x7F16;&#x90FD;&#x6709;&#x5BF9;&#x5E94;&#x7684;&#x4E8C;&#x8FDB;&#x5236;&#x503C;,&#x6240;&#x4EE5;&#x6C47;&#x7F16;&#x5668;&#x7684;&#x6C47;&#x7F16;&#x8FC7;&#x7A0B;&#x76F8;&#x5BF9;&#x4E8E;&#x7F16;&#x8BD1;&#x5668;&#x6765;&#x8BB2;&#x6BD4;&#x8F83;&#x7B80;&#x5355;.
+语法分析仅仅完成了对表达式的语法层面分析,但是它并不了解这个语句是否真正有意义.
 </p>
 
 <p>
-&#x5728;gcc&#x4E2D;,&#x5C06;&#x6C47;&#x7F16;&#x6587;&#x4EF6;&#x5230;&#x4E8C;&#x8FDB;&#x5236;&#x6587;&#x4EF6;&#x4F7F;&#x7528;&#x547D;&#x4EE4; <code>gcc -c hello.s -o hello.o / gcc -c hello.c -o hello.o</code>,&#x4E5F;&#x53EF;&#x4EE5;&#x4F7F;&#x7528; as  &#x6765;&#x5B8C;&#x6210;.
+编译器所能分析的是 <b>静态语义(Static Semantic)</b>,是指在编译时可以确定的语义,与之对应的是 <b>动态语义(Dynaic Semantic)</b> 就是只有在运行期才能确定的语义.
+经过语义分析后,语法树的表达式都被标识了类型,如果有些类型需要作隐式转换,语义分析程序会在语法树中插入相应的转换节点.
+</p>
+</div>
+</div>
+<div id="outline-container-org6ee42ad" class="outline-3">
+<h3 id="org6ee42ad">中间语言生成</h3>
+<div class="outline-text-3" id="text-org6ee42ad">
+<p>
+<b>源代码优化器(Source Code Optimizer)</b> 在源代码级别进行优化,但是由于直接在语法树上做优化比较困难,
+所以源代码优化器往往将整个语法树转换成 <b>中间代码(Intermediate Code)</b>, 它是语法树的顺序表示.
+中间代码有很多种形式,在不同的编译器中有着不同的形式,比较常见的有: <b>三地址码(Three-address Code)</b> 和 <b>P-代码(P-Code)</b>.
 </p>
 
 <p>
-&#x7ECF;&#x8FC7;&#x9884;&#x7F16;&#x8BD1;,&#x7F16;&#x8BD1;,&#x6C47;&#x7F16;&#x4E4B;&#x540E;&#x7684; .o &#x6587;&#x4EF6;&#x88AB;&#x79F0;&#x4E3A; <b>&#x76EE;&#x6807;&#x6587;&#x4EF6;</b>.
+中间代码使得编译器可以被分为前端和后端,编译器前端负责产生机器无关的中间代码,后端将中间代码转换成目标机器码.
+这样对于一些跨平台的编译器而言,它们可以针对不同的平台使用同一个前端和不同的后端.
 </p>
 </div>
 </div>
-<div id="outline-container-org437ce0b" class="outline-2">
-<h2 id="org437ce0b">&#x94FE;&#x63A5;(Linking)</h2>
-<div class="outline-text-2" id="text-org437ce0b">
+<div id="outline-container-orgda278df" class="outline-3">
+<h3 id="orgda278df">目标代码生成与优化</h3>
+<div class="outline-text-3" id="text-orgda278df">
 <p>
-&#x5C06;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x4E0E;&#x5E93;&#x6587;&#x4EF6;&#x4EE5;&#x4E00;&#x5B9A;&#x7684;&#x89C4;&#x5219;, <b>&#x786E;&#x5B9A;&#x7684;&#x5730;&#x5740;</b> &#x7ED3;&#x5408;,&#x624D;&#x80FD;&#x5F62;&#x6210;&#x6700;&#x540E;&#x7684;&#x53EF;&#x6267;&#x884C;&#x6587;&#x4EF6;.
+源代码级优化器产生中间代码标志着下面的过程都属于后端,后端主要包括 <b>代码生成器(Code Generator)</b> 和 <b>目标代码优化器(Target Code Optimizer)</b>.
+代码生成器将中间代码转换为目标机器码,这个过程十分依赖于目标机器.
+</p>
+</div>
+</div>
+</div>
+<div id="outline-container-org4db26b4" class="outline-2">
+<h2 id="org4db26b4">汇编(Assembly)</h2>
+<div class="outline-text-2" id="text-org4db26b4">
+<p>
+将编译后的汇编代码转变为二进制文件,因为汇编都有对应的二进制值,所以汇编器的汇编过程相对于编译器来讲比较简单.
+</p>
+
+<p>
+在gcc中,将汇编文件到二进制文件使用命令 <code>gcc -c hello.s -o hello.o / gcc -c hello.c -o hello.o</code>,也可以使用 as  来完成.
+</p>
+
+<p>
+经过预编译,编译,汇编之后的 .o 文件被称为 <b>目标文件</b>.
+</p>
+</div>
+</div>
+<div id="outline-container-orge2cf8a7" class="outline-2">
+<h2 id="orge2cf8a7">链接(Linking)</h2>
+<div class="outline-text-2" id="text-orge2cf8a7">
+<p>
+将目标文件与库文件以一定的规则, <b>确定的地址</b> 结合,才能形成最后的可执行文件.
 </p>
 </div>
 </div>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-08-20 四 17:37.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
 </div>
 
     </div>
@@ -523,7 +523,7 @@ Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org70de7d7"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x9884;&amp;#x5904;&amp;#x7406;(Preprocessing)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgbd6d6d8"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x7F16;&amp;#x8BD1;(Compilation)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org34cef65"><span class="nav-number">2.1.</span> <span class="nav-text">&amp;#x626B;&amp;#x63CF;&amp;#x5668;(&amp;#x8BCD;&amp;#x6CD5;&amp;#x5206;&amp;#x6790;)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org324666d"><span class="nav-number">2.2.</span> <span class="nav-text">&amp;#x8BED;&amp;#x6CD5;&amp;#x5206;&amp;#x6790;(Grammar Parser)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org67bb8b2"><span class="nav-number">2.3.</span> <span class="nav-text">&amp;#x8BED;&amp;#x4E49;&amp;#x5206;&amp;#x6790;(Semantic Analyzer)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org8cf551c"><span class="nav-number">2.4.</span> <span class="nav-text">&amp;#x4E2D;&amp;#x95F4;&amp;#x8BED;&amp;#x8A00;&amp;#x751F;&amp;#x6210;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org6eea129"><span class="nav-number">2.5.</span> <span class="nav-text">&amp;#x76EE;&amp;#x6807;&amp;#x4EE3;&amp;#x7801;&amp;#x751F;&amp;#x6210;&amp;#x4E0E;&amp;#x4F18;&amp;#x5316;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org0ce6c89"><span class="nav-number">3.</span> <span class="nav-text">&amp;#x6C47;&amp;#x7F16;(Assembly)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org437ce0b"><span class="nav-number">4.</span> <span class="nav-text">&amp;#x94FE;&amp;#x63A5;(Linking)</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org4b820bd"><span class="nav-number">1.</span> <span class="nav-text">预处理(Preprocessing)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgb7622bd"><span class="nav-number">2.</span> <span class="nav-text">编译(Compilation)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org915b2b2"><span class="nav-number">2.1.</span> <span class="nav-text">扫描器(词法分析)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org673ae7f"><span class="nav-number">2.2.</span> <span class="nav-text">语法分析(Grammar Parser)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org449da81"><span class="nav-number">2.3.</span> <span class="nav-text">语义分析(Semantic Analyzer)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org6ee42ad"><span class="nav-number">2.4.</span> <span class="nav-text">中间语言生成</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgda278df"><span class="nav-number">2.5.</span> <span class="nav-text">目标代码生成与优化</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org4db26b4"><span class="nav-number">3.</span> <span class="nav-text">汇编(Assembly)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orge2cf8a7"><span class="nav-number">4.</span> <span class="nav-text">链接(Linking)</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 

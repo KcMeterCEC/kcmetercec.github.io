@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="&amp;#x8BB0;&amp;#x5F55;ALSA&amp;#x7684;&amp;#x9A71;&amp;#x52A8;&amp;#x548C;&amp;#x4E0A;&amp;#x5C42;&amp;#x8C03;&amp;#x8BD5;&amp;#x3002;">
+  <meta name="description" content="记录ALSA的驱动和上层调试。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[What]linux -&gt; ALSA 调试">
 <meta property="og:url" content="http://kcmetercec.top/2018/04/16/linux_driver_ALSA_debug/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="&amp;#x8BB0;&amp;#x5F55;ALSA&amp;#x7684;&amp;#x9A71;&amp;#x52A8;&amp;#x548C;&amp;#x4E0A;&amp;#x5C42;&amp;#x8C03;&amp;#x8BD5;&amp;#x3002;">
+<meta property="og:description" content="记录ALSA的驱动和上层调试。">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[driver]/[What]Linux--ALSA/audio_play.jpg?raw=true">
 <meta property="article:published_time" content="2018-04-15T16:00:00.000Z">
@@ -301,133 +301,133 @@
       
         <div id="content">
 <p>
-&#x8BB0;&#x5F55;ALSA&#x7684;&#x9A71;&#x52A8;&#x548C;&#x4E0A;&#x5C42;&#x8C03;&#x8BD5;&#x3002;
+记录ALSA的驱动和上层调试。
 </p>
 
 <a id="more"></a>
 
-<div id="outline-container-org6a32d81" class="outline-2">
-<h2 id="org6a32d81">ALSA&#x81EA;&#x5E26;&#x8C03;&#x8BD5;&#x8F93;&#x51FA;</h2>
-<div class="outline-text-2" id="text-org6a32d81">
+<div id="outline-container-org80c4f56" class="outline-2">
+<h2 id="org80c4f56">ALSA自带调试输出</h2>
+<div class="outline-text-2" id="text-org80c4f56">
 <p>
-&#x5728;&#x5185;&#x6838;&#x7684;&#x5B50;&#x7CFB;&#x7EDF;&#x4E2D;&#x5DF2;&#x7ECF;&#x81EA;&#x5E26;&#x4E86;&#x5F88;&#x591A;&#x8C03;&#x8BD5;&#x4FE1;&#x606F;&#xFF0C;&#x800C;&#x4E0D;&#x9700;&#x8981;&#x6211;&#x4EEC;&#x5728;&#x8FD9;&#x4E9B;&#x5B50;&#x7CFB;&#x7EDF;&#x4EE3;&#x7801;&#x4E2D;&#x518D;&#x624B;&#x52A8;&#x7684;&#x63D2;&#x5165;&#x3002;
+在内核的子系统中已经自带了很多调试信息，而不需要我们在这些子系统代码中再手动的插入。
 </p>
 
 <p>
-&#x901A;&#x8FC7;&#x67E5;&#x770B;&#x6587;&#x4EF6; <code>include/sound/core.h</code> &#x53D1;&#x73B0;&#x6709;&#x5B8F; <code>CONFIG_SND_DEBUG , CONFIG_SND_DEBUG_VERBOSE, CONFIG_SND_VERBOSE_PRINTK</code>, &#x901A;&#x8FC7;&#x5728; menuconfig &#x4E2D;&#x641C;&#x7D22;&#x53D1;&#x73B0;&#x5176;&#x8DEF;&#x5F84;&#x4E3A;&#xFF1A;
+通过查看文件 <code>include/sound/core.h</code> 发现有宏 <code>CONFIG_SND_DEBUG , CONFIG_SND_DEBUG_VERBOSE, CONFIG_SND_VERBOSE_PRINTK</code>, 通过在 menuconfig 中搜索发现其路径为：
 </p>
 <pre class="example">
-Device Drivers -&gt; Sound card support -&gt; Advanced Linux Sound Architecture </pre>
+Device Drivers -> Sound card support -> Advanced Linux Sound Architecture </pre>
 <ul class="org-ul">
-<li>CONFIG_SND_DEBUG : &#x8F93;&#x51FA;&#x57FA;&#x672C;&#x7684;&#x8C03;&#x8BD5;&#x4FE1;&#x606F;</li>
-<li>CONFIG_SND_VERBOSE_PRINTK : &#x5728;&#x8C03;&#x8BD5;&#x4FE1;&#x606F;&#x5934;&#x524D;&#x52A0;&#x4E0A;&#x6587;&#x4EF6;&#x53CA;&#x4F4D;&#x7F6E;&#x6807;&#x8BB0;</li>
-<li>CONFIG_SND_DEBUG_VERBOSE: &#x66F4;&#x591A;&#x7684;&#x8C03;&#x8BD5;&#x4FE1;&#x606F;&#x8F93;&#x51FA;
+<li>CONFIG_SND_DEBUG : 输出基本的调试信息</li>
+<li>CONFIG_SND_VERBOSE_PRINTK : 在调试信息头前加上文件及位置标记</li>
+<li>CONFIG_SND_DEBUG_VERBOSE: 更多的调试信息输出
 <ul class="org-ul">
-<li>&#x5728;&#x9009;&#x4E2D; <code>Debug</code> &#x540E;&#x624D;&#x4F1A;&#x51FA;&#x73B0; <code>More verbose debug</code> &#x7684;&#x9009;&#x9879;&#x3002;</li>
+<li>在选中 <code>Debug</code> 后才会出现 <code>More verbose debug</code> 的选项。</li>
 </ul></li>
 </ul>
 </div>
 </div>
-<div id="outline-container-org065a080" class="outline-2">
-<h2 id="org065a080">&#x6570;&#x636E;&#x9A8C;&#x8BC1;</h2>
-<div class="outline-text-2" id="text-org065a080">
+<div id="outline-container-org95c699c" class="outline-2">
+<h2 id="org95c699c">数据验证</h2>
+<div class="outline-text-2" id="text-org95c699c">
 <p>
-&#x4E0A;&#x5C42;&#x7684;&#x6570;&#x636E;&#x662F;&#x4F1A;&#x901A;&#x8FC7; wirte &#x7C7B;&#x51FD;&#x6570;&#x53D1;&#x9001;&#x4E0B;&#x6765;&#xFF0C;&#x53EF;&#x4EE5;&#x5728;&#x9A71;&#x52A8;&#x4E2D;&#x6253;&#x5370;&#x7F13;&#x51B2;&#x4E2D;&#x7684;&#x503C;&#x4EE5;&#x786E;&#x8BA4;&#x6570;&#x636E;&#x5BF9;&#x9F50;&#x64CD;&#x4F5C;&#x3002;
+上层的数据是会通过 wirte 类函数发送下来，可以在驱动中打印缓冲中的值以确认数据对齐操作。
 </p>
 
 <p>
-&#x6BD4;&#x8F83;&#x5E38;&#x89C1;&#x7684;&#x65B9;&#x6CD5;&#x5C31;&#x662F;&#x5199;&#x4E00;&#x4E2A;&#x9012;&#x589E;&#x7684;&#x6570;&#x636E;&#xFF0C;&#x4E0B;&#x5C42;&#x6765;&#x4F9D;&#x6B21;&#x5339;&#x914D;&#x3002;
+比较常见的方法就是写一个递增的数据，下层来依次匹配。
 </p>
 </div>
 </div>
-<div id="outline-container-org8417cfa" class="outline-2">
-<h2 id="org8417cfa">&#x6CE8;&#x610F;I2S&#x534F;&#x8BAE;</h2>
-<div class="outline-text-2" id="text-org8417cfa">
+<div id="outline-container-orgfe604e0" class="outline-2">
+<h2 id="orgfe604e0">注意I2S协议</h2>
+<div class="outline-text-2" id="text-orgfe604e0">
 <p>
-&#x9664;&#x4E86;&#x6807;&#x51C6;&#x7684;I2S&#x534F;&#x8BAE;&#x5916;&#xFF0C;&#x8FD8;&#x6709;&#x5DE6;&#x53F3;&#x5BF9;&#x9F50;&#x4E24;&#x79CD;&#x65B9;&#x5F0F;&#xFF0C;&#x5982;&#x679C;&#x8FD9;&#x4E2A;&#x6CA1;&#x6709;&#x914D;&#x7F6E;&#x4E0E;codec&#x82AF;&#x7247;&#x4E00;&#x81F4;&#xFF0C;&#x90A3;&#x4E48;&#x542C;&#x5230;&#x7684;&#x58F0;&#x97F3;&#x5C31;&#x4F1A;&#x6709;&#x7C7B;&#x4F3C;&#x8FC7;&#x8F7D;&#x7684;&#x6548;&#x679C;&#x3002;(&#x56E0;&#x4E3A;&#x4E0A;&#x4E00;&#x4E2A;&#x901A;&#x9053;&#x7684;&#x4F4E;&#x4F4D;&#x6570;&#x636E;&#x88AB;&#x91C7;&#x7528;&#x5230;&#x4E86;&#x4E0B;&#x4E00;&#x4E2A;&#x901A;&#x9053;&#x7684;&#x9AD8;&#x4F4D;&#x4E0A;&#x53BB;)
+除了标准的I2S协议外，还有左右对齐两种方式，如果这个没有配置与codec芯片一致，那么听到的声音就会有类似过载的效果。(因为上一个通道的低位数据被采用到了下一个通道的高位上去)
 </p>
 </div>
 </div>
-<div id="outline-container-org262b982" class="outline-2">
-<h2 id="org262b982">codec&#x914D;&#x7F6E;</h2>
-<div class="outline-text-2" id="text-org262b982">
+<div id="outline-container-orgaf20246" class="outline-2">
+<h2 id="orgaf20246">codec配置</h2>
+<div class="outline-text-2" id="text-orgaf20246">
 <p>
-&#x6709;&#x4E9B;&#x82AF;&#x7247;&#x7684;&#x914D;&#x7F6E;&#x9ED8;&#x8BA4;&#x662F;&#x9759;&#x97F3;&#xFF0C;&#x6709;&#x4E9B;&#x590D;&#x6742;&#x7684;&#x82AF;&#x7247;(&#x6BD4;&#x5982;AD1761)&#x5185;&#x90E8;&#x8FD8;&#x6709;&#x5F88;&#x591A;&#x901A;&#x8DEF;&#xFF0C;&#x8FD9;&#x4E9B;&#x90FD;&#x53EF;&#x4EE5;&#x5148;&#x901A;&#x8FC7; <code>amixer</code> &#x547D;&#x4EE4;&#x914D;&#x7F6E;, &#x518D;&#x786E;&#x5B9A;&#x53C2;&#x6570;&#x540E;&#x518D;&#x4F7F;&#x7528;&#x7A0B;&#x5E8F;&#x914D;&#x7F6E;&#x3002;
+有些芯片的配置默认是静音，有些复杂的芯片(比如AD1761)内部还有很多通路，这些都可以先通过 <code>amixer</code> 命令配置, 再确定参数后再使用程序配置。
 </p>
 <ul class="org-ul">
-<li>&#x9996;&#x5148;&#x4F7F;&#x7528; <code>amixer contents</code> &#x5217;&#x51FA;&#x5176;&#x9ED8;&#x8BA4;&#x914D;&#x7F6E;</li>
-<li>&#x6839;&#x636E;&#x82AF;&#x7247;&#x7684;datasheet&#x6765;&#x67E5;&#x770B;&#x5176;&#x4E2D;&#x4E00;&#x4E9B;&#x4E0D;&#x5408;&#x9002;&#x7684;&#x914D;&#x7F6E;&#x7F57;&#x5217;&#x51FA;&#x6765;</li>
-<li>&#x6839;&#x636E;&#x9700;&#x8981;&#x914D;&#x7F6E;&#x7684;id&#x53F7;(numid=xx)&#xFF0C;&#x4F7F;&#x7528;&#x547D;&#x4EE4;&#x914D;&#x7F6E; <code>amixer cset numid=xx &lt;value&gt;</code> 
+<li>首先使用 <code>amixer contents</code> 列出其默认配置</li>
+<li>根据芯片的datasheet来查看其中一些不合适的配置罗列出来</li>
+<li>根据需要配置的id号(numid=xx)，使用命令配置 <code>amixer cset numid=xx <value></code> 
 <ul class="org-ul">
-<li>&#x5F53;&#x6709;&#x51E0;&#x4E2A;&#x97F3;&#x9891;&#x82AF;&#x7247;&#x65F6;&#xFF0C;&#x4E3A;&#x4E86;&#x627E;&#x51FA;&#x5BF9;&#x5E94;&#x82AF;&#x7247;&#x7684;&#x8BBE;&#x7F6E;&#xFF0C;&#x53EF;&#x4EE5;&#x5728;&#x82AF;&#x7247;&#x9A71;&#x52A8;&#x4E2D;&#x627E;&#x5230;&#x5BF9;&#x5E94;&#x5B57;&#x7B26;&#x4E32;&#x5E76;&#x8FDB;&#x884C;&#x53CD;&#x5411;&#x641C;&#x5BFB;</li>
+<li>当有几个音频芯片时，为了找出对应芯片的设置，可以在芯片驱动中找到对应字符串并进行反向搜寻</li>
 </ul></li>
 </ul>
 </div>
 </div>
-<div id="outline-container-org06505f7" class="outline-2">
-<h2 id="org06505f7">ALSA&#x4E2D;&#x7684;&#x751F;&#x4EA7;&#x8005;&#x548C;&#x6D88;&#x8D39;&#x8005;&#x6A21;&#x578B;</h2>
-<div class="outline-text-2" id="text-org06505f7">
+<div id="outline-container-orgb7edddb" class="outline-2">
+<h2 id="orgb7edddb">ALSA中的生产者和消费者模型</h2>
+<div class="outline-text-2" id="text-orgb7edddb">
 </div>
-<div id="outline-container-org1105412" class="outline-3">
-<h3 id="org1105412">&#x95EE;&#x9898;&#x63CF;&#x8FF0;</h3>
-<div class="outline-text-3" id="text-org1105412">
+<div id="outline-container-org3b8cb87" class="outline-3">
+<h3 id="org3b8cb87">问题描述</h3>
+<div class="outline-text-3" id="text-org3b8cb87">
 <p>
-&#x4E00;&#x822C;&#x6765;&#x8BF4;&#x662F;&#x9700;&#x8981;&#x6D88;&#x8D39;&#x8005;&#x7684;&#x5E73;&#x5747;&#x901F;&#x5EA6;&#x5927;&#x4E8E;&#x751F;&#x4EA7;&#x8005;&#x7684;&#x5E73;&#x5747;&#x6570;&#x636E;&#x624D;&#x80FD;&#x4FDD;&#x8BC1;&#x6570;&#x636E;&#x4E0D;&#x4E22;&#x5931;&#xFF0C;&#x4F46;&#x662F;&#x5728;&#x97F3;&#x9891;
-&#x8FD9;&#x79CD;&#x60C5;&#x51B5;&#x4E0B;&#xFF0C;&#x4E3A;&#x4E86;&#x64AD;&#x653E;&#x7684;&#x58F0;&#x97F3;&#x548C;&#x4EA7;&#x751F;&#x7684;&#x58F0;&#x97F3;&#x4E00;&#x81F4;&#xFF0C;&#x90A3;&#x5C31;&#x9700;&#x8981;&#x751F;&#x4EA7;&#x8005;&#x548C;&#x6D88;&#x8D39;&#x8005;&#x7684;&#x901F;&#x5EA6;&#x7406;&#x8BBA;&#x4E0A;&#x4E00;&#x81F4;&#x3002;
+一般来说是需要消费者的平均速度大于生产者的平均数据才能保证数据不丢失，但是在音频
+这种情况下，为了播放的声音和产生的声音一致，那就需要生产者和消费者的速度理论上一致。
 </p>
 
 <p>
-&#x5728;&#x64AD;&#x653E;&#x4E00;&#x4E2A;&#x97F3;&#x9891;&#x6587;&#x4EF6;&#x65F6;&#xFF0C;&#x53EF;&#x4EE5;&#x4FDD;&#x8BC1;&#x6D88;&#x8D39;&#x8005;&#x4E00;&#x76F4;&#x53EF;&#x4EE5;&#x4E0D;&#x95F4;&#x65AD;&#x7684;&#x83B7;&#x53D6;&#x6570;&#x636E;&#xFF0C;&#x4F46;&#x5728;&#x5176;&#x4ED6;&#x573A;&#x5408;&#xFF08;&#x6BD4;&#x5982;&#x5148;&#x89E3;&#x8C03;&#x518D;&#x4EA7;&#x751F;&#x97F3;&#x9891;&#x6570;&#x636E;&#xFF09;&#xFF0C;
-&#x751F;&#x4EA7;&#x8005;&#x9700;&#x8981;&#x4E00;&#x5B9A;&#x65F6;&#x95F4;&#x624D;&#x4F1A;&#x4EA7;&#x751F;&#x6709;&#x6548;&#x6570;&#x636E;&#xFF0C;&#x8FD9;&#x5C31;&#x4ECE;&#x5B8F;&#x89C2;&#x4E0A;&#x5BFC;&#x81F4;&#x6D88;&#x8D39;&#x8005;&#x4F1A;&#x95F4;&#x6B47;&#x7684;&#x7B49;&#x5F85;&#x751F;&#x4EA7;&#x8005;&#x3002;
-&#x5728;&#x8FD9;&#x79CD;&#x60C5;&#x51B5;&#x4E0B;&#x4E0A;&#x5C42;&#x4FBF;&#x4F1A;&#x4EA7;&#x751F; <code>Broken pipe</code> &#x4E5F;&#x5C31;&#x662F; <code>underrun</code> &#x9519;&#x8BEF;&#x3002;
+在播放一个音频文件时，可以保证消费者一直可以不间断的获取数据，但在其他场合（比如先解调再产生音频数据），
+生产者需要一定时间才会产生有效数据，这就从宏观上导致消费者会间歇的等待生产者。
+在这种情况下上层便会产生 <code>Broken pipe</code> 也就是 <code>underrun</code> 错误。
 </p>
 </div>
 </div>
-<div id="outline-container-org613d6fe" class="outline-3">
-<h3 id="org613d6fe">&#x89E3;&#x51B3;&#x65B9;&#x6848;(&#x81EA;&#x6211;&#x601D;&#x8003;)</h3>
-<div class="outline-text-3" id="text-org613d6fe">
+<div id="outline-container-org18eed37" class="outline-3">
+<h3 id="org18eed37">解决方案(自我思考)</h3>
+<div class="outline-text-3" id="text-org18eed37">
 <p>
-ALSA&#x51FA;&#x73B0;&#x6B64;&#x9519;&#x8BEF;&#x7684;&#x6839;&#x672C;&#x539F;&#x56E0;&#x5C31;&#x662F;&#x8FD9;&#x4E2A;&#x7279;&#x6B8A;&#x7684;&#x6D88;&#x8D39;&#x8005;&#x9700;&#x8981;&#x65F6;&#x523B;&#x90FD;&#x6709;&#x6570;&#x636E;&#xFF0C;&#x90A3;&#x4E48;&#x89E3;&#x51B3;&#x601D;&#x8DEF;&#x5C31;&#x662F;&#xFF1A;
+ALSA出现此错误的根本原因就是这个特殊的消费者需要时刻都有数据，那么解决思路就是：
 </p>
 </div>
-<div id="outline-container-org3e7db3f" class="outline-4">
-<h4 id="org3e7db3f">&#x65B9;&#x6848;&#x4E00;</h4>
-<div class="outline-text-4" id="text-org3e7db3f">
+<div id="outline-container-org1df65de" class="outline-4">
+<h4 id="org1df65de">方案一</h4>
+<div class="outline-text-4" id="text-org1df65de">
 <p>
-&#x64AD;&#x653E;&#x4E0A;&#x4E00;&#x6B21;&#x5904;&#x7406;&#x540E;&#x7684;&#x6570;&#x636E;&#xFF0C;&#x5728;&#x64AD;&#x653E;&#x7684;&#x540C;&#x65F6;(&#x4E00;&#x822C;&#x901A;&#x8FC7;DMA&#x9001;&#x51FA;)&#xFF0C;&#x5904;&#x7406;&#x5F53;&#x524D;&#x63A5;&#x6536;&#x7684;&#x6570;&#x636E;.
-</p>
-
-<p>
-&#x8FD9;&#x79CD;&#x65B9;&#x5F0F;&#x6709;&#x4E00;&#x4E2A;&#x6761;&#x4EF6;: <b>&#x5904;&#x7406;&#x4E00;&#x5E27;&#x6570;&#x636E;&#x7684;&#x65F6;&#x95F4;&#x8981;&#x4F4E;&#x4E8E;&#x64AD;&#x653E;&#x5B8C;&#x4E00;&#x5E27;&#x7684;&#x65F6;&#x95F4;</b>
-</p>
-</div>
-</div>
-<div id="outline-container-org1e4a755" class="outline-4">
-<h4 id="org1e4a755">&#x65B9;&#x6848;&#x4E8C;</h4>
-<div class="outline-text-4" id="text-org1e4a755">
-<p>
-&#x5F53;&#x5904;&#x7406;&#x4E00;&#x5E27;&#x7684;&#x65F6;&#x95F4;&#x957F;&#x4E8E;&#x64AD;&#x653E;&#x5B8C;&#x4E00;&#x5E27;&#x7684;&#x65F6;&#x95F4;&#x65F6;&#xFF0C;&#x65B9;&#x6848;&#x4E00;&#x5C31;&#x4F1A;&#x51FA;&#x73B0;&#x6742;&#x97F3;&#xFF0C;&#x4E3A;&#x4E86;&#x907F;&#x514D;&#x8FD9;&#x79CD;&#x60C5;&#x51B5;&#x5C31;&#x9700;&#x8981;&#x8FDB;&#x884C;&#x91CD;&#x91C7;&#x6837;&#xFF0C;&#x76F8;&#x5F53;&#x4E8E;&#x589E;&#x5927;&#x53D1;&#x9001;&#x7ED9;&#x64AD;&#x653E;&#x5668;&#x7684;&#x6570;&#x636E;&#x91CF;&#xFF0C;&#x5EF6;&#x957F;&#x5176;&#x64AD;&#x653E;&#x65F6;&#x95F4;&#x3002;
+播放上一次处理后的数据，在播放的同时(一般通过DMA送出)，处理当前接收的数据.
 </p>
 
 <p>
-&#x81F3;&#x4E8E;&#x8FD9;&#x4E2A;&#x63D2;&#x503C;&#x53D6;&#x591A;&#x5C11;&#xFF0C;&#x8981;&#x6839;&#x636E;&#x5F53;&#x524D;&#x7684;&#x6570;&#x636E;&#x901F;&#x7387;&#x548C;&#x6D88;&#x8D39;&#x8005;&#x4EA7;&#x751F;&#x6570;&#x636E;&#x7684;&#x65F6;&#x95F4;&#x6D88;&#x8017;&#x6765;&#x7B97;&#x3002;
+这种方式有一个条件: <b>处理一帧数据的时间要低于播放完一帧的时间</b>
+</p>
+</div>
+</div>
+<div id="outline-container-org6172eca" class="outline-4">
+<h4 id="org6172eca">方案二</h4>
+<div class="outline-text-4" id="text-org6172eca">
+<p>
+当处理一帧的时间长于播放完一帧的时间时，方案一就会出现杂音，为了避免这种情况就需要进行重采样，相当于增大发送给播放器的数据量，延长其播放时间。
+</p>
+
+<p>
+至于这个插值取多少，要根据当前的数据速率和消费者产生数据的时间消耗来算。
 </p>
 <pre class="example">
-&#x6BD4;&#x5982;&#x5F53;&#x524D;&#x6570;&#x636E;&#x901F;&#x7387;&#x662F; 44100 Hz&#xFF0C;&#x90A3;&#x4E48;&#x4E00;&#x4E2A;frame&#x7684;&#x65F6;&#x95F4;&#x5C31;&#x662F;23&#x5FAE;&#x79D2;&#xFF0C;&#x800C;&#x4E0A;&#x5C42;&#x5728;&#x63A5;&#x6536;&#x5230;&#x91C7;&#x6837;&#x539F;&#x59CB;&#x6570;&#x636E;&#x540E;
-&#x8FDB;&#x884C;&#x89E3;&#x8C03;&#x7684;&#x65F6;&#x95F4;&#x9700;&#x8981;5&#x6BEB;&#x79D2;&#xFF0C;&#x90A3;&#x4E48;&#x8FD9;&#x6BB5;&#x63D2;&#x503C;&#x6570;&#x636E;&#x81F3;&#x5C11;&#x8981;&#x5305;&#x542B;218&#x4E2A;frame&#x624D;&#x53EF;&#x4EE5;&#x4FDD;&#x8BC1;&#x4E0E;&#x89E3;&#x8C03;&#x7B97;&#x6CD5;&#x6301;&#x5E73;&#x3002;
-&#x52A0;&#x4E0A;&#x7EBF;&#x7A0B;&#x7684;&#x5207;&#x6362;&#x65F6;&#x95F4;&#x53D6;300&#x4E2A;frame&#x7684;&#x7A7A;&#x95F4;&#x624D;&#x6BD4;&#x8F83;&#x5408;&#x9002;&#x3002;</pre>
+比如当前数据速率是 44100 Hz，那么一个frame的时间就是23微秒，而上层在接收到采样原始数据后
+进行解调的时间需要5毫秒，那么这段插值数据至少要包含218个frame才可以保证与解调算法持平。
+加上线程的切换时间取300个frame的空间才比较合适。</pre>
 </div>
 </div>
 </div>
-<div id="outline-container-orgc2debd6" class="outline-3">
-<h3 id="orgc2debd6">&#x771F;&#x5B9E;&#x89E3;&#x51B3;&#x65B9;&#x6848;</h3>
-<div class="outline-text-3" id="text-orgc2debd6">
+<div id="outline-container-org4c4aa2b" class="outline-3">
+<h3 id="org4c4aa2b">真实解决方案</h3>
+<div class="outline-text-3" id="text-org4c4aa2b">
 <p>
-&#x97F3;&#x9891;&#x8FD9;&#x65B9;&#x9762;&#x5904;&#x7406;&#x5E94;&#x8BE5;&#x662F;&#x4E00;&#x4E2A;&#x5F88;&#x666E;&#x904D;&#x7684;&#x9700;&#x6C42;&#xFF0C;&#x80AF;&#x5B9A;&#x6709;&#x5F88;&#x591A;&#x9AD8;&#x4EBA;&#x5904;&#x7406;&#x4E86;&#x8FD9;&#x4E2A;&#x95EE;&#x9898;&#x5E76;&#x5F00;&#x6E90;&#x51FA;&#x6765;&#x4E86;&#xFF0C;&#x5F85;&#x6211;&#x641C;&#x4ED6;&#x4E00;&#x641C;&#x2026;..
+音频这方面处理应该是一个很普遍的需求，肯定有很多高人处理了这个问题并开源出来了，待我搜他一搜…..
 </p>
 
 <p>
-&#x76EE;&#x524D;&#x53D1;&#x73B0;&#x6709;&#x4E24;&#x4E2A;&#x5E93;&#x90FD;&#x5177;&#x6709;&#x91CD;&#x91C7;&#x6837;&#x7684;&#x529F;&#x80FD;:
+目前发现有两个库都具有重采样的功能:
 </p>
 <ol class="org-ol">
 <li><a href="http://liquidsdr.org/doc/resamp/" target="_blank" rel="noopener">liquid</a></li>
@@ -435,38 +435,38 @@ ALSA&#x51FA;&#x73B0;&#x6B64;&#x9519;&#x8BEF;&#x7684;&#x6839;&#x672C;&#x539F;&#x5
 </ol>
 
 <p>
-&#x5728;&#x5B9E;&#x9645;&#x5E94;&#x7528;&#x4E2D;&#x53D1;&#x73B0;&#xFF0C;&#x91CD;&#x91C7;&#x6837;&#x53EA;&#x662F;&#x89E3;&#x51B3;&#x4E86;&#x5176;&#x4E2D;&#x4E00;&#x73AF;&#xFF0C;&#x8FD8;&#x6709;&#x5176;&#x4ED6;&#x73AF;&#xFF01;
+在实际应用中发现，重采样只是解决了其中一环，还有其他环！
 </p>
 
 <p>
-&#x8BA9;&#x6211;&#x4EEC;&#x6765;&#x597D;&#x597D;&#x68B3;&#x7406;&#x4E00;&#x4E0B;&#x5728;&#x7C7B;&#x4F3C;&#x4E8E;&#x89E3;&#x8C03;&#x4EA7;&#x751F;&#x7684;&#x97F3;&#x9891;&#x6570;&#x636E;&#x8FD9;&#x79CD;&#x5E94;&#x7528;:
+让我们来好好梳理一下在类似于解调产生的音频数据这种应用:
 </p>
 <ol class="org-ol">
-<li>&#x5728;&#x6570;&#x636E;&#x9001;&#x5F80;ALSA&#x63A5;&#x53E3;&#x524D;&#xFF0C;&#x9700;&#x8981;&#x8FDB;&#x884C;&#x4EE5;&#x4E0B;&#x4E24;&#x6B65;:
+<li>在数据送往ALSA接口前，需要进行以下两步:
 <ul class="org-ul">
-<li>&#x63A5;&#x6536;&#x6570;&#x636E;</li>
-<li>&#x89E3;&#x8C03;</li>
-<li>&#x91CD;&#x91C7;&#x6837;</li>
+<li>接收数据</li>
+<li>解调</li>
+<li>重采样</li>
 </ul></li>
-<li>&#x4E3A;&#x4E86;&#x4E0D;&#x8BA9;ALSA&#x63A5;&#x6536;&#x4E0D;&#x5230;&#x6570;&#x636E;(&#x53EA;&#x8981;&#x4E2D;&#x95F4;&#x6CA1;&#x6709;&#x63A5;&#x6536;&#x5230;&#x6570;&#x636E;&#xFF0C;&#x6700;&#x7EC8;&#x542C;&#x5230;&#x7684;&#x58F0;&#x97F3;&#x91CC;&#x9762;&#x5C31;&#x4F1A;&#x6709;&#x5494;&#x3001;&#x5494;&#x3001;&#x5494;&#x2026;)&#xFF0C;&#x9700;&#x8981;:
+<li>为了不让ALSA接收不到数据(只要中间没有接收到数据，最终听到的声音里面就会有咔、咔、咔…)，需要:
 <ul class="org-ul">
-<li>&#x8BA9; <code>&#x63A5;&#x6536;&#x6570;&#x636E;&#x548C;&#x89E3;&#x8C03;&#x6570;&#x636E;&#x4EE5;&#x53CA;&#x91CD;&#x91C7;&#x6837;&#x7684;&#x4E00;&#x5468;&#x671F;</code> &#x6240;&#x6D88;&#x8017;&#x7684;&#x65F6;&#x95F4;&#x5C0F;&#x4E8E;ALSA&#x64AD;&#x653E;&#x5B8C;&#x4E00;&#x5468;&#x671F;&#x7684;&#x65F6;&#x95F4;</li>
+<li>让 <code>接收数据和解调数据以及重采样的一周期</code> 所消耗的时间小于ALSA播放完一周期的时间</li>
 </ul></li>
-<li>&#x4EC5;&#x4EC5;&#x8FD9;&#x6837;&#x8FD8;&#x4E0D;&#x591F;&#xFF0C;&#x56E0;&#x4E3A;ALSA&#x5185;&#x90E8;&#x5177;&#x6709;&#x73AF;&#x5F62;&#x7F13;&#x5B58;&#xFF0C;ALSA&#x5C06;&#x4E00;&#x4E2A;period&#x53D1;&#x9001;&#x7ED9;DMA&#x540E;&#x4F1A;&#x7ACB;&#x5373;&#x8FD4;&#x56DE;&#x63A5;&#x6536;&#x4E0B;&#x4E00;&#x5E27;&#x6570;&#x636E;(&#x5982;&#x679C;&#x7F13;&#x5B58;&#x6709;&#x7A7A;&#x4F4D;&#x7684;&#x8BDD;)
+<li>仅仅这样还不够，因为ALSA内部具有环形缓存，ALSA将一个period发送给DMA后会立即返回接收下一帧数据(如果缓存有空位的话)
 <ul class="org-ul">
-<li>&#x6240;&#x4EE5;&#x9700;&#x8981;&#x5C06;&#x89E3;&#x8C03;&#x6570;&#x636E;&#x8F93;&#x51FA;&#x5230;&#x4E00;&#x4E2A;<a href="https://github.com/KcMeterCEC/common_code/tree/master/c/data_structure/ring_buffer" target="_blank" rel="noopener">&#x4E2D;&#x95F4;&#x73AF;&#x5F62;&#x7F13;&#x5B58;</a>&#xFF0C; <b>&#x5E76;&#x4E14;&#x5EF6;&#x65F6;&#x542F;&#x52A8;ALSA</b>
+<li>所以需要将解调数据输出到一个<a href="https://github.com/KcMeterCEC/common_code/tree/master/c/data_structure/ring_buffer" target="_blank" rel="noopener">中间环形缓存</a>， <b>并且延时启动ALSA</b>
 <ul class="org-ul">
-<li>&#x5EF6;&#x65F6;&#x662F;&#x4E3A;&#x4E86;&#x8BA9;&#x7F13;&#x5B58;&#x4E2D;&#x6709;&#x8DB3;&#x591F;&#x7684;&#x6570;&#x636E;&#x53EF;&#x4EE5;&#x6EE1;&#x8DB3;ALSA&#x524D;&#x671F;&#x7684;&#x7A81;&#x53D1;&#x8BFB;&#x53D6;</li>
+<li>延时是为了让缓存中有足够的数据可以满足ALSA前期的突发读取</li>
 </ul></li>
 </ul></li>
-<li>&#x7ECF;&#x8FC7;&#x4EE5;&#x4E0A;3&#x6B65;&#xFF0C;&#x4ECE;&#x5B8F;&#x89C2;&#x4E0A;&#x6765;&#x770B;&#xFF0C;&#x89E3;&#x8C03;&#x6570;&#x636E;&#x4F1A;&#x5199;&#x6EE1;&#x7F13;&#x5B58;&#xFF0C;&#x8FD9;&#x4E2A;&#x65F6;&#x5019;&#x8FD8;&#x9700;&#x8981;&#x62BD;&#x6837;&#x4E22;&#x6389;&#x6570;&#x636E;(&#x5C31;&#x662F;&#x95F4;&#x9694;&#x4E00;&#x6BB5;&#x6570;&#x636E;&#x4E22;&#x6389;&#x4E00;&#x5C0F;&#x5E27;)
+<li>经过以上3步，从宏观上来看，解调数据会写满缓存，这个时候还需要抽样丢掉数据(就是间隔一段数据丢掉一小帧)
 <ul class="org-ul">
-<li>&#x56E0;&#x4E3A;&#x97F3;&#x9891;&#x82AF;&#x7247;&#x5185;&#x90E8;&#x6709;&#x6EE4;&#x6CE2;&#x5668;&#xFF0C;&#x6240;&#x4EE5;&#x5F53;&#x62BD;&#x6837;&#x4E22;&#x6570;&#x636E;&#x65F6;&#xFF0C;&#x5BF9;&#x542C;&#x58F0;&#x97F3;&#x4E0D;&#x4F1A;&#x6709;&#x5F71;&#x54CD;&#x3002;&#x4F46;&#x5982;&#x679C;&#x8FDE;&#x7EED;&#x4E22;&#x6570;&#x636E;&#xFF0C;&#x4E5F;&#x4F1A;&#x5494;&#x3001;&#x5494;&#x3001;&#x5494;&#x2026;</li>
+<li>因为音频芯片内部有滤波器，所以当抽样丢数据时，对听声音不会有影响。但如果连续丢数据，也会咔、咔、咔…</li>
 </ul></li>
 </ol>
 
 <p>
-&#x8FD9;&#x6837;&#x6574;&#x4E2A;&#x65B9;&#x6848;&#x5C31;&#x5982;&#x4E0B;&#x56FE;&#x6240;&#x793A;:
+这样整个方案就如下图所示:
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[driver]/[What]Linux--ALSA/audio_play.jpg?raw=true" alt="audio_play.jpg">
 </div>
@@ -474,7 +474,7 @@ ALSA&#x51FA;&#x73B0;&#x6B64;&#x9519;&#x8BEF;&#x7684;&#x6839;&#x672C;&#x539F;&#x5
 </div>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
 </div>
 
     </div>
@@ -560,7 +560,7 @@ Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org6a32d81"><span class="nav-number">1.</span> <span class="nav-text">ALSA&amp;#x81EA;&amp;#x5E26;&amp;#x8C03;&amp;#x8BD5;&amp;#x8F93;&amp;#x51FA;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org065a080"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x6570;&amp;#x636E;&amp;#x9A8C;&amp;#x8BC1;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org8417cfa"><span class="nav-number">3.</span> <span class="nav-text">&amp;#x6CE8;&amp;#x610F;I2S&amp;#x534F;&amp;#x8BAE;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org262b982"><span class="nav-number">4.</span> <span class="nav-text">codec&amp;#x914D;&amp;#x7F6E;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org06505f7"><span class="nav-number">5.</span> <span class="nav-text">ALSA&amp;#x4E2D;&amp;#x7684;&amp;#x751F;&amp;#x4EA7;&amp;#x8005;&amp;#x548C;&amp;#x6D88;&amp;#x8D39;&amp;#x8005;&amp;#x6A21;&amp;#x578B;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org1105412"><span class="nav-number">5.1.</span> <span class="nav-text">&amp;#x95EE;&amp;#x9898;&amp;#x63CF;&amp;#x8FF0;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org613d6fe"><span class="nav-number">5.2.</span> <span class="nav-text">&amp;#x89E3;&amp;#x51B3;&amp;#x65B9;&amp;#x6848;(&amp;#x81EA;&amp;#x6211;&amp;#x601D;&amp;#x8003;)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org3e7db3f"><span class="nav-number">5.2.1.</span> <span class="nav-text">&amp;#x65B9;&amp;#x6848;&amp;#x4E00;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org1e4a755"><span class="nav-number">5.2.2.</span> <span class="nav-text">&amp;#x65B9;&amp;#x6848;&amp;#x4E8C;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgc2debd6"><span class="nav-number">5.3.</span> <span class="nav-text">&amp;#x771F;&amp;#x5B9E;&amp;#x89E3;&amp;#x51B3;&amp;#x65B9;&amp;#x6848;</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org80c4f56"><span class="nav-number">1.</span> <span class="nav-text">ALSA自带调试输出</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org95c699c"><span class="nav-number">2.</span> <span class="nav-text">数据验证</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgfe604e0"><span class="nav-number">3.</span> <span class="nav-text">注意I2S协议</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgaf20246"><span class="nav-number">4.</span> <span class="nav-text">codec配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgb7edddb"><span class="nav-number">5.</span> <span class="nav-text">ALSA中的生产者和消费者模型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org3b8cb87"><span class="nav-number">5.1.</span> <span class="nav-text">问题描述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org18eed37"><span class="nav-number">5.2.</span> <span class="nav-text">解决方案(自我思考)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org1df65de"><span class="nav-number">5.2.1.</span> <span class="nav-text">方案一</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org6172eca"><span class="nav-number">5.2.2.</span> <span class="nav-text">方案二</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org4c4aa2b"><span class="nav-number">5.3.</span> <span class="nav-text">真实解决方案</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 

@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="&amp;#x53C2;&amp;#x8003;&amp;#x6587;&amp;#x6863;: &#x2F;Documentation&#x2F;devicetree&#x2F;booting-without-of.txt    &amp;#x53EA;&amp;#x6709;&amp;#x77E5;&amp;#x9053;&amp;#x4E86;&amp;#x8BBE;&amp;#x5907;&amp;#x6811;&amp;#x7684;&amp;#x6570;&amp;#x636E;&amp;#x7ED3;&amp;#x6784;&amp;#xFF0C;">
+  <meta name="description" content="参考文档: &#x2F;Documentation&#x2F;devicetree&#x2F;booting-without-of.txt    只有知道了设备树的数据结构，才能进一步分析设备树相关的操作代码。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[What]linux -&gt; 设备树数据结构">
 <meta property="og:url" content="http://kcmetercec.top/2018/06/26/linux_driver_devicetree_struct/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="&amp;#x53C2;&amp;#x8003;&amp;#x6587;&amp;#x6863;: &#x2F;Documentation&#x2F;devicetree&#x2F;booting-without-of.txt    &amp;#x53EA;&amp;#x6709;&amp;#x77E5;&amp;#x9053;&amp;#x4E86;&amp;#x8BBE;&amp;#x5907;&amp;#x6811;&amp;#x7684;&amp;#x6570;&amp;#x636E;&amp;#x7ED3;&amp;#x6784;&amp;#xFF0C;">
+<meta property="og:description" content="参考文档: &#x2F;Documentation&#x2F;devicetree&#x2F;booting-without-of.txt    只有知道了设备树的数据结构，才能进一步分析设备树相关的操作代码。">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[driver]/[What]Linux--device_tree/struct_block.jpg?raw=true">
 <meta property="article:published_time" content="2018-06-25T16:00:00.000Z">
@@ -301,31 +301,31 @@
       
         <div id="content">
 <p>
-&#x53C2;&#x8003;&#x6587;&#x6863;: <code>/Documentation/devicetree/booting-without-of.txt</code>
+参考文档: <code>/Documentation/devicetree/booting-without-of.txt</code>
 </p>
 
 <p>
-&#x53EA;&#x6709;&#x77E5;&#x9053;&#x4E86;&#x8BBE;&#x5907;&#x6811;&#x7684;&#x6570;&#x636E;&#x7ED3;&#x6784;&#xFF0C;&#x624D;&#x80FD;&#x8FDB;&#x4E00;&#x6B65;&#x5206;&#x6790;&#x8BBE;&#x5907;&#x6811;&#x76F8;&#x5173;&#x7684;&#x64CD;&#x4F5C;&#x4EE3;&#x7801;&#x3002;
+只有知道了设备树的数据结构，才能进一步分析设备树相关的操作代码。
 </p>
 
 <a id="more"></a>
 
 <p>
-kernel&#x901A;&#x8FC7;&#x8BFB;&#x53D6;&#x7531;bootloader&#x4F20;&#x5165;&#x7684;r2&#x5BC4;&#x5B58;&#x5668;&#x4E2D;&#x7684;&#x8BBE;&#x5907;&#x6811;&#x7269;&#x7406;&#x5730;&#x5740;&#xFF0C;&#x6765;&#x83B7;&#x53D6;&#x8BBE;&#x5907;&#x6811;&#x7684;&#x5185;&#x5BB9;&#x3002;
+kernel通过读取由bootloader传入的r2寄存器中的设备树物理地址，来获取设备树的内容。
 </p>
 
 <p>
-kernel&#x4E3A;&#x4E86;&#x8BC6;&#x522B;&#x8BBE;&#x5907;&#x6811;&#x4E00;&#x4E2A;&#x5168;&#x5C40;&#x7684;&#x4FE1;&#x606F;&#xFF0C;&#x5F53;&#x7136;&#x5C31;&#x9700;&#x8981;&#x4E00;&#x4E2A;&#x5934;&#x6765;&#x63CF;&#x8FF0;&#x6B64;&#x5BF9;&#x8C61;:
+kernel为了识别设备树一个全局的信息，当然就需要一个头来描述此对象:
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Definitions used by the flattened device tree */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> OF_DT_HEADER		0xd00dfeed	<span class="comment">/* marker */</span></span></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief &#x8BBE;&#x5907;&#x6811;&#x7ED3;&#x6784;&#x5934;(&#x4EE5;&#x5927;&#x7AEF;&#x6A21;&#x5F0F;&#x7684;&#x683C;&#x5F0F;&#x5B58;&#x50A8;)</span></span><br><span class="line"><span class="comment"> * @param magic:&#x6B64;&#x9B54;&#x6570;&#x7528;&#x4E8E;&#x6807;&#x8BC6;&#x8BBE;&#x5907;&#x6811;&#x7684;&#x5F00;&#x5934;</span></span><br><span class="line"><span class="comment"> * @param totalsize:&#x8BBE;&#x5907;&#x6811;&#x6240;&#x5360;&#x7528;&#x7684;&#x5185;&#x5B58;&#x5927;&#x5C0F;&#xFF0C;&#x5305;&#x542B;&#x5934;</span></span><br><span class="line"><span class="comment"> * @param off_dt_struct:&#x8BBE;&#x5907;&#x6811;&#x7ED3;&#x6784;&#x504F;&#x79FB;</span></span><br><span class="line"><span class="comment"> * @param off_dt_strings:&#x8BBE;&#x5907;&#x6811;&#x5B57;&#x7B26;&#x4E32;&#x504F;&#x79FB;</span></span><br><span class="line"><span class="comment"> * @param off_mem_rsvmap:&#x5185;&#x5B58;&#x4FDD;&#x7559;&#x533A;&#xFF0C;&#x7531; &#x7269;&#x7406;&#x5730;&#x5740;+&#x5927;&#x5C0F; &#x7EC4;&#x6210;&#x4E00;&#x4E2A;&#x5217;&#x8868;&#x8868;&#x793A;&#xFF0C;&#x907F;&#x514D;kernel&#x5C06;&#x5176;&#x7528;&#x4E8E;&#x5176;&#x4ED6;&#x7528;&#x9014;</span></span><br><span class="line"><span class="comment"> * @param version:&#x6307;&#x660E;&#x5F53;&#x524D;&#x8BBE;&#x5907;&#x6811;&#x7248;&#x672C;&#xFF0C;&#x7248;&#x672C;&#x8D8A;&#x9AD8;&#x65B0;&#x589E;&#x7684;&#x5C5E;&#x6027;&#x8D8A;&#x591A;</span></span><br><span class="line"><span class="comment"> * @param last_comp_verson:&#x5411;&#x540E;&#x517C;&#x5BB9;&#x7684;&#x7248;&#x672C;&#x53F7;&#xFF0C;&#x4EE3;&#x8868;&#x8001;&#x7248;&#x672C;&#x7F16;&#x8BD1;&#x7684;&#x5185;&#x6838;&#x4E5F;&#x53EF;&#x4EE5;&#x4F7F;&#x7528;&#x6B64;&#x65B0;&#x7248;&#x672C;&#x7684;&#x8BBE;&#x5907;&#x6811;</span></span><br><span class="line"><span class="comment"> * @param boot_cpuid_phys:&#x542F;&#x52A8;&#x7684;CPU id &#x53F7;</span></span><br><span class="line"><span class="comment"> * @param size_dt_strings: &#x8BBE;&#x5907;&#x6811;&#x5B57;&#x7B26;&#x4E32;&#x5927;&#x5C0F;</span></span><br><span class="line"><span class="comment"> * @param size_dt_struct : &#x8BBE;&#x5907;&#x6811;&#x7ED3;&#x6784;&#x63CF;&#x8FF0;&#x5927;&#x5C0F;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">boot_param_header</span> {</span></span><br><span class="line">  u32     magic;                  <span class="comment">/* magic word OF_DT_HEADER */</span></span><br><span class="line">  u32     totalsize;              <span class="comment">/* total size of DT block */</span></span><br><span class="line">  u32     off_dt_struct;          <span class="comment">/* offset to structure */</span></span><br><span class="line">  u32     off_dt_strings;         <span class="comment">/* offset to strings */</span></span><br><span class="line">  u32     off_mem_rsvmap;         <span class="comment">/* offset to memory reserve map</span></span><br><span class="line"><span class="comment">				   */</span></span><br><span class="line">  u32     version;                <span class="comment">/* format version */</span></span><br><span class="line">  u32     last_comp_version;      <span class="comment">/* last compatible version */</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* version 2 fields below */</span></span><br><span class="line">  u32     boot_cpuid_phys;        <span class="comment">/* Which physical CPU id we&apos;re</span></span><br><span class="line"><span class="comment">				     booting on */</span></span><br><span class="line">  <span class="comment">/* version 3 fields below */</span></span><br><span class="line">  u32     size_dt_strings;        <span class="comment">/* size of the strings block */</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* version 17 fields below */</span></span><br><span class="line">  u32	size_dt_struct;		<span class="comment">/* size of the DT structure block */</span></span><br><span class="line">};</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Definitions used by the flattened device tree */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> OF_DT_HEADER		0xd00dfeed	<span class="comment">/* marker */</span></span></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 设备树结构头(以大端模式的格式存储)</span></span><br><span class="line"><span class="comment"> * @param magic:此魔数用于标识设备树的开头</span></span><br><span class="line"><span class="comment"> * @param totalsize:设备树所占用的内存大小，包含头</span></span><br><span class="line"><span class="comment"> * @param off_dt_struct:设备树结构偏移</span></span><br><span class="line"><span class="comment"> * @param off_dt_strings:设备树字符串偏移</span></span><br><span class="line"><span class="comment"> * @param off_mem_rsvmap:内存保留区，由 物理地址+大小 组成一个列表表示，避免kernel将其用于其他用途</span></span><br><span class="line"><span class="comment"> * @param version:指明当前设备树版本，版本越高新增的属性越多</span></span><br><span class="line"><span class="comment"> * @param last_comp_verson:向后兼容的版本号，代表老版本编译的内核也可以使用此新版本的设备树</span></span><br><span class="line"><span class="comment"> * @param boot_cpuid_phys:启动的CPU id 号</span></span><br><span class="line"><span class="comment"> * @param size_dt_strings: 设备树字符串大小</span></span><br><span class="line"><span class="comment"> * @param size_dt_struct : 设备树结构描述大小</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">boot_param_header</span> {</span></span><br><span class="line">  u32     magic;                  <span class="comment">/* magic word OF_DT_HEADER */</span></span><br><span class="line">  u32     totalsize;              <span class="comment">/* total size of DT block */</span></span><br><span class="line">  u32     off_dt_struct;          <span class="comment">/* offset to structure */</span></span><br><span class="line">  u32     off_dt_strings;         <span class="comment">/* offset to strings */</span></span><br><span class="line">  u32     off_mem_rsvmap;         <span class="comment">/* offset to memory reserve map</span></span><br><span class="line"><span class="comment">				   */</span></span><br><span class="line">  u32     version;                <span class="comment">/* format version */</span></span><br><span class="line">  u32     last_comp_version;      <span class="comment">/* last compatible version */</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* version 2 fields below */</span></span><br><span class="line">  u32     boot_cpuid_phys;        <span class="comment">/* Which physical CPU id we're</span></span><br><span class="line"><span class="comment">				     booting on */</span></span><br><span class="line">  <span class="comment">/* version 3 fields below */</span></span><br><span class="line">  u32     size_dt_strings;        <span class="comment">/* size of the strings block */</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* version 17 fields below */</span></span><br><span class="line">  u32	size_dt_struct;		<span class="comment">/* size of the DT structure block */</span></span><br><span class="line">};</span><br></pre></td></tr></table></figure>
 </div>
 <p>
-&#x6839;&#x636E;&#x4E0A;&#x9762;&#x5934;&#x7684;&#x63CF;&#x8FF0;&#xFF0C;&#x53EF;&#x4EE5;&#x5F97;&#x51FA;&#x8BBE;&#x5907;&#x6811;&#x5728;&#x5185;&#x5B58;&#x4E2D;&#x7684;&#x7ED3;&#x6784;&#x5982;&#x4E0B;:
+根据上面头的描述，可以得出设备树在内存中的结构如下:
 </p>
 <pre class="example">
              ------------------------------
-     base -&gt; |  struct boot_param_header  |
+     base -> |  struct boot_param_header  |
              ------------------------------
              |      (alignment gap)       |
              ------------------------------
@@ -342,37 +342,37 @@ kernel&#x4E3A;&#x4E86;&#x8BC6;&#x522B;&#x8BBE;&#x5907;&#x6811;&#x4E00;&#x4E2A;&#
              |                            |
              |     device-tree strings    |
              |                            |
-      -----&gt; ------------------------------
+      -----> ------------------------------
       |
       |
       --- (base + totalsize)
 
-&#x5BF9;&#x9F50;&#x533A;&#x57DF;&#x6839;&#x636E;&#x5B9E;&#x9645;&#x60C5;&#x51B5;&#x51B3;&#x5B9A;&#x6709;&#x6CA1;&#x6709;&#x3002;</pre>
-<div id="outline-container-org3a0d6cc" class="outline-2">
-<h2 id="org3a0d6cc">device-tree structure</h2>
-<div class="outline-text-2" id="text-org3a0d6cc">
+对齐区域根据实际情况决定有没有。</pre>
+<div id="outline-container-orga07dd00" class="outline-2">
+<h2 id="orga07dd00">device-tree structure</h2>
+<div class="outline-text-2" id="text-orga07dd00">
 <p>
-&#x8BBE;&#x5907;&#x6811;&#x7684;&#x7ED3;&#x6784;&#x4EE5;4&#x5B57;&#x8282;&#x5BF9;&#x9F50;&#x7684;&#x65B9;&#x5F0F;&#x6765;&#x6392;&#x5217;&#xFF0C;&#x5982;&#x4E0B;&#x56FE;&#x6240;&#x793A;:
+设备树的结构以4字节对齐的方式来排列，如下图所示:
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[driver]/[What]Linux--device_tree/struct_block.jpg?raw=true" alt="struct_block.jpg">
 </div>
 </div>
-<div id="outline-container-orge9950f8" class="outline-2">
-<h2 id="orge9950f8">device-tree strings</h2>
-<div class="outline-text-2" id="text-orge9950f8">
+<div id="outline-container-org329bbaa" class="outline-2">
+<h2 id="org329bbaa">device-tree strings</h2>
+<div class="outline-text-2" id="text-org329bbaa">
 <p>
-&#x5B57;&#x7B26;&#x533A;&#x57DF;&#x5C31;&#x662F;&#x6309;&#x987A;&#x4FBF;&#x5B58;&#x50A8;&#x7684;&#x5B57;&#x7B26;&#x4E32;&#xFF0C;&#x901A;&#x8FC7; strucure block &#x4E2D;&#x7684; offset&#x6765;&#x83B7;&#x53D6;&#x3002;
+字符区域就是按顺便存储的字符串，通过 strucure block 中的 offset来获取。
 </p>
 
 <p>
-&#x53EF;&#x4EE5;&#x770B;&#x51FA;&#x8FD9;&#x79CD;&#x7ED3;&#x6784;&#x65B9;&#x5F0F;&#x548C;&#x7F16;&#x8BD1;&#x5668;&#x5728;&#x751F;&#x6210;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x4E2D;&#x7684;&#x7ED3;&#x6784;&#x7C7B;&#x4F3C;&#xFF0C;&#x5C06;&#x5B57;&#x7B26;&#x4E32;&#x5355;&#x72EC;&#x5B58;&#x653E;&#xFF0C;
-&#x4EE5;&#x89C4;&#x907F;&#x4E00;&#x4E9B;&#x5177;&#x6709;&#x91CD;&#x590D;&#x5B57;&#x7B26;&#x4E32;&#x800C;&#x5360;&#x7528;&#x591A;&#x4E8E;&#x7A7A;&#x95F4;&#x7684;&#x60C5;&#x51B5;&#x3002;
+可以看出这种结构方式和编译器在生成目标文件中的结构类似，将字符串单独存放，
+以规避一些具有重复字符串而占用多于空间的情况。
 </p>
 </div>
 </div>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
 </div>
 
     </div>
@@ -458,7 +458,7 @@ Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org3a0d6cc"><span class="nav-number">1.</span> <span class="nav-text">device-tree structure</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orge9950f8"><span class="nav-number">2.</span> <span class="nav-text">device-tree strings</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#orga07dd00"><span class="nav-number">1.</span> <span class="nav-text">device-tree structure</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org329bbaa"><span class="nav-number">2.</span> <span class="nav-text">device-tree strings</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 

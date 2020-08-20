@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="&amp;#x8BFE;&amp;#x7A0B;: &amp;#x5B8B;&amp;#x5B9D;&amp;#x534E;&amp;#x8001;&amp;#x5E08;&amp;#x7684;&amp;#x5185;&amp;#x5B58;&amp;#x7BA1;&amp;#x7406;             kernel version arch     v4.4.0 arm32      &amp;#x7406;&amp;#x89E3;&amp;#x8FDB;&amp;#x7A0B;(&amp;#x7528;&amp;#x6">
+  <meta name="description" content="课程: 宋宝华老师的内存管理             kernel version arch     v4.4.0 arm32      理解进程(用户空间)对内存的消耗和泄露，可以更好的监控用户空间内存。    通过前面的说明，可以知道用户空间获得的内存都是lazy机制，但在用户空间中的虚拟地址却是认为已经被全部分配了，那么这些地址空间是如何表示的呢？    同时用户空间中有很多的共享内存(">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[What]Linux 进程(用户空间)内存的消耗与泄露">
 <meta property="og:url" content="http://kcmetercec.top/2018/06/17/linux_memory_overview_consume/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="&amp;#x8BFE;&amp;#x7A0B;: &amp;#x5B8B;&amp;#x5B9D;&amp;#x534E;&amp;#x8001;&amp;#x5E08;&amp;#x7684;&amp;#x5185;&amp;#x5B58;&amp;#x7BA1;&amp;#x7406;             kernel version arch     v4.4.0 arm32      &amp;#x7406;&amp;#x89E3;&amp;#x8FDB;&amp;#x7A0B;(&amp;#x7528;&amp;#x6">
+<meta property="og:description" content="课程: 宋宝华老师的内存管理             kernel version arch     v4.4.0 arm32      理解进程(用户空间)对内存的消耗和泄露，可以更好的监控用户空间内存。    通过前面的说明，可以知道用户空间获得的内存都是lazy机制，但在用户空间中的虚拟地址却是认为已经被全部分配了，那么这些地址空间是如何表示的呢？    同时用户空间中有很多的共享内存(">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[mm]/consume/vma_struct.jpg?raw=true">
 <meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[mm]/consume/vma_code.jpg?raw=true">
@@ -304,7 +304,7 @@
       
         <div id="content">
 <p>
-&#x8BFE;&#x7A0B;: &#x5B8B;&#x5B9D;&#x534E;&#x8001;&#x5E08;&#x7684;&#x5185;&#x5B58;&#x7BA1;&#x7406;
+课程: 宋宝华老师的内存管理
 </p>
 
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
@@ -330,15 +330,15 @@
 </table>
 
 <p>
-&#x7406;&#x89E3;&#x8FDB;&#x7A0B;(&#x7528;&#x6237;&#x7A7A;&#x95F4;)&#x5BF9;&#x5185;&#x5B58;&#x7684;&#x6D88;&#x8017;&#x548C;&#x6CC4;&#x9732;&#xFF0C;&#x53EF;&#x4EE5;&#x66F4;&#x597D;&#x7684;&#x76D1;&#x63A7;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x5185;&#x5B58;&#x3002;
+理解进程(用户空间)对内存的消耗和泄露，可以更好的监控用户空间内存。
 </p>
 
 <p>
-&#x901A;&#x8FC7;&#x524D;&#x9762;&#x7684;&#x8BF4;&#x660E;&#xFF0C;&#x53EF;&#x4EE5;&#x77E5;&#x9053;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x83B7;&#x5F97;&#x7684;&#x5185;&#x5B58;&#x90FD;&#x662F;lazy&#x673A;&#x5236;&#xFF0C;&#x4F46;&#x5728;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x4E2D;&#x7684;&#x865A;&#x62DF;&#x5730;&#x5740;&#x5374;&#x662F;&#x8BA4;&#x4E3A;&#x5DF2;&#x7ECF;&#x88AB;&#x5168;&#x90E8;&#x5206;&#x914D;&#x4E86;&#xFF0C;&#x90A3;&#x4E48;&#x8FD9;&#x4E9B;&#x5730;&#x5740;&#x7A7A;&#x95F4;&#x662F;&#x5982;&#x4F55;&#x8868;&#x793A;&#x7684;&#x5462;&#xFF1F;
+通过前面的说明，可以知道用户空间获得的内存都是lazy机制，但在用户空间中的虚拟地址却是认为已经被全部分配了，那么这些地址空间是如何表示的呢？
 </p>
 
 <p>
-&#x540C;&#x65F6;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x4E2D;&#x6709;&#x5F88;&#x591A;&#x7684;&#x5171;&#x4EAB;&#x5185;&#x5B58;(&#x6BD4;&#x5982;&#x4EE3;&#x7801;&#x6BB5;)&#xFF0C;&#x8FD9;&#x4E9B;&#x53C8;&#x662F;&#x5982;&#x4F55;&#x8868;&#x793A;&#x7684;&#x5462;&#xFF1F;
+同时用户空间中有很多的共享内存(比如代码段)，这些又是如何表示的呢？
 </p>
 <ul class="org-ul">
 <li>VSS(virtual set size)</li>
@@ -349,175 +349,175 @@
 
 <a id="more"></a>
 
-<div id="outline-container-orga8d8ec4" class="outline-2">
-<h2 id="orga8d8ec4">&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x7684;&#x5185;&#x5B58;&#x8868;&#x793A;</h2>
-<div class="outline-text-2" id="text-orga8d8ec4">
+<div id="outline-container-orgdfa71ef" class="outline-2">
+<h2 id="orgdfa71ef">一个进程的内存表示</h2>
+<div class="outline-text-2" id="text-orgdfa71ef">
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[mm]/consume/vma_struct.jpg?raw=true" alt="vma_struct.jpg">
 <p>
-&#x4E0A;&#x9762;&#x8FD9;&#x5E45;&#x56FE;&#x5C31;&#x8868;&#x660E;&#x4E86;&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x6240;&#x5360;&#x7528;&#x7684;&#x865A;&#x62DF;&#x5185;&#x5B58;&#x8D44;&#x6E90;&#x7684;&#x8868;&#x793A;&#x5F62;&#x5F0F;&#xFF0C;&#x4E0B;&#x9762;&#x8FDB;&#x884C;&#x4E00;&#x4E00;&#x8BF4;&#x660E;&#x3002;
+上面这幅图就表明了一个进程所占用的虚拟内存资源的表示形式，下面进行一一说明。
 </p>
 
 <p>
-&#x5728;&#x8FDB;&#x7A0B;&#x8868;&#x793A;&#x7684;&#x7ED3;&#x6784;&#x4F53; <code>task_struct</code> &#x4E2D;&#x5305;&#x542B;&#x4E86;&#x7ED3;&#x6784; <code>mm_struct</code> &#x7684;&#x6307;&#x9488;&#xFF0C;&#x4EE5;&#x603B;&#x4F53;&#x8868;&#x793A;&#x8BE5;&#x8FDB;&#x7A0B;&#x5360;&#x7528;&#x7684;&#x865A;&#x62DF;&#x5185;&#x5B58;&#x8D44;&#x6E90;&#x3002;
+在进程表示的结构体 <code>task_struct</code> 中包含了结构 <code>mm_struct</code> 的指针，以总体表示该进程占用的虚拟内存资源。
 </p>
 <ul class="org-ul">
-<li><code>pgd</code> &#x4EE3;&#x8868;&#x8BE5;&#x8FDB;&#x7A0B;&#x7684;&#x9875;&#x8868;</li>
-<li><code>struct vm_area_struct *mmap</code> &#x5C06;&#x8FDB;&#x7A0B;&#x6574;&#x4E2A;VMA&#x7ED9;&#x94FE;&#x63A5;&#x8D77;&#x6765;&#x4E86;</li>
+<li><code>pgd</code> 代表该进程的页表</li>
+<li><code>struct vm_area_struct *mmap</code> 将进程整个VMA给链接起来了</li>
 </ul>
 
 <p>
-mmap&#x662F;&#x4E00;&#x4E2A;&#x6307;&#x5411; <code>vm_area_struct</code> &#x7ED3;&#x6784;&#x7684;&#x94FE;&#x8868;&#xFF0C;&#x6BCF;&#x4E00;&#x4E2A;&#x8282;&#x70B9;(&#x79F0;&#x4E3A;VMA)&#x90FD;&#x8868;&#x793A;&#x4E86;&#x8BE5;&#x8FDB;&#x7A0B;&#x7684; <b>&#x5408;&#x6CD5;&#x865A;&#x62DF;&#x5730;&#x5740;&#x7A7A;&#x95F4;</b> ,&#x8FDB;&#x7A0B;&#x6BCF;&#x7533;&#x8BF7;&#x4E00;&#x6BB5;&#x865A;&#x62DF;&#x5185;&#x5B58;&#x90FD;&#x4F1A;&#x6709;&#x4E00;&#x4E2A;&#x8282;&#x70B9;&#x4E0E;&#x4E4B;&#x5BF9;&#x5E94;&#x3002;
+mmap是一个指向 <code>vm_area_struct</code> 结构的链表，每一个节点(称为VMA)都表示了该进程的 <b>合法虚拟地址空间</b> ,进程每申请一段虚拟内存都会有一个节点与之对应。
 </p>
 <ul class="org-ul">
-<li>&#x867D;&#x7136;&#x5B9E;&#x9645;&#x5206;&#x914D;&#x5185;&#x5B58;&#x662F;lazy&#x673A;&#x5236;&#xFF0C;&#x4F46;&#x8FDB;&#x7A0B;&#x7684;VMA&#x4E2D;&#x5DF2;&#x7ECF;&#x5305;&#x542B;&#x4E86;&#x8BE5;&#x8FDB;&#x7A0B;&#x6240;&#x6709;&#x7684;&#x4EE3;&#x7801;&#x6BB5;&#x3001;&#x6570;&#x636E;&#x6BB5;&#x7B49;&#x5168;&#x90E8;&#x5730;&#x5740;&#x8303;&#x56F4;
+<li>虽然实际分配内存是lazy机制，但进程的VMA中已经包含了该进程所有的代码段、数据段等全部地址范围
 <ul class="org-ul">
-<li>&#x6240;&#x4EE5;&#x7AD9;&#x5728;&#x7A0B;&#x5E8F;&#x5458;(&#x865A;&#x62DF;&#x7A7A;&#x95F4;&#x7684;&#x89D2;&#x5EA6;)&#xFF0C;&#x4E00;&#x4E2A;&#x7A0B;&#x5E8F;&#x5728;&#x6700;&#x5F00;&#x59CB;&#x8FD0;&#x884C;&#x65F6;&#x5B83;&#x5C31;&#x88AB;&#x5168;&#x90E8;&#x52A0;&#x8F7D;&#x5230;&#x4E86;&#x5185;&#x5B58;</li>
+<li>所以站在程序员(虚拟空间的角度)，一个程序在最开始运行时它就被全部加载到了内存</li>
 </ul></li>
-<li><code>vm_start,vm_end</code> &#x8868;&#x793A;&#x4E00;&#x6BB5;&#x865A;&#x62DF;&#x5730;&#x5740;&#x7684;&#x8D77;&#x59CB;&#x548C;&#x7ED3;&#x675F;</li>
-<li><code>vm_page_prot</code> &#x8868;&#x793A;&#x4E86;&#x8FD9;&#x6BB5;&#x5730;&#x5740;&#x7684;&#x8BBF;&#x95EE;&#x6743;&#x9650;</li>
+<li><code>vm_start,vm_end</code> 表示一段虚拟地址的起始和结束</li>
+<li><code>vm_page_prot</code> 表示了这段地址的访问权限</li>
 </ul>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[mm]/consume/vma_code.jpg?raw=true" alt="vma_code.jpg">
 <p>
-&#x6B63;&#x662F;&#x56E0;&#x4E3A;&#x6709;&#x4E86;&#x8FD9;&#x4E9B;&#x5408;&#x6CD5;&#x865A;&#x62DF;&#x5730;&#x5740;&#x8282;&#x70B9;&#xFF0C;&#x5185;&#x6838;&#x624D;&#x53EF;&#x4EE5;&#x5224;&#x65AD;&#x51FA;&#xFF1A;&#x5728;&#x540E;&#x671F;&#x7684;&#x64CD;&#x4F5C;&#x4E2D;&#xFF0C;&#x5F53;&#x8FDB;&#x7A0B;&#x5199;&#x8BE5;&#x6BB5;&#x7A7A;&#x95F4;&#x65F6;&#xFF0C;&#x5BF9;&#x4EA7;&#x751F;&#x7684;pagefault&#x8FDB;&#x884C;&#x5BF9;&#x5E94;&#x7684;&#x5904;&#x7406;&#x3002;
+正是因为有了这些合法虚拟地址节点，内核才可以判断出：在后期的操作中，当进程写该段空间时，对产生的pagefault进行对应的处理。
 </p>
 <ul class="org-ul">
-<li>&#x6BD4;&#x5982;&#x662F;&#x7528;&#x6237; <b>&#x9996;&#x6B21;&#x5BF9;&#x7533;&#x8BF7;&#x7684;&#x5806;&#x8FDB;&#x884C;&#x5199;(&#x5176;VMA&#x6743;&#x9650;&#x662F;&#x53EF;&#x8BFB;&#x53EF;&#x5199;,&#x4F46;&#x5176;&#x9875;&#x8868;&#x662F;&#x53EA;&#x8BFB;&#x7684;)</b> &#xFF0C;&#x5904;&#x7406;pagefault&#x5E94;&#x8BE5;&#x662F;&#x7533;&#x8BF7;&#x7269;&#x7406;&#x5730;&#x5740;&#x5E76;&#x4FEE;&#x6539;&#x5176;&#x9875;&#x8868;
+<li>比如是用户 <b>首次对申请的堆进行写(其VMA权限是可读可写,但其页表是只读的)</b> ，处理pagefault应该是申请物理地址并修改其页表
 <ul class="org-ul">
-<li>minor page fault:&#x53EA;&#x53D1;&#x751F;&#x5185;&#x5B58;&#x7533;&#x8BF7;&#x64CD;&#x4F5C;</li>
+<li>minor page fault:只发生内存申请操作</li>
 </ul></li>
-<li>&#x5982;&#x679C;&#x662F;&#x5BF9;&#x5176;&#x53EA;&#x8BFB;&#x7A7A;&#x95F4;(&#x6BD4;&#x5982;&#x4EE3;&#x7801;&#x6BB5;)&#x8FDB;&#x884C;&#x5199;( <b>&#x5176;VMA&#x6743;&#x9650;&#x548C;&#x9875;&#x8868;&#x90FD;&#x662F;&#x53EA;&#x8BFB;&#x7684;</b> )&#xFF0C;&#x5904;&#x7406;pagefault&#x5E94;&#x8BE5;&#x662F;&#x6740;&#x6B7B;&#x8FDB;&#x7A0B;&#x5E76;&#x629B;&#x51FA;segmentatoin fault&#x4FE1;&#x53F7;&#x3002;</li>
-<li>&#x5982;&#x679C;&#x662F;&#x8981;&#x6267;&#x884C;&#x4EE3;&#x7801;&#xFF0C;&#x521A;&#x5F00;&#x59CB;&#x4EE3;&#x7801;&#x8FD8;&#x6CA1;&#x6709;&#x5B58;&#x5728;&#x5185;&#x5B58;&#x4E2D;&#xFF0C;&#x8FD9;&#x65F6;&#x4EA7;&#x751F;pagefault&#xFF0C;&#x5185;&#x6838;&#x68C0;&#x67E5;&#x8FD9;&#x90E8;&#x5206;&#x662F; <b>&#x53EF;&#x6267;&#x884C;&#x7684;&#x6743;&#x9650;</b> &#xFF0C;&#x7136;&#x540E;&#x5C06;&#x4E00;&#x90E8;&#x5206;&#x4EE3;&#x7801;&#x6BB5;&#x4ECE;&#x786C;&#x76D8;&#x8BFB;&#x53D6;&#x5230;&#x5185;&#x5B58;&#x5E76;&#x4FEE;&#x6539;&#x9875;&#x8868;&#x3002;
+<li>如果是对其只读空间(比如代码段)进行写( <b>其VMA权限和页表都是只读的</b> )，处理pagefault应该是杀死进程并抛出segmentatoin fault信号。</li>
+<li>如果是要执行代码，刚开始代码还没有存在内存中，这时产生pagefault，内核检查这部分是 <b>可执行的权限</b> ，然后将一部分代码段从硬盘读取到内存并修改页表。
 <ul class="org-ul">
-<li>major page fault&#xFF1A;&#x4E0D;&#x4EC5;&#x8981;&#x7533;&#x8BF7;&#x5185;&#x5B58;&#x8FD8;&#x8981;&#x53D1;&#x751F;IO&#x64CD;&#x4F5C;&#xFF0C;&#x4ECE;&#x786C;&#x76D8;&#x8BFB;</li>
+<li>major page fault：不仅要申请内存还要发生IO操作，从硬盘读</li>
 </ul></li>
-<li>&#x5982;&#x679C;&#x8BBF;&#x95EE;&#x7684;&#x865A;&#x62DF;&#x5730;&#x5740;&#x5E76;&#x6CA1;&#x6709;&#x843D;&#x5728;&#x4EFB;&#x4F55;&#x4E00;&#x4E2A;VMA&#x4E2D;&#xFF0C;&#x90A3;&#x5C31;&#x662F;&#x4E00;&#x6BB5;&#x975E;&#x6CD5;&#x5730;&#x5740;&#x4E86;&#xFF0C;&#x5185;&#x6838;&#x4E5F;&#x4F1A;kill&#x8FDB;&#x7A0B;&#x5E76;&#x629B;&#x51FA;segmentation fault&#x4FE1;&#x53F7;</li>
+<li>如果访问的虚拟地址并没有落在任何一个VMA中，那就是一段非法地址了，内核也会kill进程并抛出segmentation fault信号</li>
 </ul>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[mm]/consume/pagefault.jpg?raw=true" alt="pagefault.jpg">
 </div>
-<div id="outline-container-orgc18c63e" class="outline-3">
-<h3 id="orgc18c63e">vma&#x7684;&#x67E5;&#x770B;</h3>
-<div class="outline-text-3" id="text-orgc18c63e">
+<div id="outline-container-org3f3a73d" class="outline-3">
+<h3 id="org3f3a73d">vma的查看</h3>
+<div class="outline-text-3" id="text-org3f3a73d">
 <p>
-&#x5728;&#x67E5;&#x770B;&#x8FDB;&#x7A0B;&#x7684;vma&#x524D;&#xFF0C;&#x9996;&#x5148;&#x5C31;&#x662F;&#x8981;&#x77E5;&#x9053;&#x5176;pid&#xFF0C;&#x53EF;&#x4EE5;&#x901A;&#x8FC7; <code>ps -aux</code> &#x6216; <code>pidof</code> &#x6765;&#x627E;&#x51FA; pid.
+在查看进程的vma前，首先就是要知道其pid，可以通过 <code>ps -aux</code> 或 <code>pidof</code> 来找出 pid.
 </p>
 
 <p>
-&#x6709;&#x4EE5;&#x4E0B;3&#x79CD;&#x65B9;&#x5F0F;&#x67E5;&#x770B;vma&#xFF1A;
+有以下3种方式查看vma：
 </p>
 <ol class="org-ol">
-<li>&#x4F7F;&#x7528; <code>pmap &lt;pid&gt;</code></li>
-<li>&#x4F7F;&#x7528; <code>cat /proc/&lt;pid&gt;/maps</code></li>
-<li>&#x4F7F;&#x7528; <code>cat /proc/&lt;pid&gt;/smaps | more</code>
+<li>使用 <code>pmap <pid></code></li>
+<li>使用 <code>cat /proc/<pid>/maps</code></li>
+<li>使用 <code>cat /proc/<pid>/smaps | more</code>
 <ul class="org-ul">
-<li>&#x6B64;&#x79CD;&#x65B9;&#x5F0F;&#x6700;&#x4E3A;&#x8BE6;&#x7EC6;</li>
+<li>此种方式最为详细</li>
 </ul></li>
 </ol>
 </div>
 </div>
 </div>
-<div id="outline-container-org8f8cb21" class="outline-2">
-<h2 id="org8f8cb21">&#x591A;&#x4E2A;&#x8FDB;&#x7A0B;&#x5728;&#x5185;&#x5B58;&#x6761;&#x4E2D;&#x7684;&#x5206;&#x914D;</h2>
-<div class="outline-text-2" id="text-org8f8cb21">
+<div id="outline-container-orga5635c6" class="outline-2">
+<h2 id="orga5635c6">多个进程在内存条中的分配</h2>
+<div class="outline-text-2" id="text-orga5635c6">
 <p>
-&#x4ECE;&#x4E0A;&#x9762;&#x7684;&#x7406;&#x89E3;&#x53EF;&#x4EE5;&#x77E5;&#x9053;&#xFF0C;&#x6BCF;&#x4E2A;&#x8FDB;&#x7A0B;&#x7684;vma&#x90FD;&#x8868;&#x793A;&#x4E86;&#x81EA;&#x5DF1;&#x6240;&#x72EC;&#x81EA;&#x5360;&#x7528;&#x7684;&#x865A;&#x62DF;&#x5730;&#x5740;&#x7A7A;&#x95F4;&#xFF0C; <b>&#x4F46;&#x5B9E;&#x9645;&#x4E0A;&#x53EA;&#x6709;&#x90E8;&#x5206;&#x88AB;&#x52A0;&#x8F7D;&#x5230;&#x4E86;&#x7269;&#x7406;&#x5185;&#x5B58;</b> &#x3002;
+从上面的理解可以知道，每个进程的vma都表示了自己所独自占用的虚拟地址空间， <b>但实际上只有部分被加载到了物理内存</b> 。
 </p>
 
 <p>
-&#x5F53;&#x6709;&#x591A;&#x4E2A;&#x8FDB;&#x7A0B;&#x65F6;&#xFF0C;&#x4E00;&#x4E2A;&#x7269;&#x7406;&#x5185;&#x5B58;&#x4E0A;&#x6709;&#x5177;&#x6709;&#x591A;&#x4E2A;&#x8FDB;&#x7A0B;&#x52A0;&#x8F7D;&#x7684;&#x4E00;&#x90E8;&#x5206;&#xFF0C;&#x8FD9;&#x4E9B;&#x591A;&#x4E2A;&#x8FDB;&#x7A0B;&#x662F;&#x5982;&#x4F55;&#x74DC;&#x5206;&#x5185;&#x5B58;&#x6761;&#x7684;&#x5462;&#xFF1F;
+当有多个进程时，一个物理内存上有具有多个进程加载的一部分，这些多个进程是如何瓜分内存条的呢？
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[mm]/consume/multiprocess_mem.jpg?raw=true" alt="multiprocess_mem.jpg">
 <p>
-&#x7531;&#x4E0A;&#x56FE;&#x53EF;&#x4EE5;&#x770B;&#x51FA;&#xFF1A;
+由上图可以看出：
 </p>
 <ol class="org-ol">
-<li>&#x6BCF;&#x4E2A;&#x8FDB;&#x7A0B;&#x7684;&#x865A;&#x62DF;&#x5730;&#x5740;&#x7A7A;&#x95F4;&#x90FD;&#x8BA4;&#x4E3A;&#x81EA;&#x5DF1;&#x72EC;&#x5360;&#x6574;&#x4E2A;&#x7CFB;&#x7EDF;&#x5185;&#x5B58;&#x8D44;&#x6E90;</li>
-<li>&#x6BCF;&#x4E2A;&#x8FDB;&#x7A0B;&#x90FD;&#x5177;&#x6709;&#x4E00;&#x4E2A;&#x9875;&#x8868;&#xFF0C;&#x5728;&#x8FDB;&#x7A0B;&#x5207;&#x6362;&#x7684;&#x65F6;&#x5019;&#x4E5F;&#x4F1A;&#x53D1;&#x751F;&#x9875;&#x8868;&#x5207;&#x6362;&#xFF0C;&#x9875;&#x8868;&#x7684;&#x57FA;&#x5730;&#x5740;&#x4F1A;&#x7ED9;MMU</li>
-<li>&#x9875;&#x8868;&#x5C06;&#x6BCF;&#x4E2A;&#x8FDB;&#x7A0B;&#x5BF9;&#x5E94;&#x7684;&#x7269;&#x7406;&#x5730;&#x5740;&#x8FDB;&#x884C;&#x6620;&#x5C04;&#xFF0C;&#x5176;&#x4E2D;&#x5177;&#x6709;&#x76F8;&#x540C;&#x4EE3;&#x7801;&#x6BB5;&#x7684;&#x8FDB;&#x7A0B;&#x5176;&#x7269;&#x7406;&#x5730;&#x5740;&#x662F;&#x4E00;&#x6837;&#x7684;&#xFF0C;&#x867D;&#x7136;&#x865A;&#x62DF;&#x5730;&#x5740;&#x53EF;&#x80FD;&#x4E0D;&#x4E00;&#x6837;
+<li>每个进程的虚拟地址空间都认为自己独占整个系统内存资源</li>
+<li>每个进程都具有一个页表，在进程切换的时候也会发生页表切换，页表的基地址会给MMU</li>
+<li>页表将每个进程对应的物理地址进行映射，其中具有相同代码段的进程其物理地址是一样的，虽然虚拟地址可能不一样
 <ul class="org-ul">
-<li>&#x5728;&#x591A;&#x6838;&#x67B6;&#x6784;&#x4E0A;&#xFF0C;&#x6BCF;&#x4E2A;&#x6838;&#x90FD;&#x6709;&#x4E00;&#x4E2A;MMU&#x53EF;&#x4EE5;&#x5B9E;&#x73B0;&#x4E00;&#x4E00;&#x6620;&#x5C04;&#xFF0C;&#x4E4B;&#x95F4;&#x5E76;&#x4E0D;&#x51B2;&#x7A81;</li>
+<li>在多核架构上，每个核都有一个MMU可以实现一一映射，之间并不冲突</li>
 </ul></li>
 </ol>
 
 <p>
-&#x57FA;&#x4E8E;&#x4E0A;&#x56FE;&#xFF0C;&#x5C31;&#x53EF;&#x4EE5;&#x518D;&#x6B21;&#x6765;&#x770B;&#x5185;&#x5B58;&#x6D88;&#x8017;&#x8868;&#x793A;&#x7684;&#x51E0;&#x4E2A;&#x6982;&#x5FF5;&#x4E86;:
+基于上图，就可以再次来看内存消耗表示的几个概念了:
 </p>
 <ul class="org-ul">
-<li>VSS(Virtual set size) : &#x6307;&#x7684;&#x662F;&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x6240;&#x6D88;&#x8017;&#x7684;&#x865A;&#x62DF;&#x5730;&#x5740;&#x7A7A;&#x95F4;&#x3002;
+<li>VSS(Virtual set size) : 指的是一个进程所消耗的虚拟地址空间。
 <ul class="org-ul">
-<li>&#x5BF9;&#x5E94;&#x8FDB;&#x7A0B;1044&#xFF0C;&#x5176; VSS = 1 + 2 + 3</li>
+<li>对应进程1044，其 VSS = 1 + 2 + 3</li>
 </ul></li>
-<li>RSS(resident set size) : &#x6307;&#x7684;&#x662F;&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x6240;&#x771F;&#x5B9E;&#x6D88;&#x8017;&#x7684;&#x7269;&#x7406;&#x5185;&#x5B58;&#x7A7A;&#x95F4;
+<li>RSS(resident set size) : 指的是一个进程所真实消耗的物理内存空间
 <ul class="org-ul">
-<li>&#x5BF9;&#x5E94;&#x8FDB;&#x7A0B;1044, &#x5176; RSS = 4 + 5 + 6</li>
+<li>对应进程1044, 其 RSS = 4 + 5 + 6</li>
 </ul></li>
-<li>PSS(proporitional set size) : &#x6307;&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x6240;&#x6D88;&#x8017;&#x7684;&#x7ECF;&#x8FC7;&#x6BD4;&#x4F8B;&#x8FD0;&#x7B97;&#x540E;&#x7684;&#x7269;&#x7406;&#x5185;&#x5B58;&#x7A7A;&#x95F4;
+<li>PSS(proporitional set size) : 指一个进程所消耗的经过比例运算后的物理内存空间
 <ul class="org-ul">
-<li>&#x5BF9;&#x5E94;&#x8FDB;&#x7A0B;1044&#xFF0C;&#x5176;&#x6240;&#x5360;&#x7528;&#x7684;libc&#x7A7A;&#x95F4;&#x4E5F;&#x540C;&#x65F6;&#x88AB;&#x5176;&#x4ED6;&#x4E24;&#x4E2A;&#x8FDB;&#x7A0B;&#x6240;&#x4F7F;&#x7528;&#xFF0C;&#x6240;&#x4EE5;1044&#x4EC5;&#x5360;&#x7528;1/3&#x3002;bash&#x7A7A;&#x95F4;&#x88AB;&#x53E6;&#x5916;&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x6240;&#x5360;&#x7528;&#xFF0C;&#x6240;&#x4EE5;1044&#x4EC5;&#x5360;&#x7528;1/2
+<li>对应进程1044，其所占用的libc空间也同时被其他两个进程所使用，所以1044仅占用1/3。bash空间被另外一个进程所占用，所以1044仅占用1/2
 <ul class="org-ul">
-<li>&#x90A3;&#x4E48;&#x5176;&#x6240;&#x5360;&#x7528;&#x7684; PSS = 4 / 3 + 5 / 2 + 6</li>
+<li>那么其所占用的 PSS = 4 / 3 + 5 / 2 + 6</li>
 </ul></li>
-<li>&#x5982;&#x679C;&#x7AD9;&#x5728;&#x5185;&#x5B58;&#x6761;&#x7684;&#x89C6;&#x89D2;&#xFF0C;&#x770B;&#x5F53;&#x524D;&#x6240;&#x6709;&#x8FDB;&#x7A0B;&#x6240;&#x5360;&#x7528;&#x7684;&#x7A7A;&#x95F4;&#xFF0C;&#x90A3;&#x4E48;&#x5C31;&#x5E94;&#x8BE5;&#x770B;PSS&#x4E4B;&#x548C;</li>
+<li>如果站在内存条的视角，看当前所有进程所占用的空间，那么就应该看PSS之和</li>
 </ul></li>
-<li>USS(unique set size) : &#x6307;&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x6240;&#x72EC;&#x5360;&#x7684;&#x7269;&#x7406;&#x5185;&#x5B58;&#x7A7A;&#x95F4;
+<li>USS(unique set size) : 指一个进程所独占的物理内存空间
 <ul class="org-ul">
-<li>&#x5BF9;&#x5E94;&#x8FDB;&#x7A0B;1044&#xFF0C;&#x5176; USS = 6</li>
-<li>&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x6240;&#x72EC;&#x5360;&#x7684;&#x7A7A;&#x95F4;&#x5176;&#x4E2D;&#x5FC5;&#x7136;&#x5305;&#x542B;&#x5806;&#x533A;&#xFF0C;&#x6240;&#x4EE5;&#xFF1A; <b>&#x6211;&#x4EEC;&#x53EF;&#x4EE5;&#x901A;&#x8FC7;&#x591A;&#x70B9;&#x91C7;&#x6837;&#x8FDB;&#x7A0B;&#x7684;USS&#x6765;&#x89C2;&#x5BDF;&#x5176;&#x662F;&#x5426;&#x6709;&#x5185;&#x5B58;&#x6CC4;&#x9732;</b></li>
+<li>对应进程1044，其 USS = 6</li>
+<li>一个进程所独占的空间其中必然包含堆区，所以： <b>我们可以通过多点采样进程的USS来观察其是否有内存泄露</b></li>
 </ul></li>
 </ul>
 
 <p>
-&#x6709;&#x4EE5;&#x4E0B;&#x51E0;&#x79CD;&#x65B9;&#x5F0F;&#x6765;&#x89C2;&#x5BDF;&#x8FDB;&#x7A0B;&#x5185;&#x5B58;&#x6D88;&#x8017;&#xFF1A;
+有以下几种方式来观察进程内存消耗：
 </p>
 <ul class="org-ul">
-<li>&#x4F7F;&#x7528; <code>smem -P &lt;pid&gt;</code> &#x6765;&#x89C2;&#x5BDF;&#x5176;&#x603B;&#x4F53;&#x7684;&#x6D88;&#x8017;
+<li>使用 <code>smem -P <pid></code> 来观察其总体的消耗
 <ul class="org-ul">
-<li>&#x5728;&#x5B9E;&#x9645;&#x68C0;&#x6D4B;&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x662F;&#x5426;&#x6709;&#x5185;&#x5B58;&#x6CC4;&#x9732;&#x65F6;&#xFF0C;&#x53EF;&#x4EE5;&#x901A;&#x8FC7;&#x811A;&#x672C;&#x4F7F;&#x7528;&#x6B64;&#x547D;&#x4EE4;&#x6765;&#x957F;&#x65F6;&#x95F4;&#x6293;&#x53D6;&#x5176;USS&#x5E76;&#x4FDD;&#x5B58;&#x5230;&#x6587;&#x4EF6;&#x4E2D;&#xFF0C;&#x6700;&#x540E;&#x901A;&#x8FC7;matlab&#x4E4B;&#x7C7B;&#x7684;&#x8F6F;&#x4EF6;&#x62DF;&#x5408;&#x51FA;&#x4E00;&#x6761;&#x66F2;&#x7EBF;
+<li>在实际检测一个进程是否有内存泄露时，可以通过脚本使用此命令来长时间抓取其USS并保存到文件中，最后通过matlab之类的软件拟合出一条曲线
 <ul class="org-ul">
-<li>&#x5D4C;&#x5165;&#x5F0F;&#x4E2D;&#x4F7F;&#x7528;&#x7684;&#x662F; <code>smemcap</code> &#x6765;&#x83B7;&#x53D6;&#x6570;&#x636E;&#x7136;&#x540E;&#x518D;&#x4EA4;&#x7531;PC&#x4E0A;&#x5206;&#x6790;</li>
+<li>嵌入式中使用的是 <code>smemcap</code> 来获取数据然后再交由PC上分析</li>
 </ul></li>
-<li><code>smem --pie/--bar</code> &#x8FD8;&#x53EF;&#x4EE5;&#x4EE5;&#x56FE;&#x5F62;&#x7684;&#x65B9;&#x5F0F;&#x6765;&#x663E;&#x793A;</li>
+<li><code>smem --pie/--bar</code> 还可以以图形的方式来显示</li>
 </ul></li>
-<li>&#x4F7F;&#x7528; <code>cat /proc/&lt;pid&gt;/smaps | more</code> &#x7684;&#x65B9;&#x5F0F;&#x6765;&#x8BE6;&#x7EC6;&#x7684;&#x89C2;&#x5BDF;&#x8FDB;&#x7A0B;&#x7684;VSS,RSS,PSS.</li>
-<li>&#x4F7F;&#x7528; <code>valgrind</code> &#x6765;&#x76D1;&#x63A7;&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x662F;&#x5426;&#x6709;&#x5185;&#x5B58;&#x6CC4;&#x9732;&#xFF0C; <b>&#x8FD9;&#x79CD;&#x65B9;&#x5F0F;&#x4F1A;&#x4E25;&#x91CD;&#x964D;&#x4F4E;&#x8FDB;&#x7A0B;&#x7684;&#x8FD0;&#x884C;&#x901F;&#x5EA6;.</b></li>
+<li>使用 <code>cat /proc/<pid>/smaps | more</code> 的方式来详细的观察进程的VSS,RSS,PSS.</li>
+<li>使用 <code>valgrind</code> 来监控一个进程是否有内存泄露， <b>这种方式会严重降低进程的运行速度.</b></li>
 </ul>
 <pre class="example">
 gcc -g hello.c
 valgrind --tool=memcheck --leak-check=yes ./a.out</pre>
 <ul class="org-ul">
-<li>&#x5728;&#x4F7F;&#x7528; gcc &#x7F16;&#x8BD1;&#x4EE3;&#x7801;&#x65F6;&#xFF0C;&#x4F7F;&#x80FD;&#x5176; <code>addresssanitizer</code> &#x9009;&#x9879;&#x3002;&#x8FD9;&#x79CD;&#x65B9;&#x5F0F;&#x4F1A;&#x5728;&#x6E90;&#x4EE3;&#x7801;&#x4E2D;&#x63D2;&#x5165;&#x5185;&#x5B58;&#x76D1;&#x63A7;&#x4EE3;&#x7801;&#xFF0C;&#x8FDB;&#x7A0B;&#x8FD0;&#x884C;&#x901F;&#x5EA6;&#x5F71;&#x54CD;&#x4E0D;&#x5927;&#x3002;</li>
+<li>在使用 gcc 编译代码时，使能其 <code>addresssanitizer</code> 选项。这种方式会在源代码中插入内存监控代码，进程运行速度影响不大。</li>
 </ul>
 <p>
-&#x5982;&#x4E0B;&#x4EE3;&#x7801;&#xFF1A;
+如下代码：
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sanitizer/lsan_interface.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  <span class="keyword">uint32_t</span> *p1, i = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">while</span>(<span class="number">1</span>)</span><br><span class="line">    {</span><br><span class="line">      p1 = <span class="built_in">malloc</span>(<span class="number">1024</span>);</span><br><span class="line">      <span class="built_in">memset</span>(p1, <span class="number">0</span>, <span class="number">1024</span>);</span><br><span class="line">      sleep(<span class="number">1</span>);</span><br><span class="line">      <span class="comment">//check memory leak by asan</span></span><br><span class="line">      <span class="keyword">if</span>(++i &gt; <span class="number">3</span>)</span><br><span class="line">	{</span><br><span class="line">	  __lsan_do_leak_check();</span><br><span class="line">	}</span><br><span class="line">    }</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><stdio.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><stdlib.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><string.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><sanitizer/lsan_interface.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><unistd.h></span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  <span class="keyword">uint32_t</span> *p1, i = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">while</span>(<span class="number">1</span>)</span><br><span class="line">    {</span><br><span class="line">      p1 = <span class="built_in">malloc</span>(<span class="number">1024</span>);</span><br><span class="line">      <span class="built_in">memset</span>(p1, <span class="number">0</span>, <span class="number">1024</span>);</span><br><span class="line">      sleep(<span class="number">1</span>);</span><br><span class="line">      <span class="comment">//check memory leak by asan</span></span><br><span class="line">      <span class="keyword">if</span>(++i > <span class="number">3</span>)</span><br><span class="line">	{</span><br><span class="line">	  __lsan_do_leak_check();</span><br><span class="line">	}</span><br><span class="line">    }</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 </div>
 <p>
-&#x8FD8;&#x9700;&#x8981;&#x52A0;&#x4E0A;&#x7F16;&#x8BD1;&#x9009;&#x9879;:
+还需要加上编译选项:
 </p>
 <pre class="example">
 gcc -g -fsanitize=address ./leak.c
 ./a.out</pre>
 </div>
 </div>
-<div id="outline-container-org899f9f4" class="outline-2">
-<h2 id="org899f9f4">&#x89C2;&#x5BDF;&#x5185;&#x6838;&#x7684;&#x5185;&#x5B58;&#x6CC4;&#x9732;</h2>
-<div class="outline-text-2" id="text-org899f9f4">
+<div id="outline-container-org3cb7672" class="outline-2">
+<h2 id="org3cb7672">观察内核的内存泄露</h2>
+<div class="outline-text-2" id="text-org3cb7672">
 <p>
-&#x591A;&#x4E2A;&#x8FDB;&#x7A0B;&#x662F;&#x5171;&#x4EAB;&#x540C;&#x4E00;&#x4EFD;&#x5185;&#x6838;&#x7A7A;&#x95F4;&#x7684;&#xFF0C;&#x5F53;&#x8FDB;&#x7A0B;&#x53D1;&#x51FA;&#x7CFB;&#x7EDF;&#x8C03;&#x7528;&#x9677;&#x5165;&#x5185;&#x6838;&#x540E;&#xFF0C;&#x5982;&#x679C;&#x5185;&#x6838;&#x6709;&#x5185;&#x5B58;&#x6CC4;&#x9732;&#x90A3;&#x4E48;&#x5176; slab &#x548C; vmalloc &#x7684;&#x5360;&#x7528;&#x5C31;&#x4F1A;&#x968F;&#x7740;&#x65F6;&#x95F4;&#x63A8;&#x79FB;&#x5B8F;&#x89C2;&#x4E0A;&#x5448;&#x4E0A;&#x5347;&#x8D8B;&#x52BF;&#x3002;
+多个进程是共享同一份内核空间的，当进程发出系统调用陷入内核后，如果内核有内存泄露那么其 slab 和 vmalloc 的占用就会随着时间推移宏观上呈上升趋势。
 </p>
 
 <p>
-&#x6709;&#x4EE5;&#x4E0B;&#x51E0;&#x4E2A;&#x529E;&#x6CD5;&#x6765;&#x89C2;&#x5BDF;&#x5185;&#x6838;&#x662F;&#x5426;&#x6709;&#x6CC4;&#x9732;&#xFF1A;
+有以下几个办法来观察内核是否有泄露：
 </p>
 <ol class="org-ol">
-<li>&#x901A;&#x8FC7;&#x811A;&#x672C;&#x957F;&#x65F6;&#x95F4;&#x6293;&#x53D6; <code>cat /proc/meminfo</code> &#x8F93;&#x51FA;&#x4E2D;&#x7684; slab &#x548C; vmalloc &#x8BB0;&#x5F55;&#x5E76;&#x4FDD;&#x5B58;&#x5728;&#x6587;&#x4EF6;&#x4E2D;&#xFF0C;&#x6700;&#x540E;&#x7ECF;&#x8FC7; matlab&#x4E4B;&#x7C7B;&#x5DE5;&#x5177;&#x8FDB;&#x884C;&#x7ED8;&#x56FE;&#x3002;</li>
+<li>通过脚本长时间抓取 <code>cat /proc/meminfo</code> 输出中的 slab 和 vmalloc 记录并保存在文件中，最后经过 matlab之类工具进行绘图。</li>
 </ol>
 </div>
 </div>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
 </div>
 
     </div>
@@ -603,7 +603,7 @@ Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#orga8d8ec4"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x4E00;&amp;#x4E2A;&amp;#x8FDB;&amp;#x7A0B;&amp;#x7684;&amp;#x5185;&amp;#x5B58;&amp;#x8868;&amp;#x793A;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgc18c63e"><span class="nav-number">1.1.</span> <span class="nav-text">vma&amp;#x7684;&amp;#x67E5;&amp;#x770B;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org8f8cb21"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x591A;&amp;#x4E2A;&amp;#x8FDB;&amp;#x7A0B;&amp;#x5728;&amp;#x5185;&amp;#x5B58;&amp;#x6761;&amp;#x4E2D;&amp;#x7684;&amp;#x5206;&amp;#x914D;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org899f9f4"><span class="nav-number">3.</span> <span class="nav-text">&amp;#x89C2;&amp;#x5BDF;&amp;#x5185;&amp;#x6838;&amp;#x7684;&amp;#x5185;&amp;#x5B58;&amp;#x6CC4;&amp;#x9732;</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#orgdfa71ef"><span class="nav-number">1.</span> <span class="nav-text">一个进程的内存表示</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org3f3a73d"><span class="nav-number">1.1.</span> <span class="nav-text">vma的查看</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orga5635c6"><span class="nav-number">2.</span> <span class="nav-text">多个进程在内存条中的分配</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org3cb7672"><span class="nav-number">3.</span> <span class="nav-text">观察内核的内存泄露</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 

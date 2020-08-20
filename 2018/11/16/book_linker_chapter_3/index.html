@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="&amp;#x8BA4;&amp;#x8BC6;&amp;#x76EE;&amp;#x6807;&amp;#x6587;&amp;#x4EF6;&amp;#x3002;">
+  <meta name="description" content="认识目标文件。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[What]链接、装载与库 --&gt; 目标文件内容">
 <meta property="og:url" content="http://kcmetercec.top/2018/11/16/book_linker_chapter_3/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="&amp;#x8BA4;&amp;#x8BC6;&amp;#x76EE;&amp;#x6807;&amp;#x6587;&amp;#x4EF6;&amp;#x3002;">
+<meta property="og:description" content="认识目标文件。">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--linker_load/section_struct.jpg?raw=true">
 <meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--linker_load/elf_file.jpg?raw=true">
@@ -298,16 +298,16 @@
       
         <div id="content">
 <p>
-&#x8BA4;&#x8BC6;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x3002;
+认识目标文件。
 </p>
 <a id="more"></a>
-<div id="outline-container-org1506d92" class="outline-2">
-<h2 id="org1506d92">&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x683C;&#x5F0F;&#x6982;&#x89C8;</h2>
-<div class="outline-text-2" id="text-org1506d92">
+<div id="outline-container-orgca7824d" class="outline-2">
+<h2 id="orgca7824d">目标文件格式概览</h2>
+<div class="outline-text-2" id="text-orgca7824d">
 <p>
-PC &#x5E73;&#x53F0;&#x6D41;&#x884C;&#x7684; <b>&#x53EF;&#x6267;&#x884C;&#x6587;&#x4EF6;&#x683C;&#x5F0F;(Executable)</b> &#x4E3B;&#x8981;&#x662F; Windows &#x4E0B;&#x7684; PE(Portable Executable) &#x548C; Linux &#x7684; ELF(Executable Linkable Format),
-&#x5B83;&#x4EEC;&#x90FD;&#x662F; COFF(Common file format)&#x683C;&#x5F0F;&#x7684;&#x53D8;&#x79CD;.&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x548C;&#x53EF;&#x6267;&#x884C;&#x6587;&#x4EF6;&#x7684;&#x683C;&#x5F0F;&#x662F;&#x4E00;&#x6837;&#x7684;, <b>&#x52A8;&#x6001;&#x94FE;&#x63A5;&#x5E93;(DLL, Dynamic Linking Library)&#x548C;&#x9759;&#x6001;&#x94FE;&#x63A5;&#x5E93;(Static Linking Library)</b> 
-&#x90FD;&#x6309;&#x7167;&#x53EF;&#x6267;&#x884C;&#x6587;&#x4EF6;&#x683C;&#x5F0F;&#x5B58;&#x50A8;.
+PC 平台流行的 <b>可执行文件格式(Executable)</b> 主要是 Windows 下的 PE(Portable Executable) 和 Linux 的 ELF(Executable Linkable Format),
+它们都是 COFF(Common file format)格式的变种.目标文件和可执行文件的格式是一样的, <b>动态链接库(DLL, Dynamic Linking Library)和静态链接库(Static Linking Library)</b> 
+都按照可执行文件格式存储.
 </p>
 
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
@@ -322,69 +322,69 @@ PC &#x5E73;&#x53F0;&#x6D41;&#x884C;&#x7684; <b>&#x53EF;&#x6267;&#x884C;&#x6587;&
 </colgroup>
 <thead>
 <tr>
-<th scope="col" class="org-left">ELF&#x6587;&#x4EF6;&#x7C7B;&#x578B;</th>
-<th scope="col" class="org-left">&#x8BF4;&#x660E;</th>
-<th scope="col" class="org-left">&#x5B9E;&#x4F8B;</th>
+<th scope="col" class="org-left">ELF文件类型</th>
+<th scope="col" class="org-left">说明</th>
+<th scope="col" class="org-left">实例</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td class="org-left">&#x53EF;&#x91CD;&#x5B9A;&#x4F4D;&#x6587;&#x4EF6;(Relocatable File)</td>
-<td class="org-left">&#x8FD9;&#x7C7B;&#x6587;&#x4EF6;&#x5305;&#x542B;&#x4E86;&#x4EE3;&#x7801;&#x548C;&#x6570;&#x636E;,&#x53EF;&#x4EE5;&#x88AB;&#x7528;&#x6765;&#x94FE;&#x63A5;&#x6210;&#x53EF;&#x6267;&#x884C;&#x6587;&#x4EF6;&#x6216;&#x5171;&#x4EAB;&#x76EE;&#x6807;&#x6587;&#x4EF6;,&#x9759;&#x6001;&#x94FE;&#x63A5;&#x5E93;&#x4E5F;&#x53EF;&#x4EE5;&#x5F52;&#x4E3A;&#x8FD9;&#x4E00;&#x7C7B;</td>
-<td class="org-left">Linux &#x7684; .o Windows &#x7684; .obj</td>
+<td class="org-left">可重定位文件(Relocatable File)</td>
+<td class="org-left">这类文件包含了代码和数据,可以被用来链接成可执行文件或共享目标文件,静态链接库也可以归为这一类</td>
+<td class="org-left">Linux 的 .o Windows 的 .obj</td>
 </tr>
 
 <tr>
-<td class="org-left">&#x53EF;&#x6267;&#x884C;&#x6587;&#x4EF6;(Executable File)</td>
-<td class="org-left">&#x8FD9;&#x7C7B;&#x6587;&#x4EF6;&#x5305;&#x542B;&#x4E86;&#x53EF;&#x4EE5;&#x76F4;&#x63A5;&#x6267;&#x884C;&#x7684;&#x7A0B;&#x5E8F;,&#x5B83;&#x7684;&#x4EE3;&#x8868;&#x5C31;&#x662F;ELF&#x53EF;&#x6267;&#x884C;&#x6587;&#x4EF6;,&#x4E00;&#x822C;&#x90FD;&#x6CA1;&#x6709;&#x6269;&#x5C55;&#x540D;</td>
-<td class="org-left">/bin/bash windows &#x7684; .exe</td>
+<td class="org-left">可执行文件(Executable File)</td>
+<td class="org-left">这类文件包含了可以直接执行的程序,它的代表就是ELF可执行文件,一般都没有扩展名</td>
+<td class="org-left">/bin/bash windows 的 .exe</td>
 </tr>
 
 <tr>
-<td class="org-left">&#x5171;&#x4EAB;&#x76EE;&#x6807;&#x6587;&#x4EF6;(Shared Object File)</td>
-<td class="org-left">&#x8FD9;&#x79CD;&#x6587;&#x4EF6;&#x5305;&#x542B;&#x5E93;&#x4EE3;&#x7801;&#x548C;&#x6570;&#x636E;,&#x53EF;&#x4EE5;&#x5728;&#x4EE5;&#x4E0B;&#x4E24;&#x79CD;&#x60C5;&#x51B5;&#x4E0B;&#x4F7F;&#x7528;.&#x4E00;&#x79CD;&#x662F;&#x94FE;&#x63A5;&#x5668;&#x53EF;&#x4EE5;&#x4F7F;&#x7528;&#x8FD9;&#x79CD;&#x6587;&#x4EF6;&#x8DDF;&#x5176;&#x4ED6;&#x7684;&#x53EF;&#x91CD;&#x5B9A;&#x4F4D;&#x6587;&#x4EF6;&#x548C;&#x5171;&#x4EAB;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x94FE;&#x63A5;,&#x4EA7;&#x751F;&#x65B0;&#x7684;&#x76EE;&#x6807;&#x6587;&#x4EF6;.&#x7B2C;&#x4E8C;&#x79CD;&#x662F;&#x52A8;&#x6001;&#x8FDE;&#x63A5;&#x5668;&#x53EF;&#x4EE5;&#x5C06;&#x51E0;&#x4E2A;&#x8FD9;&#x79CD;&#x5171;&#x4EAB;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x4E0E;&#x53EF;&#x6267;&#x884C;&#x6587;&#x4EF6;&#x7ED3;&#x5408;,&#x4F5C;&#x4E3A;&#x8FDB;&#x7A0B;&#x6620;&#x50CF;&#x7684;&#x4E00;&#x90E8;&#x5206;&#x6765;&#x8FD0;&#x884C;</td>
-<td class="org-left">Linux &#x7684; .so Windows &#x7684; DLL</td>
+<td class="org-left">共享目标文件(Shared Object File)</td>
+<td class="org-left">这种文件包含库代码和数据,可以在以下两种情况下使用.一种是链接器可以使用这种文件跟其他的可重定位文件和共享目标文件链接,产生新的目标文件.第二种是动态连接器可以将几个这种共享目标文件与可执行文件结合,作为进程映像的一部分来运行</td>
+<td class="org-left">Linux 的 .so Windows 的 DLL</td>
 </tr>
 
 <tr>
-<td class="org-left">&#x6838;&#x5FC3;&#x8F6C;&#x50A8;&#x6587;&#x4EF6;(Core Dump File)</td>
-<td class="org-left">&#x5F53;&#x8FDB;&#x7A0B;&#x610F;&#x5916;&#x4E2D;&#x6B62;&#x65F6;,&#x7CFB;&#x7EDF;&#x53EF;&#x4EE5;&#x5C06;&#x8FDB;&#x7A0B;&#x7684;&#x5730;&#x5740;&#x7A7A;&#x95F4;&#x7684;&#x5185;&#x5BB9;&#x4EE5;&#x53CA;&#x7EC8;&#x6B62;&#x65F6;&#x7684;&#x4E00;&#x4E9B;&#x5176;&#x4ED6;&#x4FE1;&#x606F;&#x8F6C;&#x50A8;&#x5230;&#x6838;&#x5FC3;&#x8F6C;&#x50A8;&#x6587;&#x4EF6;</td>
-<td class="org-left">Linux &#x4E0B;&#x7684; core dump</td>
+<td class="org-left">核心转储文件(Core Dump File)</td>
+<td class="org-left">当进程意外中止时,系统可以将进程的地址空间的内容以及终止时的一些其他信息转储到核心转储文件</td>
+<td class="org-left">Linux 下的 core dump</td>
 </tr>
 </tbody>
 </table>
 
 <p>
-&#x5728;linux&#x4E0B;&#x53EF;&#x4EE5;&#x4F7F;&#x7528; <code>file</code> &#x547D;&#x4EE4;&#x67E5;&#x770B;&#x76F8;&#x5E94;&#x7684;&#x6587;&#x4EF6;&#x683C;&#x5F0F;.
+在linux下可以使用 <code>file</code> 命令查看相应的文件格式.
 </p>
 
 <p>
-&#x5728;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x4E2D;&#xFF0C;&#x9664;&#x4E86;&#x57FA;&#x672C;&#x7684;&#x4EE3;&#x7801;&#x548C;&#x6570;&#x636E;&#x5916;&#xFF0C;&#x8FD8;&#x5305;&#x62EC;&#x4E86;&#x7B26;&#x53F7;&#x8868;&#x3001;&#x8C03;&#x8BD5;&#x4FE1;&#x606F;&#x3001;&#x5B57;&#x7B26;&#x4E32;&#x7B49;&#x5185;&#x5BB9;&#x3002;
-&#x8FD9;&#x4E9B;&#x4FE1;&#x606F;&#x4EE5;&#x8282;(Section)&#x6216;&#x6BB5;(Segment)&#x7684;&#x5F62;&#x5F0F;&#x5B58;&#x50A8;&#x3002;
+在目标文件中，除了基本的代码和数据外，还包括了符号表、调试信息、字符串等内容。
+这些信息以节(Section)或段(Segment)的形式存储。
 </p>
 
 <p>
-&#x5206;&#x6BB5;&#x7684;&#x597D;&#x5904;&#x5982;&#x4E0B;:
+分段的好处如下:
 </p>
 <ol class="org-ol">
-<li>&#x6570;&#x636E;&#x548C;&#x6307;&#x4EE4;&#x5206;&#x522B;&#x88AB;&#x6620;&#x5C04;&#x5230;&#x4E24;&#x4E2A;&#x865A;&#x5B58;&#x533A;&#x57DF;,&#x6570;&#x636E;&#x533A;&#x88AB;&#x8BBE;&#x7F6E;&#x4E3A;&#x53EF;&#x8BFB;&#x5199;,&#x6307;&#x4EE4;&#x533A;&#x88AB;&#x8BBE;&#x7F6E;&#x4E3A;&#x53EA;&#x8BFB;,&#x53EF;&#x4EE5;&#x9632;&#x6B62;&#x7A0B;&#x5E8F;&#x6307;&#x4EE4;&#x88AB;&#x6709;&#x610F;&#x6216;&#x65E0;&#x610F;&#x7684;&#x6539;&#x5199;.</li>
-<li>&#x7531;&#x4E8E; CPU &#x7684;&#x7F13;&#x5B58;&#x4F53;&#x7CFB;,&#x5206;&#x6BB5;&#x6709;&#x5229;&#x4E8E;&#x63D0;&#x9AD8;&#x7A0B;&#x5E8F;&#x7684;&#x5C40;&#x90E8;&#x6027;,&#x63D0;&#x9AD8;&#x7F13;&#x5B58;&#x7684;&#x547D;&#x4E2D;&#x7387;.</li>
-<li>&#x5F53;&#x7CFB;&#x7EDF;&#x4E2D;&#x8FD0;&#x884C;&#x7740;&#x591A;&#x4E2A;&#x8BE5;&#x7A0B;&#x5E8F;&#x7684;&#x526F;&#x672C;&#x65F6;,&#x53EF;&#x4EE5;&#x5171;&#x4EAB;&#x4EE3;&#x7801;&#x6BB5;&#x800C;&#x533A;&#x5206;&#x6570;&#x636E;&#x6BB5;,&#x8282;&#x7EA6;&#x5185;&#x5B58;.</li>
+<li>数据和指令分别被映射到两个虚存区域,数据区被设置为可读写,指令区被设置为只读,可以防止程序指令被有意或无意的改写.</li>
+<li>由于 CPU 的缓存体系,分段有利于提高程序的局部性,提高缓存的命中率.</li>
+<li>当系统中运行着多个该程序的副本时,可以共享代码段而区分数据段,节约内存.</li>
 </ol>
 </div>
 </div>
 
-<div id="outline-container-org023188b" class="outline-2">
-<h2 id="org023188b">&#x5B9E;&#x4F8B;&#x67E5;&#x770B;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x683C;&#x5F0F;</h2>
-<div class="outline-text-2" id="text-org023188b">
+<div id="outline-container-org4a4743c" class="outline-2">
+<h2 id="org4a4743c">实例查看目标文件格式</h2>
+<div class="outline-text-2" id="text-org4a4743c">
 <p>
-&#x7F16;&#x8BD1;&#x8BD5;&#x9A8C;&#x4EE3;&#x7801;: <code>gcc -c SimpleSection.c -o SimpleSection.o</code>
+编译试验代码: <code>gcc -c SimpleSection.c -o SimpleSection.o</code>
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * SimpleSection.c</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Linux:</span></span><br><span class="line"><span class="comment"> *   gcc -c SimpleSection.c</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Windows:</span></span><br><span class="line"><span class="comment"> *   cl SimpleSectin.c /c /Za</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">printf</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> * format, ...)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">int</span> global_init_var = <span class="number">84</span>;</span><br><span class="line"><span class="keyword">int</span> global_uninit_var;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">func1</span><span class="params">(<span class="keyword">int</span> i)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;%d\n&quot;</span>, i);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  <span class="keyword">static</span> <span class="keyword">int</span> static_var = <span class="number">85</span>;</span><br><span class="line">  <span class="keyword">static</span> <span class="keyword">int</span> static_var2;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">int</span> a = <span class="number">1</span>;</span><br><span class="line">  <span class="keyword">int</span> b;</span><br><span class="line"></span><br><span class="line">  func1(static_var + static_var2 + a + b);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> a;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * SimpleSection.c</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Linux:</span></span><br><span class="line"><span class="comment"> *   gcc -c SimpleSection.c</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Windows:</span></span><br><span class="line"><span class="comment"> *   cl SimpleSectin.c /c /Za</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">printf</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> * format, ...)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">int</span> global_init_var = <span class="number">84</span>;</span><br><span class="line"><span class="keyword">int</span> global_uninit_var;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">func1</span><span class="params">(<span class="keyword">int</span> i)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"%d\n"</span>, i);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  <span class="keyword">static</span> <span class="keyword">int</span> static_var = <span class="number">85</span>;</span><br><span class="line">  <span class="keyword">static</span> <span class="keyword">int</span> static_var2;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">int</span> a = <span class="number">1</span>;</span><br><span class="line">  <span class="keyword">int</span> b;</span><br><span class="line"></span><br><span class="line">  func1(static_var + static_var2 + a + b);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> a;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 </div>
 <p>
-&#x67E5;&#x770B;&#x6BB5;&#x8868;&#x63CF;&#x8FF0;: <code>objdump -h SimpleSection.o</code>
+查看段表描述: <code>objdump -h SimpleSection.o</code>
 </p>
 <pre class="example">
 SimpleSection.o:     file format elf64-x86-64
@@ -406,37 +406,37 @@ Idx Name          Size      VMA               LMA               File off  Algn
   6 .eh_frame     00000058  0000000000000000  0000000000000000  000000d0  2**3
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, DATA</pre>
 <p>
-&#x4E0A;&#x56FE;&#x4E2D;:
+上图中:
 </p>
 <ul class="org-ul">
-<li>size : &#x6BB5;&#x5185;&#x5BB9;&#x5927;&#x5C0F;</li>
-<li>File off : &#x6BB5;&#x5185;&#x5BB9; <b>&#x76F8;&#x5BF9;&#x4E8E;&#x6587;&#x4EF6;&#x8D77;&#x59CB;&#x7684;&#x504F;&#x79FB;</b></li>
-<li>&#x7B2C;&#x4E8C;&#x884C;&#x8868;&#x793A;&#x6BB5;&#x7684;&#x5C5E;&#x6027;
+<li>size : 段内容大小</li>
+<li>File off : 段内容 <b>相对于文件起始的偏移</b></li>
+<li>第二行表示段的属性
 <ul class="org-ul">
-<li>CONTENTS : &#x8BE5;&#x6BB5;&#x5728;&#x540E;&#x9762;&#x7684;&#x6587;&#x4EF6;&#x5185;&#x5BB9;&#x4E2D;&#x5B58;&#x5728;
+<li>CONTENTS : 该段在后面的文件内容中存在
 <ul class="org-ul">
-<li>BSS&#x6BB5;&#x6CA1;&#x6709;&#x6B64;&#x5C5E;&#x6027;&#xFF0C;&#x8868;&#x660E;&#x5B83;&#x4E0D;&#x5360;&#x7528;&#x540E;&#x9762;&#x7684;&#x5185;&#x5BB9;&#x4EC5;&#x5728;&#x6BB5;&#x8868;&#x5904;&#x8868;&#x660E;&#x5927;&#x5C0F;&#x5373;&#x53EF;</li>
+<li>BSS段没有此属性，表明它不占用后面的内容仅在段表处表明大小即可</li>
 </ul></li>
 </ul></li>
 </ul>
 
 <p>
-&#x57FA;&#x4E8E;&#x4EE5;&#x4E0A;&#x63CF;&#x8FF0;&#x4FE1;&#x606F;&#xFF0C;&#x53EF;&#x4EE5;&#x5F97;&#x51FA;&#x6B64;&#x6587;&#x4EF6;&#x7684;&#x7ED3;&#x6784;&#x5982;&#x4E0B;&#x56FE;:
+基于以上描述信息，可以得出此文件的结构如下图:
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--linker_load/section_struct.jpg?raw=true" alt="section_struct.jpg">
 <p>
-&#x4F7F;&#x7528; <code>size</code> &#x67E5;&#x770B;&#x4EE3;&#x7801;&#x6BB5;&#x3001;&#x6570;&#x636E;&#x6BB5;&#x3001;bss&#x6BB5;&#x957F;&#x5EA6;:
+使用 <code>size</code> 查看代码段、数据段、bss段长度:
 </p>
 <pre class="example">
 cec@ubuntu:~/exercise/linux/linker_loader$ size SimpleSection.o
    text	   data	    bss	    dec	    hex	filename
     179	      8	      4	    191	     bf	SimpleSection.o</pre>
 <ul class="org-ul">
-<li>&#x4E0A;&#x9762;&#x7684;text&#x5176;&#x5B9E;&#x5305;&#x542B;&#x4E86;&#x4EE3;&#x7801;&#x6BB5;&#x3001;&#x53EA;&#x8BFB;&#x6570;&#x6BB5;&#x3001;en_frame&#x6BB5;&#x4E4B;&#x548C;</li>
+<li>上面的text其实包含了代码段、只读数段、en_frame段之和</li>
 </ul>
 
 <p>
-&#x63A5;&#x4E0B;&#x6765;&#x67E5;&#x770B;&#x53CD;&#x6C47;&#x7F16;:
+接下来查看反汇编:
 </p>
 <pre class="example">
 cec@ubuntu:~/exercise/linux/linker_loader$ objdump -s -d SimpleSection.o
@@ -462,53 +462,53 @@ Contents of section .eh_frame:
  0000 14000000 00000000 017a5200 01781001  .........zR..x..
  0010 1b0c0708 90010000 1c000000 1c000000  ................
  0020 00000000 24000000 00410e10 8602430d  ....$....A....C.
- 0030 065f0c07 08000000 1c000000 3c000000  ._..........&lt;...
+ 0030 065f0c07 08000000 1c000000 3c000000  ._..........<...
  0040 00000000 33000000 00410e10 8602430d  ....3....A....C.
  0050 066e0c07 08000000                    .n......        
 
 Disassembly of section .text:
 
-0000000000000000 &lt;func1&gt;:
+0000000000000000 <func1>:
    0:	55                   	push   %rbp
    1:	48 89 e5             	mov    %rsp,%rbp
    4:	48 83 ec 10          	sub    $0x10,%rsp
    8:	89 7d fc             	mov    %edi,-0x4(%rbp)
    b:	8b 45 fc             	mov    -0x4(%rbp),%eax
    e:	89 c6                	mov    %eax,%esi
-  10:	48 8d 3d 00 00 00 00 	lea    0x0(%rip),%rdi        # 17 &lt;func1+0x17&gt;
+  10:	48 8d 3d 00 00 00 00 	lea    0x0(%rip),%rdi        # 17 <func1+0x17>
   17:	b8 00 00 00 00       	mov    $0x0,%eax
-  1c:	e8 00 00 00 00       	callq  21 &lt;func1+0x21&gt;
+  1c:	e8 00 00 00 00       	callq  21 <func1+0x21>
   21:	90                   	nop
   22:	c9                   	leaveq 
   23:	c3                   	retq   
 
-0000000000000024 &lt;main&gt;:
+0000000000000024 <main>:
   24:	55                   	push   %rbp
   25:	48 89 e5             	mov    %rsp,%rbp
   28:	48 83 ec 10          	sub    $0x10,%rsp
   2c:	c7 45 f8 01 00 00 00 	movl   $0x1,-0x8(%rbp)
-  33:	8b 15 00 00 00 00    	mov    0x0(%rip),%edx        # 39 &lt;main+0x15&gt;
-  39:	8b 05 00 00 00 00    	mov    0x0(%rip),%eax        # 3f &lt;main+0x1b&gt;
+  33:	8b 15 00 00 00 00    	mov    0x0(%rip),%edx        # 39 <main+0x15>
+  39:	8b 05 00 00 00 00    	mov    0x0(%rip),%eax        # 3f <main+0x1b>
   3f:	01 c2                	add    %eax,%edx
   41:	8b 45 f8             	mov    -0x8(%rbp),%eax
   44:	01 c2                	add    %eax,%edx
   46:	8b 45 fc             	mov    -0x4(%rbp),%eax
   49:	01 d0                	add    %edx,%eax
   4b:	89 c7                	mov    %eax,%edi
-  4d:	e8 00 00 00 00       	callq  52 &lt;main+0x2e&gt;
+  4d:	e8 00 00 00 00       	callq  52 <main+0x2e>
   52:	8b 45 f8             	mov    -0x8(%rbp),%eax
   55:	c9                   	leaveq 
   56:	c3                   	retq  </pre>
 <p>
-&#x4ECE;&#x4E0A;&#x9762;&#x8F93;&#x51FA;&#x53EF;&#x4EE5;&#x770B;&#x5230;&#xFF1A;
+从上面输出可以看到：
 </p>
 <ol class="org-ol">
-<li>&#x4EE3;&#x7801;&#x6BB5;&#x5927;&#x5C0F;&#x786E;&#x5B9E;&#x4E3A; <code>0x57</code></li>
-<li>&#x6570;&#x636E;&#x6BB5;&#x6B63;&#x597D;&#x4E3A;&#x521D;&#x59CB;&#x5316;&#x7684;&#x5168;&#x5C40;&#x548C;&#x5C40;&#x90E8;&#x9759;&#x6001;&#x53D8;&#x91CF; <code>84,85</code>
+<li>代码段大小确实为 <code>0x57</code></li>
+<li>数据段正好为初始化的全局和局部静态变量 <code>84,85</code>
 <ul class="org-ul">
-<li>&#x5E76;&#x4E14;&#x4ECE;&#x5176;&#x5B57;&#x8282;&#x5E8F;&#xFF0C;&#x4E5F;&#x53EF;&#x4EE5;&#x77E5;&#x9053;&#x662F;&#x5C0F;&#x7AEF;&#x6A21;&#x5F0F;</li>
+<li>并且从其字节序，也可以知道是小端模式</li>
 </ul></li>
-<li>&#x53EA;&#x8BFB;&#x6570;&#x636E;&#x6BB5;&#x662F;printf&#x7684;&#x5B57;&#x7B26;&#x4E32; &quot;%d\n&quot;</li>
+<li>只读数据段是printf的字符串 "%d\n"</li>
 </ol>
 
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
@@ -521,128 +521,128 @@ Disassembly of section .text:
 </colgroup>
 <thead>
 <tr>
-<th scope="col" class="org-left">&#x5E38;&#x7528;&#x7684;&#x6BB5;&#x540D;</th>
-<th scope="col" class="org-left">&#x8BF4;&#x660E;</th>
+<th scope="col" class="org-left">常用的段名</th>
+<th scope="col" class="org-left">说明</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td class="org-left">.text</td>
-<td class="org-left">&#x4EE3;&#x7801;&#x6BB5;</td>
+<td class="org-left">代码段</td>
 </tr>
 
 <tr>
 <td class="org-left">.data</td>
-<td class="org-left">&#x4FDD;&#x5B58;&#x5DF2;&#x7ECF;&#x521D;&#x59CB;&#x5316;&#x4E86;&#x7684; <b>&#x975E;&#x96F6;</b> &#x5168;&#x5C40;&#x53D8;&#x91CF;&#x548C;&#x5C40;&#x90E8;&#x9759;&#x6001;&#x53D8;&#x91CF;</td>
+<td class="org-left">保存已经初始化了的 <b>非零</b> 全局变量和局部静态变量</td>
 </tr>
 
 <tr>
 <td class="org-left">.rodata</td>
-<td class="org-left">&#x53EA;&#x8BFB;&#x6570;&#x636E;&#x6BB5;,&#x6BD4;&#x5982;&#x5B57;&#x7B26;&#x4E32;&#x5E38;&#x91CF;&#x7B49;&#x7B49;,&#x5355;&#x72EC;&#x8BBE;&#x7ACB; .rodata &#x6BB5;&#x6709;&#x5F88;&#x591A;&#x597D;&#x5904;,&#x4E0D;&#x5149;&#x5728;&#x8BED;&#x4E49;&#x4E0A;&#x652F;&#x6301;&#x4E86; C++ &#x7684; const&#x5173;&#x952E;&#x5B57;,&#x800C;&#x4E14;&#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;&#x5728;&#x52A0;&#x8F7D;&#x7684;&#x65F6;&#x5019;&#x53EF;&#x4EE5;&#x5C06;.rodata &#x6BB5;&#x5C5E;&#x6027;&#x6620;&#x5C04;&#x6210;&#x53EA;&#x8BFB;,&#x4FDD;&#x8BC1;&#x7A0B;&#x5E8F;&#x5B89;&#x5168;.</td>
+<td class="org-left">只读数据段,比如字符串常量等等,单独设立 .rodata 段有很多好处,不光在语义上支持了 C++ 的 const关键字,而且操作系统在加载的时候可以将.rodata 段属性映射成只读,保证程序安全.</td>
 </tr>
 
 <tr>
 <td class="org-left">.bss</td>
-<td class="org-left">&#x5B58;&#x653E;&#x672A;&#x521D;&#x59CB;&#x5316;&#x7684;&#x5168;&#x5C40;&#x53D8;&#x91CF;&#x548C;&#x5C40;&#x90E8;&#x9759;&#x6001;&#x53D8;&#x91CF;, .bss &#x6BB5;&#x4FDD;&#x5B58;&#x6570;&#x91CF;&#x7684;&#x503C;,&#x800C;&#x4E0D;&#x662F;&#x5177;&#x4F53;&#x503C;,&#x5728;&#x6700;&#x7EC8;&#x7684;&#x94FE;&#x63A5;&#x8FC7;&#x7A0B;&#x4E2D;&#x4F1A;&#x5206;&#x914D;bss&#x6BB5;&#x7684;&#x7A7A;&#x95F4;</td>
+<td class="org-left">存放未初始化的全局变量和局部静态变量, .bss 段保存数量的值,而不是具体值,在最终的链接过程中会分配bss段的空间</td>
 </tr>
 
 <tr>
 <td class="org-left">.rodata1</td>
-<td class="org-left">&#x53EA;&#x8BFB;&#x6570;&#x636E;&#x4E0E;.rodata&#x4E00;&#x6837;,&#x6BD4;&#x5982;&#x5B57;&#x7B26;&#x4E32;&#x5E38;&#x91CF;,&#x5168;&#x5C40; const&#x53D8;&#x91CF;&#x7B49;.</td>
+<td class="org-left">只读数据与.rodata一样,比如字符串常量,全局 const变量等.</td>
 </tr>
 
 <tr>
 <td class="org-left">.comment</td>
-<td class="org-left">&#x5B58;&#x653E;&#x7684;&#x662F;&#x7F16;&#x8BD1;&#x5668;&#x7248;&#x672C;&#x4FE1;&#x606F;,&#x6BD4;&#x5982;&#x5B57;&#x7B26;&#x4E32; &quot;GCC:(GUN) 4.2.0&quot;</td>
+<td class="org-left">存放的是编译器版本信息,比如字符串 "GCC:(GUN) 4.2.0"</td>
 </tr>
 
 <tr>
 <td class="org-left">.debug</td>
-<td class="org-left">&#x8C03;&#x8BD5;&#x4FE1;&#x606F;</td>
+<td class="org-left">调试信息</td>
 </tr>
 
 <tr>
 <td class="org-left">.dynamic</td>
-<td class="org-left">&#x52A8;&#x6001;&#x94FE;&#x63A5;&#x4FE1;&#x606F;</td>
+<td class="org-left">动态链接信息</td>
 </tr>
 
 <tr>
 <td class="org-left">.hash</td>
-<td class="org-left">&#x7B26;&#x53F7;&#x54C8;&#x5E0C;&#x8868;</td>
+<td class="org-left">符号哈希表</td>
 </tr>
 
 <tr>
 <td class="org-left">.line</td>
-<td class="org-left">&#x8C03;&#x8BD5;&#x65F6;&#x7684;&#x884C;&#x53F7;&#x8868;,&#x5373;&#x6E90;&#x4EE3;&#x7801;&#x884C;&#x53F7;&#x4E0E;&#x7F16;&#x8BD1;&#x540E;&#x6307;&#x4EE4;&#x7684;&#x5BF9;&#x5E94;&#x8868;</td>
+<td class="org-left">调试时的行号表,即源代码行号与编译后指令的对应表</td>
 </tr>
 
 <tr>
 <td class="org-left">.note</td>
-<td class="org-left">&#x989D;&#x5916;&#x7684;&#x7F16;&#x8BD1;&#x5668;&#x4FE1;&#x606F;,&#x6BD4;&#x5982;&#x7248;&#x672C;&#x53F7;&#x7B49;&#x7B49;</td>
+<td class="org-left">额外的编译器信息,比如版本号等等</td>
 </tr>
 
 <tr>
 <td class="org-left">.strtab</td>
-<td class="org-left">&#x5B57;&#x7B26;&#x4E32;&#x8868;,&#x7528;&#x4E8E;&#x5B58;&#x50A8; ELF &#x6587;&#x4EF6;&#x4E2D;&#x7528;&#x5230;&#x7684;&#x5404;&#x79CD;&#x5B57;&#x7B26;&#x4E32;</td>
+<td class="org-left">字符串表,用于存储 ELF 文件中用到的各种字符串</td>
 </tr>
 
 <tr>
 <td class="org-left">.symtab</td>
-<td class="org-left">&#x7B26;&#x53F7;&#x8868;</td>
+<td class="org-left">符号表</td>
 </tr>
 
 <tr>
 <td class="org-left">.plt .got</td>
-<td class="org-left">&#x52A8;&#x6001;&#x94FE;&#x63A5;&#x7684;&#x8DF3;&#x8F6C;&#x8868;&#x548C;&#x5168;&#x5C40;&#x5165;&#x53E3;&#x8868;</td>
+<td class="org-left">动态链接的跳转表和全局入口表</td>
 </tr>
 
 <tr>
 <td class="org-left">.init .fini</td>
-<td class="org-left">&#x7A0B;&#x5E8F;&#x521D;&#x59CB;&#x5316;&#x4E0E;&#x7EC8;&#x7ED3;&#x4EE3;&#x7801;&#x6BB5;</td>
+<td class="org-left">程序初始化与终结代码段</td>
 </tr>
 </tbody>
 </table>
 
 <p>
-&#x8FD9;&#x4E9B;&#x6BB5;&#x7684;&#x540D;&#x5B57;&#x90FD;&#x662F;&#x7531; &quot;.&quot; &#x4F5C;&#x4E3A;&#x524D;&#x7F00;,&#x8868;&#x793A;&#x8FD9;&#x4E9B;&#x8868;&#x7684;&#x540D;&#x5B57;&#x662F;&#x7CFB;&#x7EDF;&#x4FDD;&#x7559;&#x7684;,&#x5E94;&#x7528;&#x7A0B;&#x5E8F;&#x4E5F;&#x53EF;&#x4EE5;&#x4F7F;&#x7528;&#x4E00;&#x4E9B;&#x975E;&#x7CFB;&#x7EDF;&#x4FDD;&#x7559;&#x7684;&#x540D;&#x5B57;&#x4F5C;&#x4E3A;&#x6BB5;&#x540D;.&#x6BD4;&#x5982;&#x53EF;&#x4EE5;&#x5728; ELF &#x6587;&#x4EF6;&#x4E2D;&#x63D2;&#x5165;&#x4E00;&#x4E2A; music &#x7684;&#x6BB5;,&#x91CC;&#x9762;&#x5B58;&#x653E;&#x4E86;&#x4E00;&#x9996; MP3 &#x97F3;&#x4E50;,&#x5F53; ELF &#x6587;&#x4EF6;&#x8FD0;&#x884C;&#x8D77;&#x6765;&#x4EE5;&#x540E;&#x53EF;&#x4EE5;&#x8BFB;&#x53D6;&#x8FD9;&#x4E2A;&#x6BB5;&#x64AD;&#x653E;&#x8FD9;&#x9996; MP3.&#x4F46;&#x662F;&#x5E94;&#x7528;&#x7A0B;&#x5E8F;&#x81EA;&#x5B9A;&#x4E49;&#x7684;&#x6BB5;&#x540D;&#x4E0D;&#x80FD;&#x4F7F;&#x7528; . &#x4F5C;&#x4E3A;&#x524D;&#x7F00;,&#x5426;&#x5219;&#x5BB9;&#x6613;&#x8DDF;&#x7CFB;&#x7EDF;&#x4FDD;&#x7559;&#x6BB5;&#x540D;&#x51B2;&#x7A81;.&#x4E00;&#x4E2A; ELF &#x6587;&#x4EF6;&#x4E5F;&#x53EF;&#x4EE5;&#x62E5;&#x6709;&#x51E0;&#x4E2A;&#x76F8;&#x540C;&#x6BB5;&#x540D;&#x7684;&#x6BB5;.
+这些段的名字都是由 "." 作为前缀,表示这些表的名字是系统保留的,应用程序也可以使用一些非系统保留的名字作为段名.比如可以在 ELF 文件中插入一个 music 的段,里面存放了一首 MP3 音乐,当 ELF 文件运行起来以后可以读取这个段播放这首 MP3.但是应用程序自定义的段名不能使用 . 作为前缀,否则容易跟系统保留段名冲突.一个 ELF 文件也可以拥有几个相同段名的段.
 </p>
 </div>
 </div>
-<div id="outline-container-org8f1db4c" class="outline-2">
-<h2 id="org8f1db4c">&#x81EA;&#x5B9A;&#x4E49;&#x6BB5;&#x548C;&#x5236;&#x4F5C;&#x6BB5;</h2>
-<div class="outline-text-2" id="text-org8f1db4c">
+<div id="outline-container-orga9b832e" class="outline-2">
+<h2 id="orga9b832e">自定义段和制作段</h2>
+<div class="outline-text-2" id="text-orga9b832e">
 </div>
-<div id="outline-container-org3c29ca6" class="outline-3">
-<h3 id="org3c29ca6">&#x5236;&#x4F5C;&#x6BB5;</h3>
-<div class="outline-text-3" id="text-org3c29ca6">
+<div id="outline-container-org31df43c" class="outline-3">
+<h3 id="org31df43c">制作段</h3>
+<div class="outline-text-3" id="text-org31df43c">
 <pre class="example">
-objcopy -I binary -O elf32-i386  -B i386 &lt;input_file&gt; &lt;output_name&gt;.o</pre>
+objcopy -I binary -O elf32-i386  -B i386 <input_file> <output_name>.o</pre>
 <p>
-&#x5C06;&#x6587;&#x4EF6;&#x8F6C;&#x6362;&#x4E3A;i386&#x6267;&#x884C;&#x6587;&#x4EF6;&#x7684;&#x683C;&#x5F0F;&#x7684;&#x76EE;&#x6807;&#x6587;&#x4EF6;
-&#x4F7F;&#x7528;:
+将文件转换为i386执行文件的格式的目标文件
+使用:
 </p>
 <pre class="example">
-objdump -ht &lt;name&gt;.o</pre>
+objdump -ht <name>.o</pre>
 <p>
-&#x5373;&#x53EF;&#x67E5;&#x770B;&#x6BB5;&#x7684;&#x8D77;&#x59CB;&#x5730;&#x5740;&#x548C;&#x7ED3;&#x675F;&#x5730;&#x5740;&#xFF0C;&#x7136;&#x540E;&#x5728;&#x5176;&#x4ED6;&#x6A21;&#x5757;&#x4E2D;&#x4F7F;&#x7528;&#x3002;
+即可查看段的起始地址和结束地址，然后在其他模块中使用。
 </p>
 </div>
 </div>
-<div id="outline-container-org7a58cde" class="outline-3">
-<h3 id="org7a58cde">&#x81EA;&#x5B9A;&#x4E49;&#x6BB5;</h3>
-<div class="outline-text-3" id="text-org7a58cde">
+<div id="outline-container-org6322907" class="outline-3">
+<h3 id="org6322907">自定义段</h3>
+<div class="outline-text-3" id="text-org6322907">
 <p>
-GCC &#x63D0;&#x4F9B;&#x4E86;&#x4E00;&#x4E2A;&#x6269;&#x5C55;&#x673A;&#x5236;,&#x53EF;&#x4EE5;&#x6307;&#x5B9A;&#x53D8;&#x91CF;&#x6216;&#x51FD;&#x6570;&#x6240;&#x5904;&#x7684;&#x6BB5;:
+GCC 提供了一个扩展机制,可以指定变量或函数所处的段:
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">  &#x5728;&#x5168;&#x5C40;&#x53D8;&#x91CF;&#x6216;&#x51FD;&#x6570;&#x524D;&#x52A0;&#x4E0A; __attribute__((section(&quot;name&quot;)))</span></span><br><span class="line"><span class="comment">  &#x5C31;&#x53EF;&#x4EE5;&#x628A;&#x76F8;&#x5E94;&#x7684;&#x53D8;&#x91CF;&#x6216;&#x51FD;&#x6570;&#x653E;&#x5230;&#x4EE5; &quot;name&quot; &#x4F5C;&#x4E3A;&#x6BB5;&#x540D;&#x7684;&#x6BB5;&#x4E2D;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">__attribute__((section(<span class="string">&quot;FOO&quot;</span>)))  <span class="keyword">int</span> global = <span class="number">42</span>;</span><br><span class="line"></span><br><span class="line">__attribute__((section(<span class="string">&quot;BAR&quot;</span>))) <span class="function"><span class="keyword">void</span> <span class="title">foo</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">  在全局变量或函数前加上 __attribute__((section("name")))</span></span><br><span class="line"><span class="comment">  就可以把相应的变量或函数放到以 "name" 作为段名的段中</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">__attribute__((section(<span class="string">"FOO"</span>)))  <span class="keyword">int</span> global = <span class="number">42</span>;</span><br><span class="line"></span><br><span class="line">__attribute__((section(<span class="string">"BAR"</span>))) <span class="function"><span class="keyword">void</span> <span class="title">foo</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </div>
 </div>
-<div id="outline-container-org8b3584f" class="outline-2">
-<h2 id="org8b3584f">&#x5206;&#x6790;ELF&#x7ED3;&#x6784;</h2>
-<div class="outline-text-2" id="text-org8b3584f">
+<div id="outline-container-orge493aaa" class="outline-2">
+<h2 id="orge493aaa">分析ELF结构</h2>
+<div class="outline-text-2" id="text-orge493aaa">
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
 
@@ -653,66 +653,66 @@ GCC &#x63D0;&#x4F9B;&#x4E86;&#x4E00;&#x4E2A;&#x6269;&#x5C55;&#x673A;&#x5236;,&#x
 </colgroup>
 <thead>
 <tr>
-<th scope="col" class="org-left">&#x6587;&#x4EF6;&#x683C;&#x5F0F;</th>
-<th scope="col" class="org-left">&#x7B80;&#x8981;&#x8BF4;&#x660E;</th>
+<th scope="col" class="org-left">文件格式</th>
+<th scope="col" class="org-left">简要说明</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td class="org-left">ELF Header</td>
-<td class="org-left">&#x63CF;&#x8FF0;&#x6574;&#x4E2A;&#x6587;&#x4EF6;&#x5C5E;&#x6027;</td>
+<td class="org-left">描述整个文件属性</td>
 </tr>
 
 <tr>
 <td class="org-left">.text / .code</td>
-<td class="org-left">&#x4EE3;&#x7801;&#x6BB5;</td>
+<td class="org-left">代码段</td>
 </tr>
 
 <tr>
 <td class="org-left">.data</td>
-<td class="org-left">&#x6570;&#x636E;&#x6BB5;&#xFF0C;&#x5DF2;&#x521D;&#x59CB;&#x5316;&#x7684;&#x5168;&#x5C40;&#x53CA;&#x5C40;&#x90E8;&#x9759;&#x6001;&#x53D8;&#x91CF;</td>
+<td class="org-left">数据段，已初始化的全局及局部静态变量</td>
 </tr>
 
 <tr>
 <td class="org-left">.bss</td>
-<td class="org-left">&#x672A;&#x521D;&#x59CB;&#x5316;&#x7684;&#x5168;&#x5C40;&#x53CA;&#x5C40;&#x90E8;&#x9759;&#x6001;&#x53D8;&#x91CF;</td>
+<td class="org-left">未初始化的全局及局部静态变量</td>
 </tr>
 
 <tr>
 <td class="org-left">other sections</td>
-<td class="org-left">&#xA0;</td>
+<td class="org-left"> </td>
 </tr>
 
 <tr>
 <td class="org-left">section header table</td>
-<td class="org-left">&#x63CF;&#x8FF0;&#x5305;&#x542B;&#x6240;&#x6709;&#x6BB5;&#x7684;&#x4FE1;&#x606F;</td>
+<td class="org-left">描述包含所有段的信息</td>
 </tr>
 
 <tr>
 <td class="org-left">String Tables</td>
-<td class="org-left">&#x5B57;&#x7B26;&#x4E32;&#x8868;</td>
+<td class="org-left">字符串表</td>
 </tr>
 
 <tr>
 <td class="org-left">Symbol Tables</td>
-<td class="org-left">&#x7B26;&#x53F7;&#x8868;</td>
+<td class="org-left">符号表</td>
 </tr>
 </tbody>
 </table>
 </div>
 
-<div id="outline-container-org09183ec" class="outline-3">
-<h3 id="org09183ec">ELF Header</h3>
-<div class="outline-text-3" id="text-org09183ec">
+<div id="outline-container-org7d06c86" class="outline-3">
+<h3 id="org7d06c86">ELF Header</h3>
+<div class="outline-text-3" id="text-org7d06c86">
 <p>
-&#x53EF;&#x4EE5;&#x4F7F;&#x7528;&#x547D;&#x4EE4; <code>readelf -h hello.o</code> &#x6765;&#x67E5;&#x770B; ELF &#x6587;&#x4EF6;.
+可以使用命令 <code>readelf -h hello.o</code> 来查看 ELF 文件.
 </p>
 <pre class="example">
 cec@ubuntu:~/exercise/linux/linker_loader$ readelf -h SimpleSection.o
 ELF Header:
   Magic:   7f 45 4c 46 02 01 01 00 00 00 00 00 00 00 00 00 
   Class:                             ELF64
-  Data:                              2&apos;s complement, little endian
+  Data:                              2's complement, little endian
   Version:                           1 (current)
   OS/ABI:                            UNIX - System V
   ABI Version:                       0
@@ -731,31 +731,31 @@ ELF Header:
   Section header string table index: 12</pre>
 
 <p>
-ELF &#x7684;&#x6587;&#x4EF6;&#x5934;&#x4E2D;&#x5B9A;&#x4E49;&#x4E86; <b>ELF &#x9B54;&#x6570;</b>, <b>&#x6587;&#x4EF6;&#x673A;&#x5668;&#x5B57;&#x8282;&#x957F;&#x5EA6;</b>, <b>&#x6570;&#x636E;&#x5B58;&#x50A8;&#x65B9;&#x5F0F;</b>, <b>&#x7248;&#x672C;</b>, <b>&#x8FD0;&#x884C;&#x5E73;&#x53F0;</b>, <b>ABI&#x7248;&#x672C;</b>, 
-<b>ELF&#x91CD;&#x5B9A;&#x4F4D;&#x7C7B;&#x578B;</b>, <b>&#x786C;&#x4EF6;&#x5E73;&#x53F0;</b>, <b>&#x786C;&#x4EF6;&#x5E73;&#x53F0;&#x7248;&#x672C;</b>, <b>&#x5165;&#x53E3;&#x5730;&#x5740;</b>, <b>&#x7A0B;&#x5E8F;&#x5934;&#x5165;&#x53E3;&#x548C;&#x957F;&#x5EA6;</b>, <b>&#x6BB5;&#x8868;&#x4F4D;&#x7F6E;</b>, <b>&#x957F;&#x5EA6;&#x53CA;&#x6BB5;&#x7684;&#x6570;&#x91CF;</b>.
+ELF 的文件头中定义了 <b>ELF 魔数</b>, <b>文件机器字节长度</b>, <b>数据存储方式</b>, <b>版本</b>, <b>运行平台</b>, <b>ABI版本</b>, 
+<b>ELF重定位类型</b>, <b>硬件平台</b>, <b>硬件平台版本</b>, <b>入口地址</b>, <b>程序头入口和长度</b>, <b>段表位置</b>, <b>长度及段的数量</b>.
 </p>
 <ul class="org-ul">
-<li>&#x5934;&#x7684;&#x5927;&#x5C0F;&#x662F;64&#x5B57;&#x8282;&#xFF0C;&#x4E0E;&#x524D;&#x9762;&#x4EE3;&#x7801;&#x6BB5;&#x7684;&#x504F;&#x79FB;&#x662F;0x40&#x6B63;&#x597D;&#x5BF9;&#x5E94;&#x4E0A;&#x3002;</li>
+<li>头的大小是64字节，与前面代码段的偏移是0x40正好对应上。</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-org4486189" class="outline-3">
-<h3 id="org4486189">ELF&#x5934;&#x7684;&#x6570;&#x636E;&#x7ED3;&#x6784;</h3>
-<div class="outline-text-3" id="text-org4486189">
+<div id="outline-container-org13a9a3d" class="outline-3">
+<h3 id="org13a9a3d">ELF头的数据结构</h3>
+<div class="outline-text-3" id="text-org13a9a3d">
 <p>
-ELF &#x6587;&#x4EF6;&#x5934;&#x7ED3;&#x6784;&#x53CA;&#x76F8;&#x5173;&#x5E38;&#x6570;&#x88AB;&#x5B9A;&#x4E49;&#x5728; <code>/usr/include/elf.h</code> &#x6587;&#x4EF6;&#x91CC;, 
-&#x7ED3;&#x6784;&#x4F53; <code>Elf32_Ehdr &#x6216; Elf64_Ehdr</code> &#x5BF9;&#x5E94;&#x7740; readelf &#x6587;&#x4EF6;&#x8F93;&#x51FA;.
+ELF 文件头结构及相关常数被定义在 <code>/usr/include/elf.h</code> 文件里, 
+结构体 <code>Elf32_Ehdr 或 Elf64_Ehdr</code> 对应着 readelf 文件输出.
 </p>
 <div class="org-src-container">
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span></span></span><br><span class="line"><span class="class">{</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">char</span>	e_ident[EI_NIDENT];	<span class="comment">/* Magic number and other info */</span></span><br><span class="line">  Elf64_Half	e_type;			<span class="comment">/* Object file type */</span></span><br><span class="line">  Elf64_Half	e_machine;		<span class="comment">/* Architecture */</span></span><br><span class="line">  Elf64_Word	e_version;		<span class="comment">/* Object file version */</span></span><br><span class="line">  Elf64_Addr	e_entry;		<span class="comment">/* Entry point virtual address */</span></span><br><span class="line">  Elf64_Off	e_phoff;		<span class="comment">/* Program header table file offset */</span></span><br><span class="line">  Elf64_Off	e_shoff;		<span class="comment">/* Section header table file offset */</span></span><br><span class="line">  Elf64_Word	e_flags;		<span class="comment">/* Processor-specific flags */</span></span><br><span class="line">  Elf64_Half	e_ehsize;		<span class="comment">/* ELF header size in bytes */</span></span><br><span class="line">  Elf64_Half	e_phentsize;		<span class="comment">/* Program header table entry size */</span></span><br><span class="line">  Elf64_Half	e_phnum;		<span class="comment">/* Program header table entry count */</span></span><br><span class="line">  Elf64_Half	e_shentsize;		<span class="comment">/* Section header table entry size */</span></span><br><span class="line">  Elf64_Half	e_shnum;		<span class="comment">/* Section header table entry count */</span></span><br><span class="line">  Elf64_Half	e_shstrndx;		<span class="comment">/* Section header string table index */</span></span><br><span class="line">} Elf64_Ehdr;</span><br></pre></td></tr></table></figure>
 </div>
 <ul class="org-ul">
-<li>&#x9B54;&#x6570;:&#x7528;&#x4E8E;&#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;&#x786E;&#x8BA4;&#x662F;&#x5426;&#x52A0;&#x8F7D;&#xFF0C; 16&#x5B57;&#x8282;&#x6B63;&#x597D;&#x5BF9;&#x5E94; <code>e_dent[]</code> &#x6570;&#x7EC4;&#x5185;&#x5BB9;elf &#x6587;&#x4EF6;&#x5934;&#x9B54;&#x6570;&#x6700;&#x5F00;&#x59CB;&#x7684; 4&#x4E2A;&#x5B57;&#x8282;&#x662F;&#x6240;&#x6709; ELF &#x6587;&#x4EF6;&#x90FD;&#x5FC5;&#x987B;&#x76F8;&#x540C;&#x7684;&#x8868;&#x793A;&#x7801;,&#x5206;&#x522B;&#x4E3A; <code>0x7f,0x45,0x4c,0x46</code>,
+<li>魔数:用于操作系统确认是否加载， 16字节正好对应 <code>e_dent[]</code> 数组内容elf 文件头魔数最开始的 4个字节是所有 ELF 文件都必须相同的表示码,分别为 <code>0x7f,0x45,0x4c,0x46</code>,
 <ul class="org-ul">
-<li>&#x7B2C;&#x4E00;&#x4E2A;&#x5B57;&#x8282;&#x5BF9;&#x5E94; ASCII &#x5B57;&#x7B26;&#x91CC;&#x9762;&#x7684; DEL &#x63A7;&#x5236;&#x7B26;, &#x540E;&#x9762;3&#x5B57;&#x8282;&#x521A;&#x597D;&#x662F; ELF &#x8FD9;3&#x4E2A;&#x5B57;&#x6BCD;&#x7684; ASCII &#x7801;.&#x8FD9; 4 &#x4E2A;&#x5B57;&#x8282;&#x53C8;&#x88AB;&#x79F0;&#x4E3A; ELF &#x6587;&#x4EF6;&#x7684;&#x9B54;&#x6570;.</li>
-<li>&#x63A5;&#x4E0B;&#x6765;&#x7684;&#x5B57;&#x8282;&#x5206;&#x522B;&#x7528;&#x6765;&#x6807;&#x8BC6; ELF &#x7684;&#x6587;&#x4EF6;&#x7C7B;&#x578B;, &#x5B57;&#x8282;&#x5E8F;, &#x4E3B;&#x7248;&#x672C;&#x53F7;,&#x540E;&#x9762;&#x7684;9&#x4E2A;&#x5B57;&#x8282;ELF&#x6807;&#x51C6;&#x6CA1;&#x6709;&#x5B9A;&#x4E49;,&#x4E00;&#x822C;&#x586B;0,&#x6709;&#x4E9B;&#x5E73;&#x53F0;&#x4F1A;&#x4F7F;&#x7528;&#x8FD9;9&#x4E2A;&#x5B57;&#x8282;&#x4F5C;&#x4E3A;&#x6269;&#x5C55;&#x6807;&#x5FD7;.</li>
+<li>第一个字节对应 ASCII 字符里面的 DEL 控制符, 后面3字节刚好是 ELF 这3个字母的 ASCII 码.这 4 个字节又被称为 ELF 文件的魔数.</li>
+<li>接下来的字节分别用来标识 ELF 的文件类型, 字节序, 主版本号,后面的9个字节ELF标准没有定义,一般填0,有些平台会使用这9个字节作为扩展标志.</li>
 </ul></li>
-<li>e_type &#x6587;&#x4EF6;&#x7C7B;&#x578B; : linux &#x901A;&#x8FC7;&#x6B64;&#x503C;&#x6765;&#x5224;&#x65AD; ELF &#x7684;&#x771F;&#x6B63;&#x6587;&#x4EF6;&#x7C7B;&#x578B;,&#x800C;&#x4E0D;&#x662F;&#x901A;&#x8FC7;&#x6587;&#x4EF6;&#x7684;&#x6269;&#x5C55;&#x540D;.</li>
+<li>e_type 文件类型 : linux 通过此值来判断 ELF 的真正文件类型,而不是通过文件的扩展名.</li>
 </ul>
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
@@ -769,47 +769,47 @@ ELF &#x6587;&#x4EF6;&#x5934;&#x7ED3;&#x6784;&#x53CA;&#x76F8;&#x5173;&#x5E38;&#x6
 </colgroup>
 <thead>
 <tr>
-<th scope="col" class="org-left">&#x5E38;&#x91CF;</th>
-<th scope="col" class="org-right">&#x503C;</th>
-<th scope="col" class="org-left">&#x542B;&#x4E49;</th>
+<th scope="col" class="org-left">常量</th>
+<th scope="col" class="org-right">值</th>
+<th scope="col" class="org-left">含义</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td class="org-left">ET_REL</td>
 <td class="org-right">1</td>
-<td class="org-left">&#x53EF;&#x91CD;&#x5B9A;&#x4F4D;&#x6587;&#x4EF6;,&#x4E00;&#x822C;&#x4E3A; .o &#x6587;&#x4EF6;</td>
+<td class="org-left">可重定位文件,一般为 .o 文件</td>
 </tr>
 
 <tr>
 <td class="org-left">ET_EXEC</td>
 <td class="org-right">2</td>
-<td class="org-left">&#x53EF;&#x6267;&#x884C;&#x6587;&#x4EF6;</td>
+<td class="org-left">可执行文件</td>
 </tr>
 
 <tr>
 <td class="org-left">ET_DYN</td>
 <td class="org-right">3</td>
-<td class="org-left">&#x5171;&#x4EAB;&#x76EE;&#x6807;&#x6587;&#x4EF6;,&#x4E00;&#x822C;&#x4E3A; .so &#x6587;&#x4EF6;</td>
+<td class="org-left">共享目标文件,一般为 .so 文件</td>
 </tr>
 </tbody>
 </table>
 <ul class="org-ul">
-<li>e_machine : &#x8868;&#x793A;&#x5F53;&#x524D; ELF &#x6587;&#x4EF6;&#x5728;&#x54EA;&#x79CD;&#x673A;&#x5668;&#x5E73;&#x53F0;&#x4E0B;&#x4F7F;&#x7528;</li>
+<li>e_machine : 表示当前 ELF 文件在哪种机器平台下使用</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-orgba86dd5" class="outline-3">
-<h3 id="orgba86dd5">Section Header Table &#x6BB5;&#x8868;</h3>
-<div class="outline-text-3" id="text-orgba86dd5">
+<div id="outline-container-org375e359" class="outline-3">
+<h3 id="org375e359">Section Header Table 段表</h3>
+<div class="outline-text-3" id="text-org375e359">
 <p>
-&#x6BB5;&#x8868;&#x662F; ELF &#x6587;&#x4EF6;&#x4E2D;&#x9664;&#x4E86;&#x6587;&#x4EF6;&#x5934;&#x4EE5;&#x5916;&#x6700;&#x91CD;&#x8981;&#x7684;&#x7ED3;&#x6784;,&#x5B83;&#x63CF;&#x8FF0;&#x4E86; ELF &#x7684;&#x5404;&#x4E2A;&#x6BB5;&#x7684;&#x4FE1;&#x606F;.
-ELF &#x6587;&#x4EF6;&#x7684;&#x6BB5;&#x7ED3;&#x6784;&#x5C31;&#x662F;&#x7531;&#x6BB5;&#x8868;&#x51B3;&#x5B9A;&#x7684;,&#x7F16;&#x8BD1;&#x5668;,&#x94FE;&#x63A5;&#x5668;&#x548C;&#x88C5;&#x8F7D;&#x5668;&#x90FD;&#x662F;&#x4F9D;&#x9760;&#x6BB5;&#x8868;&#x6765;&#x5B9A;&#x4F4D;&#x548C;&#x8BBF;&#x95EE;&#x5404;&#x4E2A;&#x6BB5;&#x7684;&#x5C5E;&#x6027;.
-&#x6BB5;&#x8868;&#x5728; ELF &#x6587;&#x4EF6;&#x4E2D;&#x7684;&#x4F4D;&#x7F6E;&#x7531; ELF &#x6587;&#x4EF6;&#x5934;&#x7684; <code>e_shoff</code> &#x6210;&#x5458;&#x51B3;&#x5B9A;.
+段表是 ELF 文件中除了文件头以外最重要的结构,它描述了 ELF 的各个段的信息.
+ELF 文件的段结构就是由段表决定的,编译器,链接器和装载器都是依靠段表来定位和访问各个段的属性.
+段表在 ELF 文件中的位置由 ELF 文件头的 <code>e_shoff</code> 成员决定.
 </p>
 
 <p>
-&#x4F7F;&#x7528;&#x547D;&#x4EE4; <code>readelf -S hello.o</code> &#x6765;&#x663E;&#x793A;&#x5B8C;&#x6574;&#x7684;&#x6BB5;&#x8868;.
+使用命令 <code>readelf -S hello.o</code> 来显示完整的段表.
 </p>
 <pre class="example">
 cec@ubuntu:~/exercise/linux/linker_loader$ readelf -S SimpleSection.o
@@ -851,20 +851,20 @@ Key to Flags:
   l (large), p (processor specific)</pre>
 
 <p>
-&#x6BB5;&#x8868;&#x7684;&#x7ED3;&#x6784;&#x6BD4;&#x8F83;&#x7B80;&#x5355;,&#x5B83;&#x662F;&#x4E00;&#x4E2A;&#x4EE5; <code>Elf32/64_Shdr</code> &#x7ED3;&#x6784;&#x4F53;&#x4E3A;&#x5143;&#x7D20;&#x7684;&#x6570;&#x7EC4;,&#x6570;&#x7EC4;&#x5143;&#x7D20;&#x7684;&#x4E2A;&#x6570;&#x7B49;&#x4E8E;&#x6BB5;&#x7684;&#x4E2A;&#x6570;,&#x6BCF;&#x4E2A; <code>Elf32/64_Shdr</code> &#x7ED3;&#x6784;&#x5BF9;&#x5E94;&#x4E00;&#x4E2A;&#x6BB5;.
-&#x6240;&#x4EE5; <code>Elf32/64_Shdr</code> &#x53C8;&#x88AB;&#x79F0;&#x4E3A;&#x6BB5;&#x63CF;&#x8FF0;&#x7B26;.ELF &#x6BB5;&#x8868;&#x7684;&#x8FD9;&#x4E2A;&#x6570;&#x7EC4;&#x7B2C;&#x4E00;&#x4E2A;&#x5143;&#x7D20;&#x662F;&#x65E0;&#x6548;&#x7684;&#x6BB5;&#x63CF;&#x8FF0;&#x7B26;,&#x5B83;&#x7684;&#x7C7B;&#x578B;&#x4E3A;&quot;NULL&quot;,&#x9664;&#x6B64;&#x4E4B;&#x5916;&#x6BCF;&#x4E2A;&#x6BB5;&#x63CF;&#x8FF0;&#x7B26;&#x90FD;&#x5BF9;&#x5E94;&#x4E00;&#x4E2A;&#x6BB5;. 
+段表的结构比较简单,它是一个以 <code>Elf32/64_Shdr</code> 结构体为元素的数组,数组元素的个数等于段的个数,每个 <code>Elf32/64_Shdr</code> 结构对应一个段.
+所以 <code>Elf32/64_Shdr</code> 又被称为段描述符.ELF 段表的这个数组第一个元素是无效的段描述符,它的类型为"NULL",除此之外每个段描述符都对应一个段. 
 </p>
 <div class="org-src-container">
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span></span></span><br><span class="line"><span class="class">{</span></span><br><span class="line">  Elf64_Word	sh_name;		<span class="comment">/* Section name (string tbl index) */</span></span><br><span class="line">  Elf64_Word	sh_type;		<span class="comment">/* Section type */</span></span><br><span class="line">  Elf64_Xword	sh_flags;		<span class="comment">/* Section flags */</span></span><br><span class="line">  Elf64_Addr	sh_addr;		<span class="comment">/* Section virtual addr at execution */</span></span><br><span class="line">  Elf64_Off	sh_offset;		<span class="comment">/* Section file offset */</span></span><br><span class="line">  Elf64_Xword	sh_size;		<span class="comment">/* Section size in bytes */</span></span><br><span class="line">  Elf64_Word	sh_link;		<span class="comment">/* Link to another section */</span></span><br><span class="line">  Elf64_Word	sh_info;		<span class="comment">/* Additional section information */</span></span><br><span class="line">  Elf64_Xword	sh_addralign;		<span class="comment">/* Section alignment */</span></span><br><span class="line">  Elf64_Xword	sh_entsize;		<span class="comment">/* Entry size if section holds table */</span></span><br><span class="line">} Elf64_Shdr;</span><br></pre></td></tr></table></figure>
 </div>
 
 <p>
-&#x7531;&#x6B64;&#x53EF;&#x4EE5;&#x5F97;&#x5230;&#x6587;&#x4EF6;&#x5168;&#x5C40;&#x89C6;&#x56FE;:
+由此可以得到文件全局视图:
 </p>
-<img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--linker_load/elf_file.jpg?raw=true" alt="elf_file.jpg">- &#x6587;&#x4EF6;&#x7684;&#x5927;&#x5C0F;&#x6B63;&#x597D;&#x5B8C;&#x5168;&#x543B;&#x5408;
+<img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--linker_load/elf_file.jpg?raw=true" alt="elf_file.jpg">- 文件的大小正好完全吻合
 
 <p>
-&#x6BB5;&#x7684;&#x540D;&#x5B57;&#x4E0D;&#x80FD;&#x771F;&#x6B63;&#x7684;&#x8868;&#x793A;&#x6BB5;&#x7684;&#x7C7B;&#x578B;,&#x5BF9;&#x4E8E;&#x7F16;&#x8BD1;&#x5668;&#x548C;&#x94FE;&#x63A5;&#x5668;&#x6765;&#x8BF4;,&#x4E3B;&#x8981;&#x51B3;&#x5B9A;&#x6BB5;&#x7684;&#x5C5E;&#x6027;&#x7684;&#x662F;&#x6BB5;&#x7684;&#x7C7B;&#x578B;(sh_type)&#x548C;&#x6BB5;&#x7684;&#x6807;&#x5FD7;&#x4F4D;(sh_flags),&#x6BB5;&#x7684;&#x7C7B;&#x578B;&#x76F8;&#x5173;&#x5E38;&#x91CF;&#x4EE5; SHT_ &#x5F00;&#x5934;.
+段的名字不能真正的表示段的类型,对于编译器和链接器来说,主要决定段的属性的是段的类型(sh_type)和段的标志位(sh_flags),段的类型相关常量以 SHT_ 开头.
 </p>
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
@@ -878,88 +878,88 @@ Key to Flags:
 </colgroup>
 <thead>
 <tr>
-<th scope="col" class="org-left">&#x5E38;&#x91CF;</th>
-<th scope="col" class="org-right">&#x503C;</th>
-<th scope="col" class="org-left">&#x542B;&#x4E49;</th>
+<th scope="col" class="org-left">常量</th>
+<th scope="col" class="org-right">值</th>
+<th scope="col" class="org-left">含义</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td class="org-left">SHT_NULL</td>
 <td class="org-right">0</td>
-<td class="org-left">&#x65E0;&#x6548;&#x6BB5;</td>
+<td class="org-left">无效段</td>
 </tr>
 
 <tr>
 <td class="org-left">SHT_PROGBITS</td>
 <td class="org-right">1</td>
-<td class="org-left">&#x7A0B;&#x5E8F;&#x6BB5;. &#x4EE3;&#x7801;&#x6BB5;,&#x6570;&#x636E;&#x6BB5;&#x90FD;&#x662F;&#x8FD9;&#x79CD;&#x7C7B;&#x578B;</td>
+<td class="org-left">程序段. 代码段,数据段都是这种类型</td>
 </tr>
 
 <tr>
 <td class="org-left">SHT_SYMTAB</td>
 <td class="org-right">2</td>
-<td class="org-left">&#x7B26;&#x53F7;&#x8868;</td>
+<td class="org-left">符号表</td>
 </tr>
 
 <tr>
 <td class="org-left">SHT_STRTAB</td>
 <td class="org-right">3</td>
-<td class="org-left">&#x5B57;&#x7B26;&#x4E32;&#x8868;</td>
+<td class="org-left">字符串表</td>
 </tr>
 
 <tr>
 <td class="org-left">SHT_RELA</td>
 <td class="org-right">4</td>
-<td class="org-left">&#x91CD;&#x5B9A;&#x4F4D;&#x8868;</td>
+<td class="org-left">重定位表</td>
 </tr>
 
 <tr>
 <td class="org-left">SHT_HASH</td>
 <td class="org-right">5</td>
-<td class="org-left">&#x7B26;&#x53F7;&#x8868;&#x7684;&#x54C8;&#x5E0C;&#x8868;</td>
+<td class="org-left">符号表的哈希表</td>
 </tr>
 
 <tr>
 <td class="org-left">SHT_DYNMAIC</td>
 <td class="org-right">6</td>
-<td class="org-left">&#x52A8;&#x6001;&#x94FE;&#x63A5;&#x4FE1;&#x606F;</td>
+<td class="org-left">动态链接信息</td>
 </tr>
 
 <tr>
 <td class="org-left">SHT_NOTE</td>
 <td class="org-right">7</td>
-<td class="org-left">&#x63D0;&#x793A;&#x4FE1;&#x606F;</td>
+<td class="org-left">提示信息</td>
 </tr>
 
 <tr>
 <td class="org-left">SHT_NOTEBITS</td>
 <td class="org-right">8</td>
-<td class="org-left">&#x8868;&#x793A;&#x8BE5;&#x6BB5;&#x5728;&#x6587;&#x4EF6;&#x4E2D;&#x6CA1;&#x6709;&#x5185;&#x5BB9;,&#x6BD4;&#x5982; .bss &#x6BB5;</td>
+<td class="org-left">表示该段在文件中没有内容,比如 .bss 段</td>
 </tr>
 
 <tr>
 <td class="org-left">SHT_REL</td>
 <td class="org-right">9</td>
-<td class="org-left">&#x91CD;&#x5B9A;&#x4F4D;&#x4FE1;&#x606F;</td>
+<td class="org-left">重定位信息</td>
 </tr>
 
 <tr>
 <td class="org-left">SHT_SHLIB</td>
 <td class="org-right">10</td>
-<td class="org-left">&#x4FDD;&#x7559;</td>
+<td class="org-left">保留</td>
 </tr>
 
 <tr>
 <td class="org-left">SHT_DNYSYM</td>
 <td class="org-right">11</td>
-<td class="org-left">&#x52A8;&#x6001;&#x94FE;&#x63A5;&#x7B26;&#x53F7;&#x8868;</td>
+<td class="org-left">动态链接符号表</td>
 </tr>
 </tbody>
 </table>
 
 <p>
-&#x6BB5;&#x7684;&#x6807;&#x5FD7;&#x4F4D;&#x8868;&#x793A;&#x8BE5;&#x6BB5;&#x5728;&#x8FDB;&#x7A0B;&#x865A;&#x62DF;&#x5730;&#x5740;&#x7A7A;&#x95F4;&#x4E2D;&#x7684;&#x5C5E;&#x6027;,&#x6BD4;&#x5982;&#x662F;&#x5426;&#x53EF;&#x5199;,&#x53EF;&#x6267;&#x884C;,&#x76F8;&#x5173;&#x5E38;&#x91CF;&#x4EE5; SHF_ &#x5F00;&#x5934;.
+段的标志位表示该段在进程虚拟地址空间中的属性,比如是否可写,可执行,相关常量以 SHF_ 开头.
 </p>
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
@@ -973,34 +973,34 @@ Key to Flags:
 </colgroup>
 <thead>
 <tr>
-<th scope="col" class="org-left">&#x5E38;&#x91CF;</th>
-<th scope="col" class="org-right">&#x503C;</th>
-<th scope="col" class="org-left">&#x542B;&#x4E49;</th>
+<th scope="col" class="org-left">常量</th>
+<th scope="col" class="org-right">值</th>
+<th scope="col" class="org-left">含义</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td class="org-left">SHF_WRITE</td>
 <td class="org-right">1</td>
-<td class="org-left">&#x53EF;&#x5199;</td>
+<td class="org-left">可写</td>
 </tr>
 
 <tr>
 <td class="org-left">SHF_ALLOC</td>
 <td class="org-right">2</td>
-<td class="org-left">&#x5728;&#x8FDB;&#x7A0B;&#x7A7A;&#x95F4;&#x4E2D;&#x9700;&#x8981;&#x5206;&#x914D;&#x7A7A;&#x95F4;.&#x6BD4;&#x5982;&#x4EE3;&#x7801;&#x6BB5;,&#x6570;&#x636E;&#x6BB5;,.bss &#x6BB5;</td>
+<td class="org-left">在进程空间中需要分配空间.比如代码段,数据段,.bss 段</td>
 </tr>
 
 <tr>
 <td class="org-left">SHF_EXECINSTR</td>
 <td class="org-right">4</td>
-<td class="org-left">&#x53EF;&#x6267;&#x884C;,&#x4E00;&#x822C;&#x6307;&#x4EE3;&#x7801;&#x6BB5;</td>
+<td class="org-left">可执行,一般指代码段</td>
 </tr>
 </tbody>
 </table>
 
 <p>
-<code>sh_link , sh_info</code> &#x4EE3;&#x8868;&#x6BB5;&#x7684;&#x94FE;&#x63A5;&#x4FE1;&#x606F;&#x3002;
+<code>sh_link , sh_info</code> 代表段的链接信息。
 </p>
 
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
@@ -1023,26 +1023,26 @@ Key to Flags:
 <tbody>
 <tr>
 <td class="org-left">SHT_DYNAMIC</td>
-<td class="org-left">&#x8BE5;&#x6BB5;&#x6240;&#x4F7F;&#x7528;&#x7684;&#x5B57;&#x7B26;&#x4E32;&#x8868;&#x5728;&#x6BB5;&#x8868;&#x4E2D;&#x7684;&#x4E0B;&#x6807;</td>
+<td class="org-left">该段所使用的字符串表在段表中的下标</td>
 <td class="org-right">0</td>
 </tr>
 
 <tr>
 <td class="org-left">SHT_HASH</td>
-<td class="org-left">&#x8BE5;&#x6BB5;&#x6240;&#x4F7F;&#x7528;&#x7684;&#x7B26;&#x53F7;&#x8868;&#x5728;&#x6BB5;&#x8868;&#x4E2D;&#x7684;&#x4E0B;&#x6807;</td>
+<td class="org-left">该段所使用的符号表在段表中的下标</td>
 <td class="org-right">0</td>
 </tr>
 
 <tr>
 <td class="org-left">SH_REL , SH_RELA</td>
-<td class="org-left">&#x8BE5;&#x6BB5;&#x6240;&#x4F7F;&#x7528;&#x7684;&#x76F8;&#x5E94;&#x7B26;&#x53F7;&#x8868;&#x5728;&#x6BB5;&#x8868;&#x4E2D;&#x7684;&#x4E0B;&#x6807;</td>
-<td class="org-right">&#x8BE5;&#x91CD;&#x5B9A;&#x4F4D;&#x8868;&#x6240;&#x4F5C;&#x7528;&#x7684;&#x6BB5;&#x5728;&#x6BB5;&#x8868;&#x4E2D;&#x7684;&#x4E0B;&#x6807;</td>
+<td class="org-left">该段所使用的相应符号表在段表中的下标</td>
+<td class="org-right">该重定位表所作用的段在段表中的下标</td>
 </tr>
 
 <tr>
 <td class="org-left">SHT_SYMTAB,SHT_DYNSYM</td>
-<td class="org-left">&#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;&#x76F8;&#x5173;&#x7684;</td>
-<td class="org-right">&#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;&#x76F8;&#x5173;&#x7684;</td>
+<td class="org-left">操作系统相关的</td>
+<td class="org-right">操作系统相关的</td>
 </tr>
 
 <tr>
@@ -1054,73 +1054,73 @@ Key to Flags:
 </table>
 </div>
 </div>
-<div id="outline-container-org3860e03" class="outline-3">
-<h3 id="org3860e03">Relocation Table(&#x91CD;&#x5B9A;&#x4F4D;&#x8868;)</h3>
-<div class="outline-text-3" id="text-org3860e03">
+<div id="outline-container-org79ef349" class="outline-3">
+<h3 id="org79ef349">Relocation Table(重定位表)</h3>
+<div class="outline-text-3" id="text-org79ef349">
 <p>
-&#x94FE;&#x63A5;&#x5668;&#x5728;&#x5904;&#x7406;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x65F6;,&#x987B;&#x8981;&#x5BF9;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x4E2D;&#x67D0;&#x4E9B;&#x90E8;&#x4F4D;&#x8FDB;&#x884C;&#x91CD;&#x5B9A;&#x4F4D;,&#x5373;&#x4EE3;&#x7801;&#x6BB5;&#x548C;&#x6570;&#x636E;&#x6BB5;&#x4E2D;&#x90A3;&#x4E9B;&#x7EDD;&#x5BF9;&#x5730;&#x5740;&#x7684;&#x5F15;&#x7528;&#x4F4D;&#x7F6E;.
-&#x8FD9;&#x4E9B;&#x91CD;&#x5B9A;&#x4F4D;&#x7684;&#x4FE1;&#x606F;&#x90FD;&#x8BB0;&#x5F55;&#x5728; ELF &#x6587;&#x4EF6;&#x7684;&#x91CD;&#x5B9A;&#x4F4D;&#x8868;&#x91CC;&#x9762;,
-&#x5BF9;&#x4E8E;&#x6BCF;&#x4E2A;&#x9700;&#x8981;&#x91CD;&#x5B9A;&#x4F4D;&#x7684;&#x4EE3;&#x7801;&#x6BB5;&#x6216;&#x6570;&#x636E;&#x6BB5;,&#x90FD;&#x4F1A;&#x6709;&#x4E00;&#x4E2A;&#x76F8;&#x5E94;&#x7684;&#x91CD;&#x5B9A;&#x4F4D;&#x8868;.
-&#x6BD4;&#x5982; &quot;.rela.text&quot; &#x5C31;&#x662F;&#x9488;&#x5BF9; &quot;.text&quot; &#x6BB5;&#x7684;&#x91CD;&#x5B9A;&#x4F4D;&#x8868;.
+链接器在处理目标文件时,须要对目标文件中某些部位进行重定位,即代码段和数据段中那些绝对地址的引用位置.
+这些重定位的信息都记录在 ELF 文件的重定位表里面,
+对于每个需要重定位的代码段或数据段,都会有一个相应的重定位表.
+比如 ".rela.text" 就是针对 ".text" 段的重定位表.
 </p>
 </div>
 </div>
-<div id="outline-container-orgd48bf0a" class="outline-3">
-<h3 id="orgd48bf0a">String Table(&#x5B57;&#x7B26;&#x4E32;&#x8868;)</h3>
-<div class="outline-text-3" id="text-orgd48bf0a">
+<div id="outline-container-org0d0577d" class="outline-3">
+<h3 id="org0d0577d">String Table(字符串表)</h3>
+<div class="outline-text-3" id="text-org0d0577d">
 <p>
-&#x4EE3;&#x7801;&#x4E2D;&#x7684;&#x7B26;&#x53F7;(&#x51FD;&#x6570;&#x540D;&#x3001;&#x53D8;&#x91CF;&#x540D;&#x7B49;)&#x662F;&#x88AB;&#x96C6;&#x4E2D;&#x653E;&#x5230;&#x4E00;&#x4E2A;&#x8868;,&#x7136;&#x540E;&#x4F7F;&#x7528;&#x5B57;&#x7B26;&#x4E32;&#x5728;&#x8868;&#x4E2D;&#x7684;&#x504F;&#x79FB;&#x518D;&#x5F15;&#x7528;&#x5B57;&#x7B26;&#x4E32;.
-&#x901A;&#x8FC7;&#x8FD9;&#x79CD;&#x65B9;&#x6CD5;,&#x5728;ELF &#x6587;&#x4EF6;&#x4E2D;&#x5F15;&#x7528;&#x5B57;&#x7B26;&#x4E32;&#x53EA;&#x9700;&#x7ED9;&#x51FA;&#x6570;&#x5B57;&#x4E0B;&#x6807;&#x5373;&#x53EF;,&#x4E0D;&#x7528;&#x8003;&#x8651;&#x5B57;&#x7B26;&#x4E32;&#x957F;&#x5EA6;&#x7684;&#x95EE;&#x9898;.
-&#x4E00;&#x822C;&#x5B57;&#x7B26;&#x4E32;&#x8868;&#x5728; ELF &#x6587;&#x4EF6;&#x4E2D;&#x4E5F;&#x4EE5;&#x6BB5;&#x7684;&#x5F62;&#x5F0F;&#x4FDD;&#x5B58;,&#x5E38;&#x89C1;&#x7684;&#x6BB5;&#x540D;&#x4E3A; &quot;.strtab&quot; &#x6216; &quot;.shstrtab &quot;.
-&#x8FD9;&#x4E24;&#x4E2A;&#x5B57;&#x7B26;&#x4E32;&#x8868;&#x5206;&#x522B;&#x4E3A; <b>&#x5B57;&#x7B26;&#x4E32;&#x8868;(String Table)</b> &#x548C; <b>&#x6BB5;&#x8868;&#x5B57;&#x7B26;&#x4E32;&#x8868;(Section Header String Table)</b>.
-&#x5B57;&#x7B26;&#x4E32;&#x8868;&#x7528;&#x6765;&#x4FDD;&#x5B58;&#x7B26;&#x53F7;&#x8868;&#x4E2D;&#x7684;&#x5B57;&#x7B26;&#x4E32;,&#x6BB5;&#x8868;&#x5B57;&#x7B26;&#x4E32;&#x7528;&#x6765;&#x4FDD;&#x5B58;&#x6BB5;&#x8868;&#x4E2D;&#x7528;&#x5230;&#x7684;&#x5B57;&#x7B26;&#x4E32;(&#x6BD4;&#x5982;&#x6BB5;&#x540D;).
+代码中的符号(函数名、变量名等)是被集中放到一个表,然后使用字符串在表中的偏移再引用字符串.
+通过这种方法,在ELF 文件中引用字符串只需给出数字下标即可,不用考虑字符串长度的问题.
+一般字符串表在 ELF 文件中也以段的形式保存,常见的段名为 ".strtab" 或 ".shstrtab ".
+这两个字符串表分别为 <b>字符串表(String Table)</b> 和 <b>段表字符串表(Section Header String Table)</b>.
+字符串表用来保存符号表中的字符串,段表字符串用来保存段表中用到的字符串(比如段名).
 </p>
 <ul class="org-ul">
-<li>&#x5B9E;&#x9645;&#x4EE3;&#x7801;&#x4E2D;&#x7528;&#x5230;&#x7684;&#x5B57;&#x7B26;&#x4E32;&#x662F;&#x5B58;&#x653E;&#x4E8E;&#x53EA;&#x8BFB;&#x6570;&#x636E;&#x6BB5;(.rodata)&#x4E2D;&#x7684;!</li>
+<li>实际代码中用到的字符串是存放于只读数据段(.rodata)中的!</li>
 </ul>
 </div>
 </div>
 </div>
-<div id="outline-container-orgf88579d" class="outline-2">
-<h2 id="orgf88579d">&#x94FE;&#x63A5;&#x7684;&#x63A5;&#x53E3;&#x2013;&#x7B26;&#x53F7;</h2>
-<div class="outline-text-2" id="text-orgf88579d">
+<div id="outline-container-orge56bf59" class="outline-2">
+<h2 id="orge56bf59">链接的接口–符号</h2>
+<div class="outline-text-2" id="text-orge56bf59">
 <p>
-&#x5728;&#x94FE;&#x63A5;&#x4E2D;,&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x4E4B;&#x95F4;&#x7684;&#x76F8;&#x4E92;&#x62FC;&#x5408;&#x5B9E;&#x9645;&#x4E0A;&#x662F;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x4E4B;&#x95F4;&#x5BF9;&#x5730;&#x5740;&#x7684;&#x5F15;&#x7528;, &#x5373;&#x5BF9;&#x51FD;&#x6570;&#x548C;&#x53D8;&#x91CF;&#x7684;&#x5730;&#x5740;&#x7684;&#x5F15;&#x7528;. 
-&#x5728;&#x94FE;&#x63A5;&#x4E2D;, &#x6211;&#x4EEC;&#x5C06;&#x51FD;&#x6570;&#x548C;&#x53D8;&#x91CF;&#x7EDF;&#x79F0;&#x4E3A; <b>&#x7B26;&#x53F7;(Symbol)</b>,&#x51FD;&#x6570;&#x540D;&#x548C;&#x53D8;&#x91CF;&#x540D;&#x5C31;&#x662F; <b>&#x7B26;&#x53F7;&#x540D;(Symbol Name)</b>.
+在链接中,目标文件之间的相互拼合实际上是目标文件之间对地址的引用, 即对函数和变量的地址的引用. 
+在链接中, 我们将函数和变量统称为 <b>符号(Symbol)</b>,函数名和变量名就是 <b>符号名(Symbol Name)</b>.
 </p>
 
 <p>
-&#x6211;&#x4EEC;&#x53EF;&#x4EE5;&#x5C06;&#x7B26;&#x53F7;&#x770B;&#x4F5C;&#x662F;&#x94FE;&#x63A5;&#x4E2D;&#x7684;&#x7C98;&#x5408;&#x5242;,&#x6574;&#x4E2A;&#x94FE;&#x63A5;&#x8FC7;&#x7A0B;&#x6B63;&#x662F;&#x57FA;&#x4E8E;&#x7B26;&#x53F7;&#x624D;&#x80FD;&#x591F;&#x6B63;&#x786E;&#x5B8C;&#x6210;.
-&#x94FE;&#x63A5;&#x8FC7;&#x7A0B;&#x4E2D;&#x5F88;&#x5173;&#x952E;&#x7684;&#x4E00;&#x90E8;&#x5206;&#x5C31;&#x662F;&#x7B26;&#x53F7;&#x7684;&#x7BA1;&#x7406;,&#x6BCF;&#x4E00;&#x4E2A;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x90FD;&#x4F1A;&#x6709;&#x4E00;&#x4E2A;&#x76F8;&#x5E94;&#x7684; <b>&#x7B26;&#x53F7;&#x8868;(Symbol Table)</b>,&#x8FD9;&#x4E2A;&#x8868;&#x91CC;&#x9762;&#x8BB0;&#x5F55;&#x4E86;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x4E2D;&#x6240;&#x7528;&#x5230;&#x7684;&#x6240;&#x6709;&#x7B26;&#x53F7;.
+我们可以将符号看作是链接中的粘合剂,整个链接过程正是基于符号才能够正确完成.
+链接过程中很关键的一部分就是符号的管理,每一个目标文件都会有一个相应的 <b>符号表(Symbol Table)</b>,这个表里面记录了目标文件中所用到的所有符号.
 </p>
 
 <p>
-&#x6BCF;&#x4E2A;&#x5B9A;&#x4E49;&#x7684;&#x7B26;&#x53F7;&#x6709;&#x4E00;&#x4E2A;&#x5BF9;&#x5E94;&#x7684;&#x503C;,&#x53EB;&#x505A;&#x7B26;&#x53F7;&#x503C;,&#x5BF9;&#x4E8E;&#x53D8;&#x91CF;&#x548C;&#x51FD;&#x6570;&#x6765;&#x8BF4;,&#x7B26;&#x53F7;&#x503C;&#x5C31;&#x662F;&#x5B83;&#x4EEC;&#x7684;&#x5730;&#x5740;.
+每个定义的符号有一个对应的值,叫做符号值,对于变量和函数来说,符号值就是它们的地址.
 </p>
 
 <p>
-&#x9664;&#x4E86;&#x51FD;&#x6570;&#x548C;&#x53D8;&#x91CF;&#x4E4B;&#x5916;,&#x8FD8;&#x5B58;&#x5728;&#x5176;&#x4ED6;&#x51E0;&#x79CD;&#x4E0D;&#x5E38;&#x7528;&#x5230;&#x7684;&#x7B26;&#x53F7;.&#x5C06;&#x7B26;&#x53F7;&#x8868;&#x4E2D;&#x6240;&#x6709;&#x7684;&#x7B26;&#x53F7;&#x8FDB;&#x884C;&#x5206;&#x7C7B;,&#x5B83;&#x4EEC;&#x6709;&#x53EF;&#x80FD;&#x662F;&#x4E0B;&#x9762;&#x8FD9;&#x4E9B;&#x7C7B;&#x578B;&#x4E2D;&#x7684;&#x4E00;&#x79CD;:
+除了函数和变量之外,还存在其他几种不常用到的符号.将符号表中所有的符号进行分类,它们有可能是下面这些类型中的一种:
 </p>
 <ul class="org-ul">
-<li>&#x5B9A;&#x4E49;&#x5728;&#x672C;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x7684;&#x5168;&#x5C40;&#x7B26;&#x53F7;, &#x53EF;&#x4EE5;&#x88AB;&#x5176;&#x4ED6;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x5F15;&#x7528;.&#x6BD4;&#x5982;&#x51FD;&#x6570;&#x540D;,&#x5168;&#x5C40;&#x53D8;&#x91CF;&#x540D;.</li>
-<li>&#x5728;&#x672C;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x4E2D;&#x5F15;&#x7528;&#x7684;&#x5168;&#x5C40;&#x7B26;&#x53F7;,&#x5374;&#x6CA1;&#x6709;&#x5B9A;&#x4E49;&#x5728;&#x672C;&#x76EE;&#x6807;&#x6587;&#x4EF6;,&#x8FD9;&#x4E00;&#x822C;&#x53EB;&#x505A; <b>&#x5916;&#x90E8;&#x7B26;&#x53F7;(External Symbol)</b>,&#x4E5F;&#x5C31;&#x662F;&#x7B26;&#x53F7;&#x5F15;&#x7528;.&#x6BD4;&#x5982;&#x5916;&#x90E8;&#x51FD;&#x6570;&#x540D;,&#x5916;&#x90E8;&#x53D8;&#x91CF;&#x540D;.</li>
-<li>&#x6BB5;&#x540D;,&#x8FD9;&#x79CD;&#x7B26;&#x53F7;&#x7531;&#x7F16;&#x8BD1;&#x5668;&#x4EA7;&#x751F;,&#x5B83;&#x7684;&#x503C;&#x5C31;&#x662F;&#x8BE5;&#x6BB5;&#x7684;&#x8D77;&#x59CB;&#x5730;&#x5740;.</li>
-<li>&#x5C40;&#x90E8;&#x7B26;&#x53F7;,&#x8FD9;&#x7C7B;&#x7B26;&#x53F7;&#x53EA;&#x5728;&#x7F16;&#x8BD1;&#x5355;&#x5143;&#x5185;&#x90E8;&#x53EF;&#x89C1;.&#x6BD4;&#x5982;&#x5C40;&#x90E8;&#x53D8;&#x91CF;,&#x5185;&#x90E8;&#x9759;&#x6001;&#x53D8;&#x91CF;,&#x5185;&#x90E8;&#x5168;&#x5C40;&#x53D8;&#x91CF;.&#x8C03;&#x8BD5;&#x5668;&#x53EF;&#x4EE5;&#x4F7F;&#x7528;&#x8FD9;&#x4E9B;&#x7B26;&#x53F7;&#x6765;&#x5206;&#x6790;&#x7A0B;&#x5E8F;&#x6216;&#x5D29;&#x6E83;&#x65F6;&#x7684;&#x6838;&#x5FC3;&#x8F6C;&#x50A8;&#x6587;&#x4EF6;
+<li>定义在本目标文件的全局符号, 可以被其他目标文件引用.比如函数名,全局变量名.</li>
+<li>在本目标文件中引用的全局符号,却没有定义在本目标文件,这一般叫做 <b>外部符号(External Symbol)</b>,也就是符号引用.比如外部函数名,外部变量名.</li>
+<li>段名,这种符号由编译器产生,它的值就是该段的起始地址.</li>
+<li>局部符号,这类符号只在编译单元内部可见.比如局部变量,内部静态变量,内部全局变量.调试器可以使用这些符号来分析程序或崩溃时的核心转储文件
 <ul class="org-ul">
-<li>&#x8FD9;&#x4E9B;&#x5C40;&#x90E8;&#x7B26;&#x53F7;&#x5BF9;&#x4E8E;&#x94FE;&#x63A5;&#x8FC7;&#x7A0B;&#x6CA1;&#x6709;&#x4F5C;&#x7528;,&#x8FDE;&#x63A5;&#x5668;&#x5F80;&#x5F80;&#x4E5F;&#x5FFD;&#x7565;&#x5B83;&#x4EEC;.</li>
+<li>这些局部符号对于链接过程没有作用,连接器往往也忽略它们.</li>
 </ul></li>
-<li>&#x884C;&#x53F7;&#x4FE1;&#x606F;,&#x5373;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x6307;&#x4EE4;&#x4E0E;&#x4E0E;&#x6E90;&#x4EE3;&#x7801;&#x4E2D;&#x4EE3;&#x7801;&#x884C;&#x7684;&#x5BF9;&#x5E94;&#x5173;&#x7CFB;,&#x5B83;&#x4E5F;&#x662F;&#x53EF;&#x9009;&#x7684;.</li>
+<li>行号信息,即目标文件指令与与源代码中代码行的对应关系,它也是可选的.</li>
 </ul>
 
 <p>
-&#x94FE;&#x63A5;&#x8FC7;&#x7A0B;&#x4E2D;,&#x6700;&#x9700;&#x8981;&#x5173;&#x5FC3;&#x7684;&#x5C31;&#x662F;&#x5168;&#x5C40;&#x7B26;&#x53F7;&#x7684;&#x76F8;&#x4E92;&#x7C98;&#x5408;, &#x5C40;&#x90E8;&#x7B26;&#x53F7;,&#x6BB5;&#x540D;,&#x884C;&#x53F7;&#x7B49;&#x90FD;&#x662F;&#x6B21;&#x8981;&#x7684;,&#x5B83;&#x4EEC; <b>&#x5BF9;&#x4E8E;&#x5176;&#x4ED6;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x6765;&#x8BF4;&#x662F;&#x4E0D;&#x53EF;&#x89C1;&#x7684;</b>,&#x5728;&#x94FE;&#x63A5;&#x8FC7;&#x7A0B;&#x4E2D;&#x4E5F;&#x662F;&#x65E0;&#x5173;&#x7D27;&#x8981;&#x7684;.
+链接过程中,最需要关心的就是全局符号的相互粘合, 局部符号,段名,行号等都是次要的,它们 <b>对于其他目标文件来说是不可见的</b>,在链接过程中也是无关紧要的.
 </p>
 
 <p>
-&#x7B26;&#x53F7;&#x8868;&#x7684;&#x67E5;&#x770B;&#x4F7F;&#x7528;&#x547D;&#x4EE4; <code>readelf -s hello.o</code>
+符号表的查看使用命令 <code>readelf -s hello.o</code>
 </p>
 <pre class="example">
-Symbol table &apos;.symtab&apos; contains 17 entries:
+Symbol table '.symtab' contains 17 entries:
    Num:    Value          Size Type    Bind   Vis      Ndx Name
      0: 0000000000000000     0 NOTYPE  LOCAL  DEFAULT  UND 
      1: 0000000000000000     0 FILE    LOCAL  DEFAULT  ABS SimpleSection.c
@@ -1140,28 +1140,28 @@ Symbol table &apos;.symtab&apos; contains 17 entries:
     15: 0000000000000000     0 NOTYPE  GLOBAL DEFAULT  UND printf
     16: 0000000000000024    51 FUNC    GLOBAL DEFAULT    1 main</pre>
 </div>
-<div id="outline-container-org3b91644" class="outline-3">
-<h3 id="org3b91644">&#x7B26;&#x53F7;&#x8868;&#x7684;&#x7ED3;&#x6784;</h3>
-<div class="outline-text-3" id="text-org3b91644">
+<div id="outline-container-orgfff8f93" class="outline-3">
+<h3 id="orgfff8f93">符号表的结构</h3>
+<div class="outline-text-3" id="text-orgfff8f93">
 <p>
-&#x7B26;&#x53F7;&#x8868;&#x5F80;&#x5F80;&#x662F;&#x6587;&#x4EF6;&#x4E2D;&#x7684;&#x4E00;&#x4E2A;&#x6BB5;,&#x6BB5;&#x540D;&#x4E00;&#x822C;&#x53EB;&quot;.symtab&quot;,&#x5B83;&#x662F;&#x7531;  <code>Elf32/64_Sym</code> &#x7ED3;&#x6784;&#x7EC4;&#x6210;&#x7684;&#x6570;&#x7EC4;,&#x6BCF;&#x4E2A;&#x7ED3;&#x6784;&#x5BF9;&#x5E94;&#x4E00;&#x4E2A;&#x7B26;&#x53F7;.
+符号表往往是文件中的一个段,段名一般叫".symtab",它是由  <code>Elf32/64_Sym</code> 结构组成的数组,每个结构对应一个符号.
 </p>
 <div class="org-src-container">
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span></span></span><br><span class="line"><span class="class">{</span></span><br><span class="line">  Elf64_Word	st_name;		<span class="comment">/* Symbol name (string tbl index) */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">char</span>	st_info;		<span class="comment">/* Symbol type and binding */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">char</span> st_other;		<span class="comment">/* Symbol visibility */</span></span><br><span class="line">  Elf64_Section	st_shndx;		<span class="comment">/* Section index */</span></span><br><span class="line">  Elf64_Addr	st_value;		<span class="comment">/* Symbol value */</span></span><br><span class="line">  Elf64_Xword	st_size;		<span class="comment">/* Symbol size */</span></span><br><span class="line">} </span><br></pre></td></tr></table></figure>
 </div>
 <p>
-&#x5BF9;&#x4E8E;&#x6B64;&#x7ED3;&#x6784;&#x7684;&#x90E8;&#x5206;&#x5143;&#x7D20;&#x4F5C;&#x8BF4;&#x660E;:
+对于此结构的部分元素作说明:
 </p>
 </div>
-<div id="outline-container-org0330d29" class="outline-4">
-<h4 id="org0330d29">st_info(&#x7B26;&#x53F7;&#x7C7B;&#x578B;&#x548C;&#x7ED1;&#x5B9A;&#x4FE1;&#x606F;)</h4>
-<div class="outline-text-4" id="text-org0330d29">
+<div id="outline-container-orgb968eb4" class="outline-4">
+<h4 id="orgb968eb4">st_info(符号类型和绑定信息)</h4>
+<div class="outline-text-4" id="text-orgb968eb4">
 <p>
-&#x4F4E;4&#x4F4D;&#x8868;&#x793A;&#x7B26;&#x53F7;&#x7C7B;&#x578B;(Symbol Type),&#x9AD8;4&#x4F4D;&#x8868;&#x793A;&#x7B26;&#x53F7;&#x7ED1;&#x5B9A;&#x4FE1;&#x606F;(Symbol Binding).
+低4位表示符号类型(Symbol Type),高4位表示符号绑定信息(Symbol Binding).
 </p>
 
 <ul class="org-ul">
-<li>&#x7B26;&#x53F7;&#x7ED1;&#x5B9A;&#x4FE1;&#x606F;</li>
+<li>符号绑定信息</li>
 </ul>
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
@@ -1175,34 +1175,34 @@ Symbol table &apos;.symtab&apos; contains 17 entries:
 </colgroup>
 <thead>
 <tr>
-<th scope="col" class="org-left">&#x5B8F;&#x5B9A;&#x4E49;&#x540D;</th>
-<th scope="col" class="org-right">&#x503C;</th>
-<th scope="col" class="org-left">&#x8BF4;&#x660E;</th>
+<th scope="col" class="org-left">宏定义名</th>
+<th scope="col" class="org-right">值</th>
+<th scope="col" class="org-left">说明</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td class="org-left">STB_LOCAL</td>
 <td class="org-right">0</td>
-<td class="org-left">&#x5C40;&#x90E8;&#x7B26;&#x53F7;,&#x5BF9;&#x4E8E;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x7684;&#x5916;&#x90E8;&#x4E0D;&#x53EF;&#x89C1;</td>
+<td class="org-left">局部符号,对于目标文件的外部不可见</td>
 </tr>
 
 <tr>
 <td class="org-left">STB_GLOBAL</td>
 <td class="org-right">1</td>
-<td class="org-left">&#x5168;&#x5C40;&#x7B26;&#x53F7;,&#x5916;&#x90E8;&#x53EF;&#x89C1;</td>
+<td class="org-left">全局符号,外部可见</td>
 </tr>
 
 <tr>
 <td class="org-left">STB_WEAK</td>
 <td class="org-right">2</td>
-<td class="org-left">&#x5F31;&#x5F15;&#x7528;</td>
+<td class="org-left">弱引用</td>
 </tr>
 </tbody>
 </table>
 
 <ul class="org-ul">
-<li>&#x7B26;&#x53F7;&#x7C7B;&#x578B;</li>
+<li>符号类型</li>
 </ul>
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
@@ -1216,50 +1216,50 @@ Symbol table &apos;.symtab&apos; contains 17 entries:
 </colgroup>
 <thead>
 <tr>
-<th scope="col" class="org-left">&#x5B8F;&#x5B9A;&#x4E49;&#x540D;</th>
-<th scope="col" class="org-right">&#x503C;</th>
-<th scope="col" class="org-left">&#x8BF4;&#x660E;</th>
+<th scope="col" class="org-left">宏定义名</th>
+<th scope="col" class="org-right">值</th>
+<th scope="col" class="org-left">说明</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td class="org-left">STT_NOTYPE</td>
 <td class="org-right">0</td>
-<td class="org-left">&#x672A;&#x77E5;&#x7C7B;&#x578B;&#x7B26;&#x53F7;</td>
+<td class="org-left">未知类型符号</td>
 </tr>
 
 <tr>
 <td class="org-left">STT_OBJECT</td>
 <td class="org-right">1</td>
-<td class="org-left">&#x8BE5;&#x7B26;&#x53F7;&#x662F;&#x4E2A;&#x6570;&#x636E;&#x5BF9;&#x8C61;,&#x6BD4;&#x5982;&#x53D8;&#x91CF;,&#x6570;&#x7EC4;&#x7B49;</td>
+<td class="org-left">该符号是个数据对象,比如变量,数组等</td>
 </tr>
 
 <tr>
 <td class="org-left">STT_FUNC</td>
 <td class="org-right">2</td>
-<td class="org-left">&#x8BE5;&#x7B26;&#x53F7;&#x662F;&#x4E2A;&#x51FD;&#x6570;&#x6216;&#x5176;&#x4ED6;&#x53EF;&#x6267;&#x884C;&#x4EE3;&#x7801;</td>
+<td class="org-left">该符号是个函数或其他可执行代码</td>
 </tr>
 
 <tr>
 <td class="org-left">STT_SECTION</td>
 <td class="org-right">3</td>
-<td class="org-left">&#x8BE5;&#x7B26;&#x53F7;&#x8868;&#x793A;&#x4E00;&#x4E2A;&#x6BB5;,&#x8FD9;&#x79CD;&#x7B26;&#x53F7;&#x5FC5;&#x987B;&#x662F; STB_LOCAL &#x7684;</td>
+<td class="org-left">该符号表示一个段,这种符号必须是 STB_LOCAL 的</td>
 </tr>
 
 <tr>
 <td class="org-left">STT_FILE</td>
 <td class="org-right">4</td>
-<td class="org-left">&#x8BE5;&#x7B26;&#x53F7;&#x8868;&#x793A;&#x6587;&#x4EF6;&#x540D;,&#x4E00;&#x822C;&#x90FD;&#x662F;&#x8BE5;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x6240;&#x5BF9;&#x5E94;&#x7684;&#x6E90;&#x6587;&#x4EF6;&#x540D;,&#x5B83;&#x4E00;&#x5B9A;&#x662F; STB_LOCAL &#x7C7B;&#x578B;&#x7684;,&#x5E76;&#x4E14;&#x5B83;&#x7684; st_shndx &#x4E00;&#x5B9A;&#x662F; SHN_ABS</td>
+<td class="org-left">该符号表示文件名,一般都是该目标文件所对应的源文件名,它一定是 STB_LOCAL 类型的,并且它的 st_shndx 一定是 SHN_ABS</td>
 </tr>
 </tbody>
 </table>
 </div>
 </div>
-<div id="outline-container-org97acc24" class="outline-4">
-<h4 id="org97acc24">st_shndx(&#x7B26;&#x53F7;&#x6240;&#x5728;&#x6BB5;)</h4>
-<div class="outline-text-4" id="text-org97acc24">
+<div id="outline-container-org94087a4" class="outline-4">
+<h4 id="org94087a4">st_shndx(符号所在段)</h4>
+<div class="outline-text-4" id="text-org94087a4">
 <p>
-&#x5982;&#x679C;&#x7B26;&#x53F7;&#x5B9A;&#x4E49;&#x5728;&#x672C;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x4E2D;,&#x90A3;&#x4E48;&#x8FD9;&#x4E2A;&#x6210;&#x5458;&#x8868;&#x793A;&#x7B26;&#x53F7;&#x6240;&#x5728;&#x7684;&#x6BB5;&#x5728;&#x6BB5;&#x8868;&#x4E2D;&#x7684;&#x4E0B;&#x6807;.&#x4F46;&#x662F;&#x5982;&#x679C;&#x7B26;&#x53F7;&#x4E0D;&#x662F;&#x5B9A;&#x4E49;&#x5728;&#x672C;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x4E2D;,&#x6216;&#x8005;&#x5BF9;&#x4E8E;&#x6709;&#x4E9B;&#x7279;&#x6B8A;&#x7B26;&#x53F7;,&#x5982;&#x4E0B;&#x6240;&#x793A;:
+如果符号定义在本目标文件中,那么这个成员表示符号所在的段在段表中的下标.但是如果符号不是定义在本目标文件中,或者对于有些特殊符号,如下所示:
 </p>
 
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
@@ -1274,68 +1274,68 @@ Symbol table &apos;.symtab&apos; contains 17 entries:
 </colgroup>
 <thead>
 <tr>
-<th scope="col" class="org-left">&#x5B8F;&#x5B9A;&#x4E49;&#x540D;</th>
-<th scope="col" class="org-right">&#x503C;</th>
-<th scope="col" class="org-left">&#x8BF4;&#x660E;</th>
+<th scope="col" class="org-left">宏定义名</th>
+<th scope="col" class="org-right">值</th>
+<th scope="col" class="org-left">说明</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td class="org-left">SHN_ABS</td>
 <td class="org-right">0xfff1</td>
-<td class="org-left">&#x8868;&#x793A;&#x8BE5;&#x7B26;&#x53F7;&#x5305;&#x542B;&#x4E86;&#x4E00;&#x4E2A;&#x7EDD;&#x5BF9;&#x503C;,&#x6BD4;&#x5982;&#x8868;&#x793A;&#x6587;&#x4EF6;&#x540D;&#x7684;&#x7B26;&#x53F7;&#x5C31;&#x5C5E;&#x4E8E;&#x8FD9;&#x79CD;&#x7C7B;&#x578B;</td>
+<td class="org-left">表示该符号包含了一个绝对值,比如表示文件名的符号就属于这种类型</td>
 </tr>
 
 <tr>
 <td class="org-left">SHN_COMMON</td>
 <td class="org-right">0xfff2</td>
-<td class="org-left">&#x8868;&#x793A;&#x8BE5;&#x7B26;&#x53F7;&#x662F;&#x4E00;&#x4E2A; COMMON &#x5757;&#x7C7B;&#x578B;&#x7684;&#x7B26;&#x53F7;,&#x4E00;&#x822C;&#x6765;&#x8BF4;&#x672A;&#x521D;&#x59CB;&#x5316;&#x7684;&#x5168;&#x5C40;&#x7B26;&#x53F7;&#x5B9A;&#x4E49;&#x5C31;&#x662F;&#x8FD9;&#x79CD;&#x7C7B;&#x578B;&#x7684;,</td>
+<td class="org-left">表示该符号是一个 COMMON 块类型的符号,一般来说未初始化的全局符号定义就是这种类型的,</td>
 </tr>
 
 <tr>
 <td class="org-left">SHN_UNDEF</td>
 <td class="org-right">0</td>
-<td class="org-left">&#x8868;&#x793A;&#x8BE5;&#x7B26;&#x53F7;&#x672A;&#x5B9A;&#x4E49;,&#x8FD9;&#x4E2A;&#x7B26;&#x53F7;&#x8868;&#x793A;&#x8BE5;&#x7B26;&#x53F7;&#x5728;&#x672C;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x88AB;&#x5F15;&#x7528;&#x5230;,&#x4F46;&#x662F;&#x5B9A;&#x4E49;&#x5728;&#x5176;&#x4ED6;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x4E2D;</td>
+<td class="org-left">表示该符号未定义,这个符号表示该符号在本目标文件被引用到,但是定义在其他目标文件中</td>
 </tr>
 </tbody>
 </table>
 </div>
 </div>
-<div id="outline-container-org5337720" class="outline-4">
-<h4 id="org5337720">st_value(&#x7B26;&#x53F7;&#x503C;)</h4>
-<div class="outline-text-4" id="text-org5337720">
+<div id="outline-container-orge62e878" class="outline-4">
+<h4 id="orge62e878">st_value(符号值)</h4>
+<div class="outline-text-4" id="text-orge62e878">
 <ul class="org-ul">
-<li>&#x5728;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x4E2D;,&#x5982;&#x679C;&#x662F;&#x7B26;&#x53F7;&#x7684;&#x5B9A;&#x4E49;&#x5E76;&#x4E14;&#x8BE5;&#x7B26;&#x53F7;&#x4E0D;&#x662F; &quot;COMMON&#x5757;&quot;&#x7C7B;&#x578B;&#x7684;,&#x5219;&#x8868;&#x793A;&#x8BE5;&#x7B26;&#x53F7;&#x5728;&#x6BB5;&#x4E2D;&#x7684;&#x504F;&#x79FB;.</li>
+<li>在目标文件中,如果是符号的定义并且该符号不是 "COMMON块"类型的,则表示该符号在段中的偏移.</li>
 </ul>
 <p>
-&#x5373;&#x7B26;&#x53F7;&#x6240;&#x5BF9;&#x5E94;&#x7684;&#x51FD;&#x6570;&#x6216;&#x53D8;&#x91CF;&#x4F4D;&#x4E8E;&#x7531; <code>st_shndx</code> &#x6307;&#x5B9A;&#x7684;&#x6BB5;,&#x504F;&#x79FB; <code>st_value</code> &#x7684;&#x4F4D;&#x7F6E;,
+即符号所对应的函数或变量位于由 <code>st_shndx</code> 指定的段,偏移 <code>st_value</code> 的位置,
 </p>
 <ul class="org-ul">
-<li>&#x5728;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x4E2D;,&#x5982;&#x679C;&#x7B26;&#x53F7;&#x662F; &quot;COMMON&#x5757;&quot;&#x7C7B;&#x578B;&#x7684;,&#x5219; <code>st_value</code> &#x8868;&#x793A;&#x8BE5;&#x7B26;&#x53F7;&#x7684;&#x5BF9;&#x9F50;&#x5C5E;&#x6027;.</li>
-<li>&#x5728;&#x53EF;&#x6267;&#x884C;&#x6587;&#x4EF6;&#x4E2D;,&#x8868;&#x793A;&#x7B26;&#x53F7;&#x7684;&#x865A;&#x62DF;&#x5730;&#x5740;.</li>
+<li>在目标文件中,如果符号是 "COMMON块"类型的,则 <code>st_value</code> 表示该符号的对齐属性.</li>
+<li>在可执行文件中,表示符号的虚拟地址.</li>
 </ul>
 </div>
 </div>
 </div>
-<div id="outline-container-org62eb5ef" class="outline-3">
-<h3 id="org62eb5ef">&#x7279;&#x6B8A;&#x7B26;&#x53F7;</h3>
-<div class="outline-text-3" id="text-org62eb5ef">
+<div id="outline-container-orgcb3ae17" class="outline-3">
+<h3 id="orgcb3ae17">特殊符号</h3>
+<div class="outline-text-3" id="text-orgcb3ae17">
 <p>
-&#x6709;&#x4E9B;&#x7B26;&#x53F7;&#x5E76;&#x6CA1;&#x6709;&#x5728;&#x7A0B;&#x5E8F;&#x4E2D;&#x5B9A;&#x4E49;,&#x4F46;&#x662F;&#x5728;&#x94FE;&#x63A5;&#x811A;&#x672C;&#x4E2D;&#x5B9A;&#x4E49;&#x4E86;,&#x6240;&#x4EE5;&#x5728;&#x7A0B;&#x5E8F;&#x4E2D;&#x4F9D;&#x7136;&#x53EF;&#x4EE5;&#x4F7F;&#x7528;.
-<b>&#x8FD9;&#x4E9B;&#x503C;&#x5728;&#x6700;&#x7EC8;&#x94FE;&#x63A5;&#x6210;&#x53EF;&#x6267;&#x884C;&#x6587;&#x4EF6;&#x7684;&#x65F6;&#x5019;&#x5C06;&#x89E3;&#x6790;&#x4E3A;&#x6B63;&#x786E;&#x7684;&#x503C;</b>.
+有些符号并没有在程序中定义,但是在链接脚本中定义了,所以在程序中依然可以使用.
+<b>这些值在最终链接成可执行文件的时候将解析为正确的值</b>.
 </p>
 <ul class="org-ul">
-<li>__executable_start &#x7A0B;&#x5E8F;&#x7684;&#x8D77;&#x59CB;&#x5730;&#x5740;, <b>&#x4E0D;&#x662F;&#x5165;&#x53E3;&#x5730;&#x5740;</b>,&#x662F;&#x7A0B;&#x5E8F;&#x6700;&#x5F00;&#x59CB;&#x7684;&#x865A;&#x62DF;&#x5730;&#x5740;</li>
-<li>__etext or _etext or etext  &#x4EE3;&#x7801;&#x6BB5;&#x6700;&#x672B;&#x5C3E;&#x7684;&#x865A;&#x62DF;&#x5730;&#x5740;</li>
-<li>_edata or edata &#x6570;&#x636E;&#x6BB5;&#x6700;&#x672B;&#x5C3E;&#x7684;&#x865A;&#x62DF;&#x5730;&#x5740;</li>
-<li>_end or end &#x7A0B;&#x5E8F;&#x865A;&#x62DF;&#x7ED3;&#x675F;&#x5730;&#x5740;</li>
+<li>__executable_start 程序的起始地址, <b>不是入口地址</b>,是程序最开始的虚拟地址</li>
+<li>__etext or _etext or etext  代码段最末尾的虚拟地址</li>
+<li>_edata or edata 数据段最末尾的虚拟地址</li>
+<li>_end or end 程序虚拟结束地址</li>
 </ul>
 
 <p>
-&#x4F7F;&#x7528;&#x5982;&#x4E0B;&#x4EE3;&#x7801;&#x6D4B;&#x8BD5;:
+使用如下代码测试:
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">extern</span> <span class="keyword">char</span> __executable_start[];</span><br><span class="line"><span class="keyword">extern</span> <span class="keyword">char</span> etext[], _etext[], __etext[];</span><br><span class="line"><span class="keyword">extern</span> <span class="keyword">char</span> edata[], _edata[];</span><br><span class="line"><span class="keyword">extern</span> <span class="keyword">char</span> end[], _end[];</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;executable start %p\n&quot;</span>, __executable_start);</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;text end %p %p %p\n&quot;</span>, etext, _etext, __etext);</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;data end %p %p\n&quot;</span>, edata, _edata);</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;executable end %p %p\n&quot;</span>, end, _end);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><stdio.h></span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">extern</span> <span class="keyword">char</span> __executable_start[];</span><br><span class="line"><span class="keyword">extern</span> <span class="keyword">char</span> etext[], _etext[], __etext[];</span><br><span class="line"><span class="keyword">extern</span> <span class="keyword">char</span> edata[], _edata[];</span><br><span class="line"><span class="keyword">extern</span> <span class="keyword">char</span> end[], _end[];</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"executable start %p\n"</span>, __executable_start);</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"text end %p %p %p\n"</span>, etext, _etext, __etext);</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"data end %p %p\n"</span>, edata, _edata);</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"executable end %p %p\n"</span>, end, _end);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 </div>
 <pre class="example">
 cec@virtual:~/learn/c/hello$ ./special_symbol
@@ -1345,116 +1345,116 @@ data end 0x601038 0x601038
 executable end 0x601040 0x601040</pre>
 </div>
 </div>
-<div id="outline-container-org190b1c8" class="outline-3">
-<h3 id="org190b1c8">&#x7B26;&#x53F7;&#x4FEE;&#x9970;&#x4E0E;&#x51FD;&#x6570;&#x7B7E;&#x540D;</h3>
-<div class="outline-text-3" id="text-org190b1c8">
+<div id="outline-container-org870b679" class="outline-3">
+<h3 id="org870b679">符号修饰与函数签名</h3>
+<div class="outline-text-3" id="text-org870b679">
 <p>
-&#x4E3A;&#x4E86;&#x907F;&#x514D;&#x7528;&#x6237;&#x5199;&#x7684;&#x4EE3;&#x7801;&#x4E2D;&#x7B26;&#x53F7;&#x4E0E;&#x5E93;&#x6587;&#x4EF6;&#x4E2D;&#x7B26;&#x53F7;&#x540D;&#x79F0;&#x6709;&#x6240;&#x51B2;&#x7A81;, UNIX&#x4E0B;&#x7684; C &#x8BED;&#x8A00;&#x89C4;&#x5B9A;,C &#x8BED;&#x8A00;&#x6E90;&#x4EE3;&#x7801;&#x6587;&#x4EF6;&#x4E2D;&#x7684;&#x6240;&#x6709;&#x5168;&#x5C40;&#x53D8;&#x91CF;&#x548C;&#x51FD;&#x6570;&#x7ECF;&#x8FC7;&#x7F16;&#x8BD1;&#x540E;,&#x76F8;&#x5BF9;&#x5E94;&#x7684;&#x7B26;&#x53F7;&#x540D;&#x524D;&#x52A0;&#x4E0A;&#x4E0B;&#x5212;&#x7EBF; &quot;<span class="underline">&quot;.
-&#x800C; fortan &#x8BED;&#x8A00;&#x7684;&#x6E90;&#x4EE3;&#x7801;&#x7ECF;&#x8FC7;&#x7F16;&#x8BD1;&#x540E;&#x7684;&#x7B26;&#x53F7;&#x540D;&#x524D;&#x540E;&#x90FD;&#x8981;&#x52A0;&#x4E0A;&#x4E0B;&#x5212;&#x7EBF; &quot;</span>&quot;. <b>&#x5728;&#x73B0;&#x5728;</b> &#x7684; Linux&#x4E0B;&#x7684; GCC &#x7F16;&#x8BD1;&#x5668;&#x4E2D;,&#x9ED8;&#x8BA4;&#x60C5;&#x51B5;&#x4E0B;&#x5DF2;&#x7ECF;&#x53BB;&#x6389;&#x4E86;C&#x7684;&#x4E0B;&#x5212;&#x7EBF;,&#x4F46;&#x662F; Windows &#x8FD8;&#x4FDD;&#x6301;&#x8FD9;&#x6837;&#x7684;&#x4F20;&#x7EDF;.
-GCC &#x7F16;&#x8BD1;&#x5668;&#x53EF;&#x4EE5;&#x901A;&#x8FC7;&#x53C2;&#x6570;&#x9009;&#x9879; <code>-fleading-underscore</code> &#x6216; <code>-fno-leading-underscore</code> &#x6765;&#x6253;&#x5F00;&#x548C;&#x5173;&#x95ED;&#x662F;&#x5426;&#x5728; C &#x8BED;&#x8A00;&#x52A0;&#x4E0B;&#x5212;&#x7EBF;.
+为了避免用户写的代码中符号与库文件中符号名称有所冲突, UNIX下的 C 语言规定,C 语言源代码文件中的所有全局变量和函数经过编译后,相对应的符号名前加上下划线 "<span class="underline">".
+而 fortan 语言的源代码经过编译后的符号名前后都要加上下划线 "</span>". <b>在现在</b> 的 Linux下的 GCC 编译器中,默认情况下已经去掉了C的下划线,但是 Windows 还保持这样的传统.
+GCC 编译器可以通过参数选项 <code>-fleading-underscore</code> 或 <code>-fno-leading-underscore</code> 来打开和关闭是否在 C 语言加下划线.
 </p>
 </div>
-<div id="outline-container-org2b5846b" class="outline-4">
-<h4 id="org2b5846b">C++ &#x7B26;&#x53F7;&#x4FEE;&#x9970;</h4>
-<div class="outline-text-4" id="text-org2b5846b">
+<div id="outline-container-orgded270e" class="outline-4">
+<h4 id="orgded270e">C++ 符号修饰</h4>
+<div class="outline-text-4" id="text-orgded270e">
 <p>
-&#x4E3A;&#x4E86;&#x652F;&#x6301; C++ &#x7684;&#x7279;&#x6027;, &#x53D1;&#x660E;&#x4E86; <b>&#x7B26;&#x53F7;&#x4FEE;&#x9970;(Name Decoration)&#x6216;&#x7B26;&#x53F7;&#x6539;&#x7F16;(Name Mangling)</b> &#x7684;&#x673A;&#x5236;.
+为了支持 C++ 的特性, 发明了 <b>符号修饰(Name Decoration)或符号改编(Name Mangling)</b> 的机制.
 </p>
 
 <p>
-&#x51FD;&#x6570;&#x7B7E;&#x540D;&#x5305;&#x542B;&#x4E86;&#x4E00;&#x4E2A;&#x51FD;&#x6570;&#x7684;&#x4FE1;&#x606F;,&#x5305;&#x62EC;&#x51FD;&#x6570;&#x540D;,&#x5B83;&#x7684;&#x53C2;&#x6570;&#x7C7B;&#x578B;,&#x5B83;&#x6240;&#x5728;&#x7684;&#x7C7B;&#x548C;&#x540D;&#x79F0;&#x7A7A;&#x95F4;&#x53CA;&#x5176;&#x4ED6;&#x4FE1;&#x606F;.&#x51FD;&#x6570;&#x7B7E;&#x540D;&#x7528;&#x4E8E;&#x8BC6;&#x522B;&#x4E0D;&#x540C;&#x7684;&#x51FD;&#x6570;,&#x5C31;&#x50CF;&#x7B7E;&#x540D;&#x7528;&#x4E8E;&#x8BC6;&#x522B;&#x4E0D;&#x540C;&#x7684;&#x4EBA;&#x4E00;&#x6837;,&#x51FD;&#x6570;&#x7684;&#x540D;&#x5B57;&#x53EA;&#x662F;&#x51FD;&#x6570;&#x7B7E;&#x540D;&#x7684;&#x4E00;&#x90E8;&#x5206;.
+函数签名包含了一个函数的信息,包括函数名,它的参数类型,它所在的类和名称空间及其他信息.函数签名用于识别不同的函数,就像签名用于识别不同的人一样,函数的名字只是函数签名的一部分.
 </p>
 
 <p>
-&#x5728;&#x7F16;&#x8BD1;&#x5668;&#x53CA;&#x8FDE;&#x63A5;&#x5668;&#x5904;&#x7406;&#x7B26;&#x53F7;&#x65F6;,&#x5B83;&#x4EEC;&#x4F7F;&#x7528;&#x67D0;&#x79CD; <b>&#x540D;&#x79F0;&#x4FEE;&#x9970;</b> &#x7684;&#x65B9;&#x6CD5;,&#x4F7F;&#x5F97;&#x51FD;&#x6570;&#x7B7E;&#x540D;&#x5BF9;&#x5E94;&#x4E00;&#x4E2A; <b>&#x4FEE;&#x9970;&#x540E;&#x540D;&#x79F0;(Decorated Name)</b>.&#x7F16;&#x8BD1;&#x5668;&#x5728;&#x5C06; C++ &#x6E90;&#x4EE3;&#x7801;&#x7F16;&#x8BD1;&#x6210;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x65F6;,&#x4F1A;&#x5C06;&#x51FD;&#x6570;&#x548C;&#x53D8;&#x91CF;&#x7684;&#x540D;&#x5B57;
-&#x8FDB;&#x884C;&#x4FEE;&#x9970;,&#x5F62;&#x6210;&#x7B26;&#x53F7;&#x540D;,&#x6240;&#x4EE5;&#x4E0D;&#x4F1A;&#x6709;&#x91CD;&#x590D;&#x7684;&#x540D;&#x5B57;.
+在编译器及连接器处理符号时,它们使用某种 <b>名称修饰</b> 的方法,使得函数签名对应一个 <b>修饰后名称(Decorated Name)</b>.编译器在将 C++ 源代码编译成目标文件时,会将函数和变量的名字
+进行修饰,形成符号名,所以不会有重复的名字.
 </p>
 
 <p>
-GCC&#x7684;&#x57FA;&#x672C;C++&#x540D;&#x79F0;&#x4FEE;&#x9970;&#x65B9;&#x6CD5;&#x5982;&#x4E0B;:&#x6240;&#x6709;&#x7684;&#x7B26;&#x53F7;&#x90FD;&#x4EE5; &quot;_Z&quot;&#x5F00;&#x5934;,&#x5BF9;&#x4E8E;&#x5D4C;&#x5957;&#x7684;&#x540D;&#x5B57;,&#x540E;&#x9762;&#x7D27;&#x8DDF; &quot;N&quot;,&#x7136;&#x540E;&#x662F;&#x5404;&#x4E2A;&#x540D;&#x79F0;&#x7A7A;&#x95F4;&#x548C;&#x7C7B;&#x7684;&#x540D;&#x5B57;,&#x6BCF;&#x4E2A;&#x540D;&#x5B57;&#x524D;&#x662F;&#x540D;&#x5B57;&#x5B57;&#x7B26;&#x4E32;&#x7684;&#x957F;&#x5EA6;,&#x518D;&#x4EE5; &quot;E&quot; &#x7ED3;&#x5C3E;.
-&#x6BD4;&#x5982; N::C::func &#x7ECF;&#x8FC7;&#x4FEE;&#x9970;&#x540E;&#x5C31;&#x662F; <code>_ZN1N1C4funcE</code>. &#x5BF9;&#x4E8E;&#x4E00;&#x4E2A;&#x51FD;&#x6570;&#x6765;&#x8BF4;,&#x5B83;&#x7684;&#x53C2;&#x6570;&#x5217;&#x8868;&#x7D27;&#x8DDF;&#x5728; &quot;E&quot; &#x540E;&#x9762;,&#x5BF9;&#x4E8E; int &#x7C7B;&#x578B;&#x6765;&#x8BF4;, &#x5C31;&#x662F;&#x5B57;&#x6BCD;&quot;i&quot;.&#x6240;&#x4EE5;&#x4EE5;&#x6574;&#x4E2A; N::C::func(int) &#x51FD;&#x6570;&#x7B7E;&#x540D;&#x7ECF;&#x8FC7;
-&#x4FEE;&#x9970;&#x4E3A; <code>_ZN1N1C4funcEi</code>.binutils &#x91CC;&#x9762;&#x63D0;&#x4F9B;&#x4E86;&#x4E00;&#x4E2A;&#x53EB; &quot;c++filt&quot; &#x7684;&#x5DE5;&#x5177;&#x53EF;&#x4EE5;&#x7528;&#x6765;&#x89E3;&#x6790;&#x88AB;&#x4FEE;&#x9970;&#x8FC7;&#x7684;&#x540D;&#x79F0;,&#x6BD4;&#x5982; <code>c++filt _ZN1N1C4funcEi</code>.
+GCC的基本C++名称修饰方法如下:所有的符号都以 "_Z"开头,对于嵌套的名字,后面紧跟 "N",然后是各个名称空间和类的名字,每个名字前是名字字符串的长度,再以 "E" 结尾.
+比如 N::C::func 经过修饰后就是 <code>_ZN1N1C4funcE</code>. 对于一个函数来说,它的参数列表紧跟在 "E" 后面,对于 int 类型来说, 就是字母"i".所以以整个 N::C::func(int) 函数签名经过
+修饰为 <code>_ZN1N1C4funcEi</code>.binutils 里面提供了一个叫 "c++filt" 的工具可以用来解析被修饰过的名称,比如 <code>c++filt _ZN1N1C4funcEi</code>.
 </p>
 
 <p>
-&#x7B7E;&#x540D;&#x548C;&#x540D;&#x79F0;&#x4FEE;&#x9970;&#x673A;&#x5236;&#x4E0D;&#x5149;&#x88AB;&#x4F7F;&#x7528;&#x5230;&#x51FD;&#x6570;&#x4E0A;,C++&#x4E2D;&#x7684;&#x5168;&#x5C40;&#x53D8;&#x91CF;&#x548C;&#x9759;&#x6001;&#x53D8;&#x91CF;&#x4E5F;&#x6709;&#x540C;&#x6837;&#x7684;&#x673A;&#x5236;.&#x5BF9;&#x4E8E;&#x5168;&#x5C40;&#x53D8;&#x91CF;&#x6765;&#x8BF4;,&#x5B83;&#x8DDF;&#x51FD;&#x6570;&#x4E00;&#x6837;&#x90FD;&#x662F;&#x4E00;&#x4E2A;&#x5168;&#x5C40;&#x53EF;&#x89C1;&#x7684;&#x540D;&#x79F0;,&#x5B83;&#x4E5F;&#x9075;&#x5FAA;&#x4E0A;&#x9762;&#x7684;&#x540D;&#x79F0;&#x4FEE;&#x9970;&#x673A;&#x5236;. <b>&#x503C;&#x5F97;&#x6CE8;&#x610F;&#x7684;&#x662F;</b>,
-&#x53D8;&#x91CF;&#x7684;&#x7C7B;&#x578B;&#x5E76;&#x6CA1;&#x6709;&#x88AB;&#x52A0;&#x5165;&#x5230;&#x4FEE;&#x9970;&#x540E;&#x7684;&#x540D;&#x79F0;&#x4E2D;,&#x6240;&#x4EE5;&#x4E0D;&#x8BBA;&#x8FD9;&#x4E2A;&#x53D8;&#x91CF;&#x662F;&#x6574;&#x5F62;&#x8FD8;&#x662F;&#x6D6E;&#x70B9;&#x578B;&#x751A;&#x81F3;&#x662F;&#x4E00;&#x4E2A;&#x5168;&#x5C40;&#x5BF9;&#x8C61;,&#x5B83;&#x7684;&#x540D;&#x79F0;&#x90FD;&#x662F;&#x4E00;&#x6837;&#x7684;.
-&#x540D;&#x79F0;&#x4FEE;&#x9970;&#x673A;&#x5236;&#x4E5F;&#x88AB;&#x7528;&#x6765;&#x9632;&#x6B62;&#x9759;&#x6001;&#x53D8;&#x91CF;&#x7684;&#x540D;&#x5B57;&#x51B2;&#x7A81;.
+签名和名称修饰机制不光被使用到函数上,C++中的全局变量和静态变量也有同样的机制.对于全局变量来说,它跟函数一样都是一个全局可见的名称,它也遵循上面的名称修饰机制. <b>值得注意的是</b>,
+变量的类型并没有被加入到修饰后的名称中,所以不论这个变量是整形还是浮点型甚至是一个全局对象,它的名称都是一样的.
+名称修饰机制也被用来防止静态变量的名字冲突.
 </p>
 
 <p>
-&#x4E0D;&#x540C;&#x7684;&#x7F16;&#x8BD1;&#x5668;&#x5382;&#x5546;&#x7684;&#x540D;&#x79F0;&#x4FEE;&#x9970;&#x65B9;&#x6CD5;&#x53EF;&#x80FD;&#x4E0D;&#x540C;,&#x6240;&#x4EE5;&#x4E0D;&#x540C;&#x7684;&#x7F16;&#x8BD1;&#x5668;&#x5BF9;&#x4E8E;&#x540C;&#x4E00;&#x4E2A;&#x51FD;&#x6570;&#x7B7E;&#x540D;&#x53EF;&#x80FD;&#x5BF9;&#x5E94;&#x4E0D;&#x540C;&#x7684;&#x4FEE;&#x9970;&#x540E;&#x540D;&#x79F0;.
+不同的编译器厂商的名称修饰方法可能不同,所以不同的编译器对于同一个函数签名可能对应不同的修饰后名称.
 </p>
 </div>
 </div>
-<div id="outline-container-orgb04c6af" class="outline-4">
-<h4 id="orgb04c6af">extern &quot;C&quot;</h4>
-<div class="outline-text-4" id="text-orgb04c6af">
+<div id="outline-container-org3831273" class="outline-4">
+<h4 id="org3831273">extern "C"</h4>
+<div class="outline-text-4" id="text-org3831273">
 <p>
-c++&#x4EE3;&#x7801;&#x4E2D;&#x6709;&#x53EF;&#x80FD;&#x4F1A;&#x5F15;&#x7528;&#x5230; c &#x8BED;&#x8A00;&#x6240;&#x63D0;&#x4F9B;&#x7684;&#x5E93;&#x51FD;&#x6570;,&#x5982;&#x679C;&#x4EE5;c++&#x7684;&#x89C4;&#x5219;&#x6765;&#x4FEE;&#x9970;&#x51FD;&#x6570;,&#x90A3;&#x4E48;&#x5230;&#x6700;&#x7EC8;&#x7684;&#x94FE;&#x63A5;&#x8FC7;&#x7A0B;&#x4FBF;&#x65E0;&#x6CD5;&#x6210;&#x529F;&#x94FE;&#x63A5;&#x5230; C&#x7684;&#x5E93;&#x51FD;&#x6570;&#x4E2D;,&#x5BFC;&#x81F4;&#x7F16;&#x8BD1;&#x5931;&#x8D25;.
-&#x901A;&#x8FC7;&#x4F7F;&#x7528; <code>extern &quot;C&quot;</code> &#x5173;&#x952E;&#x5B57;&#x7528;&#x6CD5;,&#x63D0;&#x9192;&#x7F16;&#x8BD1;&#x5668;&#x4EE5; c &#x7684;&#x89C4;&#x5219;&#x6765;&#x4FEE;&#x9970;.&#x540C;&#x65F6;&#x4E3A;&#x4E86;&#x8BA9;&#x4E00;&#x4E2A;&#x5934;&#x6587;&#x4EF6;&#x53EF;&#x4EE5;&#x540C;&#x65F6;&#x88AB; c &#x548C; c++&#x8C03;&#x7528;,&#x9700;&#x8981;&#x4F7F;&#x7528; <code>__cplusplus</code> &#x5B8F;&#x6765;&#x533A;&#x5206;.
+c++代码中有可能会引用到 c 语言所提供的库函数,如果以c++的规则来修饰函数,那么到最终的链接过程便无法成功链接到 C的库函数中,导致编译失败.
+通过使用 <code>extern "C"</code> 关键字用法,提醒编译器以 c 的规则来修饰.同时为了让一个头文件可以同时被 c 和 c++调用,需要使用 <code>__cplusplus</code> 宏来区分.
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> __cplusplus</span></span><br><span class="line"><span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> {</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">	<span class="function"><span class="keyword">void</span> *<span class="title">memset</span><span class="params">(<span class="keyword">void</span> *, <span class="keyword">int</span>, <span class="keyword">size_t</span>)</span></span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> __cplusplus</span></span><br><span class="line">}</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> __cplusplus</span></span><br><span class="line"><span class="keyword">extern</span> <span class="string">"C"</span> {</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">	<span class="function"><span class="keyword">void</span> *<span class="title">memset</span><span class="params">(<span class="keyword">void</span> *, <span class="keyword">int</span>, <span class="keyword">size_t</span>)</span></span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> __cplusplus</span></span><br><span class="line">}</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </div>
-<div id="outline-container-orgea04f3a" class="outline-4">
-<h4 id="orgea04f3a">&#x5F31;&#x7B26;&#x53F7;&#x4E0E;&#x5F3A;&#x7B26;&#x53F7;</h4>
-<div class="outline-text-4" id="text-orgea04f3a">
+<div id="outline-container-orgef355c6" class="outline-4">
+<h4 id="orgef355c6">弱符号与强符号</h4>
+<div class="outline-text-4" id="text-orgef355c6">
 <p>
-&#x5F53;&#x4F7F;&#x7528;&#x5F3A;&#x7B26;&#x53F7;&#x65F6;(Strong Symbol),&#x5982;&#x679C;&#x591A;&#x4E2A;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x542B;&#x6709;&#x76F8;&#x540C;&#x540D;&#x5B57;&#x7684;&#x5168;&#x5C40;&#x7B26;&#x53F7;&#x5B9A;&#x4E49;&#xFF0C;&#x90A3;&#x4E48;&#x8FD9;&#x4E9B;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x5728;&#x94FE;&#x63A5;&#x7684;&#x65F6;&#x5019;&#x5C31;&#x4F1A;&#x51FA;&#x73B0;&#x7B26;&#x53F7;&#x91CD;&#x590D;&#x5B9A;&#x4E49;&#x7684;&#x9519;&#x8BEF;&#x3002;
+当使用强符号时(Strong Symbol),如果多个目标文件含有相同名字的全局符号定义，那么这些目标文件在链接的时候就会出现符号重复定义的错误。
 </p>
 
 <p>
-<b>&#x5BF9;&#x4E8E;c/c++&#x6765;&#x8BF4;&#xFF0C;&#x7F16;&#x8BD1;&#x5668;&#x9ED8;&#x8BA4;&#x51FD;&#x6570;&#x548C;&#x521D;&#x59CB;&#x5316;&#x4E86;&#x7684;&#x5168;&#x5C40;&#x53D8;&#x91CF;&#x4E3A;&#x5F3A;&#x7B26;&#x53F7;&#xFF0C;&#x672A;&#x521D;&#x59CB;&#x5316;&#x7684;&#x5168;&#x5C40;&#x53D8;&#x91CF;&#x672A;&#x5F31;&#x7B26;&#x53F7;</b> &#xFF0C;&#x4E5F;&#x53EF;&#x4EE5;&#x901A;&#x8FC7;gcc <code>__attribute__((weak))</code> &#x6765;&#x5B9A;&#x4E49;&#x4E00;&#x4E2A;&#x5F3A;&#x7B26;&#x53F7;&#x4E3A;&#x5F31;&#x7B26;&#x53F7;&#x3002;
+<b>对于c/c++来说，编译器默认函数和初始化了的全局变量为强符号，未初始化的全局变量未弱符号</b> ，也可以通过gcc <code>__attribute__((weak))</code> 来定义一个强符号为弱符号。
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//&#x65E2;&#x4E0D;&#x662F;&#x5F3A;&#x7B26;&#x53F7;&#xFF0C;&#x4E5F;&#x4E0D;&#x662F;&#x5F31;&#x7B26;&#x53F7;&#xFF0C;&#x56E0;&#x4E3A;&#x5B83;&#x662F;&#x5916;&#x90E8;&#x53D8;&#x91CF;&#x5F15;&#x7528;</span></span><br><span class="line"><span class="keyword">extern</span> <span class="keyword">int</span> ext;</span><br><span class="line"></span><br><span class="line"><span class="comment">//&#x5F31;&#x7B26;&#x53F7;</span></span><br><span class="line"><span class="keyword">int</span> weak;</span><br><span class="line"><span class="comment">//&#x5F3A;&#x7B26;&#x53F7;</span></span><br><span class="line"><span class="keyword">int</span> strong = <span class="number">1</span>;</span><br><span class="line"><span class="comment">//&#x5F31;&#x7B26;&#x53F7;</span></span><br><span class="line">__attribute__((weak)) weak2 = <span class="number">2</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//&#x5F3A;&#x7B26;&#x53F7;</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//既不是强符号，也不是弱符号，因为它是外部变量引用</span></span><br><span class="line"><span class="keyword">extern</span> <span class="keyword">int</span> ext;</span><br><span class="line"></span><br><span class="line"><span class="comment">//弱符号</span></span><br><span class="line"><span class="keyword">int</span> weak;</span><br><span class="line"><span class="comment">//强符号</span></span><br><span class="line"><span class="keyword">int</span> strong = <span class="number">1</span>;</span><br><span class="line"><span class="comment">//弱符号</span></span><br><span class="line">__attribute__((weak)) weak2 = <span class="number">2</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//强符号</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 </div>
 <p>
-&#x94FE;&#x63A5;&#x5668;&#x6309;&#x7167;&#x4E0B;&#x9762;&#x7684;&#x89C4;&#x5219;&#x5904;&#x7406;&#x4E0E;&#x9009;&#x62E9;&#x88AB;&#x591A;&#x6B21;&#x5B9A;&#x4E49;&#x7684;&#x5168;&#x5C40;&#x7B26;&#x53F7;&#xFF1A;
+链接器按照下面的规则处理与选择被多次定义的全局符号：
 </p>
 <ul class="org-ul">
-<li>&#x4E0D;&#x5141;&#x8BB8;&#x5F3A;&#x7B26;&#x53F7;&#x88AB;&#x591A;&#x6B21;&#x5B9A;&#x4E49;&#xFF0C;&#x5426;&#x5219;&#x62A5;&#x9519;</li>
-<li>&#x5982;&#x679C;&#x4E00;&#x4E2A;&#x7B26;&#x53F7;&#x5728;&#x67D0;&#x4E2A;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x4E2D;&#x662F;&#x5F3A;&#x7B26;&#x53F7;&#xFF0C;&#x5728;&#x5176;&#x4ED6;&#x6587;&#x4EF6;&#x4E2D;&#x90FD;&#x662F;&#x5F31;&#x7B26;&#x53F7;&#xFF0C;&#x90A3;&#x4E48;&#x9009;&#x62E9;&#x5F3A;&#x7B26;&#x53F7;</li>
-<li>&#x5982;&#x679C;&#x4E00;&#x4E2A;&#x7B26;&#x53F7;&#x5728;&#x6240;&#x6709;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x4E2D;&#x90FD;&#x662F;&#x5F31;&#x7B26;&#x53F7;&#xFF0C;&#x90A3;&#x4E48;&#x9009;&#x62E9;&#x5176;&#x4E2D;&#x5360;&#x7528;&#x7A7A;&#x95F4;&#x6700;&#x5927;&#x7684;&#x4E00;&#x4E2A;&#x3002;</li>
+<li>不允许强符号被多次定义，否则报错</li>
+<li>如果一个符号在某个目标文件中是强符号，在其他文件中都是弱符号，那么选择强符号</li>
+<li>如果一个符号在所有目标文件中都是弱符号，那么选择其中占用空间最大的一个。</li>
 </ul>
 
 <p>
-&#x5BF9;&#x5916;&#x90E8;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x7684;&#x5F15;&#x7528;&#x5728;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x94FE;&#x63A5;&#x65F6;&#xFF0C;&#x5982;&#x679C;&#x6CA1;&#x6709;&#x627E;&#x5230;&#x7B26;&#x53F7;&#x5B9A;&#x4E49;&#xFF0C;&#x94FE;&#x63A5;&#x5668;&#x5C31;&#x4F1A;&#x62A5;&#x9519;&#xFF0C;&#x8FD9;&#x79CD;&#x88AB;&#x79F0;&#x4E3A; <b>&#x5F3A;&#x5F15;&#x7528;(Strong Reference)</b>.
+对外部目标文件的引用在目标文件链接时，如果没有找到符号定义，链接器就会报错，这种被称为 <b>强引用(Strong Reference)</b>.
 </p>
 
 <p>
-&#x5728;&#x5904;&#x7406; <b>&#x5F31;&#x5F15;&#x7528;(Weak Reference)</b> &#x65F6;&#xFF0C;&#x5982;&#x679C;&#x7B26;&#x53F7;&#x6CA1;&#x6709;&#x88AB;&#x5B9A;&#x4E49;&#x5219;&#x4E0D;&#x4F1A;&#x62A5;&#x9519;&#xFF0C;&#x5C06;&#x5176;&#x503C;&#x9ED8;&#x8BA4;&#x4E3A;0&#x3002;
+在处理 <b>弱引用(Weak Reference)</b> 时，如果符号没有被定义则不会报错，将其值默认为0。
 </p>
 
 <p>
-&#x5728;gcc&#x4E2D;&#x4F7F;&#x7528; <code>__attribute__((weakref))</code> &#x6765;&#x58F0;&#x660E;&#x5BF9;&#x4E00;&#x4E2A;&#x5916;&#x90E8;&#x51FD;&#x6570;&#x7684;&#x5F15;&#x7528;&#x4E3A;&#x5F31;&#x5F15;&#x7528;&#x3002;
+在gcc中使用 <code>__attribute__((weakref))</code> 来声明对一个外部函数的引用为弱引用。
 </p>
 <div class="org-src-container">
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">__attribute__((weakref)) <span class="function"><span class="keyword">void</span> <span class="title">foo</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	<span class="keyword">if</span>(foo) foo();</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 </div>
 <pre class="example">
-&#x8FD9;&#x79CD;&#x5F31;&#x7B26;&#x53F7;&#x548C;&#x5F31;&#x5F15;&#x7528;&#x5BF9;&#x4E8E;&#x5E93;&#x6765;&#x8BF4;&#x5341;&#x5206;&#x6709;&#x7528;&#xFF0C;&#x6BD4;&#x5982;&#x5E93;&#x5B9A;&#x4E49;&#x7684;&#x5F31;&#x7B26;&#x53F7;&#x53EF;&#x4EE5;&#x88AB;&#x7528;&#x6237;&#x5B9A;&#x4E49;&#x7684;&#x5F3A;&#x7B26;&#x53F7;&#x6240;&#x8986;&#x76D6;&#xFF0C;&#x4ECE;&#x800C;&#x4F7F;&#x5F97;&#x7A0B;&#x5E8F;&#x53EF;&#x4EE5;&#x4F7F;&#x7528;&#x81EA;&#x5B9A;&#x4E49;&#x7248;&#x672C;&#x7684;&#x5E93;&#x51FD;&#x6570;&#x3002;
-&#x6216;&#x8005;&#x7A0B;&#x5E8F;&#x53EF;&#x4EE5;&#x5BF9;&#x67D0;&#x4E9B;&#x6269;&#x5C55;&#x529F;&#x80FD;&#x6A21;&#x5757;&#x7684;&#x5F15;&#x7528;&#x5B9A;&#x4E49;&#x4E3A;&#x5F31;&#x5F15;&#x7528;&#xFF0C;&#x5F53;&#x6211;&#x4EEC;&#x5C06;&#x6269;&#x5C55;&#x6A21;&#x5757;&#x4E0E;&#x7A0B;&#x5E8F;&#x94FE;&#x63A5;&#x5728;&#x4E00;&#x8D77;&#x65F6;&#xFF0C;&#x529F;&#x80FD;&#x6A21;&#x5757;&#x5C31;&#x53EF;&#x4EE5;&#x6B63;&#x5E38;&#x4F7F;&#x7528;&#x3002;
-&#x5982;&#x679C;&#x6211;&#x4EEC;&#x53BB;&#x6389;&#x4E86;&#x67D0;&#x4E9B;&#x529F;&#x80FD;&#x6A21;&#x5757;&#xFF0C;&#x90A3;&#x4E48;&#x7A0B;&#x5E8F;&#x4E5F;&#x53EF;&#x4EE5;&#x6B63;&#x5E38;&#x94FE;&#x63A5;&#xFF0C;&#x53EA;&#x662F;&#x7F3A;&#x5C11;&#x4E86;&#x76F8;&#x5E94;&#x7684;&#x529F;&#x80FD;&#xFF0C;&#x8FD9;&#x4F7F;&#x5F97;&#x7A0B;&#x5E8F;&#x7684;&#x529F;&#x80FD;&#x66F4;&#x52A0;&#x5BB9;&#x6613;&#x88C1;&#x526A;&#x548C;&#x7EC4;&#x5408;&#x3002;</pre>
+这种弱符号和弱引用对于库来说十分有用，比如库定义的弱符号可以被用户定义的强符号所覆盖，从而使得程序可以使用自定义版本的库函数。
+或者程序可以对某些扩展功能模块的引用定义为弱引用，当我们将扩展模块与程序链接在一起时，功能模块就可以正常使用。
+如果我们去掉了某些功能模块，那么程序也可以正常链接，只是缺少了相应的功能，这使得程序的功能更加容易裁剪和组合。</pre>
 </div>
 </div>
 </div>
-<div id="outline-container-org5e5329e" class="outline-3">
-<h3 id="org5e5329e">&#x8C03;&#x8BD5;&#x4FE1;&#x606F;</h3>
-<div class="outline-text-3" id="text-org5e5329e">
+<div id="outline-container-org09a6572" class="outline-3">
+<h3 id="org09a6572">调试信息</h3>
+<div class="outline-text-3" id="text-org09a6572">
 <p>
-&#x8C03;&#x8BD5;&#x4FE1;&#x606F;&#x5305;&#x542B;&#x4E86;&#x6E90;&#x4EE3;&#x7801;&#x4E0E;&#x76EE;&#x6807;&#x4EE3;&#x7801;&#x4E4B;&#x95F4;&#x7684;&#x5173;&#x7CFB;&#xFF0C;&#x6BD4;&#x5982;&#x884C;&#x6570;&#xFF0C;&#x51FD;&#x6570;&#xFF0C;&#x53D8;&#x91CF;&#x7684;&#x4E00;&#x4E00;&#x5BF9;&#x5E94;&#x5173;&#x7CFB;&#x3002;
+调试信息包含了源代码与目标代码之间的关系，比如行数，函数，变量的一一对应关系。
 </p>
 
 <p>
-&#x5728;GCC&#x7F16;&#x8BD1;&#x65F6;&#x52A0;&#x4E0A; -g &#x53C2;&#x6570;&#x5C31;&#x4F1A;&#x589E;&#x52A0;&#x8C03;&#x8BD5;&#x4FE1;&#x606F;&#x5230;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x4E2D;&#x3002;&#x76EE;&#x6807;&#x4EE3;&#x7801;&#x4F1A;&#x751F;&#x6210;&#x5F88;&#x591A; debug &#x6BB5;&#x3002;
+在GCC编译时加上 -g 参数就会增加调试信息到目标文件中。目标代码会生成很多 debug 段。
 </p>
 
 <p>
-&#x5728;linux&#x4E2D;&#xFF0C;&#x4F7F;&#x7528; strip &#x547D;&#x4EE4;&#x53BB;&#x6389;&#x76EE;&#x6807;&#x4EE3;&#x7801;&#x7684;&#x8C03;&#x8BD5;&#x4FE1;&#x606F;&#xFF1A;
+在linux中，使用 strip 命令去掉目标代码的调试信息：
 </p>
 <pre class="example">
 strip foo</pre>
@@ -1463,7 +1463,7 @@ strip foo</pre>
 </div>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-08-20 四 17:37.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
 </div>
 
     </div>
@@ -1549,7 +1549,7 @@ Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org1506d92"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x76EE;&amp;#x6807;&amp;#x6587;&amp;#x4EF6;&amp;#x683C;&amp;#x5F0F;&amp;#x6982;&amp;#x89C8;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org023188b"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x5B9E;&amp;#x4F8B;&amp;#x67E5;&amp;#x770B;&amp;#x76EE;&amp;#x6807;&amp;#x6587;&amp;#x4EF6;&amp;#x683C;&amp;#x5F0F;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org8f1db4c"><span class="nav-number">3.</span> <span class="nav-text">&amp;#x81EA;&amp;#x5B9A;&amp;#x4E49;&amp;#x6BB5;&amp;#x548C;&amp;#x5236;&amp;#x4F5C;&amp;#x6BB5;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org3c29ca6"><span class="nav-number">3.1.</span> <span class="nav-text">&amp;#x5236;&amp;#x4F5C;&amp;#x6BB5;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org7a58cde"><span class="nav-number">3.2.</span> <span class="nav-text">&amp;#x81EA;&amp;#x5B9A;&amp;#x4E49;&amp;#x6BB5;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org8b3584f"><span class="nav-number">4.</span> <span class="nav-text">&amp;#x5206;&amp;#x6790;ELF&amp;#x7ED3;&amp;#x6784;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org09183ec"><span class="nav-number">4.1.</span> <span class="nav-text">ELF Header</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org4486189"><span class="nav-number">4.2.</span> <span class="nav-text">ELF&amp;#x5934;&amp;#x7684;&amp;#x6570;&amp;#x636E;&amp;#x7ED3;&amp;#x6784;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgba86dd5"><span class="nav-number">4.3.</span> <span class="nav-text">Section Header Table &amp;#x6BB5;&amp;#x8868;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org3860e03"><span class="nav-number">4.4.</span> <span class="nav-text">Relocation Table(&amp;#x91CD;&amp;#x5B9A;&amp;#x4F4D;&amp;#x8868;)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgd48bf0a"><span class="nav-number">4.5.</span> <span class="nav-text">String Table(&amp;#x5B57;&amp;#x7B26;&amp;#x4E32;&amp;#x8868;)</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgf88579d"><span class="nav-number">5.</span> <span class="nav-text">&amp;#x94FE;&amp;#x63A5;&amp;#x7684;&amp;#x63A5;&amp;#x53E3;&amp;#x2013;&amp;#x7B26;&amp;#x53F7;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org3b91644"><span class="nav-number">5.1.</span> <span class="nav-text">&amp;#x7B26;&amp;#x53F7;&amp;#x8868;&amp;#x7684;&amp;#x7ED3;&amp;#x6784;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org0330d29"><span class="nav-number">5.1.1.</span> <span class="nav-text">st_info(&amp;#x7B26;&amp;#x53F7;&amp;#x7C7B;&amp;#x578B;&amp;#x548C;&amp;#x7ED1;&amp;#x5B9A;&amp;#x4FE1;&amp;#x606F;)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org97acc24"><span class="nav-number">5.1.2.</span> <span class="nav-text">st_shndx(&amp;#x7B26;&amp;#x53F7;&amp;#x6240;&amp;#x5728;&amp;#x6BB5;)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org5337720"><span class="nav-number">5.1.3.</span> <span class="nav-text">st_value(&amp;#x7B26;&amp;#x53F7;&amp;#x503C;)</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org62eb5ef"><span class="nav-number">5.2.</span> <span class="nav-text">&amp;#x7279;&amp;#x6B8A;&amp;#x7B26;&amp;#x53F7;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org190b1c8"><span class="nav-number">5.3.</span> <span class="nav-text">&amp;#x7B26;&amp;#x53F7;&amp;#x4FEE;&amp;#x9970;&amp;#x4E0E;&amp;#x51FD;&amp;#x6570;&amp;#x7B7E;&amp;#x540D;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org2b5846b"><span class="nav-number">5.3.1.</span> <span class="nav-text">C++ &amp;#x7B26;&amp;#x53F7;&amp;#x4FEE;&amp;#x9970;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgb04c6af"><span class="nav-number">5.3.2.</span> <span class="nav-text">extern &quot;C&quot;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgea04f3a"><span class="nav-number">5.3.3.</span> <span class="nav-text">&amp;#x5F31;&amp;#x7B26;&amp;#x53F7;&amp;#x4E0E;&amp;#x5F3A;&amp;#x7B26;&amp;#x53F7;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org5e5329e"><span class="nav-number">5.4.</span> <span class="nav-text">&amp;#x8C03;&amp;#x8BD5;&amp;#x4FE1;&amp;#x606F;</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#orgca7824d"><span class="nav-number">1.</span> <span class="nav-text">目标文件格式概览</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org4a4743c"><span class="nav-number">2.</span> <span class="nav-text">实例查看目标文件格式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orga9b832e"><span class="nav-number">3.</span> <span class="nav-text">自定义段和制作段</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org31df43c"><span class="nav-number">3.1.</span> <span class="nav-text">制作段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org6322907"><span class="nav-number">3.2.</span> <span class="nav-text">自定义段</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orge493aaa"><span class="nav-number">4.</span> <span class="nav-text">分析ELF结构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org7d06c86"><span class="nav-number">4.1.</span> <span class="nav-text">ELF Header</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org13a9a3d"><span class="nav-number">4.2.</span> <span class="nav-text">ELF头的数据结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org375e359"><span class="nav-number">4.3.</span> <span class="nav-text">Section Header Table 段表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org79ef349"><span class="nav-number">4.4.</span> <span class="nav-text">Relocation Table(重定位表)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org0d0577d"><span class="nav-number">4.5.</span> <span class="nav-text">String Table(字符串表)</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orge56bf59"><span class="nav-number">5.</span> <span class="nav-text">链接的接口–符号</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgfff8f93"><span class="nav-number">5.1.</span> <span class="nav-text">符号表的结构</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgb968eb4"><span class="nav-number">5.1.1.</span> <span class="nav-text">st_info(符号类型和绑定信息)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org94087a4"><span class="nav-number">5.1.2.</span> <span class="nav-text">st_shndx(符号所在段)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orge62e878"><span class="nav-number">5.1.3.</span> <span class="nav-text">st_value(符号值)</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgcb3ae17"><span class="nav-number">5.2.</span> <span class="nav-text">特殊符号</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org870b679"><span class="nav-number">5.3.</span> <span class="nav-text">符号修饰与函数签名</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgded270e"><span class="nav-number">5.3.1.</span> <span class="nav-text">C++ 符号修饰</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org3831273"><span class="nav-number">5.3.2.</span> <span class="nav-text">extern &quot;C&quot;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgef355c6"><span class="nav-number">5.3.3.</span> <span class="nav-text">弱符号与强符号</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org09a6572"><span class="nav-number">5.4.</span> <span class="nav-text">调试信息</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 

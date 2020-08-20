@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="&amp;#x5F53;&amp;#x53EA;&amp;#x6709;&amp;#x4E00;&amp;#x7EA7;&amp;#x9875;&amp;#x8868;&amp;#x65F6;&amp;#xFF0C;&amp;#x9875;&amp;#x8868;&amp;#x672C;&amp;#x8EAB;&amp;#x6240;&amp;#x5360;&amp;#x7528;&amp;#x7684;&amp;#x7A7A;&amp;#x95F4;&amp;#x5C31;&amp;#x4F1A;&amp;#x5F88;&amp;#x5927;&amp;#xFF0C;&amp;#x800">
+  <meta name="description" content="当只有一级页表时，页表本身所占用的空间就会很大，而多级页表可以解决这个问题。   假设页块大小为 4KB，那么对于 32 位系统来说，一个进程需要映射到 1048576 个页块。  一个页表项为 4 字节，那么一个进程的页表就是 4*1048576 &#x3D; 4MB。  假设一个系统中运行了 1000 个进程，那么页表总共就要占用 4000 MB，这显然是无法使用的。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[What]Paging:Smaller Tables">
 <meta property="og:url" content="http://kcmetercec.top/2020/03/18/book_ostep_vm-smaller_tables/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="&amp;#x5F53;&amp;#x53EA;&amp;#x6709;&amp;#x4E00;&amp;#x7EA7;&amp;#x9875;&amp;#x8868;&amp;#x65F6;&amp;#xFF0C;&amp;#x9875;&amp;#x8868;&amp;#x672C;&amp;#x8EAB;&amp;#x6240;&amp;#x5360;&amp;#x7528;&amp;#x7684;&amp;#x7A7A;&amp;#x95F4;&amp;#x5C31;&amp;#x4F1A;&amp;#x5F88;&amp;#x5927;&amp;#xFF0C;&amp;#x800">
+<meta property="og:description" content="当只有一级页表时，页表本身所占用的空间就会很大，而多级页表可以解决这个问题。   假设页块大小为 4KB，那么对于 32 位系统来说，一个进程需要映射到 1048576 个页块。  一个页表项为 4 字节，那么一个进程的页表就是 4*1048576 &#x3D; 4MB。  假设一个系统中运行了 1000 个进程，那么页表总共就要占用 4000 MB，这显然是无法使用的。">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/smalltb/seg_page.jpg?raw=true">
 <meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/smalltb/seg_page_vir_addr.jpg?raw=true">
@@ -302,194 +302,194 @@
       
         <div id="content">
 <p>
-&#x5F53;&#x53EA;&#x6709;&#x4E00;&#x7EA7;&#x9875;&#x8868;&#x65F6;&#xFF0C;&#x9875;&#x8868;&#x672C;&#x8EAB;&#x6240;&#x5360;&#x7528;&#x7684;&#x7A7A;&#x95F4;&#x5C31;&#x4F1A;&#x5F88;&#x5927;&#xFF0C;&#x800C;&#x591A;&#x7EA7;&#x9875;&#x8868;&#x53EF;&#x4EE5;&#x89E3;&#x51B3;&#x8FD9;&#x4E2A;&#x95EE;&#x9898;&#x3002;
+当只有一级页表时，页表本身所占用的空间就会很大，而多级页表可以解决这个问题。
 </p>
 <pre class="example">
-&#x5047;&#x8BBE;&#x9875;&#x5757;&#x5927;&#x5C0F;&#x4E3A; 4KB&#xFF0C;&#x90A3;&#x4E48;&#x5BF9;&#x4E8E; 32 &#x4F4D;&#x7CFB;&#x7EDF;&#x6765;&#x8BF4;&#xFF0C;&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x9700;&#x8981;&#x6620;&#x5C04;&#x5230; 1048576 &#x4E2A;&#x9875;&#x5757;&#x3002;
+假设页块大小为 4KB，那么对于 32 位系统来说，一个进程需要映射到 1048576 个页块。
 
-&#x4E00;&#x4E2A;&#x9875;&#x8868;&#x9879;&#x4E3A; 4 &#x5B57;&#x8282;&#xFF0C;&#x90A3;&#x4E48;&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x7684;&#x9875;&#x8868;&#x5C31;&#x662F; 4*1048576 = 4MB&#x3002;
+一个页表项为 4 字节，那么一个进程的页表就是 4*1048576 = 4MB。
 
-&#x5047;&#x8BBE;&#x4E00;&#x4E2A;&#x7CFB;&#x7EDF;&#x4E2D;&#x8FD0;&#x884C;&#x4E86; 1000 &#x4E2A;&#x8FDB;&#x7A0B;&#xFF0C;&#x90A3;&#x4E48;&#x9875;&#x8868;&#x603B;&#x5171;&#x5C31;&#x8981;&#x5360;&#x7528; 4000 MB&#xFF0C;&#x8FD9;&#x663E;&#x7136;&#x662F;&#x65E0;&#x6CD5;&#x4F7F;&#x7528;&#x7684;&#x3002;</pre>
+假设一个系统中运行了 1000 个进程，那么页表总共就要占用 4000 MB，这显然是无法使用的。</pre>
 
 <a id="more"></a>
-<div id="outline-container-org5497c54" class="outline-2">
-<h2 id="org5497c54">&#x7B80;&#x6613;&#x529E;&#x6CD5;&#xFF1A;&#x4F7F;&#x7528;&#x5927;&#x9875;</h2>
-<div class="outline-text-2" id="text-org5497c54">
+<div id="outline-container-org45bff45" class="outline-2">
+<h2 id="org45bff45">简易办法：使用大页</h2>
+<div class="outline-text-2" id="text-org45bff45">
 <p>
-&#x5982;&#x679C;&#x6211;&#x4EEC;&#x7B80;&#x5355;&#x7C97;&#x66B4;&#x7684;&#x5C06;&#x9875;&#x5757;&#x5927;&#x5C0F;&#x89C4;&#x5B9A;&#x4E3A; 16 KB&#xFF0C;&#x90A3;&#x4E48;&#x5BF9;&#x5E94;&#x7684;&#x9875;&#x5757;&#x6570;&#x91CF;&#x5C31;&#x53EA;&#x6709;&#x539F;&#x6765;&#x7684;&#x56DB;&#x5206;&#x4E4B;&#x4E00;&#xFF0C;&#x6700;&#x7EC8;&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x7684;&#x9875;&#x8868;&#x5C31;&#x53EA;&#x6709; 1MB &#x5927;&#x5C0F;&#x3002;
+如果我们简单粗暴的将页块大小规定为 16 KB，那么对应的页块数量就只有原来的四分之一，最终一个进程的页表就只有 1MB 大小。
 </p>
 
 <p>
-&#x4F46;&#x662F;&#x8FD9;&#x6837;&#x4F1A;&#x9020;&#x6210;&#x5185;&#x5B58;&#x7684;&#x6D6A;&#x8D39;&#xFF0C;&#x56E0;&#x4E3A;&#x5373;&#x4F7F;&#x6BCF;&#x6B21;&#x4EC5;&#x7533;&#x8BF7;&#x51E0;&#x4E2A;&#x5B57;&#x8282;&#xFF0C;&#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;&#x4E5F;&#x4F1A;&#x5206;&#x914D;&#x4E00;&#x4E2A;&#x9875;&#x5757;&#x3002;
+但是这样会造成内存的浪费，因为即使每次仅申请几个字节，操作系统也会分配一个页块。
 </p>
 </div>
 </div>
-<div id="outline-container-org872920f" class="outline-2">
-<h2 id="org872920f">&#x8FDB;&#x9636;&#x65B9;&#x6848;&#xFF1A;&#x9875;&#x548C;&#x6BB5;</h2>
-<div class="outline-text-2" id="text-org872920f">
+<div id="outline-container-org05cadab" class="outline-2">
+<h2 id="org05cadab">进阶方案：页和段</h2>
+<div class="outline-text-2" id="text-org05cadab">
 <p>
-&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x7684;&#x865A;&#x62DF;&#x5730;&#x5740;&#x7A7A;&#x95F4;&#x4F1A;&#x6620;&#x5C04;&#x5230;&#x6574;&#x4E2A; 32 &#x4F4D;&#x5730;&#x5740;&#x7A7A;&#x95F4;&#xFF0C;&#x7136;&#x800C;&#x5B9E;&#x9645;&#x4E0A;&#x771F;&#x6B63;&#x6620;&#x5C04;&#x5230;&#x7269;&#x7406;&#x5730;&#x5740;&#x7684;&#x9875;&#x8868;&#x9879;&#x5F88;&#x5C11;&#x3002;
-&#x4E5F;&#x5C31;&#x662F;&#x8BF4;&#x7EDD;&#x5927;&#x591A;&#x6570;&#x7684;&#x9875;&#x8868;&#x9879;&#x90FD;&#x5904;&#x4E8E; invalid &#x7684;&#x72B6;&#x6001;&#xFF0C;&#x90A3;&#x4E48;&#x8FD9;&#x4E9B;&#x9875;&#x8868;&#x9879;&#x672C;&#x8EAB;&#x6D6A;&#x8D39;&#x4E86;&#x5F88;&#x591A;&#x7269;&#x7406;&#x5185;&#x5B58;&#x7A7A;&#x95F4;&#x3002;
+一个进程的虚拟地址空间会映射到整个 32 位地址空间，然而实际上真正映射到物理地址的页表项很少。
+也就是说绝大多数的页表项都处于 invalid 的状态，那么这些页表项本身浪费了很多物理内存空间。
 </p>
 
 <p>
-&#x6240;&#x4EE5;&#x6211;&#x4EEC;&#x53EF;&#x4EE5;&#x5148;&#x5C06;&#x865A;&#x62DF;&#x5730;&#x5740;&#x5206;&#x4E3A;&#x591A;&#x4E2A;&#x6BB5;&#xFF0C;&#x7136;&#x540E;&#x518D;&#x6BB5;&#x5185;&#x8FDB;&#x884C;&#x9875;&#x8868;&#x6620;&#x5C04;&#xFF0C;&#x800C;&#x6BB5;&#x5916;&#x7684;&#x90E8;&#x5206;&#x5C31;&#x5168;&#x90E8;&#x662F; invalid &#x7684;&#x72B6;&#x6001;&#xFF0C;&#x5E76;&#x4E14;&#x4E0D;&#x4F1A;&#x5360;&#x7528;&#x66F4;&#x591A;&#x7684;&#x7269;&#x7406;&#x5185;&#x5B58;&#x7A7A;&#x95F4;&#x3002;
+所以我们可以先将虚拟地址分为多个段，然后再段内进行页表映射，而段外的部分就全部是 invalid 的状态，并且不会占用更多的物理内存空间。
 </p>
 
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/smalltb/seg_page.jpg?raw=true" alt="mempic/smalltb/seg_page.jpg">
 <p>
-&#x5982;&#x4E0A;&#x56FE;&#x6240;&#x793A;&#xFF0C;&#x8BE5;&#x8FDB;&#x7A0B;&#x603B;&#x5171;&#x53EA;&#x4F7F;&#x7528;&#x4E86; 4 &#x9875;&#xFF0C;&#x800C;&#x5176;&#x5B83;&#x9875;&#x8868;&#x9879;&#x6240;&#x5360;&#x7528;&#x7684;&#x5185;&#x5B58;&#x5C31;&#x5168;&#x90E8;&#x6D6A;&#x8D39;&#x4E86;&#x3002;
-&#x6240;&#x4EE5;&#x53EF;&#x4EE5;&#x5C06; code,heap,stack &#x5206;&#x4E3A; 3 &#x4E2A;&#x6BB5;&#xFF0C;&#x5C31;&#x53EF;&#x4EE5;&#x8282;&#x7EA6;&#x5176;&#x4ED6;&#x9875;&#x8868;&#x9879;&#x6240;&#x5360;&#x7528;&#x7684;&#x5185;&#x5B58;&#x4E86;&#x3002;
+如上图所示，该进程总共只使用了 4 页，而其它页表项所占用的内存就全部浪费了。
+所以可以将 code,heap,stack 分为 3 个段，就可以节约其他页表项所占用的内存了。
 </p>
 
 <p>
-&#x4E3A;&#x4E86;&#x8FBE;&#x5230;&#x6B64;&#x76EE;&#x7684;&#xFF0C;&#x9700;&#x8981;&#x5177;&#x5907;&#x4EE5;&#x4E0B;&#x4E24;&#x4E2A;&#x6761;&#x4EF6;&#xFF1A;
+为了达到此目的，需要具备以下两个条件：
 </p>
 <ol class="org-ol">
-<li>&#x6BCF;&#x4E2A;&#x6BB5;&#x90FD;&#x5177;&#x6709;&#x5176;&#x5BF9;&#x5E94;&#x7684;&#x6BB5;&#x57FA;&#x5730;&#x5740;&#xFF0C;&#x5176;&#x5B9E;&#x4E5F;&#x5C31;&#x662F;&#x8FD9;&#x4E2A;&#x6BB5;&#x4E2D;&#x8D77;&#x59CB;&#x9875;&#x7684;&#x57FA;&#x5730;&#x5740;</li>
-<li>&#x5BF9;&#x5E94;&#x6BCF;&#x4E2A;&#x6BB5;&#x9700;&#x8981;&#x6709;&#x4E2A;&#x9650;&#x5236;&#x5BC4;&#x5B58;&#x5668;&#xFF0C;&#x4EE5;&#x8868;&#x660E;&#x8BE5;&#x6BB5;&#x7684;&#x8303;&#x56F4;&#x662F;&#x591A;&#x5927;&#xFF0C;&#x4E5F;&#x5C31;&#x662F;&#x8FD9;&#x4E2A;&#x6BB5;&#x4E2D;&#x7EC8;&#x6B62;&#x9875;&#x7684;&#x5730;&#x5740;</li>
+<li>每个段都具有其对应的段基地址，其实也就是这个段中起始页的基地址</li>
+<li>对应每个段需要有个限制寄存器，以表明该段的范围是多大，也就是这个段中终止页的地址</li>
 </ol>
 
 <p>
-&#x4E3A;&#x4E86;&#x8868;&#x793A; 3 &#x4E2A;&#x6BB5;&#xFF0C;&#x5C31;&#x9700;&#x8981; 2 &#x4F4D;&#x6765;&#x5B58;&#x50A8;&#xFF0C;&#x7136;&#x540E;&#x662F;&#x8BE5;&#x6BB5;&#x5185;&#x7684;&#x9875;&#x5757;&#x504F;&#x79FB;&#xFF0C;&#x6700;&#x540E;&#x662F;&#x9875;&#x5185;&#x504F;&#x79FB;&#x3002;
-&#x90A3;&#x4E48;&#x5BF9;&#x4E8E;&#x4E00;&#x4E2A; 32 &#x4F4D;&#x5730;&#x5740;&#x7A7A;&#x95F4;&#x6765;&#x8BF4;&#xFF0C;&#x5176;&#x865A;&#x62DF;&#x5730;&#x5740;&#x5212;&#x5206;&#x5982;&#x4E0B;&#xFF1A;
+为了表示 3 个段，就需要 2 位来存储，然后是该段内的页块偏移，最后是页内偏移。
+那么对于一个 32 位地址空间来说，其虚拟地址划分如下：
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/smalltb/seg_page_vir_addr.jpg?raw=true" alt="mempic/smalltb/seg_page_vir_addr.jpg">
 <p>
-&#x901A;&#x8FC7;&#x865A;&#x62DF;&#x5730;&#x5740;&#x5F97;&#x5230;&#x9875;&#x8868;&#x9879;&#x7684;&#x903B;&#x8F91;&#x5982;&#x4E0B;&#xFF1A;
+通过虚拟地址得到页表项的逻辑如下：
 </p>
 <pre class="example">
-SN           = (VirtualAddress &amp; SEG_MASK) &gt;&gt; SN_SHIFT
-VPN          = (VirtualAddress &amp; VPN_MASK) &gt;&gt; VPN_SHIFT
+SN           = (VirtualAddress & SEG_MASK) >> SN_SHIFT
+VPN          = (VirtualAddress & VPN_MASK) >> VPN_SHIFT
 AddressOfPTE = Base[SN] + (VPN*sizeof(PTE))</pre>
 
 <p>
-&#x8FD9;&#x79CD;&#x65B9;&#x5F0F;&#x867D;&#x7136;&#x770B;&#x4E0A;&#x53BB;&#x8282;&#x7EA6;&#x4E86;&#x4E0D;&#x5C11;&#x5185;&#x5B58;&#xFF0C;&#x4F46;&#x662F;&#x4F9D;&#x7136;&#x5177;&#x6709;&#x4E0B;&#x9762;&#x8FD9;&#x4E2A;&#x95EE;&#x9898;&#xFF1A;
+这种方式虽然看上去节约了不少内存，但是依然具有下面这个问题：
 </p>
 <ul class="org-ul">
-<li>&#x786C;&#x4EF6;&#x590D;&#x6742;&#xFF1A;&#x539F;&#x6765;&#x4EC5;&#x9700;&#x8981; 1 &#x4E2A;&#x9875;&#x8868;&#x57FA;&#x5730;&#x5740;&#x5BC4;&#x5B58;&#x5668;&#x5C31;&#x80FD;&#x641E;&#x5B9A;&#x7684;&#x4E8B;&#xFF0C;&#x73B0;&#x5728;&#x9700;&#x8981;&#x591A;&#x4E2A;&#x6BB5;&#x57FA;&#x5730;&#x5740;&#x5BC4;&#x5B58;&#x5668;&#x548C;&#x8303;&#x56F4;&#x9650;&#x5236;&#x5BC4;&#x5B58;&#x5668;</li>
-<li>&#x4F9D;&#x7136;&#x4F1A;&#x6709;&#x5185;&#x5B58;&#x6D6A;&#x8D39;&#xFF1A;&#x5F53;&#x4E00;&#x4E2A;&#x6BB5;&#x4E2D;&#x6240;&#x7533;&#x8BF7;&#x7684;&#x9875;&#x662F;&#x968F;&#x673A;&#x5206;&#x5E03;&#x65F6;&#xFF0C;&#x4F9D;&#x7136;&#x5728;&#x8BE5;&#x6BB5;&#x4E2D;&#x4F1A;&#x6709;&#x5F88;&#x591A;&#x9875;&#x8868;&#x9879;&#x7528;&#x4E0D;&#x4E0A;</li>
+<li>硬件复杂：原来仅需要 1 个页表基地址寄存器就能搞定的事，现在需要多个段基地址寄存器和范围限制寄存器</li>
+<li>依然会有内存浪费：当一个段中所申请的页是随机分布时，依然在该段中会有很多页表项用不上</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-org355d9a6" class="outline-2">
-<h2 id="org355d9a6">&#x591A;&#x7EA7;&#x9875;&#x8868;</h2>
-<div class="outline-text-2" id="text-org355d9a6">
+<div id="outline-container-org0b92c34" class="outline-2">
+<h2 id="org0b92c34">多级页表</h2>
+<div class="outline-text-2" id="text-org0b92c34">
 <p>
-&#x591A;&#x7EA7;&#x9875;&#x8868;&#x662F;&#x5C06;&#x9875;&#x8868;&#x7ED3;&#x6784;&#x7531;&#x539F;&#x6765;&#x7684;&#x4E00;&#x5C42;&#x5206;&#x591A;&#x591A;&#x5C42;&#xFF0C;&#x4ECE;&#x6700;&#x5F00;&#x59CB;&#x7684;&#x5927;&#x9875;&#x67E5;&#x627E;&#x5230;&#x5C0F;&#x9875;&#x3002;
+多级页表是将页表结构由原来的一层分多多层，从最开始的大页查找到小页。
 </p>
 
 <p>
-&#x8FD9;&#x91CC;&#x7684;&#x5173;&#x952E;&#x70B9;&#x5728;&#x4E8E;&#xFF1A;&#x5982;&#x679C;&#x4E00;&#x6BB5;&#x5185;&#x5B58;&#x6CA1;&#x6709;&#x88AB;&#x6620;&#x5C04;&#xFF0C;&#x90A3;&#x4E48;&#x5927;&#x9875;&#x91CC;&#x9762;&#x5C31;&#x8BBE;&#x7F6E;&#x4E3A; invalid&#xFF0C;&#x800C;&#x540E;&#x5176;&#x4E0B;&#x7EA7;&#x7684;&#x5C0F;&#x9875;&#x5C31;&#x4E0D;&#x9700;&#x8981;&#x5360;&#x636E;&#x7269;&#x7406;&#x5185;&#x5B58;&#x7A7A;&#x95F4;&#x4E86;&#x3002;
+这里的关键点在于：如果一段内存没有被映射，那么大页里面就设置为 invalid，而后其下级的小页就不需要占据物理内存空间了。
 </p>
 
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/smalltb/pagetlb_overview.jpg?raw=true" alt="mempic/smalltb/pagetlb_overview.jpg">
 <p>
-&#x5982;&#x4E0A;&#x56FE;&#x6240;&#x793A;&#xFF1A;&#x5982;&#x679C;&#x4F7F;&#x7528;&#x5DE6;&#x8FB9;&#x4E00;&#x7EA7;&#x9875;&#x8868;&#x7684;&#x5F62;&#x5F0F;&#xFF0C;&#x90A3;&#x4E48;&#x53EA;&#x6709; 5 &#x4E2A;&#x9875;&#x8868;&#x9879;&#x662F;&#x6709;&#x6548;&#x7684;&#xFF0C;&#x5176;&#x4ED6;&#x65E0;&#x6548;&#x7684;&#x9875;&#x8868;&#x9879;&#x4E5F;&#x8981;&#x5360;&#x7528;&#x5185;&#x5B58;&#x7A7A;&#x95F4;&#x3002;
-&#x5F53;&#x4F7F;&#x7528;&#x4E8C;&#x7EA7;&#x9875;&#x8868;&#x540E;&#xFF0C;&#x5728;&#x7B2C;&#x4E00;&#x7EA7;&#x9875;&#x8868;&#x4E2D;&#x5C31;&#x5DF2;&#x7ECF;&#x8868;&#x793A;&#x4E86;&#x4E2D;&#x95F4;&#x4E24;&#x7EA7;&#x662F;&#x65E0;&#x6548;&#x7684;&#xFF0C;&#x90A3;&#x4E48;&#x8FD9;&#x4E24;&#x7EA7;&#x5BF9;&#x5E94;&#x7684;&#x4E8C;&#x7EA7;&#x9875;&#x8868;&#x4E5F;&#x5C31;&#x4E0D;&#x9700;&#x8981;&#x5B58;&#x50A8;&#x7A7A;&#x95F4;&#x4E86;&#x3002;
+如上图所示：如果使用左边一级页表的形式，那么只有 5 个页表项是有效的，其他无效的页表项也要占用内存空间。
+当使用二级页表后，在第一级页表中就已经表示了中间两级是无效的，那么这两级对应的二级页表也就不需要存储空间了。
 </p>
 <ul class="org-ul">
-<li>&#x4E00;&#x7EA7;&#x9875;&#x8868;&#x4E5F;&#x79F0;&#x4E3A; PDE&#xFF08;page directory entries&#xFF09;</li>
+<li>一级页表也称为 PDE（page directory entries）</li>
 </ul>
 
 <p>
-&#x4F7F;&#x7528;&#x591A;&#x7EA7;&#x9875;&#x8868;&#x5177;&#x6709;&#x5982;&#x4E0B;&#x4F18;&#x5148;&#xFF1A;
+使用多级页表具有如下优先：
 </p>
 <ul class="org-ul">
-<li>&#x591A;&#x7EA7;&#x9875;&#x8868;&#x53EA;&#x6709;&#x5728;&#x4E0A;&#x7EA7;&#x9875;&#x8868;&#x4E3A; valid &#x65F6;&#xFF0C;&#x672C;&#x7EA7;&#x9875;&#x8868;&#x624D;&#x4F1A;&#x5360;&#x7528;&#x7269;&#x7406;&#x5185;&#x5B58;&#x7A7A;&#x95F4;</li>
-<li>&#x5728;&#x4F7F;&#x7528;&#x4E00;&#x7EA7;&#x9875;&#x8868;&#x7684;&#x60C5;&#x51B5;&#x4E0B;&#xFF0C;&#x9875;&#x8868;&#x9879;&#x672C;&#x8EAB;&#x6240;&#x5360;&#x7528;&#x7684;&#x5185;&#x5B58;&#x5FC5;&#x987B;&#x662F;&#x8FDE;&#x7EED;&#x7684;&#xFF0C;&#x6BD4;&#x5982;&#x5728; 32 &#x4F4D;&#x7CFB;&#x7EDF;&#x4E2D;&#x7684; 4K &#x9875;&#x5927;&#x5C0F;&#xFF0C;&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x7684;&#x9875;&#x8868;&#x5C31;&#x8981;&#x5360;&#x7528; 4MB&#x3002;</li>
+<li>多级页表只有在上级页表为 valid 时，本级页表才会占用物理内存空间</li>
+<li>在使用一级页表的情况下，页表项本身所占用的内存必须是连续的，比如在 32 位系统中的 4K 页大小，一个进程的页表就要占用 4MB。</li>
 </ul>
 <p>
-&#x800C;&#x5728;&#x4F7F;&#x7528;&#x591A;&#x7EA7;&#x9875;&#x8868;&#x7684;&#x60C5;&#x51B5;&#x4E0B;&#xFF0C;&#x4E0B;&#x7EA7;&#x9875;&#x8868;&#x53EF;&#x4EE5;&#x5206;&#x6563;&#x7684;&#x5B58;&#x50A8;&#xFF0C;&#x8FD9;&#x6837;&#x907F;&#x514D;&#x4E86;&#x7533;&#x8BF7;&#x8FDE;&#x7EED;&#x5927;&#x5185;&#x5B58;&#x7684;&#x538B;&#x529B;&#x3002;
+而在使用多级页表的情况下，下级页表可以分散的存储，这样避免了申请连续大内存的压力。
 </p>
 
 <p>
-&#x4F46;&#x540C;&#x65F6;&#x4E5F;&#x5177;&#x6709;&#x8FD9;&#x4E9B;&#x7F3A;&#x70B9;&#xFF1A;
+但同时也具有这些缺点：
 </p>
 <ul class="org-ul">
-<li>&#x5F53;&#x51FA;&#x73B0; TLB miss &#x65F6;&#xFF0C;&#x591A;&#x7EA7;&#x9875;&#x8868;&#x7684;&#x67E5;&#x8BE2;&#x6548;&#x7387;&#x4F4E;&#x4E8E;&#x4E00;&#x7EA7;&#x9875;&#x8868;&#x3002;
+<li>当出现 TLB miss 时，多级页表的查询效率低于一级页表。
 <ul class="org-ul">
-<li>&#x6BD4;&#x5982;&#x662F;&#x4E8C;&#x7EA7;&#x9875;&#x8868;&#x65F6;&#xFF0C;&#x7B2C;&#x4E00;&#x6B21;&#x9700;&#x8981;&#x4ECE;&#x7269;&#x7406;&#x5185;&#x5B58;&#x53D6;&#x4E00;&#x7EA7;&#x9875;&#x8868;&#xFF0C;&#x7B2C;&#x4E8C;&#x6B21;&#x624D;&#x662F;&#x4ECE;&#x7269;&#x7406;&#x5185;&#x5B58;&#x53D6;&#x5BF9;&#x5E94;&#x4E8E;&#x5185;&#x5B58;&#x5757;&#x7684;&#x9875;&#x8868;</li>
+<li>比如是二级页表时，第一次需要从物理内存取一级页表，第二次才是从物理内存取对应于内存块的页表</li>
 </ul></li>
-<li>&#x591A;&#x7EA7;&#x9875;&#x8868;&#x5728;&#x786C;&#x4EF6;&#x548C;&#x8F6F;&#x4EF6;&#x7684;&#x590D;&#x6742;&#x5EA6;&#x4F1A;&#x9AD8;&#x4E8E;&#x4E00;&#x7EA7;&#x9875;&#x8868;</li>
+<li>多级页表在硬件和软件的复杂度会高于一级页表</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-org9dd042f" class="outline-2">
-<h2 id="org9dd042f">&#x793A;&#x4F8B;</h2>
-<div class="outline-text-2" id="text-org9dd042f">
+<div id="outline-container-org2df3ede" class="outline-2">
+<h2 id="org2df3ede">示例</h2>
+<div class="outline-text-2" id="text-org2df3ede">
 </div>
-<div id="outline-container-orgb82930a" class="outline-3">
-<h3 id="orgb82930a">&#x53EA;&#x6709;&#x4E00;&#x7EA7;&#x9875;&#x8868;</h3>
-<div class="outline-text-3" id="text-orgb82930a">
+<div id="outline-container-org879d516" class="outline-3">
+<h3 id="org879d516">只有一级页表</h3>
+<div class="outline-text-3" id="text-org879d516">
 <p>
-&#x5047;&#x8BBE;&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x7684; address space &#x662F; 16KB&#xFF0C;&#x9875;&#x5757;&#x5927;&#x5C0F;&#x662F; 64 &#x5B57;&#x8282;&#x3002;&#x90A3;&#x4E48;&#x9700;&#x8981; 14 &#x4F4D;&#x6765;&#x8868;&#x793A;&#x865A;&#x62DF;&#x5730;&#x5740;&#xFF0C;&#x5176;&#x4E2D;&#x9700;&#x8981; 8 &#x4F4D;&#xFF08;256 &#x4E2A;&#x9875;&#x8868;&#x9879;&#xFF09;&#x8868;&#x793A;&#x9875;&#x8868;&#x504F;&#x79FB;&#xFF0C;6 &#x4F4D;&#x8868;&#x793A;&#x9875;&#x5185;&#x504F;&#x79FB;&#x3002;
+假设一个进程的 address space 是 16KB，页块大小是 64 字节。那么需要 14 位来表示虚拟地址，其中需要 8 位（256 个页表项）表示页表偏移，6 位表示页内偏移。
 </p>
 
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/smalltb/ex_linear_tlb.jpg?raw=true" alt="mempic/smalltb/ex_linear_tlb.jpg">
 <p>
-&#x5047;&#x8BBE;&#x5F53;&#x4F7F;&#x7528;&#x4E00;&#x7EA7;&#x9875;&#x8868;&#x65F6;&#xFF0C;&#x8BE5;&#x8FDB;&#x7A0B;&#x7684;&#x9875;&#x8868;&#x5982;&#x4E0A;&#x56FE;&#x6240;&#x793A;&#xFF1A;
+假设当使用一级页表时，该进程的页表如上图所示：
 </p>
 <ul class="org-ul">
-<li>&#x9875; 0&#xFF5E;1 &#x7528;&#x4E8E;&#x5B58;&#x653E;&#x4EE3;&#x7801;&#xFF0C;4&#xFF5E;5 &#x7528;&#x4E8E;&#x5B58;&#x653E;&#x5806;&#xFF0C;254&#xFF5E;255 &#x7528;&#x4E8E;&#x5B58;&#x653E;&#x6808;&#xFF0C;&#x5176;&#x4F59;&#x7684;&#x9875;&#x90FD;&#x672A;&#x6620;&#x5C04;&#x3002;</li>
-<li>&#x603B;&#x5171;&#x6709; 250 &#x4E2A;&#x9875;&#x8868;&#x9879;&#xFF0C;&#x603B;&#x5171; 1000 &#x5B57;&#x8282;&#x7684;&#x7269;&#x7406;&#x5185;&#x5B58;&#x88AB;&#x6D6A;&#x8D39;&#x4E86;</li>
+<li>页 0～1 用于存放代码，4～5 用于存放堆，254～255 用于存放栈，其余的页都未映射。</li>
+<li>总共有 250 个页表项，总共 1000 字节的物理内存被浪费了</li>
 </ul>
 </div>
 </div>
 
-<div id="outline-container-org217b4d8" class="outline-3">
-<h3 id="org217b4d8">&#x5177;&#x6709;&#x4E8C;&#x7EA7;&#x9875;&#x8868;</h3>
-<div class="outline-text-3" id="text-org217b4d8">
+<div id="outline-container-org6811fb8" class="outline-3">
+<h3 id="org6811fb8">具有二级页表</h3>
+<div class="outline-text-3" id="text-org6811fb8">
 <p>
-&#x4E0B;&#x9762;&#x4F7F;&#x7528;&#x4E8C;&#x7EA7;&#x9875;&#x8868;&#xFF0C;&#x7531;&#x4E8E;&#x9875;&#x5927;&#x5C0F;&#x662F; 64 &#x5B57;&#x8282;&#xFF0C;&#x90A3;&#x4E48; 14 &#x4F4D;&#x5360;&#x7528;&#x7684; 1KB &#x9875;&#x8868;&#x9879;&#x53EF;&#x4EE5;&#x518D;&#x5206;&#x4E3A; 16 &#x4E2A;&#x9875;&#xFF0C;&#x90A3;&#x4E48;&#x4E8C;&#x7EA7;&#x9875;&#x8868;&#x7684;&#x865A;&#x62DF;&#x5730;&#x5740;&#x5982;&#x4E0B;&#xFF1A;
+下面使用二级页表，由于页大小是 64 字节，那么 14 位占用的 1KB 页表项可以再分为 16 个页，那么二级页表的虚拟地址如下：
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/smalltb/ex_2_tlb_address.jpg?raw=true" alt="mempic/smalltb/ex_2_tlb_address.jpg">
 <p>
-&#x5047;&#x8BBE; 2 &#x7EA7;&#x9875;&#x8868;&#x9879;&#x7684;&#x5185;&#x5BB9;&#x5982;&#x4E0B;&#xFF1A;
+假设 2 级页表项的内容如下：
 </p>
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mempic/smalltb/ex_2_tlb_contents.jpg?raw=true" alt="mempic/smalltb/ex_2_tlb_contents.jpg">
 <p>
-&#x53EF;&#x4EE5;&#x770B;&#x51FA;&#xFF0C;&#x4F7F;&#x7528; 2&#x7EA7;&#x9875;&#x8868;&#x9879;&#x6240;&#x6D88;&#x8017;&#x7684;&#x5185;&#x5B58;&#x4E3A;&#xFF1A;
+可以看出，使用 2级页表项所消耗的内存为：
 </p>
 <ul class="org-ul">
-<li>&#x5B58;&#x653E;&#x4E00;&#x7EA7;&#x9875;&#x8868;&#xFF0C;&#x6D88;&#x8017;&#x4E86; 4 &#xD7; 16 = 64 &#x5B57;&#x8282;</li>
-<li>&#x5B58;&#x653E;&#x4E24;&#x4E2A;&#x4E8C;&#x7EA7;&#x9875;&#x8868;&#xFF0C;&#x6D88;&#x8017;&#x4E86; 4 &#xD7; 16 &#xD7; 2 = 128 &#x5B57;&#x8282;</li>
-<li>&#x6700;&#x7EC8;&#x6D6A;&#x8D39;&#x4E86; (3 &#xD7; 16 - 8) &#xD7; 4 = 160 &#x5B57;&#x8282;&#xFF0C;&#x76F8;&#x6BD4;&#x4E00;&#x7EA7;&#x9875;&#x8868;&#x8282;&#x7701;&#x4E86;&#x5F88;&#x591A;&#x5185;&#x5B58;</li>
+<li>存放一级页表，消耗了 4 × 16 = 64 字节</li>
+<li>存放两个二级页表，消耗了 4 × 16 × 2 = 128 字节</li>
+<li>最终浪费了 (3 × 16 - 8) × 4 = 160 字节，相比一级页表节省了很多内存</li>
 </ul>
 
 <p>
-&#x5176;&#x8F6C;&#x6362;&#x8FC7;&#x7A0B;&#x5982;&#x4E0B;&#xFF0C;&#x5047;&#x8BBE;&#x8BBF;&#x95EE;&#x865A;&#x62DF;&#x5730;&#x5740; 0x3F80 &#x5904;&#x7684;&#x5185;&#x5B58;&#xFF1A;
+其转换过程如下，假设访问虚拟地址 0x3F80 处的内存：
 </p>
 <ul class="org-ul">
-<li>&#x9996;&#x5148;&#x53D6;&#x51FA;&#x524D; 4 &#x5B57;&#x8282;&#xFF0C;&#x5F97;&#x5230;&#x5176;&#x5728;&#x4E00;&#x7EA7;&#x9875;&#x8868;&#x4E2D;&#x504F;&#x79FB;&#x4E3A; 15,&#x90A3;&#x4E48;&#x53EF;&#x4EE5;&#x901A;&#x8FC7;&#x4E00;&#x7EA7;&#x9875;&#x8868;&#x57FA;&#x5730;&#x5740;&#x548C;&#x5176;&#x504F;&#x79FB;&#x5F97;&#x5230;&#x6B64;&#x65F6;&#x7684;&#x4E8C;&#x7EA7;&#x9875;&#x8868;&#x6709;&#x6548;&#x4E14;&#x57FA;&#x5730;&#x5740;&#x4E3A; 101</li>
-<li>&#x4E8C;&#x7EA7;&#x9875;&#x8868;&#x57FA;&#x5730;&#x5740; 101 &#x518D;&#x52A0;&#x4E0A;&#x504F;&#x79FB;&#x4F4D; 14&#xFF08;1110&#xFF09;&#xFF0C;&#x5BF9;&#x5E94;&#x7B2C; 55 &#x4E2A;&#x5185;&#x5B58;&#x5757;</li>
-<li>&#x6700;&#x7EC8;&#x7684; 6 &#x4F4D;&#x4E3A;&#x5168; 0,&#x4EE3;&#x8868;&#x5176;&#x5728;&#x7269;&#x7406;&#x5185;&#x5B58;&#x5757;&#x7684;&#x504F;&#x79FB;&#x4E3A; 0,&#x90A3;&#x4E48;&#x5BF9;&#x5E94;&#x7684;&#x7269;&#x7406;&#x5730;&#x5740;&#x521A;&#x597D;&#x662F;&#x7269;&#x7406;&#x5185;&#x5B58;&#x5757;&#x7684;&#x8D77;&#x59CB; = 00 1101 1100 0000 = 0x0DC0</li>
+<li>首先取出前 4 字节，得到其在一级页表中偏移为 15,那么可以通过一级页表基地址和其偏移得到此时的二级页表有效且基地址为 101</li>
+<li>二级页表基地址 101 再加上偏移位 14（1110），对应第 55 个内存块</li>
+<li>最终的 6 位为全 0,代表其在物理内存块的偏移为 0,那么对应的物理地址刚好是物理内存块的起始 = 00 1101 1100 0000 = 0x0DC0</li>
 </ul>
 
 <p>
-&#x4F7F;&#x7528;&#x4E8C;&#x7EA7;&#x9875;&#x8868;&#x7684;&#x6D41;&#x7A0B;&#x5982;&#x4E0B;&#xFF1A;
+使用二级页表的流程如下：
 </p>
 <pre class="example">
-VPN = (VirtualAddress &amp; VPN_MASK) &gt;&gt; SHIFT
+VPN = (VirtualAddress & VPN_MASK) >> SHIFT
 (Success, TlbEntry) = TLB_Lookup(VPN)
 if (Success == True) // TLB Hit
     if (CanAccess(TlbEntry.ProtectBits) == True)
-        Offset = VirtualAddress &amp; OFFSET_MASK
-        PhysAddr = (TlbEntry.PFN &lt;&lt; SHIFT) | Offset
+        Offset = VirtualAddress & OFFSET_MASK
+        PhysAddr = (TlbEntry.PFN << SHIFT) | Offset
         Register = AccessMemory(PhysAddr)
     else
         RaiseException(PROTECTION_FAULT)
 else // TLB Miss
     // first, get page directory entry
-    PDIndex = (VPN &amp; PD_MASK) &gt;&gt; PD_SHIFT
+    PDIndex = (VPN & PD_MASK) >> PD_SHIFT
     PDEAddr = PDBR + (PDIndex * sizeof(PDE))
     PDE = AccessMemory(PDEAddr)
     if (PDE.Valid == False)
         RaiseException(SEGMENTATION_FAULT)
     else
         // PDE is valid: now fetch PTE from page table
-        PTIndex = (VPN &amp; PT_MASK) &gt;&gt; PT_SHIFT
-        PTEAddr = (PDE.PFN &lt;&lt; SHIFT) + (PTIndex * sizeof(PTE))
+        PTIndex = (VPN & PT_MASK) >> PT_SHIFT
+        PTEAddr = (PDE.PFN << SHIFT) + (PTIndex * sizeof(PTE))
         PTE = AccessMemory(PTEAddr)
         if (PTE.Valid == False)
             RaiseException(SEGMENTATION_FAULT)
@@ -500,60 +500,60 @@ else // TLB Miss
             RetryInstruction()</pre>
 </div>
 </div>
-<div id="outline-container-org47ba0ee" class="outline-3">
-<h3 id="org47ba0ee">&#x4F7F;&#x7528;&#x591A;&#x7EA7;&#x9875;&#x8868;</h3>
-<div class="outline-text-3" id="text-org47ba0ee">
+<div id="outline-container-orgc3dc81f" class="outline-3">
+<h3 id="orgc3dc81f">使用多级页表</h3>
+<div class="outline-text-3" id="text-orgc3dc81f">
 <p>
-&#x5047;&#x8BBE;&#x865A;&#x62DF;&#x5730;&#x5740;&#x4E3A; 30 &#x4F4D;&#xFF0C;&#x9875;&#x5927;&#x5C0F;&#x4E3A; 512 &#x5B57;&#x8282;&#xFF0C;&#x90A3;&#x4E48;&#x5C31;&#x9700;&#x8981; 9 &#x4F4D;&#x6765;&#x8868;&#x793A;&#x9875;&#x5185;&#x504F;&#x79FB;&#xFF0C;&#x5269;&#x4F59;&#x7684; 21 &#x4F4D;&#x8868;&#x793A;&#x9875;&#x504F;&#x79FB;&#x3002;
+假设虚拟地址为 30 位，页大小为 512 字节，那么就需要 9 位来表示页内偏移，剩余的 21 位表示页偏移。
 </p>
 
 <p>
-&#x5047;&#x8BBE;&#x4EC5;&#x4F7F;&#x7528;&#x4E8C;&#x7EA7;&#x9875;&#x8868;&#xFF0C;&#x90A3;&#x4E48;&#x7531;&#x4E8E;&#x9875;&#x5927;&#x5C0F;&#x662F; 512 &#x5B57;&#x8282;&#xFF0C;&#x4E00;&#x4E2A;&#x9875;&#x8868;&#x9879;&#x4E3A; 4 &#x5B57;&#x8282;&#xFF0C;&#x90A3;&#x4E48;&#x4E00;&#x9875;&#x5C31;&#x53EF;&#x4EE5;&#x8868;&#x793A; 128 &#x4E2A;&#x9875;&#x8868;&#x9879;&#x3002;
-&#x4E5F;&#x5C31;&#x662F;&#x8BF4; 7 &#x4F4D;&#x8868;&#x793A;&#x7B2C;&#x4E8C;&#x7EA7;&#x9875;&#x8868;&#x504F;&#x79FB;&#xFF0C;&#x5269;&#x4E0B;&#x7684; 14 &#x4F4D;&#x8868;&#x793A;&#x7B2C;&#x4E00;&#x7EA7;&#x9875;&#x8868;&#x504F;&#x79FB;&#xFF0C;&#x4E00;&#x7EA7;&#x9875;&#x8868;&#x4F9D;&#x7136;&#x5F88;&#x5927;&#xFF0C;&#x4F9D;&#x7136;&#x4F1A;&#x6D6A;&#x8D39;&#x5F88;&#x591A;&#x5185;&#x5B58;&#x3002;
+假设仅使用二级页表，那么由于页大小是 512 字节，一个页表项为 4 字节，那么一页就可以表示 128 个页表项。
+也就是说 7 位表示第二级页表偏移，剩下的 14 位表示第一级页表偏移，一级页表依然很大，依然会浪费很多内存。
 </p>
 
 <p>
-&#x5047;&#x8BBE;&#x4F7F;&#x7528; 3 &#x7EA7;&#x9875;&#x8868;&#xFF0C;&#x90A3;&#x4E48;&#x4E00;&#x7EA7;&#x9875;&#x8868;&#xFF0C;&#x4E8C;&#x7EA7;&#x9875;&#x8868;&#xFF0C;&#x4EE5;&#x53CA;&#x4E09;&#x7EA7;&#x9875;&#x8868;&#x90FD;&#x5360;&#x7528; 7 &#x4F4D;&#x3002;&#x5047;&#x8BBE; 1 &#x7EA7;&#x9875;&#x8868;&#x7684;&#x67D0;&#x4E2A;&#x9875;&#x8868;&#x9879;&#x4E3A; invalid&#xFF0C;&#x90A3;&#x4E48;&#x5176;&#x4E0B;&#x7684;&#x4E8C;&#x4E09;&#x7EA7;&#x9875;&#x8868;&#x90FD;&#x4E0D;&#x5B58;&#x5728;&#xFF0C;&#x4E5F;&#x5C31;&#x4E0D;&#x4F1A;&#x5360;&#x7528;&#x7269;&#x7406;&#x5185;&#x5B58;&#x4E86;&#x3002;
-</p>
-</div>
-</div>
-</div>
-
-
-
-
-
-<div id="outline-container-org3f7d93e" class="outline-2">
-<h2 id="org3f7d93e">&#x9875;&#x8868;&#x8F6C;&#x7F6E;</h2>
-<div class="outline-text-2" id="text-org3f7d93e">
-<p>
-&#x4E00;&#x822C;&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x4F1A;&#x5BF9;&#x5E94;&#x4E00;&#x4E2A;&#x9875;&#x8868;&#xFF0C;&#x800C;&#x9875;&#x8868;&#x8F6C;&#x7F6E;&#x7684;&#x65B9;&#x5F0F;&#x662F;&#x6240;&#x6709;&#x8FDB;&#x7A0B;&#x4EC5;&#x4F7F;&#x7528;&#x4E00;&#x4E2A;&#x9875;&#x8868;&#x3002;
-</p>
-
-<p>
-&#x8FD9;&#x4E2A;&#x9875;&#x8868;&#x6620;&#x5C04;&#x4E86;&#x6574;&#x4E2A;&#x7269;&#x7406;&#x5185;&#x5B58;&#x9875;&#xFF0C;&#x6BCF;&#x4E2A;&#x9875;&#x88AB;&#x6807;&#x8BB0;&#x4E86;&#x8BE5;&#x9875;&#x662F;&#x7531;&#x54EA;&#x4E9B;&#x8FDB;&#x7A0B;&#x6240;&#x5171;&#x4EAB;&#xFF0C;&#x54EA;&#x4E9B;&#x8FDB;&#x7A0B;&#x6240;&#x72EC;&#x5360;&#x3002;
-</p>
-
-<p>
-&#x5F53;&#x8C03;&#x5EA6;&#x81F3;&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x65F6;&#xFF0C;&#x4F7F;&#x7528;&#x54C8;&#x5E0C;&#x7B97;&#x6CD5;&#x5F97;&#x51FA;&#x6B64;&#x8FDB;&#x7A0B;&#x5BF9;&#x5E94;&#x7684;&#x5185;&#x5B58;&#x9875;&#xFF0C;&#x7136;&#x540E;&#x8FDB;&#x884C;&#x5BF9;&#x5E94;&#x64CD;&#x4F5C;&#x3002;
-</p>
-
-<p>
-&#x8FD9;&#x79CD;&#x65B9;&#x5F0F;&#x53EF;&#x4EE5;&#x5F88;&#x5927;&#x9650;&#x5EA6;&#x7684;&#x8282;&#x7EA6;&#x5185;&#x5B58;&#xFF0C;&#x4F46;&#x5B9E;&#x9645;&#x4F7F;&#x7528;&#x5E76;&#x4E0D;&#x591A;&#xFF0C;&#x53EF;&#x80FD;&#x662F;&#x786C;&#x4EF6;&#x5B9E;&#x73B0;&#x8F83;&#x4E3A;&#x590D;&#x6742;&#x5427;&#x3002;
+假设使用 3 级页表，那么一级页表，二级页表，以及三级页表都占用 7 位。假设 1 级页表的某个页表项为 invalid，那么其下的二三级页表都不存在，也就不会占用物理内存了。
 </p>
 </div>
 </div>
-<div id="outline-container-org9bc9b4b" class="outline-2">
-<h2 id="org9bc9b4b">&#x5C06;&#x9875;&#x8868;&#x4EA4;&#x6362;&#x81F3;&#x786C;&#x76D8;</h2>
-<div class="outline-text-2" id="text-org9bc9b4b">
+</div>
+
+
+
+
+
+<div id="outline-container-orgd14e039" class="outline-2">
+<h2 id="orgd14e039">页表转置</h2>
+<div class="outline-text-2" id="text-orgd14e039">
 <p>
-&#x5F53;&#x5185;&#x5B58;&#x5403;&#x7D27;&#x65F6;&#xFF0C;&#x4E5F;&#x53EF;&#x4EE5;&#x5C06;&#x9875;&#x8868;&#x7F6E;&#x6362;&#x5230;&#x786C;&#x76D8;&#x4F5C;&#x4E3A;&#x4E34;&#x65F6;&#x5B58;&#x50A8;&#xFF0C;&#x8FD9;&#x6837;&#x4E5F;&#x53EF;&#x4EE5;&#x51CF;&#x5C0F;&#x5185;&#x5B58;&#x538B;&#x529B;&#x3002;
+一般一个进程会对应一个页表，而页表转置的方式是所有进程仅使用一个页表。
+</p>
+
+<p>
+这个页表映射了整个物理内存页，每个页被标记了该页是由哪些进程所共享，哪些进程所独占。
+</p>
+
+<p>
+当调度至一个进程时，使用哈希算法得出此进程对应的内存页，然后进行对应操作。
+</p>
+
+<p>
+这种方式可以很大限度的节约内存，但实际使用并不多，可能是硬件实现较为复杂吧。
+</p>
+</div>
+</div>
+<div id="outline-container-org786a875" class="outline-2">
+<h2 id="org786a875">将页表交换至硬盘</h2>
+<div class="outline-text-2" id="text-org786a875">
+<p>
+当内存吃紧时，也可以将页表置换到硬盘作为临时存储，这样也可以减小内存压力。
 </p>
 </div>
 </div>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
 </div>
 
     </div>
@@ -639,7 +639,7 @@ Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org5497c54"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x7B80;&amp;#x6613;&amp;#x529E;&amp;#x6CD5;&amp;#xFF1A;&amp;#x4F7F;&amp;#x7528;&amp;#x5927;&amp;#x9875;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org872920f"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x8FDB;&amp;#x9636;&amp;#x65B9;&amp;#x6848;&amp;#xFF1A;&amp;#x9875;&amp;#x548C;&amp;#x6BB5;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org355d9a6"><span class="nav-number">3.</span> <span class="nav-text">&amp;#x591A;&amp;#x7EA7;&amp;#x9875;&amp;#x8868;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org9dd042f"><span class="nav-number">4.</span> <span class="nav-text">&amp;#x793A;&amp;#x4F8B;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgb82930a"><span class="nav-number">4.1.</span> <span class="nav-text">&amp;#x53EA;&amp;#x6709;&amp;#x4E00;&amp;#x7EA7;&amp;#x9875;&amp;#x8868;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org217b4d8"><span class="nav-number">4.2.</span> <span class="nav-text">&amp;#x5177;&amp;#x6709;&amp;#x4E8C;&amp;#x7EA7;&amp;#x9875;&amp;#x8868;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org47ba0ee"><span class="nav-number">4.3.</span> <span class="nav-text">&amp;#x4F7F;&amp;#x7528;&amp;#x591A;&amp;#x7EA7;&amp;#x9875;&amp;#x8868;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org3f7d93e"><span class="nav-number">5.</span> <span class="nav-text">&amp;#x9875;&amp;#x8868;&amp;#x8F6C;&amp;#x7F6E;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org9bc9b4b"><span class="nav-number">6.</span> <span class="nav-text">&amp;#x5C06;&amp;#x9875;&amp;#x8868;&amp;#x4EA4;&amp;#x6362;&amp;#x81F3;&amp;#x786C;&amp;#x76D8;</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org45bff45"><span class="nav-number">1.</span> <span class="nav-text">简易办法：使用大页</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org05cadab"><span class="nav-number">2.</span> <span class="nav-text">进阶方案：页和段</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org0b92c34"><span class="nav-number">3.</span> <span class="nav-text">多级页表</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org2df3ede"><span class="nav-number">4.</span> <span class="nav-text">示例</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org879d516"><span class="nav-number">4.1.</span> <span class="nav-text">只有一级页表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org6811fb8"><span class="nav-number">4.2.</span> <span class="nav-text">具有二级页表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgc3dc81f"><span class="nav-number">4.3.</span> <span class="nav-text">使用多级页表</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgd14e039"><span class="nav-number">5.</span> <span class="nav-text">页表转置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org786a875"><span class="nav-number">6.</span> <span class="nav-text">将页表交换至硬盘</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 

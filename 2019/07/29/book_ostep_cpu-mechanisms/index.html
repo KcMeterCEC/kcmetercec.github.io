@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="&amp;#x7406;&amp;#x89E3;&amp;#x64CD;&amp;#x4F5C;&amp;#x7CFB;&amp;#x7EDF;&amp;#x865A;&amp;#x62DF;&amp;#x5316;CPU&amp;#x7684;&amp;#x5B9E;&amp;#x73B0;&amp;#x673A;&amp;#x5236;&amp;#x3002;">
+  <meta name="description" content="理解操作系统虚拟化CPU的实现机制。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[What]Limited Direct Execution">
 <meta property="og:url" content="http://kcmetercec.top/2019/07/29/book_ostep_cpu-mechanisms/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="&amp;#x7406;&amp;#x89E3;&amp;#x64CD;&amp;#x4F5C;&amp;#x7CFB;&amp;#x7EDF;&amp;#x865A;&amp;#x62DF;&amp;#x5316;CPU&amp;#x7684;&amp;#x5B9E;&amp;#x73B0;&amp;#x673A;&amp;#x5236;&amp;#x3002;">
+<meta property="og:description" content="理解操作系统虚拟化CPU的实现机制。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2019-07-28T16:00:00.000Z">
 <meta property="article:modified_time" content="2020-08-01T01:09:06.476Z">
@@ -295,135 +295,135 @@
       
         <div id="content">
 <p>
-&#x7406;&#x89E3;&#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;&#x865A;&#x62DF;&#x5316;CPU&#x7684;&#x5B9E;&#x73B0;&#x673A;&#x5236;&#x3002;
+理解操作系统虚拟化CPU的实现机制。
 </p>
 <a id="more"></a>
 <p>
-&#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;&#x8981;&#x5B9E;&#x73B0;&#x865A;&#x62DF;&#x5316;&#x673A;&#x5236;&#xFF0C;&#x6709;&#x4E24;&#x4E2A;&#x6311;&#x6218;&#xFF1A;
+操作系统要实现虚拟化机制，有两个挑战：
 </p>
 <ol class="org-ol">
-<li>&#x5C3D;&#x91CF;&#x5C11;&#x7684;&#x5360;&#x7528;&#x8BA1;&#x7B97;&#x673A;&#x8D44;&#x6E90;&#x5B8C;&#x6210;&#x865A;&#x62DF;&#x5316;&#x673A;&#x5236;</li>
-<li>&#x5C3D;&#x91CF;&#x9AD8;&#x6548;&#x7387;&#x7684;&#x8FD0;&#x884C;&#x8FDB;&#x7A0B;&#x540C;&#x65F6;&#x4E5F;&#x80FD;&#x5F88;&#x597D;&#x7684;&#x638C;&#x63A7;&#x5B83;&#x4EEC;</li>
+<li>尽量少的占用计算机资源完成虚拟化机制</li>
+<li>尽量高效率的运行进程同时也能很好的掌控它们</li>
 </ol>
 
-<div id="outline-container-org217249d" class="outline-2">
-<h2 id="org217249d">&#x65E0;&#x9650;&#x5236;&#x7684;&#x8FD0;&#x884C;</h2>
-<div class="outline-text-2" id="text-org217249d">
+<div id="outline-container-org4ed9d87" class="outline-2">
+<h2 id="org4ed9d87">无限制的运行</h2>
+<div class="outline-text-2" id="text-org4ed9d87">
 <p>
-&#x65E0;&#x9650;&#x5236;&#x7684;&#x8FD0;&#x884C;&#x662F;&#x6307;&#xFF1A;&#x7CFB;&#x7EDF;&#x4ECE;&#x786C;&#x76D8;&#x62F7;&#x8D1D;&#x4EE3;&#x7801;&#x5230;&#x5185;&#x5B58;&#xFF0C;&#x5C06;&#x5176;&#x52A0;&#x5165;&#x8FDB;&#x7A0B;&#x5217;&#x8868;&#x5E76;&#x4E3A;&#x5176;&#x5206;&#x914D;&#x5FC5;&#x8981;&#x7684;&#x5185;&#x5B58;&#x540E;&#x8DF3;&#x5165;&#x5165;&#x53E3;&#x5730;&#x5740;&#x5F00;&#x59CB;&#x6267;&#x884C;&#x3002;
+无限制的运行是指：系统从硬盘拷贝代码到内存，将其加入进程列表并为其分配必要的内存后跳入入口地址开始执行。
 </p>
 
 <p>
-&#x8FD9;&#x79CD;&#x60C5;&#x51B5;&#x4E0B;&#x8FDB;&#x7A0B;&#x7684;&#x8FD0;&#x884C;&#x6548;&#x7387;&#x662F;&#x6700;&#x9AD8;&#x7684;&#xFF0C;&#x4F46;&#x7531;&#x4E8E;&#x8FDB;&#x7A0B;&#x5177;&#x6709;&#x7EDD;&#x5BF9;&#x7684;&#x8BBF;&#x95EE;&#x6743;&#x9650;&#xFF0C;&#x5BFC;&#x81F4;&#x7CFB;&#x7EDF;&#x7684;&#x8D44;&#x6E90;&#x53EF;&#x4EE5;&#x4E0D;&#x88AB;&#x4FDD;&#x62A4;&#x7684;&#x8BBF;&#x95EE;&#x3002;
+这种情况下进程的运行效率是最高的，但由于进程具有绝对的访问权限，导致系统的资源可以不被保护的访问。
 </p>
 
 <p>
-&#x4E00;&#x4E0D;&#x5C0F;&#x5FC3;&#x5C31;&#x4F1A;&#x641E;&#x6B7B;&#x6574;&#x4E2A;&#x7CFB;&#x7EDF;&#xFF0C;&#x6B64;&#x65F6;&#x7684;&#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;&#x548C;&#x4EE3;&#x7801;&#x5E93;&#x5DEE;&#x522B;&#x4E0D;&#x5927;&#x4E86;&#xFF0C;&#x5F88;&#x660E;&#x663E;&#x662F;&#x4E0D;&#x884C;&#x7684;&#x3002;
+一不小心就会搞死整个系统，此时的操作系统和代码库差别不大了，很明显是不行的。
 </p>
 </div>
 </div>
-<div id="outline-container-orgfb00119" class="outline-2">
-<h2 id="orgfb00119">&#x6709;&#x9650;&#x5236;&#x7684;&#x8FD0;&#x884C;</h2>
-<div class="outline-text-2" id="text-orgfb00119">
+<div id="outline-container-org62162de" class="outline-2">
+<h2 id="org62162de">有限制的运行</h2>
+<div class="outline-text-2" id="text-org62162de">
 <p>
-&#x7531;&#x6B64;&#x624D;&#x53D1;&#x660E;&#x4E86;&#x7528;&#x6237;&#x6001;&#x548C;&#x5185;&#x6838;&#x6001;&#xFF0C;&#x7528;&#x6237;&#x6001;&#x8FDB;&#x7A0B;&#x4E0D;&#x80FD;&#x76F4;&#x63A5;&#x53D1;&#x8D77;IO&#x8BF7;&#x6C42;&#x3001;&#x8BBF;&#x95EE;&#x5176;&#x4ED6;&#x8FDB;&#x7A0B;&#x5185;&#x5B58;&#x7B49;&#xFF0C;&#x5185;&#x6838;&#x6001;&#x5219;&#x5BF9;&#x8D44;&#x6E90;&#x6709;&#x7EDD;&#x5BF9;&#x7684;&#x63A7;&#x5236;&#x6743;&#x3002;
+由此才发明了用户态和内核态，用户态进程不能直接发起IO请求、访问其他进程内存等，内核态则对资源有绝对的控制权。
 </p>
 <ul class="org-ul">
-<li>&#x8981;&#x5B9E;&#x73B0;&#x7528;&#x6237;&#x6001;&#x548C;&#x5185;&#x6838;&#x6001;&#x662F;&#x9700;&#x8981;CPU&#x786C;&#x4EF6;&#x652F;&#x6301;&#x7684;</li>
+<li>要实现用户态和内核态是需要CPU硬件支持的</li>
 </ul>
 
 <p>
-&#x5185;&#x6838;&#x4E3A;&#x7528;&#x6237;&#x6001;&#x8FDB;&#x7A0B;&#x63D0;&#x4F9B;&#x4E86;&#x7CFB;&#x7EDF;&#x8C03;&#x7528;&#x4E8E;&#x5B8C;&#x6210;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x8BBF;&#x95EE;&#x3001;&#x7533;&#x8BF7;&#x5185;&#x5B58;&#x3001;&#x4E0E;&#x5176;&#x4ED6;&#x8FDB;&#x7A0B;&#x901A;&#x4FE1;&#x7B49;&#x7279;&#x6743;&#x529F;&#x80FD;&#x3002;
+内核为用户态进程提供了系统调用于完成文件系统访问、申请内存、与其他进程通信等特权功能。
 </p>
 
 <p>
-&#x8C03;&#x7528;&#x7CFB;&#x7EDF;API&#x540E;&#xFF0C;&#x5185;&#x90E8;&#x4F1A;&#x8C03;&#x7528;&#x9677;&#x5165;&#x5185;&#x6838;&#x7684;&#x6C47;&#x7F16;&#x6307;&#x4EE4;&#xFF0C;&#x8DF3;&#x8F6C;&#x81F3;&#x5185;&#x6838;&#x4EE3;&#x7801;&#x7684;&#x540C;&#x65F6;&#x4E5F;&#x8FDB;&#x5165;&#x5230;&#x4E86;&#x7279;&#x6743;&#x7B49;&#x7EA7;&#x3002;
-&#x5F53;&#x5185;&#x6838;&#x5904;&#x7406;&#x5B8C;&#x6B64;&#x8C03;&#x7528;&#x540E;&#x53C8;&#x901A;&#x8FC7;&#x6C47;&#x7F16;&#x6267;&#x884C;&#x56DE;&#x5230;&#x7528;&#x6237;&#x6001;&#xFF0C;&#x8DF3;&#x8F6C;&#x81F3;&#x7528;&#x6237;&#x4EE3;&#x7801;&#x7684;&#x540C;&#x65F6;&#x4E5F;&#x8FDB;&#x5165;&#x5230;&#x4E86;&#x7528;&#x6237;&#x7B49;&#x7EA7;&#x3002;
+调用系统API后，内部会调用陷入内核的汇编指令，跳转至内核代码的同时也进入到了特权等级。
+当内核处理完此调用后又通过汇编执行回到用户态，跳转至用户代码的同时也进入到了用户等级。
 </p>
 <ul class="org-ul">
-<li>&#x5185;&#x6838;&#x4F1A;&#x5148;&#x5C06;&#x7528;&#x6237;&#x6001;&#x7684;PC&#x6307;&#x9488;&#x3001;&#x5BC4;&#x5B58;&#x5668;&#x503C;&#x4FDD;&#x5B58;&#x5230;&#x5BF9;&#x5E94;&#x7684;&#x8FDB;&#x7A0B;&#x6808;&#x4E2D;&#xFF0C;&#x5728;&#x5B8C;&#x6210;&#x5904;&#x7406;&#x540E;&#x53C8;&#x5F39;&#x51FA;&#x8BE5;&#x6808;</li>
-<li>&#x540C;&#x65F6;&#x5185;&#x6838;&#x4E5F;&#x4F1A;&#x5BF9;&#x51FD;&#x6570;&#x8C03;&#x7528;&#xFF08;&#x662F;&#x5426;&#x5728;&#x51FD;&#x6570;&#x8868;&#x4E2D;&#x6709;&#x5BF9;&#x5E94;&#xFF09;&#x53CA;&#x7528;&#x6237;&#x8F93;&#x5165;&#x7684;&#x53C2;&#x6570;&#x8FDB;&#x884C;&#x68C0;&#x67E5;&#xFF0C;&#x907F;&#x514D;&#x53C2;&#x6570;&#x6307;&#x5411;&#x4E86;&#x975E;&#x6CD5;&#x5730;&#x5740;&#x800C;&#x51FA;&#x73B0;&#x5B89;&#x5168;&#x95EE;&#x9898;&#x3002;</li>
+<li>内核会先将用户态的PC指针、寄存器值保存到对应的进程栈中，在完成处理后又弹出该栈</li>
+<li>同时内核也会对函数调用（是否在函数表中有对应）及用户输入的参数进行检查，避免参数指向了非法地址而出现安全问题。</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-org531cac7" class="outline-2">
-<h2 id="org531cac7">&#x8FDB;&#x7A0B;&#x95F4;&#x7684;&#x5207;&#x6362;</h2>
-<div class="outline-text-2" id="text-org531cac7">
+<div id="outline-container-org98ee652" class="outline-2">
+<h2 id="org98ee652">进程间的切换</h2>
+<div class="outline-text-2" id="text-org98ee652">
 </div>
-<div id="outline-container-orgff12c91" class="outline-3">
-<h3 id="orgff12c91">&#x5408;&#x4F5C;&#x5F0F;&#x8C03;&#x5EA6;</h3>
-<div class="outline-text-3" id="text-orgff12c91">
+<div id="outline-container-org4612516" class="outline-3">
+<h3 id="org4612516">合作式调度</h3>
+<div class="outline-text-3" id="text-org4612516">
 <p>
-&#x5408;&#x4F5C;&#x5F0F;&#x8C03;&#x5EA6;&#x662F;&#x7531;&#x8FDB;&#x7A0B;&#x901A;&#x8FC7;&#x7CFB;&#x7EDF;&#x8C03;&#x7528;&#x6216;&#x975E;&#x6CD5;&#x8BBF;&#x95EE;&#x6765;&#x5B9E;&#x73B0;&#x8FDB;&#x7A0B;&#x5207;&#x6362;&#x3002;
+合作式调度是由进程通过系统调用或非法访问来实现进程切换。
 </p>
 <ul class="org-ul">
-<li>&#x7CFB;&#x7EDF;&#x8C03;&#x7528;&#x76F8;&#x5F53;&#x4E8E;&#x8FDB;&#x7A0B;&#x4E3B;&#x52A8;&#x8BA9;&#x51FA;CPU&#xFF0C;&#x5185;&#x6838;&#x65E0;&#x6CD5;&#x5E72;&#x9884;</li>
-<li>&#x975E;&#x6CD5;&#x8BBF;&#x95EE;&#x662F;&#x7531;&#x4E8E;&#x89E6;&#x53D1;&#x4E86;&#x5F02;&#x5E38;&#x800C;&#x7531;&#x5185;&#x6838;&#x4E3B;&#x52A8;&#x5207;&#x6362;&#x5230;&#x5176;&#x4ED6;&#x8FDB;&#x7A0B;</li>
-</ul>
-
-<p>
-&#x4F46;&#x5982;&#x679C;&#x4E00;&#x4E2A;&#x8FDB;&#x7A0B;&#x65E2;&#x4E0D;&#x8FDB;&#x884C;&#x7CFB;&#x7EDF;&#x8C03;&#x7528;&#x4E5F;&#x6CA1;&#x6709;&#x89E6;&#x53D1;&#x4EFB;&#x4F55;&#x5F02;&#x5E38;&#xFF0C;&#x90A3;&#x5C31;&#x65E0;&#x6CD5;&#x5B8C;&#x6210;&#x8FDB;&#x7A0B;&#x5207;&#x6362;&#xFF0C;&#x8FD9;&#x80AF;&#x5B9A;&#x662F;&#x4E0D;&#x884C;&#x7684;&#x3002;
-</p>
-<ul class="org-ul">
-<li>&#x4E4B;&#x524D;&#x5728;&#x5355;&#x7247;&#x673A;&#x4E0A;&#x5199;&#x7684;&#x5408;&#x4F5C;&#x5F0F;&#x8C03;&#x5EA6;&#x5668;&#x4E5F;&#x7ECF;&#x5E38;&#x9047;&#x5230;&#x8FD9;&#x4E2A;&#x95EE;&#x9898;&#xFF0C;&#x867D;&#x7136;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x7684;&#x7406;&#x8BBA;&#x65F6;&#x95F4;&#x7247;&#x8017;&#x5C3D;&#x4E86;&#xFF0C;&#x4F46;&#x7531;&#x4E8E;&#x5176;&#x6267;&#x884C;&#x65F6;&#x95F4;&#x7684;&#x4E0D;&#x53EF;&#x63A7;&#x5BFC;&#x81F4;&#x6574;&#x4E2A;&#x7CFB;&#x7EDF;&#x5B9E;&#x65F6;&#x6027;&#x6781;&#x5DEE;&#x3002;</li>
-</ul>
-</div>
-</div>
-
-<div id="outline-container-org4da1264" class="outline-3">
-<h3 id="org4da1264">&#x7531;&#x7CFB;&#x7EDF;&#x4EFB;&#x52A1;&#x5B8C;&#x6210;&#x8C03;&#x5EA6;</h3>
-<div class="outline-text-3" id="text-org4da1264">
-<p>
-&#x901A;&#x8FC7;&#x5B9A;&#x65F6;&#x5668;&#x4E2D;&#x65AD;&#x6765;&#x5B8C;&#x6210;&#x5185;&#x6838;&#x7684;&#x4E3B;&#x52A8;&#x8C03;&#x5EA6;&#xFF0C;&#x5E76;&#x4E14;&#x5728;&#x8C03;&#x7528;&#x7CFB;&#x7EDF;&#x63A5;&#x53E3;&#x65F6;&#x4E5F;&#x53EF;&#x80FD;&#x4F1A;&#x89E6;&#x53D1;&#x8C03;&#x5EA6;&#x3002;
-</p>
-<ul class="org-ul">
-<li>&#x5728;&#x8FDB;&#x5165;&#x4E2D;&#x65AD;&#x65F6;&#xFF0C;&#x786C;&#x4EF6;&#x4F1A;&#x81EA;&#x52A8;&#x4FDD;&#x5B58;&#x90E8;&#x5206;&#x5F53;&#x524D;&#x7684;&#x8FD0;&#x884C;&#x8FDB;&#x7A0B;&#x5BC4;&#x5B58;&#x5668;&#x5230;&#x5185;&#x6838;&#x6808;</li>
+<li>系统调用相当于进程主动让出CPU，内核无法干预</li>
+<li>非法访问是由于触发了异常而由内核主动切换到其他进程</li>
 </ul>
 
 <p>
-&#x8C03;&#x5EA6;&#x5668;&#x5728;&#x8FDB;&#x884C;&#x8FDB;&#x7A0B;&#x5207;&#x6362;&#x65F6;&#xFF0C;&#x4F1A;&#x5B8C;&#x6574;&#x7684;&#x4FDD;&#x5B58;&#x5F53;&#x524D;&#x8FDB;&#x7A0B;&#x4E0A;&#x4E0B;&#x6587;&#x5230;&#x8FDB;&#x7A0B;&#x7684;PCB&#x4E2D;&#xFF0C;&#x5E76;&#x6062;&#x590D;&#x5E94;&#x8BE5;&#x5207;&#x6362;&#x5230;&#x7684;&#x8FDB;&#x7A0B;&#x7684;&#x4E0A;&#x4E0B;&#x6587;&#x3002;
+但如果一个进程既不进行系统调用也没有触发任何异常，那就无法完成进程切换，这肯定是不行的。
 </p>
 <ul class="org-ul">
-<li>&#x4E0A;&#x4E0B;&#x6587;&#x5305;&#x542B;&#x5F53;&#x524D;&#x7684;&#x5BC4;&#x5B58;&#x5668;&#x503C;&#x3001;PC&#x6307;&#x9488;&#x3001;&#x6808;&#x6307;&#x9488;&#x3002;</li>
+<li>之前在单片机上写的合作式调度器也经常遇到这个问题，虽然一个任务的理论时间片耗尽了，但由于其执行时间的不可控导致整个系统实时性极差。</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-org87b851e" class="outline-3">
+<h3 id="org87b851e">由系统任务完成调度</h3>
+<div class="outline-text-3" id="text-org87b851e">
+<p>
+通过定时器中断来完成内核的主动调度，并且在调用系统接口时也可能会触发调度。
+</p>
+<ul class="org-ul">
+<li>在进入中断时，硬件会自动保存部分当前的运行进程寄存器到内核栈</li>
 </ul>
 
 <p>
-&#x5728;&#x8FDB;&#x5165;&#x4E0A;&#x4E0B;&#x6587;&#x5207;&#x6362;&#x65F6;&#xFF0C;&#x5185;&#x6838;&#x4F1A;&#x5173;&#x95ED;&#x4E2D;&#x65AD;&#x4EE5;&#x907F;&#x514D;CPU&#x88AB;&#x5360;&#x7528;&#x3002;
+调度器在进行进程切换时，会完整的保存当前进程上下文到进程的PCB中，并恢复应该切换到的进程的上下文。
+</p>
+<ul class="org-ul">
+<li>上下文包含当前的寄存器值、PC指针、栈指针。</li>
+</ul>
+
+<p>
+在进入上下文切换时，内核会关闭中断以避免CPU被占用。
 </p>
 </div>
 </div>
 </div>
-<div id="outline-container-org8fd4330" class="outline-2">
-<h2 id="org8fd4330">&#x4F5C;&#x4E1A;</h2>
-<div class="outline-text-2" id="text-org8fd4330">
+<div id="outline-container-org4417cce" class="outline-2">
+<h2 id="org4417cce">作业</h2>
+<div class="outline-text-2" id="text-org4417cce">
 </div>
-<div id="outline-container-org1fdf36c" class="outline-3">
-<h3 id="org1fdf36c">&#x6D4B;&#x8BD5;&#x7CFB;&#x7EDF;&#x8C03;&#x7528;&#x6240;&#x6D88;&#x8017;&#x7684;&#x65F6;&#x95F4;</h3>
-<div class="outline-text-3" id="text-org1fdf36c">
+<div id="outline-container-orgecca149" class="outline-3">
+<h3 id="orgecca149">测试系统调用所消耗的时间</h3>
+<div class="outline-text-3" id="text-orgecca149">
 <p>
-&#x901A;&#x8FC7;&#x6267;&#x884C;&#x591A;&#x6B21;&#x7CFB;&#x7EDF;&#x8C03;&#x7528;&#x7B97;&#x5E73;&#x5747;&#x503C;&#x6C42;&#x5F97;&#x8C03;&#x7528;&#x65F6;&#x95F4;&#x3002;
+通过执行多次系统调用算平均值求得调用时间。
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/time.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdint.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/stat.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span>*argv[])</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="keyword">if</span>(argc != <span class="number">2</span>)</span><br><span class="line">    {</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;usage : %s &lt;run times&gt;\n&quot;</span>, argv[<span class="number">0</span>]);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">int</span> times = atoi(argv[<span class="number">1</span>]);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(times &lt;= <span class="number">0</span>)</span><br><span class="line">    {</span><br><span class="line">	times = <span class="number">1</span>;</span><br><span class="line">    }</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;run system call %d times\n&quot;</span>, times);</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timeval</span> <span class="title">start</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timeval</span> <span class="title">end</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> f_index = open(<span class="string">&quot;./call_time.c&quot;</span>, O_RDONLY);</span><br><span class="line">    <span class="keyword">if</span>(f_index == <span class="number">-1</span>)</span><br><span class="line">    {</span><br><span class="line">	perror(<span class="string">&quot;open file failed:&quot;</span>);</span><br><span class="line">	<span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">int</span> buf;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(gettimeofday(&amp;start, <span class="literal">NULL</span>) == <span class="number">-1</span>)</span><br><span class="line">    {</span><br><span class="line">	perror(<span class="string">&quot;gettimeofday() failed:&quot;</span>);</span><br><span class="line">	<span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; times; i++)</span><br><span class="line">    {</span><br><span class="line">	<span class="keyword">if</span>(read(f_index, &amp;buf, <span class="number">0</span>) == <span class="number">-1</span>)</span><br><span class="line">	{</span><br><span class="line">	    perror(<span class="string">&quot;read failed:&quot;</span>);</span><br><span class="line">	}</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(gettimeofday(&amp;end, <span class="literal">NULL</span>) == <span class="number">-1</span>)</span><br><span class="line">    {</span><br><span class="line">	perror(<span class="string">&quot;gettimeofday() failed:&quot;</span>);</span><br><span class="line">	<span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="keyword">uint64_t</span> t = end.tv_sec * <span class="number">1000000</span> + end.tv_usec -</span><br><span class="line">	(start.tv_sec * <span class="number">1000000</span> + start.tv_usec);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;system call took %f us\n&quot;</span>, (<span class="keyword">double</span>)t / (<span class="keyword">double</span>)times);</span><br><span class="line"></span><br><span class="line">    close(f_index);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><stdio.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><unistd.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><stdlib.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><sys/time.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><stdint.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><fcntl.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><sys/types.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><sys/stat.h></span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span>*argv[])</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="keyword">if</span>(argc != <span class="number">2</span>)</span><br><span class="line">    {</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"usage : %s <run times>\n"</span>, argv[<span class="number">0</span>]);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">int</span> times = atoi(argv[<span class="number">1</span>]);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(times <= <span class="number">0</span>)</span><br><span class="line">    {</span><br><span class="line">	times = <span class="number">1</span>;</span><br><span class="line">    }</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"run system call %d times\n"</span>, times);</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timeval</span> <span class="title">start</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timeval</span> <span class="title">end</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> f_index = open(<span class="string">"./call_time.c"</span>, O_RDONLY);</span><br><span class="line">    <span class="keyword">if</span>(f_index == <span class="number">-1</span>)</span><br><span class="line">    {</span><br><span class="line">	perror(<span class="string">"open file failed:"</span>);</span><br><span class="line">	<span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">int</span> buf;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(gettimeofday(&start, <span class="literal">NULL</span>) == <span class="number">-1</span>)</span><br><span class="line">    {</span><br><span class="line">	perror(<span class="string">"gettimeofday() failed:"</span>);</span><br><span class="line">	<span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">0</span>; i < times; i++)</span><br><span class="line">    {</span><br><span class="line">	<span class="keyword">if</span>(read(f_index, &buf, <span class="number">0</span>) == <span class="number">-1</span>)</span><br><span class="line">	{</span><br><span class="line">	    perror(<span class="string">"read failed:"</span>);</span><br><span class="line">	}</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(gettimeofday(&end, <span class="literal">NULL</span>) == <span class="number">-1</span>)</span><br><span class="line">    {</span><br><span class="line">	perror(<span class="string">"gettimeofday() failed:"</span>);</span><br><span class="line">	<span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="keyword">uint64_t</span> t = end.tv_sec * <span class="number">1000000</span> + end.tv_usec -</span><br><span class="line">	(start.tv_sec * <span class="number">1000000</span> + start.tv_usec);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"system call took %f us\n"</span>, (<span class="keyword">double</span>)t / (<span class="keyword">double</span>)times);</span><br><span class="line"></span><br><span class="line">    close(f_index);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 </div>
 <p>
-&#x6267;&#x884C;10&#x4E07;&#x6B21;&#x6D4B;&#x5F97;&#x7684;&#x5E73;&#x5747;&#x8C03;&#x7528;&#x65F6;&#x95F4;&#x4E3A;1&#x5FAE;&#x79D2;&#x3002;
+执行10万次测得的平均调用时间为1微秒。
 </p>
 </div>
 </div>
 
-<div id="outline-container-orgf49ec02" class="outline-3">
-<h3 id="orgf49ec02">&#x7CFB;&#x7EDF;&#x6574;&#x4F53;&#x6027;&#x80FD;&#x6D4B;&#x8BD5;</h3>
-<div class="outline-text-3" id="text-orgf49ec02">
+<div id="outline-container-orgba72983" class="outline-3">
+<h3 id="orgba72983">系统整体性能测试</h3>
+<div class="outline-text-3" id="text-orgba72983">
 <p>
-&#x4F7F;&#x7528;<a href="http://lmbench.sourceforge.net/" target="_blank" rel="noopener">lmbench</a>&#x53EF;&#x4EE5;&#x5F88;&#x597D;&#x7684;&#x6D4B;&#x8BD5;&#x3002;
+使用<a href="http://lmbench.sourceforge.net/" target="_blank" rel="noopener">lmbench</a>可以很好的测试。
 </p>
 </div>
 </div>
 </div>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
 </div>
 
     </div>
@@ -509,7 +509,7 @@ Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org217249d"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x65E0;&amp;#x9650;&amp;#x5236;&amp;#x7684;&amp;#x8FD0;&amp;#x884C;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgfb00119"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x6709;&amp;#x9650;&amp;#x5236;&amp;#x7684;&amp;#x8FD0;&amp;#x884C;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org531cac7"><span class="nav-number">3.</span> <span class="nav-text">&amp;#x8FDB;&amp;#x7A0B;&amp;#x95F4;&amp;#x7684;&amp;#x5207;&amp;#x6362;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgff12c91"><span class="nav-number">3.1.</span> <span class="nav-text">&amp;#x5408;&amp;#x4F5C;&amp;#x5F0F;&amp;#x8C03;&amp;#x5EA6;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org4da1264"><span class="nav-number">3.2.</span> <span class="nav-text">&amp;#x7531;&amp;#x7CFB;&amp;#x7EDF;&amp;#x4EFB;&amp;#x52A1;&amp;#x5B8C;&amp;#x6210;&amp;#x8C03;&amp;#x5EA6;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org8fd4330"><span class="nav-number">4.</span> <span class="nav-text">&amp;#x4F5C;&amp;#x4E1A;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org1fdf36c"><span class="nav-number">4.1.</span> <span class="nav-text">&amp;#x6D4B;&amp;#x8BD5;&amp;#x7CFB;&amp;#x7EDF;&amp;#x8C03;&amp;#x7528;&amp;#x6240;&amp;#x6D88;&amp;#x8017;&amp;#x7684;&amp;#x65F6;&amp;#x95F4;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgf49ec02"><span class="nav-number">4.2.</span> <span class="nav-text">&amp;#x7CFB;&amp;#x7EDF;&amp;#x6574;&amp;#x4F53;&amp;#x6027;&amp;#x80FD;&amp;#x6D4B;&amp;#x8BD5;</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org4ed9d87"><span class="nav-number">1.</span> <span class="nav-text">无限制的运行</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org62162de"><span class="nav-number">2.</span> <span class="nav-text">有限制的运行</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org98ee652"><span class="nav-number">3.</span> <span class="nav-text">进程间的切换</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org4612516"><span class="nav-number">3.1.</span> <span class="nav-text">合作式调度</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org87b851e"><span class="nav-number">3.2.</span> <span class="nav-text">由系统任务完成调度</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org4417cce"><span class="nav-number">4.</span> <span class="nav-text">作业</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgecca149"><span class="nav-number">4.1.</span> <span class="nav-text">测试系统调用所消耗的时间</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgba72983"><span class="nav-number">4.2.</span> <span class="nav-text">系统整体性能测试</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 

@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="&amp;#x53C2;&amp;#x8003;:    &amp;#x300A;Linux &amp;#x5185;&amp;#x6838;&amp;#x8BBE;&amp;#x8BA1;&amp;#x4E0E;&amp;#x5B9E;&amp;#x73B0;&amp;#x300B;              kernel version arch     v5.4.x lts arm32      &amp;#x4E4B;&amp;#x524D;&amp;#x5BF9; linux &amp;#x8C03;">
+  <meta name="description" content="参考:    《Linux 内核设计与实现》              kernel version arch     v5.4.x lts arm32      之前对 linux 调度有了粗略的认识，现在再来窥探一些细节。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[What]Linux 调度的实现">
 <meta property="og:url" content="http://kcmetercec.top/2020/07/21/linux_ps_schedule_detail/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="&amp;#x53C2;&amp;#x8003;:    &amp;#x300A;Linux &amp;#x5185;&amp;#x6838;&amp;#x8BBE;&amp;#x8BA1;&amp;#x4E0E;&amp;#x5B9E;&amp;#x73B0;&amp;#x300B;              kernel version arch     v5.4.x lts arm32      &amp;#x4E4B;&amp;#x524D;&amp;#x5BF9; linux &amp;#x8C03;">
+<meta property="og:description" content="参考:    《Linux 内核设计与实现》              kernel version arch     v5.4.x lts arm32      之前对 linux 调度有了粗略的认识，现在再来窥探一些细节。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2020-07-20T16:00:00.000Z">
 <meta property="article:modified_time" content="2020-08-01T01:09:06.604Z">
@@ -299,10 +299,10 @@
       
         <div id="content">
 <p>
-&#x53C2;&#x8003;: 
+参考: 
 </p>
 <ol class="org-ol">
-<li>&#x300A;Linux &#x5185;&#x6838;&#x8BBE;&#x8BA1;&#x4E0E;&#x5B9E;&#x73B0;&#x300B;</li>
+<li>《Linux 内核设计与实现》</li>
 </ol>
 
 
@@ -329,235 +329,235 @@
 </table>
 
 <p>
-&#x4E4B;&#x524D;&#x5BF9; linux &#x8C03;&#x5EA6;&#x6709;&#x4E86;<a href="http://kcmetercec.top/2018/05/26/linux_ps_schedule/">&#x7C97;&#x7565;&#x7684;&#x8BA4;&#x8BC6;</a>&#xFF0C;&#x73B0;&#x5728;&#x518D;&#x6765;&#x7AA5;&#x63A2;&#x4E00;&#x4E9B;&#x7EC6;&#x8282;&#x3002;
+之前对 linux 调度有了<a href="http://kcmetercec.top/2018/05/26/linux_ps_schedule/">粗略的认识</a>，现在再来窥探一些细节。
 </p>
 
 <a id="more"></a>
 
-<div id="outline-container-org0e624d4" class="outline-2">
-<h2 id="org0e624d4">&#x8C03;&#x5EA6;&#x5668;&#x7C7B;&#xFF08;scheduler classes&#xFF09;</h2>
-<div class="outline-text-2" id="text-org0e624d4">
+<div id="outline-container-orgb294888" class="outline-2">
+<h2 id="orgb294888">调度器类（scheduler classes）</h2>
+<div class="outline-text-2" id="text-orgb294888">
 <p>
-Linux &#x8C03;&#x5EA6;&#x5668;&#x4EE5;&#x6A21;&#x5757;&#x5316;&#x7684;&#x65B9;&#x5F0F;&#x63D0;&#x4F9B;&#xFF0C;&#x8FD9;&#x6837;&#x5141;&#x8BB8;&#x4EFB;&#x52A1;&#x53EF;&#x4EE5;&#x6709;&#x9488;&#x5BF9;&#x7684;&#x9009;&#x62E9;&#x8C03;&#x5EA6;&#x7B97;&#x6CD5;&#x3002;
+Linux 调度器以模块化的方式提供，这样允许任务可以有针对的选择调度算法。
 </p>
 
 <p>
-Linux &#x4F1A;&#x6309;&#x7167;&#x4F18;&#x5148;&#x7EA7;&#x987A;&#x5E8F;&#x904D;&#x5386;&#x8C03;&#x5EA6;&#x5668;&#x7C7B;&#xFF0C;&#x9009;&#x62E9;&#x53EF;&#x6267;&#x884C;&#x4EFB;&#x52A1;&#x7684;&#x6700;&#x9AD8;&#x4F18;&#x5148;&#x7EA7;&#x8C03;&#x5EA6;&#x5668;&#xFF0C;&#x7136;&#x540E;&#x53BB;&#x6267;&#x884C;&#x8BE5;&#x8C03;&#x5EA6;&#x5668;&#x7684;&#x4EFB;&#x52A1;&#x3002;
+Linux 会按照优先级顺序遍历调度器类，选择可执行任务的最高优先级调度器，然后去执行该调度器的任务。
 </p>
 </div>
 </div>
-<div id="outline-container-org23836ab" class="outline-2">
-<h2 id="org23836ab">&#x5B8C;&#x5168;&#x516C;&#x5E73;&#x8C03;&#x5EA6;&#xFF08;CFS&#xFF09;</h2>
-<div class="outline-text-2" id="text-org23836ab">
+<div id="outline-container-org15289e3" class="outline-2">
+<h2 id="org15289e3">完全公平调度（CFS）</h2>
+<div class="outline-text-2" id="text-org15289e3">
 </div>
-<div id="outline-container-org9aaeb16" class="outline-3">
-<h3 id="org9aaeb16">&#x57FA;&#x4E8E;&#x65F6;&#x95F4;&#x7247;&#x8C03;&#x5EA6;&#x7684;&#x7F3A;&#x9677;</h3>
-<div class="outline-text-3" id="text-org9aaeb16">
+<div id="outline-container-orgd5986e3" class="outline-3">
+<h3 id="orgd5986e3">基于时间片调度的缺陷</h3>
+<div class="outline-text-3" id="text-orgd5986e3">
 <p>
-&#x4F20;&#x7EDF; UNIX &#x4F18;&#x5148;&#x7EA7;&#x4EE5; nice &#x503C;&#x5F62;&#x5F0F;&#x8F93;&#x51FA;&#x5230;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#xFF0C;nice &#x503C;&#x8D8A;&#x5C0F;&#xFF0C;&#x83B7;&#x5F97;&#x7684;&#x65F6;&#x95F4;&#x7247;&#x8D8A;&#x591A;&#xFF0C;&#x8FD9;&#x4F1A;&#x6709;&#x4E0B;&#x9762;&#x8FD9;&#x4E9B;&#x95EE;&#x9898;&#xFF1A;
+传统 UNIX 优先级以 nice 值形式输出到用户空间，nice 值越小，获得的时间片越多，这会有下面这些问题：
 </p>
 <ul class="org-ul">
-<li>&#x4F4E; nice &#x503C;&#x4E5F;&#x5C31;&#x662F;&#x9AD8;&#x4F18;&#x5148;&#x7EA7;&#x7684;&#x4EFB;&#x52A1;&#x83B7;&#x5F97;&#x7684;&#x65F6;&#x95F4;&#x7247;&#x5F88;&#x591A;&#xFF0C;&#x4F46;&#x4E00;&#x822C;&#x60C5;&#x51B5;&#x4E0B;&#x9AD8;&#x4F18;&#x5148;&#x7EA7;&#x7684;&#x7EBF;&#x7A0B;&#x5B9E;&#x9645;&#x4E0A;&#x662F; IO &#x5BC6;&#x96C6;&#x578B;&#x3002;&#x800C;&#x9AD8; nice &#x503C;&#x7684;&#x4F4E;&#x4F18;&#x5148;&#x7EA7;&#x4EFB;&#x52A1;&#x5F80;&#x5F80;&#x662F; CPU &#x5BC6;&#x96C6;&#x578B;&#xFF0C;&#x83B7;&#x5F97;&#x7684;&#x65F6;&#x95F4;&#x7247;&#x53CD;&#x800C;&#x66F4;&#x5C0F;&#x3002;
+<li>低 nice 值也就是高优先级的任务获得的时间片很多，但一般情况下高优先级的线程实际上是 IO 密集型。而高 nice 值的低优先级任务往往是 CPU 密集型，获得的时间片反而更小。
 <ul class="org-ul">
-<li>&#x8FD9;&#x663E;&#x7136;&#x4E0E;&#x4FDD;&#x8BC1;&#x9AD8;&#x54CD;&#x5E94;&#x5EA6;&#x7684;&#x540C;&#x65F6;&#x4FDD;&#x8BC1;&#x9AD8;&#x541E;&#x5410;&#x91CF;&#x7684;&#x521D;&#x8877;&#x80CC;&#x9053;&#x800C;&#x9A70;&#x3002;</li>
+<li>这显然与保证高响应度的同时保证高吞吐量的初衷背道而驰。</li>
 </ul></li>
-<li>nice &#x503C;&#x662F; 0 &#x548C; 1 &#x5206;&#x914D;&#x7684;&#x65F6;&#x95F4;&#x7247;&#x662F; 100/95&#xFF0C;&#x4F46; nice &#x503C;&#x662F; 18 &#x548C; 19 &#x5206;&#x914D;&#x7684;&#x65F6;&#x95F4;&#x7247;&#x786E;&#x5B9E; 10/5&#xFF0C;&#x540C;&#x6837;&#x7684; nice &#x503C;&#x53EA;&#x5DEE; 1&#xFF0C;&#x4F46;&#x5206;&#x914D;&#x6BD4;&#x4F8B;&#x5374;&#x76F8;&#x5DEE;&#x5F88;&#x5927;&#x3002;
+<li>nice 值是 0 和 1 分配的时间片是 100/95，但 nice 值是 18 和 19 分配的时间片确实 10/5，同样的 nice 值只差 1，但分配比例却相差很大。
 <ul class="org-ul">
-<li>&#x8FD9;&#x4E0D;&#x80FD;&#x4FDD;&#x8BC1;&#x516C;&#x5E73;&#x6027;&#xFF0C;&#x6240;&#x4EE5; nice &#x503C;&#x7684;&#x65F6;&#x95F4;&#x7247;&#x5E94;&#x8BE5;&#x4EE5;&#x51E0;&#x4F55;&#x589E;&#x52A0;&#x800C;&#x975E;&#x7B97;&#x6570;&#x589E;&#x52A0;</li>
+<li>这不能保证公平性，所以 nice 值的时间片应该以几何增加而非算数增加</li>
 </ul></li>
-<li>&#x65F6;&#x95F4;&#x7247;&#x662F;&#x5B9A;&#x65F6;&#x5668;&#x8282;&#x62CD;&#x7684;&#x6574;&#x6570;&#x500D;&#xFF0C;&#x4F46;&#x5982;&#x679C;&#x4E00;&#x4E2A; nice &#x503C;&#x5BF9;&#x5E94;&#x4E00;&#x4E2A;&#x65F6;&#x95F4;&#x7247;&#xFF0C;&#x5F53;&#x5B9A;&#x65F6;&#x5668;&#x8282;&#x62CD;&#x88AB;&#x6539;&#x53D8;&#x540E;&#xFF0C;&#x539F;&#x5148;&#x7684;&#x65F6;&#x95F4;&#x7247;&#x5927;&#x5C0F;&#x867D;&#x7136;&#x6CA1;&#x6709;&#x53D8;&#xFF0C;&#x4F46;&#x7EDD;&#x5BF9;&#x65F6;&#x95F4;&#x5C31;&#x53D8;&#x4E86;&#x3002;
+<li>时间片是定时器节拍的整数倍，但如果一个 nice 值对应一个时间片，当定时器节拍被改变后，原先的时间片大小虽然没有变，但绝对时间就变了。
 <ul class="org-ul">
-<li>&#x6240;&#x4EE5;&#x9700;&#x8981;&#x5C06;&#x65F6;&#x95F4;&#x7247;&#x4E0E;&#x5B9A;&#x65F6;&#x5668;&#x8282;&#x62CD;&#x5206;&#x79BB;&#x5F00;&#x6765;</li>
+<li>所以需要将时间片与定时器节拍分离开来</li>
 </ul></li>
-<li>&#x8C03;&#x5EA6;&#x5668;&#x5C06;&#x63D0;&#x5347; IO &#x5BC6;&#x96C6;&#x578B;&#x4EFB;&#x52A1;&#x4F18;&#x5148;&#x7EA7;&#xFF08;&#x5360;&#x7528;&#x65F6;&#x95F4;&#x7247;&#x5C11;&#xFF09;&#xFF0C;&#x4F46;&#x5982;&#x679C;&#x5176;&#x5B83;&#x4EFB;&#x52A1;&#x901A;&#x8FC7;&#x4E3B;&#x52A8;&#x7761;&#x7720;&#x6765;&#x964D;&#x4F4E;&#x81EA;&#x5DF1;&#x7684;&#x65F6;&#x95F4;&#x7247;&#x5360;&#x7528;&#xFF0C;&#x90A3;&#x5C31;&#x4F1A;&#x8FF7;&#x60D1;&#x8C03;&#x5EA6;&#x5668;&#x3002;</li>
+<li>调度器将提升 IO 密集型任务优先级（占用时间片少），但如果其它任务通过主动睡眠来降低自己的时间片占用，那就会迷惑调度器。</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-org6866762" class="outline-3">
-<h3 id="org6866762">&#x516C;&#x5E73;&#x8C03;&#x5EA6;</h3>
-<div class="outline-text-3" id="text-org6866762">
+<div id="outline-container-org1bacb7a" class="outline-3">
+<h3 id="org1bacb7a">公平调度</h3>
+<div class="outline-text-3" id="text-org1bacb7a">
 <p>
-CFS &#x91C7;&#x7528;&#x7684;&#x65B9;&#x6CD5;&#x662F;&#x5BF9;&#x65F6;&#x95F4;&#x7247;&#x5206;&#x914D;&#x65B9;&#x5F0F;&#x4EFB;&#x52A1;&#x6839;&#x672C;&#x6027;&#x7684;&#x91CD;&#x65B0;&#x8BBE;&#x8BA1;&#xFF1A;&#x901A;&#x8FC7;&#x65F6;&#x95F4;&#x5206;&#x914D;&#x5904;&#x7406;&#x5668;&#x6BD4;&#x4F8B;&#x7684;&#x65B9;&#x5F0F;&#x6452;&#x5F03;&#x65F6;&#x95F4;&#x7247;&#xFF0C;&#x4ECE;&#x800C;&#x4FDD;&#x8BC1;&#x516C;&#x5E73;&#x6027;&#x3002;
+CFS 采用的方法是对时间片分配方式任务根本性的重新设计：通过时间分配处理器比例的方式摒弃时间片，从而保证公平性。
 </p>
 
 <blockquote>
 <p>
-CFS &#x7684;&#x51FA;&#x53D1;&#x70B9;&#x57FA;&#x4E8E;&#x4E00;&#x4E2A;&#x7B80;&#x5355;&#x7684;&#x7406;&#x5FF5;&#xFF1A;&#x4EFB;&#x52A1;&#x8C03;&#x5EA6;&#x7684;&#x6548;&#x679C;&#x5E94;&#x5982;&#x540C;&#x7CFB;&#x7EDF;&#x5177;&#x5907;&#x4E00;&#x4E2A;&#x7406;&#x60F3;&#x7684;&#x5B8C;&#x7F8E;&#x7684;&#x591A;&#x4EFB;&#x52A1;&#x5904;&#x7406;&#x5668;&#x3002;
-&#x5728;&#x8FD9;&#x4E2A;&#x7CFB;&#x7EDF;&#x4E2D;&#x5C06;&#x80FD;&#x83B7;&#x5F97; 1/n &#x7684;&#x5904;&#x7406;&#x5668;&#x65F6;&#x95F4;&#xFF08;n &#x662F;&#x6307;&#x53EF;&#x8FD0;&#x884C;&#x4EFB;&#x52A1;&#x7684;&#x6570;&#x91CF;&#xFF09;&#x3002;&#x540C;&#x65F6;&#xFF0C;&#x6211;&#x4EEC;&#x53EF;&#x4EE5;&#x8C03;&#x5EA6;&#x7ED9;&#x5B83;&#x4EEC;&#x65E0;&#x9650;&#x5C0F;&#x7684;&#x65F6;&#x95F4;&#x5468;&#x671F;&#xFF0C;
-&#x6240;&#x4EE5;&#x5728;&#x4EFB;&#x4F55;&#x53EF;&#x6D4B;&#x91CF;&#x5468;&#x671F;&#x5185;&#xFF0C;&#x6211;&#x4EEC;&#x7ED9;&#x4E88; n &#x4E2A;&#x4EFB;&#x52A1;&#x4E2D;&#x6BCF;&#x4E2A;&#x4EFB;&#x52A1;&#x540C;&#x6837;&#x591A;&#x7684;&#x8FD0;&#x884C;&#x65F6;&#x95F4;&#x3002;
+CFS 的出发点基于一个简单的理念：任务调度的效果应如同系统具备一个理想的完美的多任务处理器。
+在这个系统中将能获得 1/n 的处理器时间（n 是指可运行任务的数量）。同时，我们可以调度给它们无限小的时间周期，
+所以在任何可测量周期内，我们给予 n 个任务中每个任务同样多的运行时间。
 </p>
 </blockquote>
 
 <p>
-CFS &#x7684;&#x505A;&#x6CD5;&#x662F;&#x5141;&#x8BB8;&#x6BCF;&#x4E2A;&#x4EFB;&#x52A1;&#x8FD0;&#x884C;&#x4E00;&#x6BB5;&#x65F6;&#x95F4;&#x3001;&#x5FAA;&#x73AF;&#x8F6E;&#x8F6C;&#x3001;&#x9009;&#x62E9;&#x8FD0;&#x884C;&#x6700;&#x5C11;&#x7684;&#x4EFB;&#x52A1;&#x4F5C;&#x4E3A;&#x4E0B;&#x4E00;&#x4E2A;&#x8FD0;&#x884C;&#x4EFB;&#x52A1;&#xFF0C;&#x800C;&#x4E0D;&#x662F;&#x4F7F;&#x7528;&#x56FA;&#x5B9A;&#x5206;&#x914D;&#x7684;&#x65F6;&#x95F4;&#x7247;&#x3002;
+CFS 的做法是允许每个任务运行一段时间、循环轮转、选择运行最少的任务作为下一个运行任务，而不是使用固定分配的时间片。
 </p>
 <ul class="org-ul">
-<li>nice &#x503C;&#x518D; CFS &#x4E2D;&#x88AB;&#x4F5C;&#x4E3A;&#x4EFB;&#x52A1;&#x83B7;&#x5F97;&#x5904;&#x7406;&#x5668;&#x8FD0;&#x884C;&#x7684;&#x6743;&#x91CD;&#x3002;</li>
+<li>nice 值再 CFS 中被作为任务获得处理器运行的权重。</li>
 </ul>
 
 <p>
-CFS &#x6709;&#x4E00;&#x4E2A;&#x201C;&#x76EE;&#x6807;&#x5EF6;&#x8FDF;&#x201D;&#x7684;&#x6982;&#x5FF5;&#xFF0C;&#x5BF9;&#x6240;&#x6709;&#x4EFB;&#x52A1;&#x7684;&#x6700;&#x5C0F;&#x8C03;&#x5EA6;&#x5468;&#x671F;&#xFF1A;
+CFS 有一个“目标延迟”的概念，对所有任务的最小调度周期：
 </p>
 <ul class="org-ul">
-<li>&#x5047;&#x8BBE;&#x76EE;&#x6807;&#x5EF6;&#x8FDF;&#x662F; 20ms&#xFF0C;&#x5177;&#x6709;&#x4E24;&#x4E2A;&#x76F8;&#x540C;&#x4F18;&#x5148;&#x7EA7;&#x7684;&#x4EFB;&#x52A1;&#xFF0C;&#x4E0D;&#x7BA1;&#x5B83;&#x4EEC;&#x4F18;&#x5148;&#x7EA7;&#x662F;&#x591A;&#x5C11;&#xFF0C;&#x6BCF;&#x4E2A;&#x4EFB;&#x52A1;&#x7684;&#x8FD0;&#x884C;&#x65F6;&#x95F4;&#x90FD;&#x662F; 10ms
+<li>假设目标延迟是 20ms，具有两个相同优先级的任务，不管它们优先级是多少，每个任务的运行时间都是 10ms
 <ul class="org-ul">
-<li>&#x5982;&#x679C;&#x5177;&#x6709; 4 &#x4E2A;&#x76F8;&#x540C;&#x4F18;&#x5148;&#x7EA7;&#x7684;&#x4EFB;&#x52A1;&#xFF0C;&#x6BCF;&#x4E2A;&#x4EFB;&#x52A1;&#x7684;&#x8FD0;&#x884C;&#x65F6;&#x95F4;&#x5C31;&#x662F; 5ms&#x3002;</li>
-<li>&#x5982;&#x679C;&#x4EFB;&#x52A1;&#x7279;&#x522B;&#x591A;&#xFF0C;CFS &#x4E5F;&#x89C4;&#x5B9A;&#x4E86;&#x4E00;&#x4E2A;&#x6700;&#x5C0F;&#x7C92;&#x5EA6;&#x4EE5;&#x907F;&#x514D;&#x65E0;&#x9650;&#x7684;&#x5207;&#x6362;&#x6D88;&#x8017;&#xFF08;&#x901A;&#x5E38;&#x662F; 1ms&#xFF09;</li>
+<li>如果具有 4 个相同优先级的任务，每个任务的运行时间就是 5ms。</li>
+<li>如果任务特别多，CFS 也规定了一个最小粒度以避免无限的切换消耗（通常是 1ms）</li>
 </ul></li>
-<li>&#x5047;&#x8BBE;&#x76EE;&#x6807;&#x5EF6;&#x8FDF;&#x662F; 20ms&#xFF0C;&#x6709; nice &#x503C;&#x4E3A; 0 &#x548C; 5 &#x7684;&#x4EFB;&#x52A1;&#xFF0C;&#x5176;&#x8FD0;&#x884C;&#x65F6;&#x95F4;&#x5206;&#x522B;&#x662F; 15ms &#x548C; 5ms&#x3002;
+<li>假设目标延迟是 20ms，有 nice 值为 0 和 5 的任务，其运行时间分别是 15ms 和 5ms。
 <ul class="org-ul">
-<li>&#x5982;&#x679C; nice &#x503C;&#x4E3A; 10 &#x548C; 15&#xFF0C;&#x5176;&#x8FD0;&#x884C;&#x65F6;&#x95F4;&#x4F9D;&#x7136;&#x4E3A; 15ms &#x548C; 5ms</li>
-<li>&#x53EF;&#x4EE5;&#x770B;&#x5230;&#x5206;&#x914D;&#x6BD4;&#x4F8B;&#x53EA;&#x4E0E; nice &#x503C;&#x7684;&#x76F8;&#x5BF9;&#x503C;&#x6709;&#x5173;</li>
-</ul></li>
-</ul>
-</div>
-</div>
-<div id="outline-container-org1f9c7bd" class="outline-3">
-<h3 id="org1f9c7bd">&#x5B9E;&#x73B0; CFS</h3>
-<div class="outline-text-3" id="text-org1f9c7bd">
-<p>
-CFS &#x5B9E;&#x73B0;&#x7684;&#x4EE3;&#x7801;&#x4F4D;&#x4E8E;&#x8DEF;&#x5F84; <code>kernel/sched/fair.c</code> &#xFF0C;&#x4E0B;&#x9762;&#x8FDB;&#x884C;&#x4F9D;&#x6B21;&#x5206;&#x6790;&#x3002;
-</p>
-</div>
-<div id="outline-container-orge762b49" class="outline-4">
-<h4 id="orge762b49">&#x65F6;&#x95F4;&#x8BB0;&#x8D26;</h4>
-<div class="outline-text-4" id="text-orge762b49">
-<p>
-&#x4F20;&#x7EDF;&#x7684;&#x8C03;&#x5EA6;&#x5668;&#x5BF9;&#x4EFB;&#x52A1;&#x7684;&#x65F6;&#x95F4;&#x7247;&#x8FDB;&#x884C;&#x8BB0;&#x5F55;&#xFF0C;&#x4EE5;&#x5728;&#x4EFB;&#x52A1;&#x7684;&#x65F6;&#x95F4;&#x7247;&#x8017;&#x5C3D;&#x65F6;&#x5207;&#x6362;&#x5230;&#x5176;&#x4ED6;&#x4EFB;&#x52A1;&#xFF0C;&#x800C; CFS &#x8BB0;&#x5F55;&#x7684;&#x662F;&#x4EFB;&#x52A1;&#x8FD0;&#x884C;&#x7684;<a href="http://kcmetercec.top/2018/05/26/linux_ps_schedule/#org357e0e1">&#x865A;&#x62DF;&#x65F6;&#x95F4;</a>&#x3002;
-</p>
-
-<p>
-&#x5728; task_struct &#x7ED3;&#x6784;&#x4F53;&#x4E2D;&#x6709;&#x4E00;&#x4E2A; <code>struct sched_entity se</code> &#x6210;&#x5458;&#x53D8;&#x91CF;&#xFF0C;&#x8BE5;&#x6210;&#x5458;&#x5C31;&#x662F;&#x5BF9;&#x8BE5;&#x4EFB;&#x52A1;&#x8FDB;&#x884C;&#x65F6;&#x95F4;&#x8BB0;&#x8D26;&#x3002;
-</p>
-
-<p>
-&#x8BE5;&#x7ED3;&#x6784;&#x4F53;&#x4E2D;&#x5177;&#x6709;&#x6210;&#x5458; <code>u64 vruntime</code> &#x5C31;&#x662F;&#x7528;&#x4E8E;&#x5B58;&#x653E;&#x4EFB;&#x52A1;&#x7684;&#x865A;&#x62DF;&#x8FD0;&#x884C;&#x65F6;&#x95F4;&#xFF0C;&#x8BE5;&#x865A;&#x62DF;&#x8FD0;&#x884C;&#x65F6;&#x95F4;&#x7684;&#x5355;&#x4F4D;&#x662F; ns&#xFF0C;&#x5B83;&#x5DF2;&#x7ECF;&#x4E0E;&#x5B9A;&#x65F6;&#x5668;&#x8282;&#x62CD;&#x4E0D;&#x518D;&#x5173;&#x8054;&#x3002;
-</p>
-
-<p>
-&#x800C; vruntime &#x7684;&#x8BA1;&#x7B97;&#x5219;&#x662F;&#x5728;&#x51FD;&#x6570; <code>update_curr</code> &#x4E2D;&#x5B8C;&#x6210;&#xFF1A;
-</p>
-<div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//&#x6B64;&#x51FD;&#x6570;&#x6267;&#x884C;&#x7684;&#x516C;&#x5F0F;&#x4FBF;&#x662F; delta_vtime = delta_ptime * 1024 / weight</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> u64 <span class="title">calc_delta_fair</span><span class="params">(u64 delta, struct sched_entity *se)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  <span class="keyword">if</span> (unlikely(se-&gt;load.weight != NICE_0_LOAD))</span><br><span class="line">    delta = __calc_delta(delta, NICE_0_LOAD, &amp;se-&gt;load);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> delta;</span><br><span class="line">}</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">update_curr</span><span class="params">(struct cfs_rq *cfs_rq)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  <span class="comment">//&#x5F53;&#x524D;&#x7684;&#x4EFB;&#x52A1;&#x8BB0;&#x5F55;&#x5668;</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">sched_entity</span> *<span class="title">curr</span> = <span class="title">cfs_rq</span>-&gt;<span class="title">curr</span>;</span></span><br><span class="line">  <span class="comment">//&#x5F53;&#x524D;&#x7684;&#x8FD0;&#x884C;&#x65F6;&#x95F4;</span></span><br><span class="line">  u64 now = rq_clock_task(rq_of(cfs_rq));</span><br><span class="line">  u64 delta_exec;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (unlikely(!curr))</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//&#x4E0A;&#x4E00;&#x6B21;&#x8FDB;&#x5165;&#x8BE5;&#x51FD;&#x6570;&#x5230;&#x76EE;&#x524D;&#x6240;&#x7ECF;&#x8FC7;&#x7684;&#x65F6;&#x95F4;</span></span><br><span class="line">  delta_exec = now - curr-&gt;exec_start;</span><br><span class="line">  <span class="keyword">if</span> (unlikely((s64)delta_exec &lt;= <span class="number">0</span>))</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">  curr-&gt;exec_start = now;</span><br><span class="line"></span><br><span class="line">  schedstat_set(curr-&gt;statistics.exec_max,</span><br><span class="line">		max(delta_exec, curr-&gt;statistics.exec_max));</span><br><span class="line"></span><br><span class="line">  <span class="comment">//&#x8BE5;&#x4EFB;&#x52A1;&#x5F53;&#x524D;&#x8FD0;&#x884C;&#x7684;&#x603B;&#x65F6;&#x95F4;</span></span><br><span class="line">  curr-&gt;sum_exec_runtime += delta_exec;</span><br><span class="line">  schedstat_add(cfs_rq-&gt;exec_clock, delta_exec);</span><br><span class="line"></span><br><span class="line">  <span class="comment">//&#x5F97;&#x5230;&#x865A;&#x62DF;&#x8FD0;&#x884C;&#x65F6;&#x95F4;</span></span><br><span class="line">  curr-&gt;vruntime += calc_delta_fair(delta_exec, curr);</span><br><span class="line">  update_min_vruntime(cfs_rq);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (entity_is_task(curr)) {</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> *<span class="title">curtask</span> = <span class="title">task_of</span>(<span class="title">curr</span>);</span></span><br><span class="line"></span><br><span class="line">    trace_sched_stat_runtime(curtask, delta_exec, curr-&gt;vruntime);</span><br><span class="line">    cgroup_account_cputime(curtask, delta_exec);</span><br><span class="line">    account_group_exec_runtime(curtask, delta_exec);</span><br><span class="line">  }</span><br><span class="line"></span><br><span class="line">  account_cfs_rq_runtime(cfs_rq, delta_exec);</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
-</div>
-</div>
-</div>
-<div id="outline-container-orgd6267f0" class="outline-4">
-<h4 id="orgd6267f0">&#x4EFB;&#x52A1;&#x9009;&#x62E9;</h4>
-<div class="outline-text-4" id="text-orgd6267f0">
-<p>
-CFS &#x9009;&#x62E9;&#x4EFB;&#x52A1;&#x7684;&#x6838;&#x5FC3;&#x5C31;&#x662F;&#xFF1A;&#x9009;&#x62E9;&#x5177;&#x6709;&#x6700;&#x5C0F; vruntime &#x7684;&#x4EFB;&#x52A1;&#x6765;&#x8FD0;&#x884C;&#x3002;
-</p>
-
-<p>
-Linux &#x4F7F;&#x7528;&#x7EA2;&#x9ED1;&#x6811;&#x6765;&#x5C06;&#x6240;&#x6709;&#x5904;&#x4E8E;&#x8FD0;&#x884C;&#x72B6;&#x6001;&#x7684;&#x4EFB;&#x52A1;&#x6302;&#x63A5;&#x8D77;&#x6765;&#xFF0C;&#x90A3;&#x4E48;&#x6700;&#x5DE6;&#x4FA7;&#x7684;&#x53F6;&#x5B50;&#x8282;&#x70B9;&#x4FBF;&#x662F; vruntime &#x6700;&#x5C0F;&#x7684;&#x8282;&#x70B9;&#x3002;
-</p>
-
-<ul class="org-ul">
-<li>&#x9009;&#x62E9;&#x4E0B;&#x4E00;&#x4E2A;&#x8981;&#x8FD0;&#x884C;&#x7684;&#x4EFB;&#x52A1;&#x662F;&#x901A;&#x8FC7;&#x51FD;&#x6570; <code>__pick_next_entity</code> &#x6765;&#x5B8C;&#x6210;&#x7684;&#xFF1A;</li>
-</ul>
-<div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">sched_entity</span> *__<span class="title">pick_next_entity</span>(<span class="title">struct</span> <span class="title">sched_entity</span> *<span class="title">se</span>)</span></span><br><span class="line"><span class="class">{</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">rb_node</span> *<span class="title">next</span> = <span class="title">rb_next</span>(&amp;<span class="title">se</span>-&gt;<span class="title">run_node</span>);</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (!next)</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> rb_entry(next, struct sched_entity, run_node);</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
-</div>
-
-<ul class="org-ul">
-<li>&#x800C;&#x5C06;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x52A0;&#x5165;&#x7EA2;&#x9ED1;&#x6811;&#x662F;&#x901A;&#x8FC7; <code>enqueue_entity()</code> &#x6765;&#x5B8C;&#x6210;&#xFF0C;&#x8BE5;&#x51FD;&#x6570;&#x8C03;&#x7528; <code>__enqueue_entity()</code> &#x6765;&#x5B8C;&#x6210;&#x63D2;&#x5165;&#x3002;</li>
-<li>&#x5220;&#x9664;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x662F;&#x901A;&#x8FC7; <code>dequeue_entity()</code> &#x6765;&#x5B8C;&#x6210;</li>
-</ul>
-</div>
-</div>
-<div id="outline-container-orgd76bf82" class="outline-4">
-<h4 id="orgd76bf82">&#x8C03;&#x5EA6;&#x5668;&#x5165;&#x53E3;</h4>
-<div class="outline-text-4" id="text-orgd76bf82">
-<p>
-&#x8C03;&#x5EA6;&#x5668;&#x7684;&#x5165;&#x53E3;&#x51FD;&#x6570;&#x662F; <code>schedule()</code> &#x4F4D;&#x4E8E; <code>kernel/sched/core.c</code> &#x3002;
-</p>
-
-<p>
-&#x8BE5;&#x51FD;&#x6570;&#x4F1A;&#x8C03;&#x7528; <code>__schedule()</code> &#x51FD;&#x6570;&#xFF0C;&#x5176;&#x6267;&#x884C;&#x903B;&#x8F91;&#x4E3A;&#xFF1A;
-</p>
-<ul class="org-ul">
-<li>&#x9009;&#x62E9;&#x4F18;&#x5148;&#x7EA7;&#x6700;&#x9AD8;&#x7684;&#x8C03;&#x5EA6;&#x7B56;&#x7565;</li>
-<li>&#x4ECE;&#x8BE5;&#x8C03;&#x5EA6;&#x7B56;&#x7565;&#x4E2D;&#x9009;&#x62E9;&#x4F18;&#x5148;&#x7EA7;&#x6700;&#x9AD8;&#x7684;&#x4EFB;&#x52A1;&#x8FD0;&#x884C;</li>
-</ul>
-
-<p>
-&#x4EE5;&#x4E0A;&#x4E24;&#x4E2A;&#x91CD;&#x8981;&#x7684;&#x6267;&#x884C;&#x903B;&#x8F91;&#x662F;&#x901A;&#x8FC7;&#x51FD;&#x6570; <code>pick_next_task()</code> &#x6765;&#x5B8C;&#x6210;&#x7684;&#xFF1A;
-</p>
-<div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Pick up the highest-prio task:</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> *</span></span><br><span class="line"><span class="class"><span class="title">pick_next_task</span>(<span class="title">struct</span> <span class="title">rq</span> *<span class="title">rq</span>, <span class="title">struct</span> <span class="title">task_struct</span> *<span class="title">prev</span>, <span class="title">struct</span> <span class="title">rq_flags</span> *<span class="title">rf</span>)</span></span><br><span class="line"><span class="class">{</span></span><br><span class="line">  <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">sched_class</span> *<span class="title">class</span>;</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> *<span class="title">p</span>;</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">   * Optimization: we know that if all tasks are in the fair class we can</span></span><br><span class="line"><span class="comment">   * call that function directly, but only if the @prev task wasn&apos;t of a</span></span><br><span class="line"><span class="comment">   * higher scheduling class, because otherwise those loose the</span></span><br><span class="line"><span class="comment">   * opportunity to pull in more work from other CPUs.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="comment">//! &#x5F53;&#x6240;&#x6709;&#x53EF;&#x8FD0;&#x884C;&#x4EFB;&#x52A1;&#x90FD;&#x662F; CFS &#x4EFB;&#x52A1;&#xFF08;NICE &#x7B56;&#x7565;&#xFF09;&#x65F6;&#xFF0C;&#x53EF;&#x4EE5;&#x4F7F;&#x7528;&#x5FEB;&#x6377;&#x65B9;&#x5F0F;&#x5F97;&#x5230;&#x4E0B;&#x4E00;&#x4E2A;&#x5C06;&#x8981;&#x8FD0;&#x884C;&#x7684;&#x4EFB;&#x52A1;</span></span><br><span class="line">  <span class="keyword">if</span> (likely((prev-&gt;sched_class == &amp;idle_sched_class ||</span><br><span class="line">	prev-&gt;sched_class == &amp;fair_sched_class) &amp;&amp;</span><br><span class="line">       rq-&gt;nr_running == rq-&gt;cfs.h_nr_running)) {</span><br><span class="line"></span><br><span class="line">    p = fair_sched_class.pick_next_task(rq, prev, rf);</span><br><span class="line">    <span class="keyword">if</span> (unlikely(p == RETRY_TASK))</span><br><span class="line">      <span class="keyword">goto</span> restart;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Assumes fair_sched_class-&gt;next == idle_sched_class */</span></span><br><span class="line">    <span class="keyword">if</span> (unlikely(!p))</span><br><span class="line">      p = idle_sched_class.pick_next_task(rq, prev, rf);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> p;</span><br><span class="line">  }</span><br><span class="line"></span><br><span class="line">restart:</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_SMP</span></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">   * We must do the balancing pass before put_next_task(), such</span></span><br><span class="line"><span class="comment">   * that when we release the rq-&gt;lock the task is in the same</span></span><br><span class="line"><span class="comment">   * state as before we took rq-&gt;lock.</span></span><br><span class="line"><span class="comment">   *</span></span><br><span class="line"><span class="comment">   * We can terminate the balance pass as soon as we know there is</span></span><br><span class="line"><span class="comment">   * a runnable task of @class priority or higher.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  for_class_range(class, prev-&gt;sched_class, &amp;idle_sched_class) {</span><br><span class="line">    <span class="keyword">if</span> (class-&gt;balance(rq, prev, rf))</span><br><span class="line">      <span class="keyword">break</span>;</span><br><span class="line">  }</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">  put_prev_task(rq, prev);</span><br><span class="line"></span><br><span class="line">  <span class="comment">//! &#x4ECE;&#x6700;&#x9AD8;&#x4F18;&#x5148;&#x7EA7;&#x7B56;&#x7565;&#x5F00;&#x59CB;&#x904D;&#x5386;&#x6BCF;&#x4E2A;&#x8C03;&#x5EA6;&#x7C7B;&#xFF0C;&#x83B7;&#x53D6;&#x6700;&#x9AD8;&#x4F18;&#x5148;&#x7EA7;&#x53EF;&#x8FD0;&#x884C;&#x4EFB;&#x52A1;</span></span><br><span class="line">  for_each_class(class) {</span><br><span class="line">    p = class-&gt;pick_next_task(rq, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</span><br><span class="line">    <span class="keyword">if</span> (p)</span><br><span class="line">      <span class="keyword">return</span> p;</span><br><span class="line">  }</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* The idle class should always have a runnable task: */</span></span><br><span class="line">  BUG();</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
-</div>
-</div>
-</div>
-<div id="outline-container-org207a24a" class="outline-4">
-<h4 id="org207a24a">&#x7761;&#x7720;&#x548C;&#x5524;&#x9192;</h4>
-<div class="outline-text-4" id="text-org207a24a">
-<ul class="org-ul">
-<li>&#x7761;&#x7720;&#xFF1A;&#x4EFB;&#x52A1;&#x4ECE;&#x53EF;&#x6267;&#x884C;&#x7EA2;&#x9ED1;&#x6811;&#x4E2D;&#x79FB;&#x51FA;&#xFF0C;&#x88AB;&#x653E;&#x5165;&#x7B49;&#x5F85;&#x961F;&#x5217;</li>
-<li>&#x5524;&#x9192;&#xFF1A;&#x4EFB;&#x52A1;&#x88AB;&#x8BBE;&#x7F6E;&#x4E3A;&#x53EF;&#x6267;&#x884C;&#x72B6;&#x6001;&#xFF0C;&#x7136;&#x540E;&#x4ECE;&#x7B49;&#x5F85;&#x961F;&#x5217;&#x4E2D;&#x79FB;&#x5230;&#x53EF;&#x6267;&#x884C;&#x7EA2;&#x9ED1;&#x6811;</li>
-</ul>
-
-<p>
-&#x4E0A;&#x8FF0;&#x8FC7;&#x7A0B;&#x5728;<a href="http://kcmetercec.top/2018/04/07/linux_driver_char_overview/#org9164991">&#x6B64;&#x5904;</a>&#x6709;&#x5B8C;&#x6574;&#x7684;&#x793A;&#x4F8B;&#x3002;
-</p>
-
-<p>
-&#x53EF;&#x4EE5;&#x770B;&#x5230;&#xFF1A;&#x8C03;&#x5EA6;&#x5668;&#x771F;&#x6B63;&#x8C03;&#x5EA6;&#x7684;&#x662F;<a href="http://kcmetercec.top/2018/05/24/linux_ps_overview/#org60473d1">&#x5904;&#x4E8E;&#x8FD0;&#x884C;&#x72B6;&#x6001;</a>&#x7684;&#x4EFB;&#x52A1;&#xFF01;
-</p>
-
-<p>
-&#x4E3A;&#x4E86;&#x907F;&#x514D;&#x4EFB;&#x52A1;&#x7684;&#x4F11;&#x7720;&#x548C;&#x5524;&#x9192;&#x4EA7;&#x751F;&#x7ADE;&#x4E89;&#x6761;&#x4EF6;&#xFF0C;&#x901A;&#x5E38;&#x7684;&#x5904;&#x7406;&#x4EE3;&#x7801;&#x5982;&#x4E0B;&#xFF1A;
-</p>
-<div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//&#x4E3A;&#x5F53;&#x524D;&#x4EFB;&#x52A1;&#x521B;&#x5EFA;&#x4E00;&#x4E2A;&#x8282;&#x70B9;&#xFF0C;&#x540D;&#x53EB; wait</span></span><br><span class="line">DEFINE_WAIT(wait);</span><br><span class="line"></span><br><span class="line"><span class="comment">//&#x5C06;&#x5F53;&#x524D;&#x4EFB;&#x52A1;&#x8282;&#x70B9;&#x52A0;&#x5165;&#x7B49;&#x5F85;&#x961F;&#x5217; q &#x4E2D;</span></span><br><span class="line">add_wait_queue(q, &amp;wait);</span><br><span class="line"></span><br><span class="line"><span class="comment">//&#x5F53;&#x4E8B;&#x4EF6;&#x4E0D;&#x6EE1;&#x8DB3;&#x65F6;&#xFF0C;&#x8FDB;&#x5165;&#x7761;&#x7720;</span></span><br><span class="line"><span class="keyword">while</span>(!condition)</span><br><span class="line">  {</span><br><span class="line">    <span class="comment">//&#x5C06;&#x5F53;&#x524D;&#x4EFB;&#x52A1;&#x8BBE;&#x7F6E;&#x4E3A; TASK_INTERRUPTIBLE &#x72B6;&#x6001;</span></span><br><span class="line">    prepare_to_wait(&amp;q, &amp;wait, TASK_INTERRUPTIBLE);</span><br><span class="line">    <span class="comment">//&#x5982;&#x679C;&#x5F53;&#x524D;&#x4EFB;&#x52A1;&#x88AB;&#x4FE1;&#x53F7;&#x5524;&#x9192;&#xFF0C;&#x5219;&#x5904;&#x7406;&#x4FE1;&#x53F7;</span></span><br><span class="line">    <span class="keyword">if</span>(signal_pending(current))</span><br><span class="line">      {</span><br><span class="line">	<span class="comment">//&#x4E00;&#x822C;&#x8FD4;&#x56DE; restart &#x9519;&#x8BEF;&#xFF0C;&#x7136;&#x540E;&#x9000;&#x51FA;&#x5FAA;&#x73AF;</span></span><br><span class="line">	ret = -ERESTARTSYS;</span><br><span class="line">	<span class="keyword">break</span>;</span><br><span class="line">      }</span><br><span class="line">    <span class="comment">//&#x5728;&#x8C03;&#x7528; schedule() &#x524D;&#x9700;&#x8981;&#x91CA;&#x653E;&#x5FC5;&#x8981;&#x7684;&#x9501;</span></span><br><span class="line">    <span class="comment">//&#x4E3B;&#x52A8;&#x8C03;&#x5EA6;&#x5230;&#x5176;&#x5B83;&#x4EFB;&#x52A1;&#x8FD0;&#x884C;</span></span><br><span class="line">    schedule();</span><br><span class="line">    <span class="comment">//&#x5728;&#x8FD4;&#x56DE; schedule() &#x540E;&#x9700;&#x8981;&#x83B7;&#x53D6;&#x5FC5;&#x8981;&#x7684;&#x9501;</span></span><br><span class="line">  }</span><br><span class="line"><span class="comment">//&#x5C06;&#x5F53;&#x524D;&#x4EFB;&#x52A1;&#x8BBE;&#x7F6E;&#x4E3A;&#x8FD0;&#x884C;&#x6001;&#xFF0C;&#x5E76;&#x79FB;&#x51FA;&#x7B49;&#x5F85;&#x961F;&#x5217;</span></span><br><span class="line">finish_wait(&amp;q, &amp;wait);</span><br></pre></td></tr></table></figure>
-</div>
-
-<p>
-<code>inotify_read()</code> &#x63D0;&#x4F9B;&#x4E86;&#x6807;&#x51C6;&#x4F7F;&#x7528;&#x65B9;&#x5F0F;&#xFF1A;
-</p>
-<div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">ssize_t</span> <span class="title">inotify_read</span><span class="params">(struct file *file, <span class="keyword">char</span> __user *buf,</span></span></span><br><span class="line"><span class="function"><span class="params">	  <span class="keyword">size_t</span> count, <span class="keyword">loff_t</span> *pos)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">fsnotify_group</span> *<span class="title">group</span>;</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">fsnotify_event</span> *<span class="title">kevent</span>;</span></span><br><span class="line">  <span class="keyword">char</span> __user *start;</span><br><span class="line">  <span class="keyword">int</span> ret;</span><br><span class="line">  <span class="comment">//! &#x4E3A;&#x5F53;&#x524D;&#x4EFB;&#x52A1;&#x521B;&#x5EFA;&#x7B49;&#x5F85;&#x8282;&#x70B9;</span></span><br><span class="line">  DEFINE_WAIT_FUNC(wait, woken_wake_function);</span><br><span class="line"></span><br><span class="line">  start = buf;</span><br><span class="line">  group = file-&gt;private_data;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//&#x5C06;&#x5F53;&#x524D;&#x4EFB;&#x52A1;&#x52A0;&#x5165;&#x7B49;&#x5F85;&#x961F;&#x5217;</span></span><br><span class="line">  add_wait_queue(&amp;group-&gt;notification_waitq, &amp;wait);</span><br><span class="line">  <span class="keyword">while</span> (<span class="number">1</span>) {</span><br><span class="line">    <span class="comment">//&#x83B7;&#x53D6;&#x6761;&#x4EF6;</span></span><br><span class="line">    spin_lock(&amp;group-&gt;notification_lock);</span><br><span class="line">    kevent = get_one_event(group, count);</span><br><span class="line">    spin_unlock(&amp;group-&gt;notification_lock);</span><br><span class="line"></span><br><span class="line">    pr_debug(<span class="string">&quot;%s: group=%p kevent=%p\n&quot;</span>, __func__, group, kevent);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//&#x6761;&#x4EF6;&#x4E3A;&#x771F;&#x5219;&#x5904;&#x7406;</span></span><br><span class="line">    <span class="keyword">if</span> (kevent) {</span><br><span class="line">      ret = PTR_ERR(kevent);</span><br><span class="line">      <span class="keyword">if</span> (IS_ERR(kevent))</span><br><span class="line">	<span class="keyword">break</span>;</span><br><span class="line">      ret = copy_event_to_user(group, kevent, buf);</span><br><span class="line">      fsnotify_destroy_event(group, kevent);</span><br><span class="line">      <span class="keyword">if</span> (ret &lt; <span class="number">0</span>)</span><br><span class="line">	<span class="keyword">break</span>;</span><br><span class="line">      buf += ret;</span><br><span class="line">      count -= ret;</span><br><span class="line">      <span class="keyword">continue</span>;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    ret = -EAGAIN;</span><br><span class="line">    <span class="comment">//&#x5982;&#x679C;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x4EE5;&#x975E;&#x963B;&#x585E;&#x5904;&#x7406;&#xFF0C;&#x5219;&#x4F9D;&#x7136;&#x9000;&#x51FA;</span></span><br><span class="line">    <span class="keyword">if</span> (file-&gt;f_flags &amp; O_NONBLOCK)</span><br><span class="line">      <span class="keyword">break</span>;</span><br><span class="line">    ret = -ERESTARTSYS;</span><br><span class="line">    <span class="comment">//&#x5982;&#x679C;&#x662F;&#x4FE1;&#x53F7;&#x5524;&#x9192;&#x5219;&#x9000;&#x51FA;</span></span><br><span class="line">    <span class="keyword">if</span> (signal_pending(current))</span><br><span class="line">      <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (start != buf)</span><br><span class="line">      <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//&#x5C06;&#x5F53;&#x524D;&#x4EFB;&#x52A1;&#x8BBE;&#x7F6E;&#x4E3A; TASK_INTERRUPTIBLE &#x72B6;&#x6001;&#xFF0C;&#x5E76;&#x8FDB;&#x884C;&#x8D85;&#x65F6;&#x5224;&#x65AD;&#x8C03;&#x5EA6;</span></span><br><span class="line">    <span class="comment">//&#x5F53;&#x4EFB;&#x52A1;&#x88AB;&#x5524;&#x9192;&#x540E;&#xFF0C;&#x72B6;&#x6001;&#x4F1A;&#x88AB;&#x8BBE;&#x7F6E;&#x4E3A; TASK_RUNNING</span></span><br><span class="line">    wait_woken(&amp;wait, TASK_INTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT);</span><br><span class="line">  }</span><br><span class="line">  <span class="comment">//&#x9000;&#x51FA;&#x5FAA;&#x73AF;&#x540E;&#x5C06;&#x5F53;&#x524D;&#x4EFB;&#x52A1;&#x79FB;&#x51FA;&#x7B49;&#x5F85;&#x961F;&#x5217;</span></span><br><span class="line">  remove_wait_queue(&amp;group-&gt;notification_waitq, &amp;wait);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (start != buf &amp;&amp; ret != -EFAULT)</span><br><span class="line">    ret = buf - start;</span><br><span class="line">  <span class="keyword">return</span> ret;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
-</div>
-
-<p>
-&#x5524;&#x9192;&#x5219;&#x662F;&#x901A;&#x8FC7; <code>wake_up()</code> &#x7C7B;&#x5B8F;&#x6765;&#x5C06; <b>&#x6307;&#x5B9A;&#x961F;&#x5217;&#x4E0A;&#x6240;&#x6709;&#x4EFB;&#x52A1;&#x5524;&#x9192;</b> &#xFF1A;
-</p>
-<ul class="org-ul">
-<li>&#x5C06;&#x4EFB;&#x52A1;&#x8BBE;&#x7F6E;&#x4E3A; TASK_RUNNING &#x72B6;&#x6001;</li>
-<li>&#x5C06;&#x4EFB;&#x52A1;&#x653E;&#x5165;&#x8C03;&#x5EA6;&#x7528;&#x7684;&#x7EA2;&#x9ED1;&#x6811;&#x4E2D;</li>
-</ul>
-</div>
-</div>
-
-<div id="outline-container-org0c09683" class="outline-4">
-<h4 id="org0c09683">&#x62A2;&#x5360;&#x548C;&#x4E0A;&#x4E0B;&#x6587;&#x5207;&#x6362;</h4>
-</div>
-</div>
-</div>
-<div id="outline-container-orgb250c99" class="outline-2">
-<h2 id="orgb250c99">&#x62A2;&#x5360;&#x548C;&#x4E0A;&#x4E0B;&#x6587;&#x5207;&#x6362;</h2>
-<div class="outline-text-2" id="text-orgb250c99">
-<p>
-&#x4E0A;&#x4E0B;&#x6587;&#x5207;&#x6362;&#x5C31;&#x662F;&#x5C06;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x5207;&#x6362;&#x5230;&#x53E6;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x8FD0;&#x884C;&#xFF0C;&#x5176;&#x5B9E;&#x73B0;&#x662F;&#x7531; <code>kernel/sched/core.c</code> &#x4E2D;&#x7684; <code>context_switch()</code> &#x6765;&#x5B9E;&#x73B0;&#x7684;&#x3002;
-</p>
-
-<p>
-&#x6B64;&#x51FD;&#x6570;&#x4F1A;&#x88AB; <code>schedule()</code> &#x8C03;&#x7528;&#xFF0C;&#x5176;&#x6267;&#x884C;&#x6B65;&#x9AA4;&#x5982;&#x4E0B;&#xFF1A;
-</p>
-<ul class="org-ul">
-<li>&#x5C06;&#x865A;&#x62DF;&#x5185;&#x5B58;&#x4ECE;&#x4E0A;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x5207;&#x6362;&#x5230;&#x65B0;&#x7684;&#x4EFB;&#x52A1;</li>
-<li>&#x5C06;&#x5904;&#x7406;&#x5668;&#x72B6;&#x6001;&#x4ECE;&#x4E0A;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x5207;&#x6362;&#x5230;&#x65B0;&#x7684;&#x4EFB;&#x52A1;
-<ul class="org-ul">
-<li>&#x4FDD;&#x5B58;&#x3001;&#x6062;&#x590D;&#x6808;&#x4FE1;&#x606F;&#xFF0C;&#x5BC4;&#x5B58;&#x5668;&#x4FE1;&#x606F;&#x7B49;</li>
+<li>如果 nice 值为 10 和 15，其运行时间依然为 15ms 和 5ms</li>
+<li>可以看到分配比例只与 nice 值的相对值有关</li>
 </ul></li>
 </ul>
-
+</div>
+</div>
+<div id="outline-container-org400e3aa" class="outline-3">
+<h3 id="org400e3aa">实现 CFS</h3>
+<div class="outline-text-3" id="text-org400e3aa">
 <p>
-&#x5185;&#x6838;&#x4F1A;&#x68C0;&#x6D4B;&#x4EFB;&#x52A1; <code>need_resched</code> &#x6807;&#x8BB0;&#x6765;&#x786E;&#x8BA4;&#x662F;&#x5426;&#x8C03;&#x7528; <code>schedule()</code> &#x6765;&#x8FDB;&#x884C;&#x4E0A;&#x4E0B;&#x6587;&#x5207;&#x6362;&#xFF0C;&#x6BD4;&#x5982;&#x5F53;&#x6709;&#x9AD8;&#x4F18;&#x5148;&#x7EA7;&#x4EFB;&#x52A1;&#x9700;&#x8981;&#x8FD0;&#x884C;&#x65F6;&#xFF0C;&#x8BE5;&#x6807;&#x8BB0;&#x5C31;&#x4F1A;&#x88AB;&#x7F6E;&#x4F4D;&#x3002;
+CFS 实现的代码位于路径 <code>kernel/sched/fair.c</code> ，下面进行依次分析。
+</p>
+</div>
+<div id="outline-container-orgd62de6e" class="outline-4">
+<h4 id="orgd62de6e">时间记账</h4>
+<div class="outline-text-4" id="text-orgd62de6e">
+<p>
+传统的调度器对任务的时间片进行记录，以在任务的时间片耗尽时切换到其他任务，而 CFS 记录的是任务运行的<a href="http://kcmetercec.top/2018/05/26/linux_ps_schedule/#org357e0e1">虚拟时间</a>。
 </p>
 
 <p>
-&#x5728; <code>include/linux/sched.h</code> &#x4E2D;&#x63D0;&#x4F9B;&#x4E00;&#x4E9B;&#x5BF9;&#x6807;&#x8BB0;&#x7684;&#x64CD;&#x4F5C;&#x51FD;&#x6570;&#xFF1A;
+在 task_struct 结构体中有一个 <code>struct sched_entity se</code> 成员变量，该成员就是对该任务进行时间记账。
+</p>
+
+<p>
+该结构体中具有成员 <code>u64 vruntime</code> 就是用于存放任务的虚拟运行时间，该虚拟运行时间的单位是 ns，它已经与定时器节拍不再关联。
+</p>
+
+<p>
+而 vruntime 的计算则是在函数 <code>update_curr</code> 中完成：
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//此函数执行的公式便是 delta_vtime = delta_ptime * 1024 / weight</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> u64 <span class="title">calc_delta_fair</span><span class="params">(u64 delta, struct sched_entity *se)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  <span class="keyword">if</span> (unlikely(se->load.weight != NICE_0_LOAD))</span><br><span class="line">    delta = __calc_delta(delta, NICE_0_LOAD, &se->load);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> delta;</span><br><span class="line">}</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">update_curr</span><span class="params">(struct cfs_rq *cfs_rq)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  <span class="comment">//当前的任务记录器</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">sched_entity</span> *<span class="title">curr</span> = <span class="title">cfs_rq</span>-><span class="title">curr</span>;</span></span><br><span class="line">  <span class="comment">//当前的运行时间</span></span><br><span class="line">  u64 now = rq_clock_task(rq_of(cfs_rq));</span><br><span class="line">  u64 delta_exec;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (unlikely(!curr))</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//上一次进入该函数到目前所经过的时间</span></span><br><span class="line">  delta_exec = now - curr->exec_start;</span><br><span class="line">  <span class="keyword">if</span> (unlikely((s64)delta_exec <= <span class="number">0</span>))</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">  curr->exec_start = now;</span><br><span class="line"></span><br><span class="line">  schedstat_set(curr->statistics.exec_max,</span><br><span class="line">		max(delta_exec, curr->statistics.exec_max));</span><br><span class="line"></span><br><span class="line">  <span class="comment">//该任务当前运行的总时间</span></span><br><span class="line">  curr->sum_exec_runtime += delta_exec;</span><br><span class="line">  schedstat_add(cfs_rq->exec_clock, delta_exec);</span><br><span class="line"></span><br><span class="line">  <span class="comment">//得到虚拟运行时间</span></span><br><span class="line">  curr->vruntime += calc_delta_fair(delta_exec, curr);</span><br><span class="line">  update_min_vruntime(cfs_rq);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (entity_is_task(curr)) {</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> *<span class="title">curtask</span> = <span class="title">task_of</span>(<span class="title">curr</span>);</span></span><br><span class="line"></span><br><span class="line">    trace_sched_stat_runtime(curtask, delta_exec, curr->vruntime);</span><br><span class="line">    cgroup_account_cputime(curtask, delta_exec);</span><br><span class="line">    account_group_exec_runtime(curtask, delta_exec);</span><br><span class="line">  }</span><br><span class="line"></span><br><span class="line">  account_cfs_rq_runtime(cfs_rq, delta_exec);</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+</div>
+</div>
+</div>
+<div id="outline-container-orgf7e3b52" class="outline-4">
+<h4 id="orgf7e3b52">任务选择</h4>
+<div class="outline-text-4" id="text-orgf7e3b52">
+<p>
+CFS 选择任务的核心就是：选择具有最小 vruntime 的任务来运行。
+</p>
+
+<p>
+Linux 使用红黑树来将所有处于运行状态的任务挂接起来，那么最左侧的叶子节点便是 vruntime 最小的节点。
+</p>
+
+<ul class="org-ul">
+<li>选择下一个要运行的任务是通过函数 <code>__pick_next_entity</code> 来完成的：</li>
+</ul>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">sched_entity</span> *__<span class="title">pick_next_entity</span>(<span class="title">struct</span> <span class="title">sched_entity</span> *<span class="title">se</span>)</span></span><br><span class="line"><span class="class">{</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">rb_node</span> *<span class="title">next</span> = <span class="title">rb_next</span>(&<span class="title">se</span>-><span class="title">run_node</span>);</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (!next)</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> rb_entry(next, struct sched_entity, run_node);</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+</div>
+
+<ul class="org-ul">
+<li>而将一个任务加入红黑树是通过 <code>enqueue_entity()</code> 来完成，该函数调用 <code>__enqueue_entity()</code> 来完成插入。</li>
+<li>删除一个任务是通过 <code>dequeue_entity()</code> 来完成</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-org003f36f" class="outline-4">
+<h4 id="org003f36f">调度器入口</h4>
+<div class="outline-text-4" id="text-org003f36f">
+<p>
+调度器的入口函数是 <code>schedule()</code> 位于 <code>kernel/sched/core.c</code> 。
+</p>
+
+<p>
+该函数会调用 <code>__schedule()</code> 函数，其执行逻辑为：
+</p>
+<ul class="org-ul">
+<li>选择优先级最高的调度策略</li>
+<li>从该调度策略中选择优先级最高的任务运行</li>
+</ul>
+
+<p>
+以上两个重要的执行逻辑是通过函数 <code>pick_next_task()</code> 来完成的：
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Pick up the highest-prio task:</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> *</span></span><br><span class="line"><span class="class"><span class="title">pick_next_task</span>(<span class="title">struct</span> <span class="title">rq</span> *<span class="title">rq</span>, <span class="title">struct</span> <span class="title">task_struct</span> *<span class="title">prev</span>, <span class="title">struct</span> <span class="title">rq_flags</span> *<span class="title">rf</span>)</span></span><br><span class="line"><span class="class">{</span></span><br><span class="line">  <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">sched_class</span> *<span class="title">class</span>;</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> *<span class="title">p</span>;</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">   * Optimization: we know that if all tasks are in the fair class we can</span></span><br><span class="line"><span class="comment">   * call that function directly, but only if the @prev task wasn't of a</span></span><br><span class="line"><span class="comment">   * higher scheduling class, because otherwise those loose the</span></span><br><span class="line"><span class="comment">   * opportunity to pull in more work from other CPUs.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="comment">//! 当所有可运行任务都是 CFS 任务（NICE 策略）时，可以使用快捷方式得到下一个将要运行的任务</span></span><br><span class="line">  <span class="keyword">if</span> (likely((prev->sched_class == &idle_sched_class ||</span><br><span class="line">	prev->sched_class == &fair_sched_class) &&</span><br><span class="line">       rq->nr_running == rq->cfs.h_nr_running)) {</span><br><span class="line"></span><br><span class="line">    p = fair_sched_class.pick_next_task(rq, prev, rf);</span><br><span class="line">    <span class="keyword">if</span> (unlikely(p == RETRY_TASK))</span><br><span class="line">      <span class="keyword">goto</span> restart;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Assumes fair_sched_class->next == idle_sched_class */</span></span><br><span class="line">    <span class="keyword">if</span> (unlikely(!p))</span><br><span class="line">      p = idle_sched_class.pick_next_task(rq, prev, rf);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> p;</span><br><span class="line">  }</span><br><span class="line"></span><br><span class="line">restart:</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_SMP</span></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">   * We must do the balancing pass before put_next_task(), such</span></span><br><span class="line"><span class="comment">   * that when we release the rq->lock the task is in the same</span></span><br><span class="line"><span class="comment">   * state as before we took rq->lock.</span></span><br><span class="line"><span class="comment">   *</span></span><br><span class="line"><span class="comment">   * We can terminate the balance pass as soon as we know there is</span></span><br><span class="line"><span class="comment">   * a runnable task of @class priority or higher.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  for_class_range(class, prev->sched_class, &idle_sched_class) {</span><br><span class="line">    <span class="keyword">if</span> (class->balance(rq, prev, rf))</span><br><span class="line">      <span class="keyword">break</span>;</span><br><span class="line">  }</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">  put_prev_task(rq, prev);</span><br><span class="line"></span><br><span class="line">  <span class="comment">//! 从最高优先级策略开始遍历每个调度类，获取最高优先级可运行任务</span></span><br><span class="line">  for_each_class(class) {</span><br><span class="line">    p = class->pick_next_task(rq, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</span><br><span class="line">    <span class="keyword">if</span> (p)</span><br><span class="line">      <span class="keyword">return</span> p;</span><br><span class="line">  }</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* The idle class should always have a runnable task: */</span></span><br><span class="line">  BUG();</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+</div>
+</div>
+</div>
+<div id="outline-container-org1431055" class="outline-4">
+<h4 id="org1431055">睡眠和唤醒</h4>
+<div class="outline-text-4" id="text-org1431055">
+<ul class="org-ul">
+<li>睡眠：任务从可执行红黑树中移出，被放入等待队列</li>
+<li>唤醒：任务被设置为可执行状态，然后从等待队列中移到可执行红黑树</li>
+</ul>
+
+<p>
+上述过程在<a href="http://kcmetercec.top/2018/04/07/linux_driver_char_overview/#org9164991">此处</a>有完整的示例。
+</p>
+
+<p>
+可以看到：调度器真正调度的是<a href="http://kcmetercec.top/2018/05/24/linux_ps_overview/#org60473d1">处于运行状态</a>的任务！
+</p>
+
+<p>
+为了避免任务的休眠和唤醒产生竞争条件，通常的处理代码如下：
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//为当前任务创建一个节点，名叫 wait</span></span><br><span class="line">DEFINE_WAIT(wait);</span><br><span class="line"></span><br><span class="line"><span class="comment">//将当前任务节点加入等待队列 q 中</span></span><br><span class="line">add_wait_queue(q, &wait);</span><br><span class="line"></span><br><span class="line"><span class="comment">//当事件不满足时，进入睡眠</span></span><br><span class="line"><span class="keyword">while</span>(!condition)</span><br><span class="line">  {</span><br><span class="line">    <span class="comment">//将当前任务设置为 TASK_INTERRUPTIBLE 状态</span></span><br><span class="line">    prepare_to_wait(&q, &wait, TASK_INTERRUPTIBLE);</span><br><span class="line">    <span class="comment">//如果当前任务被信号唤醒，则处理信号</span></span><br><span class="line">    <span class="keyword">if</span>(signal_pending(current))</span><br><span class="line">      {</span><br><span class="line">	<span class="comment">//一般返回 restart 错误，然后退出循环</span></span><br><span class="line">	ret = -ERESTARTSYS;</span><br><span class="line">	<span class="keyword">break</span>;</span><br><span class="line">      }</span><br><span class="line">    <span class="comment">//在调用 schedule() 前需要释放必要的锁</span></span><br><span class="line">    <span class="comment">//主动调度到其它任务运行</span></span><br><span class="line">    schedule();</span><br><span class="line">    <span class="comment">//在返回 schedule() 后需要获取必要的锁</span></span><br><span class="line">  }</span><br><span class="line"><span class="comment">//将当前任务设置为运行态，并移出等待队列</span></span><br><span class="line">finish_wait(&q, &wait);</span><br></pre></td></tr></table></figure>
+</div>
+
+<p>
+<code>inotify_read()</code> 提供了标准使用方式：
+</p>
+<div class="org-src-container">
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">ssize_t</span> <span class="title">inotify_read</span><span class="params">(struct file *file, <span class="keyword">char</span> __user *buf,</span></span></span><br><span class="line"><span class="function"><span class="params">	  <span class="keyword">size_t</span> count, <span class="keyword">loff_t</span> *pos)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">fsnotify_group</span> *<span class="title">group</span>;</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">fsnotify_event</span> *<span class="title">kevent</span>;</span></span><br><span class="line">  <span class="keyword">char</span> __user *start;</span><br><span class="line">  <span class="keyword">int</span> ret;</span><br><span class="line">  <span class="comment">//! 为当前任务创建等待节点</span></span><br><span class="line">  DEFINE_WAIT_FUNC(wait, woken_wake_function);</span><br><span class="line"></span><br><span class="line">  start = buf;</span><br><span class="line">  group = file->private_data;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//将当前任务加入等待队列</span></span><br><span class="line">  add_wait_queue(&group->notification_waitq, &wait);</span><br><span class="line">  <span class="keyword">while</span> (<span class="number">1</span>) {</span><br><span class="line">    <span class="comment">//获取条件</span></span><br><span class="line">    spin_lock(&group->notification_lock);</span><br><span class="line">    kevent = get_one_event(group, count);</span><br><span class="line">    spin_unlock(&group->notification_lock);</span><br><span class="line"></span><br><span class="line">    pr_debug(<span class="string">"%s: group=%p kevent=%p\n"</span>, __func__, group, kevent);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//条件为真则处理</span></span><br><span class="line">    <span class="keyword">if</span> (kevent) {</span><br><span class="line">      ret = PTR_ERR(kevent);</span><br><span class="line">      <span class="keyword">if</span> (IS_ERR(kevent))</span><br><span class="line">	<span class="keyword">break</span>;</span><br><span class="line">      ret = copy_event_to_user(group, kevent, buf);</span><br><span class="line">      fsnotify_destroy_event(group, kevent);</span><br><span class="line">      <span class="keyword">if</span> (ret < <span class="number">0</span>)</span><br><span class="line">	<span class="keyword">break</span>;</span><br><span class="line">      buf += ret;</span><br><span class="line">      count -= ret;</span><br><span class="line">      <span class="keyword">continue</span>;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    ret = -EAGAIN;</span><br><span class="line">    <span class="comment">//如果用户空间以非阻塞处理，则依然退出</span></span><br><span class="line">    <span class="keyword">if</span> (file->f_flags & O_NONBLOCK)</span><br><span class="line">      <span class="keyword">break</span>;</span><br><span class="line">    ret = -ERESTARTSYS;</span><br><span class="line">    <span class="comment">//如果是信号唤醒则退出</span></span><br><span class="line">    <span class="keyword">if</span> (signal_pending(current))</span><br><span class="line">      <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (start != buf)</span><br><span class="line">      <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//将当前任务设置为 TASK_INTERRUPTIBLE 状态，并进行超时判断调度</span></span><br><span class="line">    <span class="comment">//当任务被唤醒后，状态会被设置为 TASK_RUNNING</span></span><br><span class="line">    wait_woken(&wait, TASK_INTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT);</span><br><span class="line">  }</span><br><span class="line">  <span class="comment">//退出循环后将当前任务移出等待队列</span></span><br><span class="line">  remove_wait_queue(&group->notification_waitq, &wait);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (start != buf && ret != -EFAULT)</span><br><span class="line">    ret = buf - start;</span><br><span class="line">  <span class="keyword">return</span> ret;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+</div>
+
+<p>
+唤醒则是通过 <code>wake_up()</code> 类宏来将 <b>指定队列上所有任务唤醒</b> ：
+</p>
+<ul class="org-ul">
+<li>将任务设置为 TASK_RUNNING 状态</li>
+<li>将任务放入调度用的红黑树中</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-org64da8e5" class="outline-4">
+<h4 id="org64da8e5">抢占和上下文切换</h4>
+</div>
+</div>
+</div>
+<div id="outline-container-orgf606a4d" class="outline-2">
+<h2 id="orgf606a4d">抢占和上下文切换</h2>
+<div class="outline-text-2" id="text-orgf606a4d">
+<p>
+上下文切换就是将一个任务切换到另一个任务运行，其实现是由 <code>kernel/sched/core.c</code> 中的 <code>context_switch()</code> 来实现的。
+</p>
+
+<p>
+此函数会被 <code>schedule()</code> 调用，其执行步骤如下：
+</p>
+<ul class="org-ul">
+<li>将虚拟内存从上一个任务切换到新的任务</li>
+<li>将处理器状态从上一个任务切换到新的任务
+<ul class="org-ul">
+<li>保存、恢复栈信息，寄存器信息等</li>
+</ul></li>
+</ul>
+
+<p>
+内核会检测任务 <code>need_resched</code> 标记来确认是否调用 <code>schedule()</code> 来进行上下文切换，比如当有高优先级任务需要运行时，该标记就会被置位。
+</p>
+
+<p>
+在 <code>include/linux/sched.h</code> 中提供一些对标记的操作函数：
 </p>
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
@@ -569,132 +569,132 @@ Linux &#x4F7F;&#x7528;&#x7EA2;&#x9ED1;&#x6811;&#x6765;&#x5C06;&#x6240;&#x6709;&#
 </colgroup>
 <thead>
 <tr>
-<th scope="col" class="org-left">&#x540D;&#x79F0;</th>
-<th scope="col" class="org-left">&#x8BF4;&#x660E;</th>
+<th scope="col" class="org-left">名称</th>
+<th scope="col" class="org-left">说明</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td class="org-left">need_resched()</td>
-<td class="org-left">&#x83B7;&#x53D6;&#x8BE5;&#x6807;&#x8BB0;&#x662F;&#x5426;&#x7F6E;&#x4F4D;</td>
+<td class="org-left">获取该标记是否置位</td>
 </tr>
 
 <tr>
 <td class="org-left">set_tsk_need_resched(struct task_struct *tsk)</td>
-<td class="org-left">&#x5C06;&#x8BE5;&#x4EFB;&#x52A1;&#x7684;&#x6807;&#x8BB0;&#x7F6E;&#x4F4D;</td>
+<td class="org-left">将该任务的标记置位</td>
 </tr>
 
 <tr>
 <td class="org-left">clear_tsk_need_resched(struct task_struct *tsk)</td>
-<td class="org-left">&#x5C06;&#x8BE5;&#x4EFB;&#x52A1;&#x7684;&#x6807;&#x8BB0;&#x6E05;&#x96F6;</td>
+<td class="org-left">将该任务的标记清零</td>
 </tr>
 </tbody>
 </table>
 
 <p>
-&#x8BE5;&#x6807;&#x8BB0;&#x88AB; <code>thread_info</code> &#x4E2D;&#x7684; flags &#x6210;&#x5458;&#x4FDD;&#x5B58;&#x3002;
+该标记被 <code>thread_info</code> 中的 flags 成员保存。
 </p>
 
 <p>
-&#x7528;&#x6237;&#x4EFB;&#x52A1;&#x62A2;&#x5360;&#x4F1A;&#x5728;&#x4EE5;&#x4E0B;&#x60C5;&#x51B5;&#x65F6;&#x53D1;&#x751F;&#xFF1A;
+用户任务抢占会在以下情况时发生：
 </p>
 <ul class="org-ul">
-<li>&#x7528;&#x6237;&#x8FDB;&#x884C;&#x7CFB;&#x7EDF;&#x8C03;&#x7528;&#x65F6;&#xFF0C;&#x5185;&#x6838;&#x4F1A;&#x68C0;&#x67E5; <code>need_resched</code> &#x6807;&#x8BB0;</li>
-<li>&#x6267;&#x884C;&#x4E2D;&#x65AD;&#x5904;&#x7406;&#x7A0B;&#x5E8F;&#x65F6;&#xFF0C;&#x5185;&#x6838;&#x4F1A;&#x68C0;&#x67E5; <code>need_resched</code> &#x6807;&#x8BB0;</li>
+<li>用户进行系统调用时，内核会检查 <code>need_resched</code> 标记</li>
+<li>执行中断处理程序时，内核会检查 <code>need_resched</code> 标记</li>
 </ul>
 
 <p>
-&#x5185;&#x6838;&#x4EFB;&#x52A1;&#x62A2;&#x5360;&#xFF1A;&#x53EA;&#x8981;&#x4EFB;&#x52A1;&#x6CA1;&#x6709;&#x6301;&#x6709;&#x9501;&#xFF0C;&#x5185;&#x6838;&#x5C31;&#x53EF;&#x4EE5;&#x8FDB;&#x884C;&#x62A2;&#x5360;&#x3002;
+内核任务抢占：只要任务没有持有锁，内核就可以进行抢占。
 </p>
 
 <p>
-&#x5728; <code>thread_info</code> &#x6709;&#x4E2A; <code>preempt_count</code> &#x8BA1;&#x6570;&#x5668;&#xFF0C;&#x6BCF;&#x5F53;&#x83B7;&#x5F97;&#x4E00;&#x4E2A;&#x9501;&#x65F6;&#x8BE5;&#x8BA1;&#x6570;&#x503C;&#x52A0; 1&#xFF0C;&#x91CA;&#x653E;&#x9501;&#x65F6;&#x8BE5;&#x8BA1;&#x6570;&#x503C;&#x51CF; 1&#x3002;
-&#x6240;&#x4EE5;&#x53EF;&#x4EE5;&#x5224;&#x65AD;&#x5F53; <code>preempt_count</code> &#x4E3A; 0 &#x65F6;&#xFF0C;&#x4EE3;&#x8868;&#x5B83;&#x6CA1;&#x6709;&#x83B7;&#x53D6;&#x5230;&#x9501;&#xFF0C;&#x662F;&#x53EF;&#x4EE5;&#x6267;&#x884C;&#x62A2;&#x5360;&#x7684;&#x3002;
+在 <code>thread_info</code> 有个 <code>preempt_count</code> 计数器，每当获得一个锁时该计数值加 1，释放锁时该计数值减 1。
+所以可以判断当 <code>preempt_count</code> 为 0 时，代表它没有获取到锁，是可以执行抢占的。
 </p>
 
 <p>
-&#x4E5F;&#x5C31;&#x662F;&#x8BF4;&#xFF1A;&#x5F53; <code>need_resched</code> &#x6807;&#x8BB0;&#x7F6E;&#x4F4D;&#x5E76;&#x4E14; <code>preempt_count</code> &#x503C;&#x4E3A; 0 &#x65F6;&#xFF0C;&#x5C31;&#x53EF;&#x4EE5;&#x6267;&#x884C;&#x5185;&#x6838;&#x62A2;&#x5360;&#x3002;
+也就是说：当 <code>need_resched</code> 标记置位并且 <code>preempt_count</code> 值为 0 时，就可以执行内核抢占。
 </p>
 
 <p>
-&#x5185;&#x6838;&#x62A2;&#x5360;&#x4F1A;&#x53D1;&#x751F;&#x5728;&#xFF1A;
+内核抢占会发生在：
 </p>
 <ul class="org-ul">
-<li>&#x6267;&#x884C;&#x4E2D;&#x65AD;&#x5904;&#x7406;&#x7A0B;&#x5E8F;&#x65F6;</li>
-<li>&#x5185;&#x6838;&#x4EE3;&#x7801;&#x518D;&#x4E00;&#x6B21;&#x5177;&#x6709;&#x53EF;&#x62A2;&#x5360;&#x6027;&#x65F6;</li>
-<li>&#x5185;&#x6838;&#x4EE3;&#x7801;&#x663E;&#x5F0F;&#x8C03;&#x7528; <code>schedule()</code> &#x65F6;</li>
-<li>&#x5185;&#x6838;&#x4E2D;&#x7684;&#x4EFB;&#x52A1;&#x963B;&#x585E;&#x65F6;</li>
+<li>执行中断处理程序时</li>
+<li>内核代码再一次具有可抢占性时</li>
+<li>内核代码显式调用 <code>schedule()</code> 时</li>
+<li>内核中的任务阻塞时</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-org70fb9ab" class="outline-2">
-<h2 id="org70fb9ab">&#x5B9E;&#x65F6;&#x8C03;&#x5EA6;&#x7B56;&#x7565;</h2>
-<div class="outline-text-2" id="text-org70fb9ab">
+<div id="outline-container-org5635982" class="outline-2">
+<h2 id="org5635982">实时调度策略</h2>
+<div class="outline-text-2" id="text-org5635982">
 <p>
-<a href="http://kcmetercec.top/2018/05/26/linux_ps_schedule/#org0ebe07d">&#x5B9E;&#x65F6;&#x8C03;&#x5EA6;&#x7B56;&#x7565;</a>&#x5728;&#x5185;&#x6838;&#x4E2D;&#x7684;&#x5B9A;&#x4E49;&#x662F; SCHED_FIFO &#x548C; SCHED_RR &#xFF0C;&#x800C; CFS &#x8C03;&#x5EA6;&#x7B56;&#x7565;&#x662F; SCHED_NORMAL.
+<a href="http://kcmetercec.top/2018/05/26/linux_ps_schedule/#org0ebe07d">实时调度策略</a>在内核中的定义是 SCHED_FIFO 和 SCHED_RR ，而 CFS 调度策略是 SCHED_NORMAL.
 </p>
 
 <blockquote>
 <p>
-Linux &#x7684;&#x5B9E;&#x65F6;&#x8C03;&#x5EA6;&#x7B97;&#x6CD5;&#x63D0;&#x4F9B;&#x4E86;&#x4E00;&#x79CD;&#x8F6F;&#x5B9E;&#x65F6;&#x5DE5;&#x4F5C;&#x65B9;&#x5F0F;&#xFF1A;&#x5185;&#x6838;&#x8C03;&#x5EA6;&#x8FDB;&#x7A0B;&#x5C3D;&#x529B;&#x4F7F;&#x8FDB;&#x7A0B;&#x5728;&#x5B83;&#x7684;&#x9650;&#x5B9A;&#x65F6;&#x95F4;&#x5230;&#x6765;&#x524D;&#x8FD0;&#x884C;&#xFF0C;&#x4F46;&#x5185;&#x6838;&#x4E0D;&#x4FDD;&#x8BC1;&#x4E00;&#x5B9A;&#x80FD;&#x6EE1;&#x8DB3;&#x3002;
+Linux 的实时调度算法提供了一种软实时工作方式：内核调度进程尽力使进程在它的限定时间到来前运行，但内核不保证一定能满足。
 </p>
 </blockquote>
 
 <p>
-&#x6709;&#x5173;&#x8C03;&#x5EA6;&#x7684;&#x7CFB;&#x7EDF;&#x8C03;&#x7528;&#x5982;&#x4E0B;&#xFF1A;
+有关调度的系统调用如下：
 </p>
 
 <p>
-&#x4E0E;&#x8C03;&#x5EA6;&#x7B56;&#x7565;&#x548C;&#x4F18;&#x5148;&#x7EA7;&#xFF1A;
+与调度策略和优先级：
 </p>
 <ul class="org-ul">
-<li>sched_setscheduler() / sched_getscheduler() : &#x8BBE;&#x7F6E;&#x548C;&#x83B7;&#x53D6;&#x4EFB;&#x52A1;&#x7684;&#x8C03;&#x5EA6;&#x7B56;&#x7565;
+<li>sched_setscheduler() / sched_getscheduler() : 设置和获取任务的调度策略
 <ul class="org-ul">
-<li>&#x5BF9;&#x5E94;&#x8BFB;&#x5199;&#x5185;&#x6838; task_struct &#x7684; policy &#x548C; rt_priority &#x6210;&#x5458;</li>
+<li>对应读写内核 task_struct 的 policy 和 rt_priority 成员</li>
 </ul></li>
-<li>sched_setparram() / sched_getparram() : &#x8BBE;&#x7F6E;&#x548C;&#x83B7;&#x53D6; RT &#x4EFB;&#x52A1;&#x7684;&#x4F18;&#x5148;&#x7EA7;
+<li>sched_setparram() / sched_getparram() : 设置和获取 RT 任务的优先级
 <ul class="org-ul">
-<li>&#x5BF9;&#x5E94;&#x8BFB;&#x5199;&#x5185;&#x6838; sched_param &#x7684; rt_priority &#x6210;&#x5458;</li>
+<li>对应读写内核 sched_param 的 rt_priority 成员</li>
 </ul></li>
-<li>sched_get_priority_max() / sched_get_priority_min() : &#x83B7;&#x53D6; RT &#x4F18;&#x5148;&#x7EA7;&#x7684;&#x6700;&#x5927;&#x548C;&#x6700;&#x5C0F;&#x503C;
+<li>sched_get_priority_max() / sched_get_priority_min() : 获取 RT 优先级的最大和最小值
 <ul class="org-ul">
-<li>&#x5185;&#x6838;&#x6700;&#x5927;&#x4F18;&#x5148;&#x7EA7;&#x5B9A;&#x4E49;&#x5728; <code>include/linux/sched/prio.h</code> &#x4E2D;&#x7684; <code>MAX_USER_RT_PRIO</code> &#xFF0C;&#x9ED8;&#x8BA4;&#x662F; 100&#xFF0C;&#x6240;&#x4EE5;&#x8303;&#x56F4;&#x5C31;&#x662F; 0~99</li>
+<li>内核最大优先级定义在 <code>include/linux/sched/prio.h</code> 中的 <code>MAX_USER_RT_PRIO</code> ，默认是 100，所以范围就是 0~99</li>
 </ul></li>
-<li>nice() : &#x8BBE;&#x7F6E; CFS &#x4EFB;&#x52A1;&#x7684; nice &#x503C;
+<li>nice() : 设置 CFS 任务的 nice 值
 <ul class="org-ul">
-<li>&#x5BF9;&#x5E94;&#x5185;&#x6838; task_struct &#x7684; static_prio &#x548C; prio &#x6210;&#x5458;</li>
+<li>对应内核 task_struct 的 static_prio 和 prio 成员</li>
 </ul></li>
 </ul>
 
 <p>
-&#x4E0E;&#x5904;&#x7406;&#x5668;&#x7ED1;&#x5B9A;&#x6709;&#x5173;&#x7684;&#x7CFB;&#x7EDF;&#x8C03;&#x7528;&#xFF1A;
+与处理器绑定有关的系统调用：
 </p>
 <ul class="org-ul">
-<li>sched_setaffinity() / sched_getaffinity() : &#x8BBE;&#x7F6E;&#x548C;&#x83B7;&#x53D6;&#x4EFB;&#x52A1;&#x5BF9; CPU &#x7684;&#x4EB2;&#x548C;&#x6027;
+<li>sched_setaffinity() / sched_getaffinity() : 设置和获取任务对 CPU 的亲和性
 <ul class="org-ul">
-<li>&#x5BF9;&#x5E94;&#x5185;&#x6838; task_struct &#x7684; nr_cpus_allowed &#x6210;&#x5458;&#xFF0C;&#x9ED8;&#x8BA4;&#x63A9;&#x7801;&#x4E3A;&#x5168; 1 &#xFF0C;&#x4EE3;&#x8868;&#x4EFB;&#x52A1;&#x53EF;&#x4EE5;&#x5728;&#x6240;&#x6709;&#x7684; CPU &#x4E0A;&#x8FD0;&#x884C;</li>
+<li>对应内核 task_struct 的 nr_cpus_allowed 成员，默认掩码为全 1 ，代表任务可以在所有的 CPU 上运行</li>
 </ul></li>
 </ul>
 
 <p>
-&#x4E3B;&#x52A8;&#x653E;&#x5F03;&#x5904;&#x7406;&#x5668;&#x65F6;&#x95F4;&#xFF1A;
+主动放弃处理器时间：
 </p>
 <ul class="org-ul">
 <li>sched_yield()</li>
 </ul>
 
 <p>
-&#x5BF9;&#x4E8E; CFS &#x7B56;&#x7565;&#x800C;&#x8A00;&#xFF0C;&#x4EFB;&#x52A1;&#x4F1A;&#x88AB;&#x653E;&#x5165;&#x4F18;&#x5148;&#x7EA7;&#x961F;&#x5217;&#x7684;&#x672B;&#x5C3E;&#xFF0C;&#x5E76;&#x653E;&#x5165;&#x8FC7;&#x671F;&#x961F;&#x5217;&#x4E2D;&#x3002;
+对于 CFS 策略而言，任务会被放入优先级队列的末尾，并放入过期队列中。
 </p>
 
 <p>
-&#x4F46;&#x5BF9;&#x4E8E; RT &#x7B56;&#x7565;&#x800C;&#x8A00;&#xFF0C;&#x7531;&#x4E8E;&#x4EFB;&#x52A1;&#x6CA1;&#x6709;&#x65F6;&#x95F4;&#x7684;&#x6982;&#x5FF5;&#xFF0C;&#x5B83;&#x4EEC;&#x53EA;&#x4F1A;&#x88AB;&#x653E;&#x5165;&#x5230;&#x4F18;&#x5148;&#x7EA7;&#x961F;&#x5217;&#x7684;&#x672B;&#x5C3E;&#x3002;
+但对于 RT 策略而言，由于任务没有时间的概念，它们只会被放入到优先级队列的末尾。
 </p>
 </div>
 </div>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
 </div>
 
     </div>
@@ -780,7 +780,7 @@ Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org0e624d4"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x8C03;&amp;#x5EA6;&amp;#x5668;&amp;#x7C7B;&amp;#xFF08;scheduler classes&amp;#xFF09;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org23836ab"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x5B8C;&amp;#x5168;&amp;#x516C;&amp;#x5E73;&amp;#x8C03;&amp;#x5EA6;&amp;#xFF08;CFS&amp;#xFF09;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org9aaeb16"><span class="nav-number">2.1.</span> <span class="nav-text">&amp;#x57FA;&amp;#x4E8E;&amp;#x65F6;&amp;#x95F4;&amp;#x7247;&amp;#x8C03;&amp;#x5EA6;&amp;#x7684;&amp;#x7F3A;&amp;#x9677;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org6866762"><span class="nav-number">2.2.</span> <span class="nav-text">&amp;#x516C;&amp;#x5E73;&amp;#x8C03;&amp;#x5EA6;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org1f9c7bd"><span class="nav-number">2.3.</span> <span class="nav-text">&amp;#x5B9E;&amp;#x73B0; CFS</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orge762b49"><span class="nav-number">2.3.1.</span> <span class="nav-text">&amp;#x65F6;&amp;#x95F4;&amp;#x8BB0;&amp;#x8D26;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgd6267f0"><span class="nav-number">2.3.2.</span> <span class="nav-text">&amp;#x4EFB;&amp;#x52A1;&amp;#x9009;&amp;#x62E9;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgd76bf82"><span class="nav-number">2.3.3.</span> <span class="nav-text">&amp;#x8C03;&amp;#x5EA6;&amp;#x5668;&amp;#x5165;&amp;#x53E3;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org207a24a"><span class="nav-number">2.3.4.</span> <span class="nav-text">&amp;#x7761;&amp;#x7720;&amp;#x548C;&amp;#x5524;&amp;#x9192;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org0c09683"><span class="nav-number">2.3.5.</span> <span class="nav-text">&amp;#x62A2;&amp;#x5360;&amp;#x548C;&amp;#x4E0A;&amp;#x4E0B;&amp;#x6587;&amp;#x5207;&amp;#x6362;</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgb250c99"><span class="nav-number">3.</span> <span class="nav-text">&amp;#x62A2;&amp;#x5360;&amp;#x548C;&amp;#x4E0A;&amp;#x4E0B;&amp;#x6587;&amp;#x5207;&amp;#x6362;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org70fb9ab"><span class="nav-number">4.</span> <span class="nav-text">&amp;#x5B9E;&amp;#x65F6;&amp;#x8C03;&amp;#x5EA6;&amp;#x7B56;&amp;#x7565;</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#orgb294888"><span class="nav-number">1.</span> <span class="nav-text">调度器类（scheduler classes）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org15289e3"><span class="nav-number">2.</span> <span class="nav-text">完全公平调度（CFS）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgd5986e3"><span class="nav-number">2.1.</span> <span class="nav-text">基于时间片调度的缺陷</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org1bacb7a"><span class="nav-number">2.2.</span> <span class="nav-text">公平调度</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org400e3aa"><span class="nav-number">2.3.</span> <span class="nav-text">实现 CFS</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgd62de6e"><span class="nav-number">2.3.1.</span> <span class="nav-text">时间记账</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgf7e3b52"><span class="nav-number">2.3.2.</span> <span class="nav-text">任务选择</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org003f36f"><span class="nav-number">2.3.3.</span> <span class="nav-text">调度器入口</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org1431055"><span class="nav-number">2.3.4.</span> <span class="nav-text">睡眠和唤醒</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org64da8e5"><span class="nav-number">2.3.5.</span> <span class="nav-text">抢占和上下文切换</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgf606a4d"><span class="nav-number">3.</span> <span class="nav-text">抢占和上下文切换</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org5635982"><span class="nav-number">4.</span> <span class="nav-text">实时调度策略</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 

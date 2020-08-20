@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="&amp;#x5728;gdb&amp;#x65E0;&amp;#x6CD5;&amp;#x627E;&amp;#x5230;&amp;#x6E90;&amp;#x6587;&amp;#x4EF6;&amp;#x65F6;&amp;#xFF0C;&amp;#x4E3A;gdb&amp;#x6307;&amp;#x5B9A;&amp;#x6E90;&amp;#x6587;&amp;#x4EF6;&amp;#x7684;&amp;#x8DEF;&amp;#x5F84;&amp;#x3002;">
+  <meta name="description" content="在gdb无法找到源文件时，为gdb指定源文件的路径。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[What]GDB 设置源文件路径">
 <meta property="og:url" content="http://kcmetercec.top/2018/06/14/linux_debug_gdb_sourcedir/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="&amp;#x5728;gdb&amp;#x65E0;&amp;#x6CD5;&amp;#x627E;&amp;#x5230;&amp;#x6E90;&amp;#x6587;&amp;#x4EF6;&amp;#x65F6;&amp;#xFF0C;&amp;#x4E3A;gdb&amp;#x6307;&amp;#x5B9A;&amp;#x6E90;&amp;#x6587;&amp;#x4EF6;&amp;#x7684;&amp;#x8DEF;&amp;#x5F84;&amp;#x3002;">
+<meta property="og:description" content="在gdb无法找到源文件时，为gdb指定源文件的路径。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2018-06-13T16:00:00.000Z">
 <meta property="article:modified_time" content="2020-08-01T01:09:06.532Z">
@@ -299,36 +299,36 @@
       
         <div id="content">
 <p>
-&#x5728;gdb&#x65E0;&#x6CD5;&#x627E;&#x5230;&#x6E90;&#x6587;&#x4EF6;&#x65F6;&#xFF0C;&#x4E3A;gdb&#x6307;&#x5B9A;&#x6E90;&#x6587;&#x4EF6;&#x7684;&#x8DEF;&#x5F84;&#x3002;
+在gdb无法找到源文件时，为gdb指定源文件的路径。
 </p>
 
 <a id="more"></a>
 
 <p>
-&#x6709;&#x4E9B;&#x65F6;&#x5019;&#xFF0C;gdb&#x65E0;&#x6CD5;&#x6839;&#x636E;&#x5F53;&#x524D;&#x53EF;&#x6267;&#x884C;&#x6587;&#x4EF6;&#x4E2D;&#x7684;&#x7B26;&#x53F7;&#x8868;&#x627E;&#x5230;&#x5176;&#x5BF9;&#x5E94;&#x7684;&#x6E90;&#x6587;&#x4EF6;&#xFF0C;&#x8FD9;&#x5BFC;&#x81F4;&#x8C03;&#x8BD5;&#x65E0;&#x6CD5;&#x770B;&#x5230;&#x4EE3;&#x7801;&#x5185;&#x5BB9;&#x3002;
+有些时候，gdb无法根据当前可执行文件中的符号表找到其对应的源文件，这导致调试无法看到代码内容。
 </p>
 <ul class="org-ul">
-<li>&#x6BD4;&#x5982;&#x5728;&#x5D4C;&#x5165;&#x5F0F;&#x4E0A;&#x7528;gdb&#x65F6;&#xFF0C;&#x4EC5;&#x6709;&#x5176;&#x53EF;&#x6267;&#x884C;&#x6587;&#x4EF6;&#x800C;&#x65E0;&#x6E90;&#x7801;&#x3002;</li>
+<li>比如在嵌入式上用gdb时，仅有其可执行文件而无源码。</li>
 </ul>
 
-<div id="outline-container-org8c6c8d4" class="outline-2">
-<h2 id="org8c6c8d4">&#x641C;&#x5BFB;&#x89C4;&#x5219;</h2>
-<div class="outline-text-2" id="text-org8c6c8d4">
+<div id="outline-container-org13e17c9" class="outline-2">
+<h2 id="org13e17c9">搜寻规则</h2>
+<div class="outline-text-2" id="text-org13e17c9">
 <p>
-gdb &#x9ED8;&#x8BA4;&#x7EF4;&#x62A4;&#x4E86;&#x4E00;&#x4E2A; <code>source path</code> &#x5217;&#x8868;&#xFF0C;&#x5F53;&#x542F;&#x52A8;&#x6267;&#x884C;&#x7A0B;&#x5E8F;&#x4F1A;&#x6309;&#x7167;&#x8FD9;&#x4E2A;&#x5217;&#x8868;&#x6765;&#x4F9D;&#x6B21;&#x641C;&#x5BFB;&#x76F4;&#x5230;&#x627E;&#x5230;&#x6587;&#x4EF6;,&#x5426;&#x5219;&#x8F93;&#x51FA;&#x9519;&#x8BEF;&#x4FE1;&#x606F;&#x3002;
+gdb 默认维护了一个 <code>source path</code> 列表，当启动执行程序会按照这个列表来依次搜寻直到找到文件,否则输出错误信息。
 </p>
 
 <p>
-&#x5176;&#x641C;&#x5BFB;&#x89C4;&#x5219;&#x4E00;&#x822C;&#x6309;&#x7167;&#x4EE5;&#x4E0B;3&#x6B65;&#x4F9D;&#x6B21;&#x8FDB;&#x884C;&#xFF1A;
+其搜寻规则一般按照以下3步依次进行：
 </p>
 <ol class="org-ol">
-<li>&#x641C;&#x5BFB;&#x7F16;&#x8BD1;&#x65F6;&#x6307;&#x5B9A;&#x8DEF;&#x5F84;</li>
-<li>&#x5C06;&#x6307;&#x5B9A;&#x8DEF;&#x5F84;&#x62FC;&#x63A5;&#x5230;&#x5F53;&#x524D;&#x8DEF;&#x5F84;&#x641C;&#x5BFB;</li>
-<li>&#x53BB;&#x6389;&#x6307;&#x5B9A;&#x8DEF;&#x5F84;&#x524D;&#x7F00;&#xFF0C;&#x4EC5;&#x641C;&#x5BFB;&#x5F53;&#x524D;&#x8DEF;&#x5F84;</li>
+<li>搜寻编译时指定路径</li>
+<li>将指定路径拼接到当前路径搜寻</li>
+<li>去掉指定路径前缀，仅搜寻当前路径</li>
 </ol>
 
 <p>
-gdb&#x5728;&#x542F;&#x52A8;&#x65F6;&#xFF0C;&#x4FDD;&#x5B58;&#x4FDD;&#x7559;&#x8DEF;&#x5F84;&#x8DEF;&#x5F84;&#x4FDD;&#x5B58;&#x5728;&#x73AF;&#x5883;&#x53D8;&#x91CF; <code>cdir</code> &#x548C; <code>cwd</code> &#x4E2D;&#x3002;
+gdb在启动时，保存保留路径路径保存在环境变量 <code>cdir</code> 和 <code>cwd</code> 中。
 </p>
 <ul class="org-ul">
 <li>cdir : compilation directory</li>
@@ -336,75 +336,75 @@ gdb&#x5728;&#x542F;&#x52A8;&#x65F6;&#xFF0C;&#x4FDD;&#x5B58;&#x4FDD;&#x7559;&#x8D
 </ul>
 
 <pre class="example">
-&#x6BD4;&#x5982;&#x6E90;&#x7801;&#x8DEF;&#x5F84;&#x4F4D;&#x4E8E; /usr/src/foo-1.0/lib/foo.c &#x800C;&#x53EF;&#x6267;&#x884C;&#x6587;&#x4EF6;&#x4F4D;&#x4E8E; /mnt/cross/ &#x8DEF;&#x5F84;&#xFF0C;&#x5176;&#x641C;&#x5BFB;&#x4F9D;&#x6B21;&#x4E3A;:
-1. /usr/src/foo-1.0/lib/foo.c (&#x7F16;&#x8BD1;&#x6307;&#x5B9A;&#x8DEF;&#x5F84;)
-2. /mnt/cross/usr/src/foo-1.0/lib/foo.c (&#x5F53;&#x524D;&#x8DEF;&#x5F84; + &#x6307;&#x5B9A;&#x8DEF;&#x5F84;)
-3. /mnt/cross/foo.c (&#x5F53;&#x524D;&#x8DEF;&#x5F84;)</pre>
+比如源码路径位于 /usr/src/foo-1.0/lib/foo.c 而可执行文件位于 /mnt/cross/ 路径，其搜寻依次为:
+1. /usr/src/foo-1.0/lib/foo.c (编译指定路径)
+2. /mnt/cross/usr/src/foo-1.0/lib/foo.c (当前路径 + 指定路径)
+3. /mnt/cross/foo.c (当前路径)</pre>
 </div>
 </div>
-<div id="outline-container-org5b98eaa" class="outline-2">
-<h2 id="org5b98eaa">&#x8DEF;&#x5F84;&#x4FEE;&#x6539;</h2>
-<div class="outline-text-2" id="text-org5b98eaa">
+<div id="outline-container-org56a213c" class="outline-2">
+<h2 id="org56a213c">路径修改</h2>
+<div class="outline-text-2" id="text-org56a213c">
 </div>
-<div id="outline-container-orgd26bee1" class="outline-3">
-<h3 id="orgd26bee1">&#x547D;&#x4EE4;</h3>
-<div class="outline-text-3" id="text-orgd26bee1">
+<div id="outline-container-orga01e218" class="outline-3">
+<h3 id="orga01e218">命令</h3>
+<div class="outline-text-3" id="text-orga01e218">
 </div>
-<div id="outline-container-org480d6fc" class="outline-4">
-<h4 id="org480d6fc">substitute-path(&#x63A8;&#x8350;)</h4>
-<div class="outline-text-4" id="text-org480d6fc">
+<div id="outline-container-org976146c" class="outline-4">
+<h4 id="org976146c">substitute-path(推荐)</h4>
+<div class="outline-text-4" id="text-org976146c">
 <p>
-&#x6B64;&#x547D;&#x4EE4;&#x5C06;&#x7F16;&#x8BD1;&#x65F6;&#x6307;&#x5B9A;&#x7684;&#x8DEF;&#x5F84;&#x66FF;&#x6362;&#x4E3A;&#x5176;&#x4ED6;&#x8DEF;&#x5F84;&#xFF0C;&#x5F53;&#x8DEF;&#x5F84;&#x4E2D;&#x6709;&#x591A;&#x91CD;&#x6587;&#x4EF6;&#x5939;&#x65F6;&#x4F1A; <b>&#x9012;&#x5F52;&#x641C;&#x5BFB;&#x3002;</b>
+此命令将编译时指定的路径替换为其他路径，当路径中有多重文件夹时会 <b>递归搜寻。</b>
 </p>
 
 <p>
-&#x4E5F;&#x53EF;&#x4EE5;&#x6DFB;&#x52A0;&#x591A;&#x4E2A;&#x66FF;&#x6362;&#x8DEF;&#x5F84;&#xFF0C;&#x5982;&#x679C;&#x6E90;&#x8DEF;&#x5F84;&#x6709;&#x91CD;&#x590D;&#x7684;&#xFF0C;&#x90A3;&#x4E48;&#x539F;&#x6765;&#x7684;&#x8BBE;&#x7F6E;&#x5C06;&#x4F1A;&#x88AB;&#x8986;&#x76D6;&#x3002;
+也可以添加多个替换路径，如果源路径有重复的，那么原来的设置将会被覆盖。
 </p>
 <ul class="org-ul">
-<li>&#x8BBE;&#x7F6E;&#x8DEF;&#x5F84;&#x4F7F;&#x7528;&#x683C;&#x5F0F; : set substitute-path &lt;source&gt; &lt;dist&gt;
+<li>设置路径使用格式 : set substitute-path <source> <dist>
 <ul class="org-ul">
-<li>&#x5BF9;&#x4E8E;&#x4EA4;&#x53C9;&#x7F16;&#x8BD1;&#x800C;&#x8A00;&#xFF0C;&#x5C31;&#x662F;&#x5176;&#x5728;&#x4E3B;&#x673A;&#x7684;&#x7F16;&#x8BD1;&#x8DEF;&#x5F84;</li>
-<li><b>&#x7591;&#x95EE;</b> : &#x5F53;&#x6211;&#x5411;&#x4F7F;&#x7528; $cdir &#x6765;&#x8868;&#x793A;&#x7F16;&#x8BD1;&#x8DEF;&#x5F84;&#x65F6;&#xFF0C;&#x8BBE;&#x7F6E;&#x65E0;&#x6548;&#xFF0C;&#x539F;&#x56E0;&#x4E0D;&#x660E;</li>
+<li>对于交叉编译而言，就是其在主机的编译路径</li>
+<li><b>疑问</b> : 当我向使用 $cdir 来表示编译路径时，设置无效，原因不明</li>
 </ul></li>
 </ul>
 <pre class="example">
-#&#x5C06;&#x6E90;&#x641C;&#x5BFB;&#x8DEF;&#x5F84;/foo/bar &#x66FF;&#x6362;&#x4E3A; /mnt/cross
+#将源搜寻路径/foo/bar 替换为 /mnt/cross
 set substitute-path /foo/bar /mnt/cross</pre>
 <ul class="org-ul">
-<li>&#x663E;&#x793A;&#x5DF2;&#x7ECF;&#x8BBE;&#x7F6E;&#x7684;&#x8DEF;&#x5F84; : show substitute-path [path]</li>
-<li>&#x53D6;&#x6D88;&#x8BBE;&#x7F6E;&#x7684;&#x8DEF;&#x5F84;: unset substitute-path [path]</li>
+<li>显示已经设置的路径 : show substitute-path [path]</li>
+<li>取消设置的路径: unset substitute-path [path]</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-org4637cda" class="outline-4">
-<h4 id="org4637cda">directory / dir</h4>
-<div class="outline-text-4" id="text-org4637cda">
+<div id="outline-container-org8936a9f" class="outline-4">
+<h4 id="org8936a9f">directory / dir</h4>
+<div class="outline-text-4" id="text-org8936a9f">
 <p>
-&#x6B64;&#x547D;&#x4EE4;&#x5C06;&#x4E2A;&#x6587;&#x4EF6;&#x5939;&#x52A0;&#x5165;&#x641C;&#x5BFB;&#x8DEF;&#x5F84;&#xFF0C; <b>&#x4F46;&#x5E76;&#x4E0D;&#x4F1A;&#x641C;&#x5BFB;&#x5176;&#x5B50;&#x6587;&#x4EF6;&#x5939;</b> , &#x6240;&#x4EE5;&#x5982;&#x679C;&#x6E90;&#x7801;&#x8DEF;&#x5F84;&#x6709;&#x591A;&#x5C42;&#xFF0C;&#x5219;&#x9700;&#x8981;&#x9012;&#x5F52;&#x52A0;&#x5165;&#x8DEF;&#x5F84;
+此命令将个文件夹加入搜寻路径， <b>但并不会搜寻其子文件夹</b> , 所以如果源码路径有多层，则需要递归加入路径
 </p>
 <ul class="org-ul">
-<li>&#x52A0;&#x5165;&#x8DEF;&#x5F84;&#x4F7F;&#x7528;: dir &lt;dir_path&gt;
+<li>加入路径使用: dir <dir_path>
 <ul class="org-ul">
-<li>&#x8981;&#x6DFB;&#x52A0;&#x591A;&#x4E2A;&#x8DEF;&#x5F84;&#x65F6;&#xFF0C;&#x4F7F;&#x7528;&#x5192;&#x53F7;&#x505A;&#x5206;&#x9694;</li>
+<li>要添加多个路径时，使用冒号做分隔</li>
 </ul></li>
-<li>&#x663E;&#x793A;&#x5DF2;&#x7ECF;&#x52A0;&#x5165;&#x7684;&#x8DEF;&#x5F84;&#x4F7F;&#x7528;: show dir</li>
-<li>&#x5220;&#x9664;&#x6DFB;&#x52A0;&#x7684;&#x8DEF;&#x5F84;&#x4F7F;&#x7528;: dir</li>
+<li>显示已经加入的路径使用: show dir</li>
+<li>删除添加的路径使用: dir</li>
 </ul>
 </div>
 </div>
 </div>
-<div id="outline-container-org2977857" class="outline-3">
-<h3 id="org2977857">&#x9009;&#x9879;</h3>
-<div class="outline-text-3" id="text-org2977857">
+<div id="outline-container-org1c48077" class="outline-3">
+<h3 id="org1c48077">选项</h3>
+<div class="outline-text-3" id="text-org1c48077">
 </div>
-<div id="outline-container-org0627d00" class="outline-4">
-<h4 id="org0627d00">&#x2013;with-relocated-sources=dir</h4>
+<div id="outline-container-org1f355b3" class="outline-4">
+<h4 id="org1f355b3">–with-relocated-sources=dir</h4>
 </div>
 </div>
 </div>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
 </div>
 
     </div>
@@ -490,7 +490,7 @@ Last Updated 2020-08-20 &#x56DB; 09:03.<br>Render by <a href="https://github.com
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org8c6c8d4"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x641C;&amp;#x5BFB;&amp;#x89C4;&amp;#x5219;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org5b98eaa"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x8DEF;&amp;#x5F84;&amp;#x4FEE;&amp;#x6539;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgd26bee1"><span class="nav-number">2.1.</span> <span class="nav-text">&amp;#x547D;&amp;#x4EE4;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org480d6fc"><span class="nav-number">2.1.1.</span> <span class="nav-text">substitute-path(&amp;#x63A8;&amp;#x8350;)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org4637cda"><span class="nav-number">2.1.2.</span> <span class="nav-text">directory &#x2F; dir</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org2977857"><span class="nav-number">2.2.</span> <span class="nav-text">&amp;#x9009;&amp;#x9879;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org0627d00"><span class="nav-number">2.2.1.</span> <span class="nav-text">&amp;#x2013;with-relocated-sources&#x3D;dir</span></a></li></ol></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org13e17c9"><span class="nav-number">1.</span> <span class="nav-text">搜寻规则</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org56a213c"><span class="nav-number">2.</span> <span class="nav-text">路径修改</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orga01e218"><span class="nav-number">2.1.</span> <span class="nav-text">命令</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org976146c"><span class="nav-number">2.1.1.</span> <span class="nav-text">substitute-path(推荐)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org8936a9f"><span class="nav-number">2.1.2.</span> <span class="nav-text">directory &#x2F; dir</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org1c48077"><span class="nav-number">2.2.</span> <span class="nav-text">选项</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org1f355b3"><span class="nav-number">2.2.1.</span> <span class="nav-text">–with-relocated-sources&#x3D;dir</span></a></li></ol></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
