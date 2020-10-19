@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="如果直接将整个程序的 address space 映射到物理内存，那么物理内存将会有很大的浪费，并且也无法运行太多其他程序，所以需要理解内存分段。">
+  <meta name="description" content="&amp;#x5982;&amp;#x679C;&amp;#x76F4;&amp;#x63A5;&amp;#x5C06;&amp;#x6574;&amp;#x4E2A;&amp;#x7A0B;&amp;#x5E8F;&amp;#x7684; address space &amp;#x6620;&amp;#x5C04;&amp;#x5230;&amp;#x7269;&amp;#x7406;&amp;#x5185;&amp;#x5B58;&amp;#xFF0C;&amp;#x90A3;&amp;#x4E48;&amp;#x7269;&amp;#x7406;&amp;#x5185">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[What]Segmentation">
 <meta property="og:url" content="http://kcmetercec.top/2020/02/10/book_ostep_mem-segmentation/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="如果直接将整个程序的 address space 映射到物理内存，那么物理内存将会有很大的浪费，并且也无法运行太多其他程序，所以需要理解内存分段。">
+<meta property="og:description" content="&amp;#x5982;&amp;#x679C;&amp;#x76F4;&amp;#x63A5;&amp;#x5C06;&amp;#x6574;&amp;#x4E2A;&amp;#x7A0B;&amp;#x5E8F;&amp;#x7684; address space &amp;#x6620;&amp;#x5C04;&amp;#x5230;&amp;#x7269;&amp;#x7406;&amp;#x5185;&amp;#x5B58;&amp;#xFF0C;&amp;#x90A3;&amp;#x4E48;&amp;#x7269;&amp;#x7406;&amp;#x5185">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mem_seg.jpg?raw=true">
 <meta property="article:published_time" content="2020-02-09T16:00:00.000Z">
@@ -297,44 +297,44 @@
       
         <div id="content">
 <p>
-如果直接将整个程序的 address space 映射到物理内存，那么物理内存将会有很大的浪费，并且也无法运行太多其他程序，所以需要理解内存分段。
+&#x5982;&#x679C;&#x76F4;&#x63A5;&#x5C06;&#x6574;&#x4E2A;&#x7A0B;&#x5E8F;&#x7684; address space &#x6620;&#x5C04;&#x5230;&#x7269;&#x7406;&#x5185;&#x5B58;&#xFF0C;&#x90A3;&#x4E48;&#x7269;&#x7406;&#x5185;&#x5B58;&#x5C06;&#x4F1A;&#x6709;&#x5F88;&#x5927;&#x7684;&#x6D6A;&#x8D39;&#xFF0C;&#x5E76;&#x4E14;&#x4E5F;&#x65E0;&#x6CD5;&#x8FD0;&#x884C;&#x592A;&#x591A;&#x5176;&#x4ED6;&#x7A0B;&#x5E8F;&#xFF0C;&#x6240;&#x4EE5;&#x9700;&#x8981;&#x7406;&#x89E3;&#x5185;&#x5B58;&#x5206;&#x6BB5;&#x3002;
 </p>
 <a id="more"></a>
 <p>
-仅将该程序用到的部分分段映射到物理内存的不同位置，这样在 address space 的其他未使用的部分就不会占用内存空间。
+&#x4EC5;&#x5C06;&#x8BE5;&#x7A0B;&#x5E8F;&#x7528;&#x5230;&#x7684;&#x90E8;&#x5206;&#x5206;&#x6BB5;&#x6620;&#x5C04;&#x5230;&#x7269;&#x7406;&#x5185;&#x5B58;&#x7684;&#x4E0D;&#x540C;&#x4F4D;&#x7F6E;&#xFF0C;&#x8FD9;&#x6837;&#x5728; address space &#x7684;&#x5176;&#x4ED6;&#x672A;&#x4F7F;&#x7528;&#x7684;&#x90E8;&#x5206;&#x5C31;&#x4E0D;&#x4F1A;&#x5360;&#x7528;&#x5185;&#x5B58;&#x7A7A;&#x95F4;&#x3002;
 </p>
 
 <p>
-于此同时，对应多段也会有多个物理内存基地址和限制值，通过虚拟地址的高位来区分段，地位得到段内偏移：
+&#x4E8E;&#x6B64;&#x540C;&#x65F6;&#xFF0C;&#x5BF9;&#x5E94;&#x591A;&#x6BB5;&#x4E5F;&#x4F1A;&#x6709;&#x591A;&#x4E2A;&#x7269;&#x7406;&#x5185;&#x5B58;&#x57FA;&#x5730;&#x5740;&#x548C;&#x9650;&#x5236;&#x503C;&#xFF0C;&#x901A;&#x8FC7;&#x865A;&#x62DF;&#x5730;&#x5740;&#x7684;&#x9AD8;&#x4F4D;&#x6765;&#x533A;&#x5206;&#x6BB5;&#xFF0C;&#x5730;&#x4F4D;&#x5F97;&#x5230;&#x6BB5;&#x5185;&#x504F;&#x79FB;&#xFF1A;
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// get top 2 bits of 14-bit VA</span></span><br><span class="line">Segment = (VirtualAddress & SEG_MASK) >> SEG_SHIFT</span><br><span class="line"><span class="comment">// now get offset</span></span><br><span class="line">Offset = VirtualAddress & OFFSET_MASK</span><br><span class="line"><span class="keyword">if</span> (Offset >= Bounds[Segment])</span><br><span class="line">    RaiseException(PROTECTION_FAULT)</span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">    PhysAddr = Base[Segment] + Offset</span><br><span class="line">    Register = AccessMemory(PhysAddr)</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// get top 2 bits of 14-bit VA</span></span><br><span class="line">Segment = (VirtualAddress &amp; SEG_MASK) &gt;&gt; SEG_SHIFT</span><br><span class="line"><span class="comment">// now get offset</span></span><br><span class="line">Offset = VirtualAddress &amp; OFFSET_MASK</span><br><span class="line"><span class="keyword">if</span> (Offset &gt;= Bounds[Segment])</span><br><span class="line">    RaiseException(PROTECTION_FAULT)</span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">    PhysAddr = Base[Segment] + Offset</span><br><span class="line">    Register = AccessMemory(PhysAddr)</span><br></pre></td></tr></table></figure>
 </div>
 
 <p>
-除了物理内存基地址和大小限制值外，MMU 还需要以下支持：
+&#x9664;&#x4E86;&#x7269;&#x7406;&#x5185;&#x5B58;&#x57FA;&#x5730;&#x5740;&#x548C;&#x5927;&#x5C0F;&#x9650;&#x5236;&#x503C;&#x5916;&#xFF0C;MMU &#x8FD8;&#x9700;&#x8981;&#x4EE5;&#x4E0B;&#x652F;&#x6301;&#xFF1A;
 </p>
 <ul class="org-ul">
-<li>在 linux 中栈是向下增长的，那么其得出的 offset 其实为负值(Offset - Bounds[Segment])，MMU 要处理这种情况，就有一个寄存器位来存储当前这块内存的增长方向。</li>
-<li>同一个程序可以同时启动多个进程，那么他们的代码段实际上是可以共享的，但只能读不能写，为了保护各个内存段，就需要有权限位来表明这个内存段的可操作权限</li>
+<li>&#x5728; linux &#x4E2D;&#x6808;&#x662F;&#x5411;&#x4E0B;&#x589E;&#x957F;&#x7684;&#xFF0C;&#x90A3;&#x4E48;&#x5176;&#x5F97;&#x51FA;&#x7684; offset &#x5176;&#x5B9E;&#x4E3A;&#x8D1F;&#x503C;(Offset - Bounds[Segment])&#xFF0C;MMU &#x8981;&#x5904;&#x7406;&#x8FD9;&#x79CD;&#x60C5;&#x51B5;&#xFF0C;&#x5C31;&#x6709;&#x4E00;&#x4E2A;&#x5BC4;&#x5B58;&#x5668;&#x4F4D;&#x6765;&#x5B58;&#x50A8;&#x5F53;&#x524D;&#x8FD9;&#x5757;&#x5185;&#x5B58;&#x7684;&#x589E;&#x957F;&#x65B9;&#x5411;&#x3002;</li>
+<li>&#x540C;&#x4E00;&#x4E2A;&#x7A0B;&#x5E8F;&#x53EF;&#x4EE5;&#x540C;&#x65F6;&#x542F;&#x52A8;&#x591A;&#x4E2A;&#x8FDB;&#x7A0B;&#xFF0C;&#x90A3;&#x4E48;&#x4ED6;&#x4EEC;&#x7684;&#x4EE3;&#x7801;&#x6BB5;&#x5B9E;&#x9645;&#x4E0A;&#x662F;&#x53EF;&#x4EE5;&#x5171;&#x4EAB;&#x7684;&#xFF0C;&#x4F46;&#x53EA;&#x80FD;&#x8BFB;&#x4E0D;&#x80FD;&#x5199;&#xFF0C;&#x4E3A;&#x4E86;&#x4FDD;&#x62A4;&#x5404;&#x4E2A;&#x5185;&#x5B58;&#x6BB5;&#xFF0C;&#x5C31;&#x9700;&#x8981;&#x6709;&#x6743;&#x9650;&#x4F4D;&#x6765;&#x8868;&#x660E;&#x8FD9;&#x4E2A;&#x5185;&#x5B58;&#x6BB5;&#x7684;&#x53EF;&#x64CD;&#x4F5C;&#x6743;&#x9650;</li>
 </ul>
 
 <img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--ostep/virtualization/mem_seg.jpg?raw=true" alt="mem_seg.jpg">
 <p>
-为了让物理内存分得更为精细，实际上需要硬件支持识别很多段，这么多段的具体内容组成一个段表（segment table）存放于内存中。
+&#x4E3A;&#x4E86;&#x8BA9;&#x7269;&#x7406;&#x5185;&#x5B58;&#x5206;&#x5F97;&#x66F4;&#x4E3A;&#x7CBE;&#x7EC6;&#xFF0C;&#x5B9E;&#x9645;&#x4E0A;&#x9700;&#x8981;&#x786C;&#x4EF6;&#x652F;&#x6301;&#x8BC6;&#x522B;&#x5F88;&#x591A;&#x6BB5;&#xFF0C;&#x8FD9;&#x4E48;&#x591A;&#x6BB5;&#x7684;&#x5177;&#x4F53;&#x5185;&#x5BB9;&#x7EC4;&#x6210;&#x4E00;&#x4E2A;&#x6BB5;&#x8868;&#xFF08;segment table&#xFF09;&#x5B58;&#x653E;&#x4E8E;&#x5185;&#x5B58;&#x4E2D;&#x3002;
 </p>
 
 <p>
-对于操作系统而言，它需要具有如下能力：
+&#x5BF9;&#x4E8E;&#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;&#x800C;&#x8A00;&#xFF0C;&#x5B83;&#x9700;&#x8981;&#x5177;&#x6709;&#x5982;&#x4E0B;&#x80FD;&#x529B;&#xFF1A;
 </p>
 <ul class="org-ul">
-<li>进程进行上下文切换时，还要切换两个进程的页表</li>
-<li>当应用程序使用 <code>malloc()</code> 申请内存时，如果堆空间有限，那么需要从物理内存分配空间，然后修改此部分段表映射至进程虚拟空间</li>
-<li>尽量避免内存碎片，并在碎片过多时适当的进行碎片整理。</li>
+<li>&#x8FDB;&#x7A0B;&#x8FDB;&#x884C;&#x4E0A;&#x4E0B;&#x6587;&#x5207;&#x6362;&#x65F6;&#xFF0C;&#x8FD8;&#x8981;&#x5207;&#x6362;&#x4E24;&#x4E2A;&#x8FDB;&#x7A0B;&#x7684;&#x9875;&#x8868;</li>
+<li>&#x5F53;&#x5E94;&#x7528;&#x7A0B;&#x5E8F;&#x4F7F;&#x7528; <code>malloc()</code> &#x7533;&#x8BF7;&#x5185;&#x5B58;&#x65F6;&#xFF0C;&#x5982;&#x679C;&#x5806;&#x7A7A;&#x95F4;&#x6709;&#x9650;&#xFF0C;&#x90A3;&#x4E48;&#x9700;&#x8981;&#x4ECE;&#x7269;&#x7406;&#x5185;&#x5B58;&#x5206;&#x914D;&#x7A7A;&#x95F4;&#xFF0C;&#x7136;&#x540E;&#x4FEE;&#x6539;&#x6B64;&#x90E8;&#x5206;&#x6BB5;&#x8868;&#x6620;&#x5C04;&#x81F3;&#x8FDB;&#x7A0B;&#x865A;&#x62DF;&#x7A7A;&#x95F4;</li>
+<li>&#x5C3D;&#x91CF;&#x907F;&#x514D;&#x5185;&#x5B58;&#x788E;&#x7247;&#xFF0C;&#x5E76;&#x5728;&#x788E;&#x7247;&#x8FC7;&#x591A;&#x65F6;&#x9002;&#x5F53;&#x7684;&#x8FDB;&#x884C;&#x788E;&#x7247;&#x6574;&#x7406;&#x3002;</li>
 </ul>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-10-19 &#x4E00; 22:29.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.4)
 </div>
 
     </div>

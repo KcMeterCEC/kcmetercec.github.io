@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="理解调度策略中的 多级反馈队列（Multi-level Feedback Queue, MLFQ） 。    MLFQ 的目的就是要尽量实现很短的轮转时间和响应时间。">
+  <meta name="description" content="&amp;#x7406;&amp;#x89E3;&amp;#x8C03;&amp;#x5EA6;&amp;#x7B56;&amp;#x7565;&amp;#x4E2D;&amp;#x7684; &amp;#x591A;&amp;#x7EA7;&amp;#x53CD;&amp;#x9988;&amp;#x961F;&amp;#x5217;&amp;#xFF08;Multi-level Feedback Queue, MLFQ&amp;#xFF09; &amp;#x3002;    MLFQ &amp;#x7684;&amp;#x76EE;&amp;#x">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[What]Scheduling:The Multi-Level Feedback Queue">
 <meta property="og:url" content="http://kcmetercec.top/2019/08/12/book_ostep_cpu-sched-mlfq/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="理解调度策略中的 多级反馈队列（Multi-level Feedback Queue, MLFQ） 。    MLFQ 的目的就是要尽量实现很短的轮转时间和响应时间。">
+<meta property="og:description" content="&amp;#x7406;&amp;#x89E3;&amp;#x8C03;&amp;#x5EA6;&amp;#x7B56;&amp;#x7565;&amp;#x4E2D;&amp;#x7684; &amp;#x591A;&amp;#x7EA7;&amp;#x53CD;&amp;#x9988;&amp;#x961F;&amp;#x5217;&amp;#xFF08;Multi-level Feedback Queue, MLFQ&amp;#xFF09; &amp;#x3002;    MLFQ &amp;#x7684;&amp;#x76EE;&amp;#x">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2019-08-11T16:00:00.000Z">
 <meta property="article:modified_time" content="2020-08-01T01:09:06.476Z">
@@ -295,146 +295,146 @@
       
         <div id="content">
 <p>
-理解调度策略中的 <b>多级反馈队列（Multi-level Feedback Queue, MLFQ）</b> 。
+&#x7406;&#x89E3;&#x8C03;&#x5EA6;&#x7B56;&#x7565;&#x4E2D;&#x7684; <b>&#x591A;&#x7EA7;&#x53CD;&#x9988;&#x961F;&#x5217;&#xFF08;Multi-level Feedback Queue, MLFQ&#xFF09;</b> &#x3002;
 </p>
 
 <p>
-MLFQ 的目的就是要尽量实现很短的轮转时间和响应时间。
+MLFQ &#x7684;&#x76EE;&#x7684;&#x5C31;&#x662F;&#x8981;&#x5C3D;&#x91CF;&#x5B9E;&#x73B0;&#x5F88;&#x77ED;&#x7684;&#x8F6E;&#x8F6C;&#x65F6;&#x95F4;&#x548C;&#x54CD;&#x5E94;&#x65F6;&#x95F4;&#x3002;
 </p>
 <a id="more"></a>
 <p>
-MLFQ 具有多个独立的队列，每个队列代表着不同的优先级。
+MLFQ &#x5177;&#x6709;&#x591A;&#x4E2A;&#x72EC;&#x7ACB;&#x7684;&#x961F;&#x5217;&#xFF0C;&#x6BCF;&#x4E2A;&#x961F;&#x5217;&#x4EE3;&#x8868;&#x7740;&#x4E0D;&#x540C;&#x7684;&#x4F18;&#x5148;&#x7EA7;&#x3002;
 </p>
 
 <p>
-任务根据不同的优先级而被放入不同的队列：
+&#x4EFB;&#x52A1;&#x6839;&#x636E;&#x4E0D;&#x540C;&#x7684;&#x4F18;&#x5148;&#x7EA7;&#x800C;&#x88AB;&#x653E;&#x5165;&#x4E0D;&#x540C;&#x7684;&#x961F;&#x5217;&#xFF1A;
 </p>
 <ul class="org-ul">
-<li>高优先级队列中的任务先运行</li>
-<li>相同优先级的任务采用 round-robin 策略分时轮询调度</li>
+<li>&#x9AD8;&#x4F18;&#x5148;&#x7EA7;&#x961F;&#x5217;&#x4E2D;&#x7684;&#x4EFB;&#x52A1;&#x5148;&#x8FD0;&#x884C;</li>
+<li>&#x76F8;&#x540C;&#x4F18;&#x5148;&#x7EA7;&#x7684;&#x4EFB;&#x52A1;&#x91C7;&#x7528; round-robin &#x7B56;&#x7565;&#x5206;&#x65F6;&#x8F6E;&#x8BE2;&#x8C03;&#x5EA6;</li>
 </ul>
 
 <p>
-MLFQ 自动的为任务分配优先级（根据任务的行为而预测）：
+MLFQ &#x81EA;&#x52A8;&#x7684;&#x4E3A;&#x4EFB;&#x52A1;&#x5206;&#x914D;&#x4F18;&#x5148;&#x7EA7;&#xFF08;&#x6839;&#x636E;&#x4EFB;&#x52A1;&#x7684;&#x884C;&#x4E3A;&#x800C;&#x9884;&#x6D4B;&#xFF09;&#xFF1A;
 </p>
 <ul class="org-ul">
-<li>当一个任务是 IO 密集型（占用的 CPU 时间少）时， 会提高其优先级
+<li>&#x5F53;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x662F; IO &#x5BC6;&#x96C6;&#x578B;&#xFF08;&#x5360;&#x7528;&#x7684; CPU &#x65F6;&#x95F4;&#x5C11;&#xFF09;&#x65F6;&#xFF0C; &#x4F1A;&#x63D0;&#x9AD8;&#x5176;&#x4F18;&#x5148;&#x7EA7;
 <ul class="org-ul">
-<li>因为这样可以提高任务的响应速度，用户体验好</li>
+<li>&#x56E0;&#x4E3A;&#x8FD9;&#x6837;&#x53EF;&#x4EE5;&#x63D0;&#x9AD8;&#x4EFB;&#x52A1;&#x7684;&#x54CD;&#x5E94;&#x901F;&#x5EA6;&#xFF0C;&#x7528;&#x6237;&#x4F53;&#x9A8C;&#x597D;</li>
 </ul></li>
-<li>当一个任务是 CPU 密集型（占用的 CPU 时间多）时， 会降低其优先级
+<li>&#x5F53;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x662F; CPU &#x5BC6;&#x96C6;&#x578B;&#xFF08;&#x5360;&#x7528;&#x7684; CPU &#x65F6;&#x95F4;&#x591A;&#xFF09;&#x65F6;&#xFF0C; &#x4F1A;&#x964D;&#x4F4E;&#x5176;&#x4F18;&#x5148;&#x7EA7;
 <ul class="org-ul">
-<li>因为 IO 密集型占用 CPU 时间少，所以要让它先执行，更多的时间会留给 CPU 密集型。</li>
+<li>&#x56E0;&#x4E3A; IO &#x5BC6;&#x96C6;&#x578B;&#x5360;&#x7528; CPU &#x65F6;&#x95F4;&#x5C11;&#xFF0C;&#x6240;&#x4EE5;&#x8981;&#x8BA9;&#x5B83;&#x5148;&#x6267;&#x884C;&#xFF0C;&#x66F4;&#x591A;&#x7684;&#x65F6;&#x95F4;&#x4F1A;&#x7559;&#x7ED9; CPU &#x5BC6;&#x96C6;&#x578B;&#x3002;</li>
 </ul></li>
 </ul>
-<div id="outline-container-org9457d94" class="outline-2">
-<h2 id="org9457d94">普通策略</h2>
-<div class="outline-text-2" id="text-org9457d94">
+<div id="outline-container-orgcee64e2" class="outline-2">
+<h2 id="orgcee64e2">&#x666E;&#x901A;&#x7B56;&#x7565;</h2>
+<div class="outline-text-2" id="text-orgcee64e2">
 <ul class="org-ul">
-<li>当任务被创建时，它被默认放置在最高优先级队列，此时最高优先级队列使用 RR 策略轮询调度</li>
-<li>当一个任务完整的使用了调度的时间片，那么降低其优先级
+<li>&#x5F53;&#x4EFB;&#x52A1;&#x88AB;&#x521B;&#x5EFA;&#x65F6;&#xFF0C;&#x5B83;&#x88AB;&#x9ED8;&#x8BA4;&#x653E;&#x7F6E;&#x5728;&#x6700;&#x9AD8;&#x4F18;&#x5148;&#x7EA7;&#x961F;&#x5217;&#xFF0C;&#x6B64;&#x65F6;&#x6700;&#x9AD8;&#x4F18;&#x5148;&#x7EA7;&#x961F;&#x5217;&#x4F7F;&#x7528; RR &#x7B56;&#x7565;&#x8F6E;&#x8BE2;&#x8C03;&#x5EA6;</li>
+<li>&#x5F53;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x5B8C;&#x6574;&#x7684;&#x4F7F;&#x7528;&#x4E86;&#x8C03;&#x5EA6;&#x7684;&#x65F6;&#x95F4;&#x7247;&#xFF0C;&#x90A3;&#x4E48;&#x964D;&#x4F4E;&#x5176;&#x4F18;&#x5148;&#x7EA7;
 <ul class="org-ul">
-<li>这意味着被调度过程中没有进行 IO 操作，属于 CPU 密集型且执行时间较长</li>
+<li>&#x8FD9;&#x610F;&#x5473;&#x7740;&#x88AB;&#x8C03;&#x5EA6;&#x8FC7;&#x7A0B;&#x4E2D;&#x6CA1;&#x6709;&#x8FDB;&#x884C; IO &#x64CD;&#x4F5C;&#xFF0C;&#x5C5E;&#x4E8E; CPU &#x5BC6;&#x96C6;&#x578B;&#x4E14;&#x6267;&#x884C;&#x65F6;&#x95F4;&#x8F83;&#x957F;</li>
 </ul></li>
-<li>当一个任务在时间片耗尽之前就主动放弃了 CPU，那么保持其优先级
+<li>&#x5F53;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x5728;&#x65F6;&#x95F4;&#x7247;&#x8017;&#x5C3D;&#x4E4B;&#x524D;&#x5C31;&#x4E3B;&#x52A8;&#x653E;&#x5F03;&#x4E86; CPU&#xFF0C;&#x90A3;&#x4E48;&#x4FDD;&#x6301;&#x5176;&#x4F18;&#x5148;&#x7EA7;
 <ul class="org-ul">
-<li>属于 IO 密集型或任务本身执行时间就短</li>
+<li>&#x5C5E;&#x4E8E; IO &#x5BC6;&#x96C6;&#x578B;&#x6216;&#x4EFB;&#x52A1;&#x672C;&#x8EAB;&#x6267;&#x884C;&#x65F6;&#x95F4;&#x5C31;&#x77ED;</li>
 </ul></li>
 </ul>
 
 <p>
-此调度策略具有以下不足：
+&#x6B64;&#x8C03;&#x5EA6;&#x7B56;&#x7565;&#x5177;&#x6709;&#x4EE5;&#x4E0B;&#x4E0D;&#x8DB3;&#xFF1A;
 </p>
 <ol class="org-ol">
-<li>如果当前有很多的 IO 密集型任务，那么就需要轮询调度它们，这样低优先级的 CPU 密集型任务便会被饿死（starve）</li>
-<li>如果某个 IO 密集型任务做的 IO 时间很短，而占用了 99% 的时间片时间。按照当前策略也不会降低其优先级，</li>
+<li>&#x5982;&#x679C;&#x5F53;&#x524D;&#x6709;&#x5F88;&#x591A;&#x7684; IO &#x5BC6;&#x96C6;&#x578B;&#x4EFB;&#x52A1;&#xFF0C;&#x90A3;&#x4E48;&#x5C31;&#x9700;&#x8981;&#x8F6E;&#x8BE2;&#x8C03;&#x5EA6;&#x5B83;&#x4EEC;&#xFF0C;&#x8FD9;&#x6837;&#x4F4E;&#x4F18;&#x5148;&#x7EA7;&#x7684; CPU &#x5BC6;&#x96C6;&#x578B;&#x4EFB;&#x52A1;&#x4FBF;&#x4F1A;&#x88AB;&#x997F;&#x6B7B;&#xFF08;starve&#xFF09;</li>
+<li>&#x5982;&#x679C;&#x67D0;&#x4E2A; IO &#x5BC6;&#x96C6;&#x578B;&#x4EFB;&#x52A1;&#x505A;&#x7684; IO &#x65F6;&#x95F4;&#x5F88;&#x77ED;&#xFF0C;&#x800C;&#x5360;&#x7528;&#x4E86; 99% &#x7684;&#x65F6;&#x95F4;&#x7247;&#x65F6;&#x95F4;&#x3002;&#x6309;&#x7167;&#x5F53;&#x524D;&#x7B56;&#x7565;&#x4E5F;&#x4E0D;&#x4F1A;&#x964D;&#x4F4E;&#x5176;&#x4F18;&#x5148;&#x7EA7;&#xFF0C;</li>
 </ol>
 <p>
-最终的结果就是此任务占用了绝大部分 CPU 时间，低优先级任务每次运行时间极短。
+&#x6700;&#x7EC8;&#x7684;&#x7ED3;&#x679C;&#x5C31;&#x662F;&#x6B64;&#x4EFB;&#x52A1;&#x5360;&#x7528;&#x4E86;&#x7EDD;&#x5927;&#x90E8;&#x5206; CPU &#x65F6;&#x95F4;&#xFF0C;&#x4F4E;&#x4F18;&#x5148;&#x7EA7;&#x4EFB;&#x52A1;&#x6BCF;&#x6B21;&#x8FD0;&#x884C;&#x65F6;&#x95F4;&#x6781;&#x77ED;&#x3002;
 </p>
 <ol class="org-ol">
-<li>某些任务很可能会根据当前运行状态的不同，时而是 CPU 密集型，时而是 IO 密集型。那么当它是 IO 密集型时，这部分的响应时间就极长（因为当它为 CPU 密集型时其优先级已经被降低了）</li>
+<li>&#x67D0;&#x4E9B;&#x4EFB;&#x52A1;&#x5F88;&#x53EF;&#x80FD;&#x4F1A;&#x6839;&#x636E;&#x5F53;&#x524D;&#x8FD0;&#x884C;&#x72B6;&#x6001;&#x7684;&#x4E0D;&#x540C;&#xFF0C;&#x65F6;&#x800C;&#x662F; CPU &#x5BC6;&#x96C6;&#x578B;&#xFF0C;&#x65F6;&#x800C;&#x662F; IO &#x5BC6;&#x96C6;&#x578B;&#x3002;&#x90A3;&#x4E48;&#x5F53;&#x5B83;&#x662F; IO &#x5BC6;&#x96C6;&#x578B;&#x65F6;&#xFF0C;&#x8FD9;&#x90E8;&#x5206;&#x7684;&#x54CD;&#x5E94;&#x65F6;&#x95F4;&#x5C31;&#x6781;&#x957F;&#xFF08;&#x56E0;&#x4E3A;&#x5F53;&#x5B83;&#x4E3A; CPU &#x5BC6;&#x96C6;&#x578B;&#x65F6;&#x5176;&#x4F18;&#x5148;&#x7EA7;&#x5DF2;&#x7ECF;&#x88AB;&#x964D;&#x4F4E;&#x4E86;&#xFF09;</li>
 </ol>
 </div>
 </div>
-<div id="outline-container-orga5e103a" class="outline-2">
-<h2 id="orga5e103a">优先级提升</h2>
-<div class="outline-text-2" id="text-orga5e103a">
+<div id="outline-container-org4b7f646" class="outline-2">
+<h2 id="org4b7f646">&#x4F18;&#x5148;&#x7EA7;&#x63D0;&#x5347;</h2>
+<div class="outline-text-2" id="text-org4b7f646">
 <p>
-为了解决低优先级任务被饿死的情况，采用优先级提升的策略：每隔一定调度周期 S，将所有任务的优先级提升到最高优先级队列中。
+&#x4E3A;&#x4E86;&#x89E3;&#x51B3;&#x4F4E;&#x4F18;&#x5148;&#x7EA7;&#x4EFB;&#x52A1;&#x88AB;&#x997F;&#x6B7B;&#x7684;&#x60C5;&#x51B5;&#xFF0C;&#x91C7;&#x7528;&#x4F18;&#x5148;&#x7EA7;&#x63D0;&#x5347;&#x7684;&#x7B56;&#x7565;&#xFF1A;&#x6BCF;&#x9694;&#x4E00;&#x5B9A;&#x8C03;&#x5EA6;&#x5468;&#x671F; S&#xFF0C;&#x5C06;&#x6240;&#x6709;&#x4EFB;&#x52A1;&#x7684;&#x4F18;&#x5148;&#x7EA7;&#x63D0;&#x5347;&#x5230;&#x6700;&#x9AD8;&#x4F18;&#x5148;&#x7EA7;&#x961F;&#x5217;&#x4E2D;&#x3002;
 </p>
 
 <p>
-这样所有的任务就会使用 RR 策略轮询调度：
+&#x8FD9;&#x6837;&#x6240;&#x6709;&#x7684;&#x4EFB;&#x52A1;&#x5C31;&#x4F1A;&#x4F7F;&#x7528; RR &#x7B56;&#x7565;&#x8F6E;&#x8BE2;&#x8C03;&#x5EA6;&#xFF1A;
 </p>
 <ul class="org-ul">
-<li>CPU 密集型任务就会被调度</li>
-<li>当任务切换为 IO 密集型任务时，它的优先级便会被保持</li>
+<li>CPU &#x5BC6;&#x96C6;&#x578B;&#x4EFB;&#x52A1;&#x5C31;&#x4F1A;&#x88AB;&#x8C03;&#x5EA6;</li>
+<li>&#x5F53;&#x4EFB;&#x52A1;&#x5207;&#x6362;&#x4E3A; IO &#x5BC6;&#x96C6;&#x578B;&#x4EFB;&#x52A1;&#x65F6;&#xFF0C;&#x5B83;&#x7684;&#x4F18;&#x5148;&#x7EA7;&#x4FBF;&#x4F1A;&#x88AB;&#x4FDD;&#x6301;</li>
 </ul>
 
 <p>
-这里的问题就在于 S 的值该如何设置：
+&#x8FD9;&#x91CC;&#x7684;&#x95EE;&#x9898;&#x5C31;&#x5728;&#x4E8E; S &#x7684;&#x503C;&#x8BE5;&#x5982;&#x4F55;&#x8BBE;&#x7F6E;&#xFF1A;
 </p>
 <ul class="org-ul">
-<li>如果设置得太小，那相当于所有的任务都在最高优先级了，IO 密集型任务的响应时间便会被拉长</li>
-<li>如果设置得太大，低优先级的 CPU 密集型任务的调度时间依然太短</li>
+<li>&#x5982;&#x679C;&#x8BBE;&#x7F6E;&#x5F97;&#x592A;&#x5C0F;&#xFF0C;&#x90A3;&#x76F8;&#x5F53;&#x4E8E;&#x6240;&#x6709;&#x7684;&#x4EFB;&#x52A1;&#x90FD;&#x5728;&#x6700;&#x9AD8;&#x4F18;&#x5148;&#x7EA7;&#x4E86;&#xFF0C;IO &#x5BC6;&#x96C6;&#x578B;&#x4EFB;&#x52A1;&#x7684;&#x54CD;&#x5E94;&#x65F6;&#x95F4;&#x4FBF;&#x4F1A;&#x88AB;&#x62C9;&#x957F;</li>
+<li>&#x5982;&#x679C;&#x8BBE;&#x7F6E;&#x5F97;&#x592A;&#x5927;&#xFF0C;&#x4F4E;&#x4F18;&#x5148;&#x7EA7;&#x7684; CPU &#x5BC6;&#x96C6;&#x578B;&#x4EFB;&#x52A1;&#x7684;&#x8C03;&#x5EA6;&#x65F6;&#x95F4;&#x4F9D;&#x7136;&#x592A;&#x77ED;</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-orgbf73b1f" class="outline-2">
-<h2 id="orgbf73b1f">调度计数</h2>
-<div class="outline-text-2" id="text-orgbf73b1f">
+<div id="outline-container-org0d57255" class="outline-2">
+<h2 id="org0d57255">&#x8C03;&#x5EA6;&#x8BA1;&#x6570;</h2>
+<div class="outline-text-2" id="text-org0d57255">
 <p>
-前面通过查看一个任务是否占满调度时间片来确定是否降低优先级的方式并不科学，
-因为这个层面太微观了，仅凭一次的调度时间就改变优先级，对于那种会转变状态的任务并不公平。
-应该站在更为宏观的层面来统计一个任务被调度的总时间与阈值比较。
+&#x524D;&#x9762;&#x901A;&#x8FC7;&#x67E5;&#x770B;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x662F;&#x5426;&#x5360;&#x6EE1;&#x8C03;&#x5EA6;&#x65F6;&#x95F4;&#x7247;&#x6765;&#x786E;&#x5B9A;&#x662F;&#x5426;&#x964D;&#x4F4E;&#x4F18;&#x5148;&#x7EA7;&#x7684;&#x65B9;&#x5F0F;&#x5E76;&#x4E0D;&#x79D1;&#x5B66;&#xFF0C;
+&#x56E0;&#x4E3A;&#x8FD9;&#x4E2A;&#x5C42;&#x9762;&#x592A;&#x5FAE;&#x89C2;&#x4E86;&#xFF0C;&#x4EC5;&#x51ED;&#x4E00;&#x6B21;&#x7684;&#x8C03;&#x5EA6;&#x65F6;&#x95F4;&#x5C31;&#x6539;&#x53D8;&#x4F18;&#x5148;&#x7EA7;&#xFF0C;&#x5BF9;&#x4E8E;&#x90A3;&#x79CD;&#x4F1A;&#x8F6C;&#x53D8;&#x72B6;&#x6001;&#x7684;&#x4EFB;&#x52A1;&#x5E76;&#x4E0D;&#x516C;&#x5E73;&#x3002;
+&#x5E94;&#x8BE5;&#x7AD9;&#x5728;&#x66F4;&#x4E3A;&#x5B8F;&#x89C2;&#x7684;&#x5C42;&#x9762;&#x6765;&#x7EDF;&#x8BA1;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x88AB;&#x8C03;&#x5EA6;&#x7684;&#x603B;&#x65F6;&#x95F4;&#x4E0E;&#x9608;&#x503C;&#x6BD4;&#x8F83;&#x3002;
 </p>
 <ul class="org-ul">
-<li>一旦一个任务调度的时间超过其阈值，便降低其优先级</li>
+<li>&#x4E00;&#x65E6;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x8C03;&#x5EA6;&#x7684;&#x65F6;&#x95F4;&#x8D85;&#x8FC7;&#x5176;&#x9608;&#x503C;&#xFF0C;&#x4FBF;&#x964D;&#x4F4E;&#x5176;&#x4F18;&#x5148;&#x7EA7;</li>
 </ul>
 
 <p>
-基于这种策略，便可以避免一些任务由于是 IO 密集型且每次调度低于时间片而一直占有 CPU 的情况，
-它会被降级以使得 CPU 密集型任务可以被调度。
+&#x57FA;&#x4E8E;&#x8FD9;&#x79CD;&#x7B56;&#x7565;&#xFF0C;&#x4FBF;&#x53EF;&#x4EE5;&#x907F;&#x514D;&#x4E00;&#x4E9B;&#x4EFB;&#x52A1;&#x7531;&#x4E8E;&#x662F; IO &#x5BC6;&#x96C6;&#x578B;&#x4E14;&#x6BCF;&#x6B21;&#x8C03;&#x5EA6;&#x4F4E;&#x4E8E;&#x65F6;&#x95F4;&#x7247;&#x800C;&#x4E00;&#x76F4;&#x5360;&#x6709; CPU &#x7684;&#x60C5;&#x51B5;&#xFF0C;
+&#x5B83;&#x4F1A;&#x88AB;&#x964D;&#x7EA7;&#x4EE5;&#x4F7F;&#x5F97; CPU &#x5BC6;&#x96C6;&#x578B;&#x4EFB;&#x52A1;&#x53EF;&#x4EE5;&#x88AB;&#x8C03;&#x5EA6;&#x3002;
 </p>
 </div>
 </div>
-<div id="outline-container-orgcad4623" class="outline-2">
-<h2 id="orgcad4623">量化参数</h2>
-<div class="outline-text-2" id="text-orgcad4623">
+<div id="outline-container-org972c990" class="outline-2">
+<h2 id="org972c990">&#x91CF;&#x5316;&#x53C2;&#x6570;</h2>
+<div class="outline-text-2" id="text-org972c990">
 <p>
-根据以上改进，最终得出 MLFQ 策略规则如下：
+&#x6839;&#x636E;&#x4EE5;&#x4E0A;&#x6539;&#x8FDB;&#xFF0C;&#x6700;&#x7EC8;&#x5F97;&#x51FA; MLFQ &#x7B56;&#x7565;&#x89C4;&#x5219;&#x5982;&#x4E0B;&#xFF1A;
 </p>
 <ul class="org-ul">
-<li>当任务被创建时，它被默认放置在最高优先级队列，此时最高优先级队列使用 RR 策略轮询调度</li>
-<li>一旦一个任务调度的时间超过其阈值，便降低其优先级</li>
-<li>每隔一定调度周期 S，将所有任务的优先级提升到最高优先级队列中。</li>
+<li>&#x5F53;&#x4EFB;&#x52A1;&#x88AB;&#x521B;&#x5EFA;&#x65F6;&#xFF0C;&#x5B83;&#x88AB;&#x9ED8;&#x8BA4;&#x653E;&#x7F6E;&#x5728;&#x6700;&#x9AD8;&#x4F18;&#x5148;&#x7EA7;&#x961F;&#x5217;&#xFF0C;&#x6B64;&#x65F6;&#x6700;&#x9AD8;&#x4F18;&#x5148;&#x7EA7;&#x961F;&#x5217;&#x4F7F;&#x7528; RR &#x7B56;&#x7565;&#x8F6E;&#x8BE2;&#x8C03;&#x5EA6;</li>
+<li>&#x4E00;&#x65E6;&#x4E00;&#x4E2A;&#x4EFB;&#x52A1;&#x8C03;&#x5EA6;&#x7684;&#x65F6;&#x95F4;&#x8D85;&#x8FC7;&#x5176;&#x9608;&#x503C;&#xFF0C;&#x4FBF;&#x964D;&#x4F4E;&#x5176;&#x4F18;&#x5148;&#x7EA7;</li>
+<li>&#x6BCF;&#x9694;&#x4E00;&#x5B9A;&#x8C03;&#x5EA6;&#x5468;&#x671F; S&#xFF0C;&#x5C06;&#x6240;&#x6709;&#x4EFB;&#x52A1;&#x7684;&#x4F18;&#x5148;&#x7EA7;&#x63D0;&#x5347;&#x5230;&#x6700;&#x9AD8;&#x4F18;&#x5148;&#x7EA7;&#x961F;&#x5217;&#x4E2D;&#x3002;</li>
 </ul>
 
 <p>
-与 MLFQ 的相关参数有：
+&#x4E0E; MLFQ &#x7684;&#x76F8;&#x5173;&#x53C2;&#x6570;&#x6709;&#xFF1A;
 </p>
 <ul class="org-ul">
-<li>优先级队列的个数</li>
-<li>每个优先级队列每次调度的时间片长度</li>
-<li>每隔多久提升优先级</li>
-<li>计数阈值的设置</li>
+<li>&#x4F18;&#x5148;&#x7EA7;&#x961F;&#x5217;&#x7684;&#x4E2A;&#x6570;</li>
+<li>&#x6BCF;&#x4E2A;&#x4F18;&#x5148;&#x7EA7;&#x961F;&#x5217;&#x6BCF;&#x6B21;&#x8C03;&#x5EA6;&#x7684;&#x65F6;&#x95F4;&#x7247;&#x957F;&#x5EA6;</li>
+<li>&#x6BCF;&#x9694;&#x591A;&#x4E45;&#x63D0;&#x5347;&#x4F18;&#x5148;&#x7EA7;</li>
+<li>&#x8BA1;&#x6570;&#x9608;&#x503C;&#x7684;&#x8BBE;&#x7F6E;</li>
 </ul>
 
 <p>
-这些参数都需要根据实际情况而做调整，以下是常用的经验设定：
+&#x8FD9;&#x4E9B;&#x53C2;&#x6570;&#x90FD;&#x9700;&#x8981;&#x6839;&#x636E;&#x5B9E;&#x9645;&#x60C5;&#x51B5;&#x800C;&#x505A;&#x8C03;&#x6574;&#xFF0C;&#x4EE5;&#x4E0B;&#x662F;&#x5E38;&#x7528;&#x7684;&#x7ECF;&#x9A8C;&#x8BBE;&#x5B9A;&#xFF1A;
 </p>
 <ul class="org-ul">
-<li>高优先级队列的时间片要低于低优先级队列的时间片
+<li>&#x9AD8;&#x4F18;&#x5148;&#x7EA7;&#x961F;&#x5217;&#x7684;&#x65F6;&#x95F4;&#x7247;&#x8981;&#x4F4E;&#x4E8E;&#x4F4E;&#x4F18;&#x5148;&#x7EA7;&#x961F;&#x5217;&#x7684;&#x65F6;&#x95F4;&#x7247;
 <ul class="org-ul">
-<li>这样保证高优先级的高响应速度和低优先级的吞吐量</li>
+<li>&#x8FD9;&#x6837;&#x4FDD;&#x8BC1;&#x9AD8;&#x4F18;&#x5148;&#x7EA7;&#x7684;&#x9AD8;&#x54CD;&#x5E94;&#x901F;&#x5EA6;&#x548C;&#x4F4E;&#x4F18;&#x5148;&#x7EA7;&#x7684;&#x541E;&#x5410;&#x91CF;</li>
 </ul></li>
 </ul>
 </div>
 </div>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-10-19 &#x4E00; 22:29.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.4)
 </div>
 
     </div>
@@ -520,7 +520,7 @@ Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/Code
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org9457d94"><span class="nav-number">1.</span> <span class="nav-text">普通策略</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orga5e103a"><span class="nav-number">2.</span> <span class="nav-text">优先级提升</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgbf73b1f"><span class="nav-number">3.</span> <span class="nav-text">调度计数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgcad4623"><span class="nav-number">4.</span> <span class="nav-text">量化参数</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#orgcee64e2"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x666E;&amp;#x901A;&amp;#x7B56;&amp;#x7565;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org4b7f646"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x4F18;&amp;#x5148;&amp;#x7EA7;&amp;#x63D0;&amp;#x5347;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org0d57255"><span class="nav-number">3.</span> <span class="nav-text">&amp;#x8C03;&amp;#x5EA6;&amp;#x8BA1;&amp;#x6570;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org972c990"><span class="nav-number">4.</span> <span class="nav-text">&amp;#x91CF;&amp;#x5316;&amp;#x53C2;&amp;#x6570;</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 

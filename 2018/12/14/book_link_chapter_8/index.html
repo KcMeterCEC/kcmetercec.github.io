@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="为了较好的维护共享库，需要将它们按照一定的规则组织起来。">
+  <meta name="description" content="&amp;#x4E3A;&amp;#x4E86;&amp;#x8F83;&amp;#x597D;&amp;#x7684;&amp;#x7EF4;&amp;#x62A4;&amp;#x5171;&amp;#x4EAB;&amp;#x5E93;&amp;#xFF0C;&amp;#x9700;&amp;#x8981;&amp;#x5C06;&amp;#x5B83;&amp;#x4EEC;&amp;#x6309;&amp;#x7167;&amp;#x4E00;&amp;#x5B9A;&amp;#x7684;&amp;#x89C4;&amp;#x5219;&amp;#x7EC4;&amp;#x7EC">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[What]链接、装载与库 --&gt; Linux共享库组织">
 <meta property="og:url" content="http://kcmetercec.top/2018/12/14/book_link_chapter_8/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="为了较好的维护共享库，需要将它们按照一定的规则组织起来。">
+<meta property="og:description" content="&amp;#x4E3A;&amp;#x4E86;&amp;#x8F83;&amp;#x597D;&amp;#x7684;&amp;#x7EF4;&amp;#x62A4;&amp;#x5171;&amp;#x4EAB;&amp;#x5E93;&amp;#xFF0C;&amp;#x9700;&amp;#x8981;&amp;#x5C06;&amp;#x5B83;&amp;#x4EEC;&amp;#x6309;&amp;#x7167;&amp;#x4E00;&amp;#x5B9A;&amp;#x7684;&amp;#x89C4;&amp;#x5219;&amp;#x7EC4;&amp;#x7EC">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2018-12-13T16:00:00.000Z">
 <meta property="article:modified_time" content="2020-08-01T01:09:06.468Z">
@@ -295,269 +295,269 @@
       
         <div id="content">
 <p>
-为了较好的维护共享库，需要将它们按照一定的规则组织起来。
+&#x4E3A;&#x4E86;&#x8F83;&#x597D;&#x7684;&#x7EF4;&#x62A4;&#x5171;&#x4EAB;&#x5E93;&#xFF0C;&#x9700;&#x8981;&#x5C06;&#x5B83;&#x4EEC;&#x6309;&#x7167;&#x4E00;&#x5B9A;&#x7684;&#x89C4;&#x5219;&#x7EC4;&#x7EC7;&#x8D77;&#x6765;&#x3002;
 </p>
 <a id="more"></a>
-<div id="outline-container-org2ce076d" class="outline-2">
-<h2 id="org2ce076d">共享库的版本</h2>
-<div class="outline-text-2" id="text-org2ce076d">
+<div id="outline-container-orgaf81fce" class="outline-2">
+<h2 id="orgaf81fce">&#x5171;&#x4EAB;&#x5E93;&#x7684;&#x7248;&#x672C;</h2>
+<div class="outline-text-2" id="text-orgaf81fce">
 </div>
-<div id="outline-container-orgcb19bb5" class="outline-3">
-<h3 id="orgcb19bb5">兼容性问题</h3>
-<div class="outline-text-3" id="text-orgcb19bb5">
+<div id="outline-container-org96ae93d" class="outline-3">
+<h3 id="org96ae93d">&#x517C;&#x5BB9;&#x6027;&#x95EE;&#x9898;</h3>
+<div class="outline-text-3" id="text-org96ae93d">
 <p>
-c语言的共享库的更新可以被分为兼容更新和不兼容更新，以下这些改变都会导致更新不兼容:
+c&#x8BED;&#x8A00;&#x7684;&#x5171;&#x4EAB;&#x5E93;&#x7684;&#x66F4;&#x65B0;&#x53EF;&#x4EE5;&#x88AB;&#x5206;&#x4E3A;&#x517C;&#x5BB9;&#x66F4;&#x65B0;&#x548C;&#x4E0D;&#x517C;&#x5BB9;&#x66F4;&#x65B0;&#xFF0C;&#x4EE5;&#x4E0B;&#x8FD9;&#x4E9B;&#x6539;&#x53D8;&#x90FD;&#x4F1A;&#x5BFC;&#x81F4;&#x66F4;&#x65B0;&#x4E0D;&#x517C;&#x5BB9;:
 </p>
 <ol class="org-ol">
-<li>导出函数的行为发生改变：虽然参数接口及返回没有改变，但相对旧版本行为变了很多</li>
-<li>导出函数被删除：这对于程序来讲就少了一些符号</li>
-<li>导出的数据结构发生变化：这导致对应内存操作不一致</li>
-<li>导出的函数的接口或返回值发生变化：这也相当于符号不匹配吧</li>
-<li>不同版本的编译器、操作系统、硬件平台等</li>
+<li>&#x5BFC;&#x51FA;&#x51FD;&#x6570;&#x7684;&#x884C;&#x4E3A;&#x53D1;&#x751F;&#x6539;&#x53D8;&#xFF1A;&#x867D;&#x7136;&#x53C2;&#x6570;&#x63A5;&#x53E3;&#x53CA;&#x8FD4;&#x56DE;&#x6CA1;&#x6709;&#x6539;&#x53D8;&#xFF0C;&#x4F46;&#x76F8;&#x5BF9;&#x65E7;&#x7248;&#x672C;&#x884C;&#x4E3A;&#x53D8;&#x4E86;&#x5F88;&#x591A;</li>
+<li>&#x5BFC;&#x51FA;&#x51FD;&#x6570;&#x88AB;&#x5220;&#x9664;&#xFF1A;&#x8FD9;&#x5BF9;&#x4E8E;&#x7A0B;&#x5E8F;&#x6765;&#x8BB2;&#x5C31;&#x5C11;&#x4E86;&#x4E00;&#x4E9B;&#x7B26;&#x53F7;</li>
+<li>&#x5BFC;&#x51FA;&#x7684;&#x6570;&#x636E;&#x7ED3;&#x6784;&#x53D1;&#x751F;&#x53D8;&#x5316;&#xFF1A;&#x8FD9;&#x5BFC;&#x81F4;&#x5BF9;&#x5E94;&#x5185;&#x5B58;&#x64CD;&#x4F5C;&#x4E0D;&#x4E00;&#x81F4;</li>
+<li>&#x5BFC;&#x51FA;&#x7684;&#x51FD;&#x6570;&#x7684;&#x63A5;&#x53E3;&#x6216;&#x8FD4;&#x56DE;&#x503C;&#x53D1;&#x751F;&#x53D8;&#x5316;&#xFF1A;&#x8FD9;&#x4E5F;&#x76F8;&#x5F53;&#x4E8E;&#x7B26;&#x53F7;&#x4E0D;&#x5339;&#x914D;&#x5427;</li>
+<li>&#x4E0D;&#x540C;&#x7248;&#x672C;&#x7684;&#x7F16;&#x8BD1;&#x5668;&#x3001;&#x64CD;&#x4F5C;&#x7CFB;&#x7EDF;&#x3001;&#x786C;&#x4EF6;&#x5E73;&#x53F0;&#x7B49;</li>
 </ol>
 
 <p>
-相对来讲，c++其语法的复杂性使得兼容性更难以保持，很多时候使用c++调用c共享库是个不错的选择。
+&#x76F8;&#x5BF9;&#x6765;&#x8BB2;&#xFF0C;c++&#x5176;&#x8BED;&#x6CD5;&#x7684;&#x590D;&#x6742;&#x6027;&#x4F7F;&#x5F97;&#x517C;&#x5BB9;&#x6027;&#x66F4;&#x96BE;&#x4EE5;&#x4FDD;&#x6301;&#xFF0C;&#x5F88;&#x591A;&#x65F6;&#x5019;&#x4F7F;&#x7528;c++&#x8C03;&#x7528;c&#x5171;&#x4EAB;&#x5E93;&#x662F;&#x4E2A;&#x4E0D;&#x9519;&#x7684;&#x9009;&#x62E9;&#x3002;
 </p>
 </div>
 </div>
-<div id="outline-container-orgb26c282" class="outline-3">
-<h3 id="orgb26c282">共享库版本命名</h3>
-<div class="outline-text-3" id="text-orgb26c282">
+<div id="outline-container-org43a26ba" class="outline-3">
+<h3 id="org43a26ba">&#x5171;&#x4EAB;&#x5E93;&#x7248;&#x672C;&#x547D;&#x540D;</h3>
+<div class="outline-text-3" id="text-org43a26ba">
 <p>
-linux规定了一套共享库版本命名规则: <code>libname.so.x.y.z</code> 
+linux&#x89C4;&#x5B9A;&#x4E86;&#x4E00;&#x5957;&#x5171;&#x4EAB;&#x5E93;&#x7248;&#x672C;&#x547D;&#x540D;&#x89C4;&#x5219;: <code>libname.so.x.y.z</code> 
 </p>
 <ul class="org-ul">
-<li>name : 库名称</li>
-<li>x : 主版本号(Major Version Number)，库的重大升级，可能不会兼容旧库
+<li>name : &#x5E93;&#x540D;&#x79F0;</li>
+<li>x : &#x4E3B;&#x7248;&#x672C;&#x53F7;(Major Version Number)&#xFF0C;&#x5E93;&#x7684;&#x91CD;&#x5927;&#x5347;&#x7EA7;&#xFF0C;&#x53EF;&#x80FD;&#x4E0D;&#x4F1A;&#x517C;&#x5BB9;&#x65E7;&#x5E93;
 <ul class="org-ul">
-<li>所以以前的程序需要重新编译链接后才能使用此新库</li>
+<li>&#x6240;&#x4EE5;&#x4EE5;&#x524D;&#x7684;&#x7A0B;&#x5E8F;&#x9700;&#x8981;&#x91CD;&#x65B0;&#x7F16;&#x8BD1;&#x94FE;&#x63A5;&#x540E;&#x624D;&#x80FD;&#x4F7F;&#x7528;&#x6B64;&#x65B0;&#x5E93;</li>
 </ul></li>
-<li>y : 次版本号(Minor Version Number), 增加一些新的接口符号且保持原来的接口不变</li>
-<li>z : 发布版本号(Release Version Number), 修正库的错误、性能改进等，不会添加新的接口也不会改变接口。</li>
+<li>y : &#x6B21;&#x7248;&#x672C;&#x53F7;(Minor Version Number), &#x589E;&#x52A0;&#x4E00;&#x4E9B;&#x65B0;&#x7684;&#x63A5;&#x53E3;&#x7B26;&#x53F7;&#x4E14;&#x4FDD;&#x6301;&#x539F;&#x6765;&#x7684;&#x63A5;&#x53E3;&#x4E0D;&#x53D8;</li>
+<li>z : &#x53D1;&#x5E03;&#x7248;&#x672C;&#x53F7;(Release Version Number), &#x4FEE;&#x6B63;&#x5E93;&#x7684;&#x9519;&#x8BEF;&#x3001;&#x6027;&#x80FD;&#x6539;&#x8FDB;&#x7B49;&#xFF0C;&#x4E0D;&#x4F1A;&#x6DFB;&#x52A0;&#x65B0;&#x7684;&#x63A5;&#x53E3;&#x4E5F;&#x4E0D;&#x4F1A;&#x6539;&#x53D8;&#x63A5;&#x53E3;&#x3002;</li>
 </ul>
 
 <p>
-所以一个库的次版本号和发布版本号升级时，对应的程序是不用重新升级的，直接拿来就能用。而主版本号升级时，最好根据说明修改代码再重新编译链接。
+&#x6240;&#x4EE5;&#x4E00;&#x4E2A;&#x5E93;&#x7684;&#x6B21;&#x7248;&#x672C;&#x53F7;&#x548C;&#x53D1;&#x5E03;&#x7248;&#x672C;&#x53F7;&#x5347;&#x7EA7;&#x65F6;&#xFF0C;&#x5BF9;&#x5E94;&#x7684;&#x7A0B;&#x5E8F;&#x662F;&#x4E0D;&#x7528;&#x91CD;&#x65B0;&#x5347;&#x7EA7;&#x7684;&#xFF0C;&#x76F4;&#x63A5;&#x62FF;&#x6765;&#x5C31;&#x80FD;&#x7528;&#x3002;&#x800C;&#x4E3B;&#x7248;&#x672C;&#x53F7;&#x5347;&#x7EA7;&#x65F6;&#xFF0C;&#x6700;&#x597D;&#x6839;&#x636E;&#x8BF4;&#x660E;&#x4FEE;&#x6539;&#x4EE3;&#x7801;&#x518D;&#x91CD;&#x65B0;&#x7F16;&#x8BD1;&#x94FE;&#x63A5;&#x3002;
 </p>
 </div>
 </div>
-<div id="outline-container-org646bceb" class="outline-3">
-<h3 id="org646bceb">SO-NAME</h3>
-<div class="outline-text-3" id="text-org646bceb">
+<div id="outline-container-orgaa31b01" class="outline-3">
+<h3 id="orgaa31b01">SO-NAME</h3>
+<div class="outline-text-3" id="text-orgaa31b01">
 <p>
-由上面可以看出，主版本号决定了库的兼容性，一个程序主模块必须使用对应主版本号一致的共享库。
+&#x7531;&#x4E0A;&#x9762;&#x53EF;&#x4EE5;&#x770B;&#x51FA;&#xFF0C;&#x4E3B;&#x7248;&#x672C;&#x53F7;&#x51B3;&#x5B9A;&#x4E86;&#x5E93;&#x7684;&#x517C;&#x5BB9;&#x6027;&#xFF0C;&#x4E00;&#x4E2A;&#x7A0B;&#x5E8F;&#x4E3B;&#x6A21;&#x5757;&#x5FC5;&#x987B;&#x4F7F;&#x7528;&#x5BF9;&#x5E94;&#x4E3B;&#x7248;&#x672C;&#x53F7;&#x4E00;&#x81F4;&#x7684;&#x5171;&#x4EAB;&#x5E93;&#x3002;
 </p>
 
 <p>
-Linux中使用 <code>SO-NAME</code> 来表示共享库的主版本号，通常这是一个指向共享库全名的软链接。(比如共享库为 libfoo.so.2.6.1，对应的SO-NAME就为libfoo.so.2)
+Linux&#x4E2D;&#x4F7F;&#x7528; <code>SO-NAME</code> &#x6765;&#x8868;&#x793A;&#x5171;&#x4EAB;&#x5E93;&#x7684;&#x4E3B;&#x7248;&#x672C;&#x53F7;&#xFF0C;&#x901A;&#x5E38;&#x8FD9;&#x662F;&#x4E00;&#x4E2A;&#x6307;&#x5411;&#x5171;&#x4EAB;&#x5E93;&#x5168;&#x540D;&#x7684;&#x8F6F;&#x94FE;&#x63A5;&#x3002;(&#x6BD4;&#x5982;&#x5171;&#x4EAB;&#x5E93;&#x4E3A; libfoo.so.2.6.1&#xFF0C;&#x5BF9;&#x5E94;&#x7684;SO-NAME&#x5C31;&#x4E3A;libfoo.so.2)
 </p>
 <ul class="org-ul">
-<li>软链接会指向目录中主版本号相同、次版本号和发布版本号最新的共享库。
+<li>&#x8F6F;&#x94FE;&#x63A5;&#x4F1A;&#x6307;&#x5411;&#x76EE;&#x5F55;&#x4E2D;&#x4E3B;&#x7248;&#x672C;&#x53F7;&#x76F8;&#x540C;&#x3001;&#x6B21;&#x7248;&#x672C;&#x53F7;&#x548C;&#x53D1;&#x5E03;&#x7248;&#x672C;&#x53F7;&#x6700;&#x65B0;&#x7684;&#x5171;&#x4EAB;&#x5E93;&#x3002;
 <ul class="org-ul">
-<li><code>ldconfig</code> 用于自动遍历共享库目录，更新软链接到最新共享库</li>
+<li><code>ldconfig</code> &#x7528;&#x4E8E;&#x81EA;&#x52A8;&#x904D;&#x5386;&#x5171;&#x4EAB;&#x5E93;&#x76EE;&#x5F55;&#xFF0C;&#x66F4;&#x65B0;&#x8F6F;&#x94FE;&#x63A5;&#x5230;&#x6700;&#x65B0;&#x5171;&#x4EAB;&#x5E93;</li>
 </ul></li>
 </ul>
 
 <p>
-在实际的主模块进行链接和运行时，都是使用以 <code>SO-NAME</code> 为名字的软链接。
+&#x5728;&#x5B9E;&#x9645;&#x7684;&#x4E3B;&#x6A21;&#x5757;&#x8FDB;&#x884C;&#x94FE;&#x63A5;&#x548C;&#x8FD0;&#x884C;&#x65F6;&#xFF0C;&#x90FD;&#x662F;&#x4F7F;&#x7528;&#x4EE5; <code>SO-NAME</code> &#x4E3A;&#x540D;&#x5B57;&#x7684;&#x8F6F;&#x94FE;&#x63A5;&#x3002;
 </p>
 
 <p>
-在实际编译主模块源码时，只需要使用 <code>-l<name></code> 参数，gcc会自动查找最新版本的 <name> 库。
+&#x5728;&#x5B9E;&#x9645;&#x7F16;&#x8BD1;&#x4E3B;&#x6A21;&#x5757;&#x6E90;&#x7801;&#x65F6;&#xFF0C;&#x53EA;&#x9700;&#x8981;&#x4F7F;&#x7528; <code>-l&lt;name&gt;</code> &#x53C2;&#x6570;&#xFF0C;gcc&#x4F1A;&#x81EA;&#x52A8;&#x67E5;&#x627E;&#x6700;&#x65B0;&#x7248;&#x672C;&#x7684; &lt;name&gt; &#x5E93;&#x3002;
 </p>
 <ul class="org-ul">
-<li>查找路径由参数 <code>-L</code> 决定</li>
-<li>当使用 <code>-static</code> 参数时，gcc会查找静态库，也就是lib<name>.a</li>
+<li>&#x67E5;&#x627E;&#x8DEF;&#x5F84;&#x7531;&#x53C2;&#x6570; <code>-L</code> &#x51B3;&#x5B9A;</li>
+<li>&#x5F53;&#x4F7F;&#x7528; <code>-static</code> &#x53C2;&#x6570;&#x65F6;&#xFF0C;gcc&#x4F1A;&#x67E5;&#x627E;&#x9759;&#x6001;&#x5E93;&#xFF0C;&#x4E5F;&#x5C31;&#x662F;lib&lt;name&gt;.a</li>
 </ul>
 </div>
 </div>
 </div>
 
-<div id="outline-container-org25127dd" class="outline-2">
-<h2 id="org25127dd">符号版本</h2>
-<div class="outline-text-2" id="text-org25127dd">
+<div id="outline-container-org07bbcd8" class="outline-2">
+<h2 id="org07bbcd8">&#x7B26;&#x53F7;&#x7248;&#x672C;</h2>
+<div class="outline-text-2" id="text-org07bbcd8">
 </div>
-<div id="outline-container-org377416c" class="outline-3">
-<h3 id="org377416c">次版本号交会问题(Minor-revision Rendezvous Problem)</h3>
-<div class="outline-text-3" id="text-org377416c">
+<div id="outline-container-orga64ee8e" class="outline-3">
+<h3 id="orga64ee8e">&#x6B21;&#x7248;&#x672C;&#x53F7;&#x4EA4;&#x4F1A;&#x95EE;&#x9898;(Minor-revision Rendezvous Problem)</h3>
+<div class="outline-text-3" id="text-orga64ee8e">
 <p>
-当某个程序依赖于较高的次版本号的共享库，而运行于较低此版本号的共享库系统时，就可能产生缺少某些符号的错误。
+&#x5F53;&#x67D0;&#x4E2A;&#x7A0B;&#x5E8F;&#x4F9D;&#x8D56;&#x4E8E;&#x8F83;&#x9AD8;&#x7684;&#x6B21;&#x7248;&#x672C;&#x53F7;&#x7684;&#x5171;&#x4EAB;&#x5E93;&#xFF0C;&#x800C;&#x8FD0;&#x884C;&#x4E8E;&#x8F83;&#x4F4E;&#x6B64;&#x7248;&#x672C;&#x53F7;&#x7684;&#x5171;&#x4EAB;&#x5E93;&#x7CFB;&#x7EDF;&#x65F6;&#xFF0C;&#x5C31;&#x53EF;&#x80FD;&#x4EA7;&#x751F;&#x7F3A;&#x5C11;&#x67D0;&#x4E9B;&#x7B26;&#x53F7;&#x7684;&#x9519;&#x8BEF;&#x3002;
 </p>
 <ul class="org-ul">
-<li>因为次版本号可能会增加一些接口，且它只保证向后兼容性。</li>
+<li>&#x56E0;&#x4E3A;&#x6B21;&#x7248;&#x672C;&#x53F7;&#x53EF;&#x80FD;&#x4F1A;&#x589E;&#x52A0;&#x4E00;&#x4E9B;&#x63A5;&#x53E3;&#xFF0C;&#x4E14;&#x5B83;&#x53EA;&#x4FDD;&#x8BC1;&#x5411;&#x540E;&#x517C;&#x5BB9;&#x6027;&#x3002;</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-orgb5671bb" class="outline-3">
-<h3 id="orgb5671bb">基于符号的版本机制(Symbol Versioning)</h3>
-<div class="outline-text-3" id="text-orgb5671bb">
+<div id="outline-container-org85cf2a1" class="outline-3">
+<h3 id="org85cf2a1">&#x57FA;&#x4E8E;&#x7B26;&#x53F7;&#x7684;&#x7248;&#x672C;&#x673A;&#x5236;(Symbol Versioning)</h3>
+<div class="outline-text-3" id="text-org85cf2a1">
 <p>
-上面这个问题，使用符号版本机制来解决： 让每个导出和导入的符号都有一个相关联的版本号，它的实际做法类似于名称修饰的方法。
+&#x4E0A;&#x9762;&#x8FD9;&#x4E2A;&#x95EE;&#x9898;&#xFF0C;&#x4F7F;&#x7528;&#x7B26;&#x53F7;&#x7248;&#x672C;&#x673A;&#x5236;&#x6765;&#x89E3;&#x51B3;&#xFF1A; &#x8BA9;&#x6BCF;&#x4E2A;&#x5BFC;&#x51FA;&#x548C;&#x5BFC;&#x5165;&#x7684;&#x7B26;&#x53F7;&#x90FD;&#x6709;&#x4E00;&#x4E2A;&#x76F8;&#x5173;&#x8054;&#x7684;&#x7248;&#x672C;&#x53F7;&#xFF0C;&#x5B83;&#x7684;&#x5B9E;&#x9645;&#x505A;&#x6CD5;&#x7C7B;&#x4F3C;&#x4E8E;&#x540D;&#x79F0;&#x4FEE;&#x9970;&#x7684;&#x65B9;&#x6CD5;&#x3002;
 </p>
 <ul class="org-ul">
-<li>在那些新的次版本号中添加的全局符号打上相应的版本标记。</li>
+<li>&#x5728;&#x90A3;&#x4E9B;&#x65B0;&#x7684;&#x6B21;&#x7248;&#x672C;&#x53F7;&#x4E2D;&#x6DFB;&#x52A0;&#x7684;&#x5168;&#x5C40;&#x7B26;&#x53F7;&#x6253;&#x4E0A;&#x76F8;&#x5E94;&#x7684;&#x7248;&#x672C;&#x6807;&#x8BB0;&#x3002;</li>
 </ul>
 
 <p>
-加上符号版本机制后，当在编译和链接程序时，链接器会根据当前程序依赖的符号而记录 <b>它所用到的最低满足要求的符号版本</b> 。
-在程序运行时，动态链接器会通过程序内记录的它所依赖的所有共享库的符号集合版本信息，然后判定当前系统共享库中的符号集合版本是否满足这些被依赖的符号即可。
+&#x52A0;&#x4E0A;&#x7B26;&#x53F7;&#x7248;&#x672C;&#x673A;&#x5236;&#x540E;&#xFF0C;&#x5F53;&#x5728;&#x7F16;&#x8BD1;&#x548C;&#x94FE;&#x63A5;&#x7A0B;&#x5E8F;&#x65F6;&#xFF0C;&#x94FE;&#x63A5;&#x5668;&#x4F1A;&#x6839;&#x636E;&#x5F53;&#x524D;&#x7A0B;&#x5E8F;&#x4F9D;&#x8D56;&#x7684;&#x7B26;&#x53F7;&#x800C;&#x8BB0;&#x5F55; <b>&#x5B83;&#x6240;&#x7528;&#x5230;&#x7684;&#x6700;&#x4F4E;&#x6EE1;&#x8DB3;&#x8981;&#x6C42;&#x7684;&#x7B26;&#x53F7;&#x7248;&#x672C;</b> &#x3002;
+&#x5728;&#x7A0B;&#x5E8F;&#x8FD0;&#x884C;&#x65F6;&#xFF0C;&#x52A8;&#x6001;&#x94FE;&#x63A5;&#x5668;&#x4F1A;&#x901A;&#x8FC7;&#x7A0B;&#x5E8F;&#x5185;&#x8BB0;&#x5F55;&#x7684;&#x5B83;&#x6240;&#x4F9D;&#x8D56;&#x7684;&#x6240;&#x6709;&#x5171;&#x4EAB;&#x5E93;&#x7684;&#x7B26;&#x53F7;&#x96C6;&#x5408;&#x7248;&#x672C;&#x4FE1;&#x606F;&#xFF0C;&#x7136;&#x540E;&#x5224;&#x5B9A;&#x5F53;&#x524D;&#x7CFB;&#x7EDF;&#x5171;&#x4EAB;&#x5E93;&#x4E2D;&#x7684;&#x7B26;&#x53F7;&#x96C6;&#x5408;&#x7248;&#x672C;&#x662F;&#x5426;&#x6EE1;&#x8DB3;&#x8FD9;&#x4E9B;&#x88AB;&#x4F9D;&#x8D56;&#x7684;&#x7B26;&#x53F7;&#x5373;&#x53EF;&#x3002;
 </p>
 
 <p>
-符号版本的设置可以使用符号版本脚本，而在gcc中还可以使用汇编宏指令来指定符号版本:
+&#x7B26;&#x53F7;&#x7248;&#x672C;&#x7684;&#x8BBE;&#x7F6E;&#x53EF;&#x4EE5;&#x4F7F;&#x7528;&#x7B26;&#x53F7;&#x7248;&#x672C;&#x811A;&#x672C;&#xFF0C;&#x800C;&#x5728;gcc&#x4E2D;&#x8FD8;&#x53EF;&#x4EE5;&#x4F7F;&#x7528;&#x6C47;&#x7F16;&#x5B8F;&#x6307;&#x4EE4;&#x6765;&#x6307;&#x5B9A;&#x7B26;&#x53F7;&#x7248;&#x672C;:
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//将add符号指定为符号标签VERS_1.1</span></span><br><span class="line"><span class="keyword">asm</span>(<span class="string">".symver add, add@VERS_1.1"</span>)</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">add</span><span class="params">(<span class="keyword">int</span> a, <span class="keyword">int</span> b)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  <span class="keyword">return</span> a + b;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="comment">//还可以实现类似于c++的符号重载机制</span></span><br><span class="line"><span class="comment">//这样可以兼容新旧版程序</span></span><br><span class="line"><span class="keyword">asm</span>(<span class="string">".symver old_printf, printf@VERS_1.1"</span>)</span><br><span class="line"><span class="keyword">asm</span>(<span class="string">".symver new_printf, printf@VERS_1.2"</span>)</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">old_printf</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">}</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">new_printf</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//&#x5C06;add&#x7B26;&#x53F7;&#x6307;&#x5B9A;&#x4E3A;&#x7B26;&#x53F7;&#x6807;&#x7B7E;VERS_1.1</span></span><br><span class="line"><span class="keyword">asm</span>(<span class="string">&quot;.symver add, add@VERS_1.1&quot;</span>)</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">add</span><span class="params">(<span class="keyword">int</span> a, <span class="keyword">int</span> b)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">  <span class="keyword">return</span> a + b;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="comment">//&#x8FD8;&#x53EF;&#x4EE5;&#x5B9E;&#x73B0;&#x7C7B;&#x4F3C;&#x4E8E;c++&#x7684;&#x7B26;&#x53F7;&#x91CD;&#x8F7D;&#x673A;&#x5236;</span></span><br><span class="line"><span class="comment">//&#x8FD9;&#x6837;&#x53EF;&#x4EE5;&#x517C;&#x5BB9;&#x65B0;&#x65E7;&#x7248;&#x7A0B;&#x5E8F;</span></span><br><span class="line"><span class="keyword">asm</span>(<span class="string">&quot;.symver old_printf, printf@VERS_1.1&quot;</span>)</span><br><span class="line"><span class="keyword">asm</span>(<span class="string">&quot;.symver new_printf, printf@VERS_1.2&quot;</span>)</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">old_printf</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">}</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">new_printf</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </div>
 </div>
 
-<div id="outline-container-org71ba9a6" class="outline-2">
-<h2 id="org71ba9a6">共享库系统路径</h2>
-<div class="outline-text-2" id="text-org71ba9a6">
+<div id="outline-container-orgf68eedf" class="outline-2">
+<h2 id="orgf68eedf">&#x5171;&#x4EAB;&#x5E93;&#x7CFB;&#x7EDF;&#x8DEF;&#x5F84;</h2>
+<div class="outline-text-2" id="text-orgf68eedf">
 <p>
-FHS(File Hierarchy Standard)标准规定了共享库路径:
+FHS(File Hierarchy Standard)&#x6807;&#x51C6;&#x89C4;&#x5B9A;&#x4E86;&#x5171;&#x4EAB;&#x5E93;&#x8DEF;&#x5F84;:
 </p>
 <ul class="org-ul">
-<li><code>/lib</code> : 系统最关键和基础的共享库，主要被 <code>/bin,/sbin，启动过程</code> 下的程序所使用
+<li><code>/lib</code> : &#x7CFB;&#x7EDF;&#x6700;&#x5173;&#x952E;&#x548C;&#x57FA;&#x7840;&#x7684;&#x5171;&#x4EAB;&#x5E93;&#xFF0C;&#x4E3B;&#x8981;&#x88AB; <code>/bin,/sbin&#xFF0C;&#x542F;&#x52A8;&#x8FC7;&#x7A0B;</code> &#x4E0B;&#x7684;&#x7A0B;&#x5E8F;&#x6240;&#x4F7F;&#x7528;
 <ul class="org-ul">
-<li>比如动态链接器、c运行时库等</li>
+<li>&#x6BD4;&#x5982;&#x52A8;&#x6001;&#x94FE;&#x63A5;&#x5668;&#x3001;c&#x8FD0;&#x884C;&#x65F6;&#x5E93;&#x7B49;</li>
 </ul></li>
-<li><code>/usr/lib</code> : 非系统运行时所需要的关键性共享库，主要是一些开发时用到的库，一般不会被用户的程序或shell脚本直接使用</li>
-<li><code>/usr/local/lib</code> : 跟系统本身并不十分相关的库，主要是一些第三方应用程序的库，主要被 <code>/usr/local/bin</code> 下的程序使用</li>
+<li><code>/usr/lib</code> : &#x975E;&#x7CFB;&#x7EDF;&#x8FD0;&#x884C;&#x65F6;&#x6240;&#x9700;&#x8981;&#x7684;&#x5173;&#x952E;&#x6027;&#x5171;&#x4EAB;&#x5E93;&#xFF0C;&#x4E3B;&#x8981;&#x662F;&#x4E00;&#x4E9B;&#x5F00;&#x53D1;&#x65F6;&#x7528;&#x5230;&#x7684;&#x5E93;&#xFF0C;&#x4E00;&#x822C;&#x4E0D;&#x4F1A;&#x88AB;&#x7528;&#x6237;&#x7684;&#x7A0B;&#x5E8F;&#x6216;shell&#x811A;&#x672C;&#x76F4;&#x63A5;&#x4F7F;&#x7528;</li>
+<li><code>/usr/local/lib</code> : &#x8DDF;&#x7CFB;&#x7EDF;&#x672C;&#x8EAB;&#x5E76;&#x4E0D;&#x5341;&#x5206;&#x76F8;&#x5173;&#x7684;&#x5E93;&#xFF0C;&#x4E3B;&#x8981;&#x662F;&#x4E00;&#x4E9B;&#x7B2C;&#x4E09;&#x65B9;&#x5E94;&#x7528;&#x7A0B;&#x5E8F;&#x7684;&#x5E93;&#xFF0C;&#x4E3B;&#x8981;&#x88AB; <code>/usr/local/bin</code> &#x4E0B;&#x7684;&#x7A0B;&#x5E8F;&#x4F7F;&#x7528;</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-orgda76de3" class="outline-2">
-<h2 id="orgda76de3">共享库查找过程</h2>
-<div class="outline-text-2" id="text-orgda76de3">
+<div id="outline-container-orge465d2b" class="outline-2">
+<h2 id="orge465d2b">&#x5171;&#x4EAB;&#x5E93;&#x67E5;&#x627E;&#x8FC7;&#x7A0B;</h2>
+<div class="outline-text-2" id="text-orge465d2b">
 <p>
-模块中的 <code>.dynamic</code> 标明了依赖库的路径。
+&#x6A21;&#x5757;&#x4E2D;&#x7684; <code>.dynamic</code> &#x6807;&#x660E;&#x4E86;&#x4F9D;&#x8D56;&#x5E93;&#x7684;&#x8DEF;&#x5F84;&#x3002;
 </p>
 <ul class="org-ul">
-<li>如果此路径是绝对路径，那么就按照这个路径查找</li>
-<li>如果是相对路径，则会依次在 <code>/etc/ld.so.cache,/usr/lib/,/lib/</code> 中查找</li>
+<li>&#x5982;&#x679C;&#x6B64;&#x8DEF;&#x5F84;&#x662F;&#x7EDD;&#x5BF9;&#x8DEF;&#x5F84;&#xFF0C;&#x90A3;&#x4E48;&#x5C31;&#x6309;&#x7167;&#x8FD9;&#x4E2A;&#x8DEF;&#x5F84;&#x67E5;&#x627E;</li>
+<li>&#x5982;&#x679C;&#x662F;&#x76F8;&#x5BF9;&#x8DEF;&#x5F84;&#xFF0C;&#x5219;&#x4F1A;&#x4F9D;&#x6B21;&#x5728; <code>/etc/ld.so.cache,/usr/lib/,/lib/</code> &#x4E2D;&#x67E5;&#x627E;</li>
 </ul>
 
 <p>
-<code>ldconfig</code> 会刷新动态链接库的符号链接，并集中存放到 <code>/etc/ld.so.cache</code> 文件中，以便于快速查找。
+<code>ldconfig</code> &#x4F1A;&#x5237;&#x65B0;&#x52A8;&#x6001;&#x94FE;&#x63A5;&#x5E93;&#x7684;&#x7B26;&#x53F7;&#x94FE;&#x63A5;&#xFF0C;&#x5E76;&#x96C6;&#x4E2D;&#x5B58;&#x653E;&#x5230; <code>/etc/ld.so.cache</code> &#x6587;&#x4EF6;&#x4E2D;&#xFF0C;&#x4EE5;&#x4FBF;&#x4E8E;&#x5FEB;&#x901F;&#x67E5;&#x627E;&#x3002;
 </p>
 <ul class="org-ul">
-<li>所以当安装、更新共享库后，都需要使用 <code>ldconfig</code> 命令</li>
+<li>&#x6240;&#x4EE5;&#x5F53;&#x5B89;&#x88C5;&#x3001;&#x66F4;&#x65B0;&#x5171;&#x4EAB;&#x5E93;&#x540E;&#xFF0C;&#x90FD;&#x9700;&#x8981;&#x4F7F;&#x7528; <code>ldconfig</code> &#x547D;&#x4EE4;</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-org4ddf1b5" class="outline-2">
-<h2 id="org4ddf1b5">环境变量</h2>
-<div class="outline-text-2" id="text-org4ddf1b5">
+<div id="outline-container-orgb407d98" class="outline-2">
+<h2 id="orgb407d98">&#x73AF;&#x5883;&#x53D8;&#x91CF;</h2>
+<div class="outline-text-2" id="text-orgb407d98">
 </div>
-<div id="outline-container-org6cd3cf7" class="outline-3">
-<h3 id="org6cd3cf7">LD_LIBRARY_PATH</h3>
-<div class="outline-text-3" id="text-org6cd3cf7">
+<div id="outline-container-orgfc88d1d" class="outline-3">
+<h3 id="orgfc88d1d">LD_LIBRARY_PATH</h3>
+<div class="outline-text-3" id="text-orgfc88d1d">
 <p>
-用于临时改变应用程序的共享库查找路径，而不会影响系统中的其他程序。
+&#x7528;&#x4E8E;&#x4E34;&#x65F6;&#x6539;&#x53D8;&#x5E94;&#x7528;&#x7A0B;&#x5E8F;&#x7684;&#x5171;&#x4EAB;&#x5E93;&#x67E5;&#x627E;&#x8DEF;&#x5F84;&#xFF0C;&#x800C;&#x4E0D;&#x4F1A;&#x5F71;&#x54CD;&#x7CFB;&#x7EDF;&#x4E2D;&#x7684;&#x5176;&#x4ED6;&#x7A0B;&#x5E8F;&#x3002;
 </p>
 <ul class="org-ul">
-<li>有利于共享库的调试和测试</li>
+<li>&#x6709;&#x5229;&#x4E8E;&#x5171;&#x4EAB;&#x5E93;&#x7684;&#x8C03;&#x8BD5;&#x548C;&#x6D4B;&#x8BD5;</li>
 </ul>
 
 <p>
-默认 <code>LD_LIBRARY_PATH</code> 的值为空，若为某个进程设置了路径，动态链接器会优先寻找此路径。
+&#x9ED8;&#x8BA4; <code>LD_LIBRARY_PATH</code> &#x7684;&#x503C;&#x4E3A;&#x7A7A;&#xFF0C;&#x82E5;&#x4E3A;&#x67D0;&#x4E2A;&#x8FDB;&#x7A0B;&#x8BBE;&#x7F6E;&#x4E86;&#x8DEF;&#x5F84;&#xFF0C;&#x52A8;&#x6001;&#x94FE;&#x63A5;&#x5668;&#x4F1A;&#x4F18;&#x5148;&#x5BFB;&#x627E;&#x6B64;&#x8DEF;&#x5F84;&#x3002;
 </p>
 </div>
 </div>
-<div id="outline-container-org5966553" class="outline-3">
-<h3 id="org5966553">LD_PRELOAD</h3>
-<div class="outline-text-3" id="text-org5966553">
+<div id="outline-container-org0efc72b" class="outline-3">
+<h3 id="org0efc72b">LD_PRELOAD</h3>
+<div class="outline-text-3" id="text-org0efc72b">
 <p>
-指定预先装载的一些共享库或是目标文件，无论程序是否依赖于它们，LD_PRELOAD里面指定的共享库或目标文件都会被装载。
+&#x6307;&#x5B9A;&#x9884;&#x5148;&#x88C5;&#x8F7D;&#x7684;&#x4E00;&#x4E9B;&#x5171;&#x4EAB;&#x5E93;&#x6216;&#x662F;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#xFF0C;&#x65E0;&#x8BBA;&#x7A0B;&#x5E8F;&#x662F;&#x5426;&#x4F9D;&#x8D56;&#x4E8E;&#x5B83;&#x4EEC;&#xFF0C;LD_PRELOAD&#x91CC;&#x9762;&#x6307;&#x5B9A;&#x7684;&#x5171;&#x4EAB;&#x5E93;&#x6216;&#x76EE;&#x6807;&#x6587;&#x4EF6;&#x90FD;&#x4F1A;&#x88AB;&#x88C5;&#x8F7D;&#x3002;
 </p>
 </div>
 </div>
-<div id="outline-container-orga006048" class="outline-3">
-<h3 id="orga006048">LD_DEBUG</h3>
-<div class="outline-text-3" id="text-orga006048">
+<div id="outline-container-org35ab7fb" class="outline-3">
+<h3 id="org35ab7fb">LD_DEBUG</h3>
+<div class="outline-text-3" id="text-org35ab7fb">
 <p>
-可以打开动态链接器的调试功能，可以设置以下值:
+&#x53EF;&#x4EE5;&#x6253;&#x5F00;&#x52A8;&#x6001;&#x94FE;&#x63A5;&#x5668;&#x7684;&#x8C03;&#x8BD5;&#x529F;&#x80FD;&#xFF0C;&#x53EF;&#x4EE5;&#x8BBE;&#x7F6E;&#x4EE5;&#x4E0B;&#x503C;:
 </p>
 <ul class="org-ul">
-<li>files : 显示装载过程</li>
-<li>bindings : 显示动态链接的符号绑定过程</li>
-<li>libs : 显示共享库的查找过程</li>
-<li>versions : 显示符号的版本依赖关系</li>
-<li>reloc : 显示重定位过程</li>
-<li>symbols : 显示符号表查找过程</li>
-<li>statistics : 显示动态链接过程中的各种统计信息</li>
-<li>all : 显示以上所有信息</li>
-<li>help : 显示上面的各种可选值的帮助信息</li>
+<li>files : &#x663E;&#x793A;&#x88C5;&#x8F7D;&#x8FC7;&#x7A0B;</li>
+<li>bindings : &#x663E;&#x793A;&#x52A8;&#x6001;&#x94FE;&#x63A5;&#x7684;&#x7B26;&#x53F7;&#x7ED1;&#x5B9A;&#x8FC7;&#x7A0B;</li>
+<li>libs : &#x663E;&#x793A;&#x5171;&#x4EAB;&#x5E93;&#x7684;&#x67E5;&#x627E;&#x8FC7;&#x7A0B;</li>
+<li>versions : &#x663E;&#x793A;&#x7B26;&#x53F7;&#x7684;&#x7248;&#x672C;&#x4F9D;&#x8D56;&#x5173;&#x7CFB;</li>
+<li>reloc : &#x663E;&#x793A;&#x91CD;&#x5B9A;&#x4F4D;&#x8FC7;&#x7A0B;</li>
+<li>symbols : &#x663E;&#x793A;&#x7B26;&#x53F7;&#x8868;&#x67E5;&#x627E;&#x8FC7;&#x7A0B;</li>
+<li>statistics : &#x663E;&#x793A;&#x52A8;&#x6001;&#x94FE;&#x63A5;&#x8FC7;&#x7A0B;&#x4E2D;&#x7684;&#x5404;&#x79CD;&#x7EDF;&#x8BA1;&#x4FE1;&#x606F;</li>
+<li>all : &#x663E;&#x793A;&#x4EE5;&#x4E0A;&#x6240;&#x6709;&#x4FE1;&#x606F;</li>
+<li>help : &#x663E;&#x793A;&#x4E0A;&#x9762;&#x7684;&#x5404;&#x79CD;&#x53EF;&#x9009;&#x503C;&#x7684;&#x5E2E;&#x52A9;&#x4FE1;&#x606F;</li>
 </ul>
 </div>
 </div>
 </div>
-<div id="outline-container-org6d4732e" class="outline-2">
-<h2 id="org6d4732e">共享库的创建与安装</h2>
-<div class="outline-text-2" id="text-org6d4732e">
+<div id="outline-container-org9eec4f8" class="outline-2">
+<h2 id="org9eec4f8">&#x5171;&#x4EAB;&#x5E93;&#x7684;&#x521B;&#x5EFA;&#x4E0E;&#x5B89;&#x88C5;</h2>
+<div class="outline-text-2" id="text-org9eec4f8">
 </div>
-<div id="outline-container-org99f23ff" class="outline-3">
-<h3 id="org99f23ff">创建</h3>
-<div class="outline-text-3" id="text-org99f23ff">
+<div id="outline-container-orgd8b395e" class="outline-3">
+<h3 id="orgd8b395e">&#x521B;&#x5EFA;</h3>
+<div class="outline-text-3" id="text-orgd8b395e">
 <pre class="example">
-gcc -shared -Wl,-soname,<soname> -o <library_name> <source_files> <library_files></pre>
+gcc -shared -Wl,-soname,&lt;soname&gt; -o &lt;library_name&gt; &lt;source_files&gt; &lt;library_files&gt;</pre>
 <ul class="org-ul">
-<li><code>-WL,-soname</code>  用于指定SO-NAME,用于以后被 <code>ldconfig</code> 使用</li>
+<li><code>-WL,-soname</code>  &#x7528;&#x4E8E;&#x6307;&#x5B9A;SO-NAME,&#x7528;&#x4E8E;&#x4EE5;&#x540E;&#x88AB; <code>ldconfig</code> &#x4F7F;&#x7528;</li>
 </ul>
 
 <p>
-比如有libfoo1.c,libfoo2.c,产生libfoo.so.1.0.0的共享库，且它们依赖于libbar1.so,libbar2.so这两个共享库，那么命令如下:
+&#x6BD4;&#x5982;&#x6709;libfoo1.c,libfoo2.c,&#x4EA7;&#x751F;libfoo.so.1.0.0&#x7684;&#x5171;&#x4EAB;&#x5E93;&#xFF0C;&#x4E14;&#x5B83;&#x4EEC;&#x4F9D;&#x8D56;&#x4E8E;libbar1.so,libbar2.so&#x8FD9;&#x4E24;&#x4E2A;&#x5171;&#x4EAB;&#x5E93;&#xFF0C;&#x90A3;&#x4E48;&#x547D;&#x4EE4;&#x5982;&#x4E0B;:
 </p>
 <pre class="example">
 gcc -shared -fPIC -Wl,-soname,libfoo.so.1 -o libfoo.so.1.0.0 libfoo1.c libfoo2.c -lbar1 -lbar2</pre>
 </div>
 </div>
-<div id="outline-container-org5a2d205" class="outline-3">
-<h3 id="org5a2d205">安装</h3>
-<div class="outline-text-3" id="text-org5a2d205">
+<div id="outline-container-org1137efd" class="outline-3">
+<h3 id="org1137efd">&#x5B89;&#x88C5;</h3>
+<div class="outline-text-3" id="text-org1137efd">
 <ol class="org-ol">
-<li>将生成的共享库复制到标准共享目录</li>
-<li>运行ldconfig生成软链接</li>
+<li>&#x5C06;&#x751F;&#x6210;&#x7684;&#x5171;&#x4EAB;&#x5E93;&#x590D;&#x5236;&#x5230;&#x6807;&#x51C6;&#x5171;&#x4EAB;&#x76EE;&#x5F55;</li>
+<li>&#x8FD0;&#x884C;ldconfig&#x751F;&#x6210;&#x8F6F;&#x94FE;&#x63A5;</li>
 </ol>
 
 <p>
-如果不是存放在标准目录，使用 <code>ldconfig -n shared_library_directory</code> 建立SO-NAME,并且需要为gcc提供"-L"和"-l"参数
+&#x5982;&#x679C;&#x4E0D;&#x662F;&#x5B58;&#x653E;&#x5728;&#x6807;&#x51C6;&#x76EE;&#x5F55;&#xFF0C;&#x4F7F;&#x7528; <code>ldconfig -n shared_library_directory</code> &#x5EFA;&#x7ACB;SO-NAME,&#x5E76;&#x4E14;&#x9700;&#x8981;&#x4E3A;gcc&#x63D0;&#x4F9B;&quot;-L&quot;&#x548C;&quot;-l&quot;&#x53C2;&#x6570;
 </p>
 <ul class="org-ul">
-<li>"-L" 指定共享库的搜索路径</li>
-<li>"-l" 指定共享库名称</li>
+<li>&quot;-L&quot; &#x6307;&#x5B9A;&#x5171;&#x4EAB;&#x5E93;&#x7684;&#x641C;&#x7D22;&#x8DEF;&#x5F84;</li>
+<li>&quot;-l&quot; &#x6307;&#x5B9A;&#x5171;&#x4EAB;&#x5E93;&#x540D;&#x79F0;</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-orgb584ae0" class="outline-3">
-<h3 id="orgb584ae0">共享库的构造和析构</h3>
-<div class="outline-text-3" id="text-orgb584ae0">
+<div id="outline-container-orgafe97e0" class="outline-3">
+<h3 id="orgafe97e0">&#x5171;&#x4EAB;&#x5E93;&#x7684;&#x6784;&#x9020;&#x548C;&#x6790;&#x6784;</h3>
+<div class="outline-text-3" id="text-orgafe97e0">
 <p>
-构造函数，可以在共享库加载后进行一些初始化工作，可以在main函数运行前或在 <code>dlopen()</code> 返回前运行:
+&#x6784;&#x9020;&#x51FD;&#x6570;&#xFF0C;&#x53EF;&#x4EE5;&#x5728;&#x5171;&#x4EAB;&#x5E93;&#x52A0;&#x8F7D;&#x540E;&#x8FDB;&#x884C;&#x4E00;&#x4E9B;&#x521D;&#x59CB;&#x5316;&#x5DE5;&#x4F5C;&#xFF0C;&#x53EF;&#x4EE5;&#x5728;main&#x51FD;&#x6570;&#x8FD0;&#x884C;&#x524D;&#x6216;&#x5728; <code>dlopen()</code> &#x8FD4;&#x56DE;&#x524D;&#x8FD0;&#x884C;:
 </p>
 <div class="org-src-container">
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> __attribute__((constructor)) init_function(<span class="keyword">void</span>);</span><br></pre></td></tr></table></figure>
 </div>
 <p>
-析构函数，可以在main函数执行完毕后，或在 <code>dlclose()</code> 返回前运行:
+&#x6790;&#x6784;&#x51FD;&#x6570;&#xFF0C;&#x53EF;&#x4EE5;&#x5728;main&#x51FD;&#x6570;&#x6267;&#x884C;&#x5B8C;&#x6BD5;&#x540E;&#xFF0C;&#x6216;&#x5728; <code>dlclose()</code> &#x8FD4;&#x56DE;&#x524D;&#x8FD0;&#x884C;:
 </p>
 <div class="org-src-container">
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> __attribute__((destructor)) fini_function(<span class="keyword">void</span>);</span><br></pre></td></tr></table></figure>
 </div>
 
 <p>
-<b><b>注意:</b></b> 为了使用这种特性，gcc不可以使用 <code>-nostartfiles</code> <code>-nostdlib</code> 这两个参数!
+<b><b>&#x6CE8;&#x610F;:</b></b> &#x4E3A;&#x4E86;&#x4F7F;&#x7528;&#x8FD9;&#x79CD;&#x7279;&#x6027;&#xFF0C;gcc&#x4E0D;&#x53EF;&#x4EE5;&#x4F7F;&#x7528; <code>-nostartfiles</code> <code>-nostdlib</code> &#x8FD9;&#x4E24;&#x4E2A;&#x53C2;&#x6570;!
 </p>
 
 <p>
-可以存在多个构造和析构函数，并为它们指定优先级：
+&#x53EF;&#x4EE5;&#x5B58;&#x5728;&#x591A;&#x4E2A;&#x6784;&#x9020;&#x548C;&#x6790;&#x6784;&#x51FD;&#x6570;&#xFF0C;&#x5E76;&#x4E3A;&#x5B83;&#x4EEC;&#x6307;&#x5B9A;&#x4F18;&#x5148;&#x7EA7;&#xFF1A;
 </p>
 <ul class="org-ul">
-<li>对于构造，数值越小优先级越高。而析构的优先级正好相反，这也符合资源的申请和释放原则</li>
+<li>&#x5BF9;&#x4E8E;&#x6784;&#x9020;&#xFF0C;&#x6570;&#x503C;&#x8D8A;&#x5C0F;&#x4F18;&#x5148;&#x7EA7;&#x8D8A;&#x9AD8;&#x3002;&#x800C;&#x6790;&#x6784;&#x7684;&#x4F18;&#x5148;&#x7EA7;&#x6B63;&#x597D;&#x76F8;&#x53CD;&#xFF0C;&#x8FD9;&#x4E5F;&#x7B26;&#x5408;&#x8D44;&#x6E90;&#x7684;&#x7533;&#x8BF7;&#x548C;&#x91CA;&#x653E;&#x539F;&#x5219;</li>
 </ul>
 <div class="org-src-container">
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> __attribute__((constructor(<span class="number">5</span>))) init_function1(<span class="keyword">void</span>);</span><br><span class="line"><span class="keyword">void</span> __attribute__((constructor(<span class="number">10</span>))) init_function2(<span class="keyword">void</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">void</span> __attribute__((destructor(<span class="number">10</span>))) fini_function2(<span class="keyword">void</span>);</span><br><span class="line"><span class="keyword">void</span> __attribute__((destructor(<span class="number">5</span>))) fini_function1(<span class="keyword">void</span>);</span><br></pre></td></tr></table></figure>
@@ -567,7 +567,7 @@ gcc -shared -fPIC -Wl,-soname,libfoo.so.1 -o libfoo.so.1.0.0 libfoo1.c libfoo2.c
 </div>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-20 四 17:37.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-10-19 &#x4E00; 22:28.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.4)
 </div>
 
     </div>
@@ -653,7 +653,7 @@ Last Updated 2020-08-20 四 17:37.<br>Render by <a href="https://github.com/Code
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org2ce076d"><span class="nav-number">1.</span> <span class="nav-text">共享库的版本</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgcb19bb5"><span class="nav-number">1.1.</span> <span class="nav-text">兼容性问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgb26c282"><span class="nav-number">1.2.</span> <span class="nav-text">共享库版本命名</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org646bceb"><span class="nav-number">1.3.</span> <span class="nav-text">SO-NAME</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org25127dd"><span class="nav-number">2.</span> <span class="nav-text">符号版本</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org377416c"><span class="nav-number">2.1.</span> <span class="nav-text">次版本号交会问题(Minor-revision Rendezvous Problem)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgb5671bb"><span class="nav-number">2.2.</span> <span class="nav-text">基于符号的版本机制(Symbol Versioning)</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org71ba9a6"><span class="nav-number">3.</span> <span class="nav-text">共享库系统路径</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgda76de3"><span class="nav-number">4.</span> <span class="nav-text">共享库查找过程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org4ddf1b5"><span class="nav-number">5.</span> <span class="nav-text">环境变量</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org6cd3cf7"><span class="nav-number">5.1.</span> <span class="nav-text">LD_LIBRARY_PATH</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org5966553"><span class="nav-number">5.2.</span> <span class="nav-text">LD_PRELOAD</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orga006048"><span class="nav-number">5.3.</span> <span class="nav-text">LD_DEBUG</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org6d4732e"><span class="nav-number">6.</span> <span class="nav-text">共享库的创建与安装</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org99f23ff"><span class="nav-number">6.1.</span> <span class="nav-text">创建</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org5a2d205"><span class="nav-number">6.2.</span> <span class="nav-text">安装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgb584ae0"><span class="nav-number">6.3.</span> <span class="nav-text">共享库的构造和析构</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#orgaf81fce"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x5171;&amp;#x4EAB;&amp;#x5E93;&amp;#x7684;&amp;#x7248;&amp;#x672C;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org96ae93d"><span class="nav-number">1.1.</span> <span class="nav-text">&amp;#x517C;&amp;#x5BB9;&amp;#x6027;&amp;#x95EE;&amp;#x9898;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org43a26ba"><span class="nav-number">1.2.</span> <span class="nav-text">&amp;#x5171;&amp;#x4EAB;&amp;#x5E93;&amp;#x7248;&amp;#x672C;&amp;#x547D;&amp;#x540D;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgaa31b01"><span class="nav-number">1.3.</span> <span class="nav-text">SO-NAME</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org07bbcd8"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x7B26;&amp;#x53F7;&amp;#x7248;&amp;#x672C;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orga64ee8e"><span class="nav-number">2.1.</span> <span class="nav-text">&amp;#x6B21;&amp;#x7248;&amp;#x672C;&amp;#x53F7;&amp;#x4EA4;&amp;#x4F1A;&amp;#x95EE;&amp;#x9898;(Minor-revision Rendezvous Problem)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org85cf2a1"><span class="nav-number">2.2.</span> <span class="nav-text">&amp;#x57FA;&amp;#x4E8E;&amp;#x7B26;&amp;#x53F7;&amp;#x7684;&amp;#x7248;&amp;#x672C;&amp;#x673A;&amp;#x5236;(Symbol Versioning)</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgf68eedf"><span class="nav-number">3.</span> <span class="nav-text">&amp;#x5171;&amp;#x4EAB;&amp;#x5E93;&amp;#x7CFB;&amp;#x7EDF;&amp;#x8DEF;&amp;#x5F84;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orge465d2b"><span class="nav-number">4.</span> <span class="nav-text">&amp;#x5171;&amp;#x4EAB;&amp;#x5E93;&amp;#x67E5;&amp;#x627E;&amp;#x8FC7;&amp;#x7A0B;</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgb407d98"><span class="nav-number">5.</span> <span class="nav-text">&amp;#x73AF;&amp;#x5883;&amp;#x53D8;&amp;#x91CF;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgfc88d1d"><span class="nav-number">5.1.</span> <span class="nav-text">LD_LIBRARY_PATH</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org0efc72b"><span class="nav-number">5.2.</span> <span class="nav-text">LD_PRELOAD</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org35ab7fb"><span class="nav-number">5.3.</span> <span class="nav-text">LD_DEBUG</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org9eec4f8"><span class="nav-number">6.</span> <span class="nav-text">&amp;#x5171;&amp;#x4EAB;&amp;#x5E93;&amp;#x7684;&amp;#x521B;&amp;#x5EFA;&amp;#x4E0E;&amp;#x5B89;&amp;#x88C5;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgd8b395e"><span class="nav-number">6.1.</span> <span class="nav-text">&amp;#x521B;&amp;#x5EFA;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org1137efd"><span class="nav-number">6.2.</span> <span class="nav-text">&amp;#x5B89;&amp;#x88C5;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgafe97e0"><span class="nav-number">6.3.</span> <span class="nav-text">&amp;#x5171;&amp;#x4EAB;&amp;#x5E93;&amp;#x7684;&amp;#x6784;&amp;#x9020;&amp;#x548C;&amp;#x6790;&amp;#x6784;</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 

@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="总结在Linux内核下使用 kgdb 调试内核。">
+  <meta name="description" content="&amp;#x603B;&amp;#x7ED3;&amp;#x5728;Linux&amp;#x5185;&amp;#x6838;&amp;#x4E0B;&amp;#x4F7F;&amp;#x7528; kgdb &amp;#x8C03;&amp;#x8BD5;&amp;#x5185;&amp;#x6838;&amp;#x3002;">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[What]Linux内核调试之Kgdb">
 <meta property="og:url" content="http://kcmetercec.top/2018/03/09/linux_debug_kernel_kgdb/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="总结在Linux内核下使用 kgdb 调试内核。">
+<meta property="og:description" content="&amp;#x603B;&amp;#x7ED3;&amp;#x5728;Linux&amp;#x5185;&amp;#x6838;&amp;#x4E0B;&amp;#x4F7F;&amp;#x7528; kgdb &amp;#x8C03;&amp;#x8BD5;&amp;#x5185;&amp;#x6838;&amp;#x3002;">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2018-03-08T16:00:00.000Z">
 <meta property="article:modified_time" content="2020-08-01T01:09:06.536Z">
@@ -299,43 +299,43 @@
       
         <div id="content">
 <p>
-总结在Linux内核下使用 kgdb 调试内核。
+&#x603B;&#x7ED3;&#x5728;Linux&#x5185;&#x6838;&#x4E0B;&#x4F7F;&#x7528; kgdb &#x8C03;&#x8BD5;&#x5185;&#x6838;&#x3002;
 </p>
 
 <a id="more"></a>
 
 <p>
-参考链接 : <a href="https://www.kernel.org/doc/html/latest/dev-tools/kgdb.html" target="_blank" rel="noopener">内核说明文档</a>
+&#x53C2;&#x8003;&#x94FE;&#x63A5; : <a href="https://www.kernel.org/doc/html/latest/dev-tools/kgdb.html" target="_blank" rel="noopener">&#x5185;&#x6838;&#x8BF4;&#x660E;&#x6587;&#x6863;</a>
 </p>
 
 <p>
-kernel 具有 <code>kdb,kgdb</code> 两个调试前端, 并且这两个还可以动态的切换.
+kernel &#x5177;&#x6709; <code>kdb,kgdb</code> &#x4E24;&#x4E2A;&#x8C03;&#x8BD5;&#x524D;&#x7AEF;, &#x5E76;&#x4E14;&#x8FD9;&#x4E24;&#x4E2A;&#x8FD8;&#x53EF;&#x4EE5;&#x52A8;&#x6001;&#x7684;&#x5207;&#x6362;.
 </p>
 
 <p>
-kdb 是一个具有 shell 风格的简易调试工具, 具有查看内存,寄存器,设置断点等等功能. <b>在使用 kdb 之前,必须先使能 kgdb</b>.
+kdb &#x662F;&#x4E00;&#x4E2A;&#x5177;&#x6709; shell &#x98CE;&#x683C;&#x7684;&#x7B80;&#x6613;&#x8C03;&#x8BD5;&#x5DE5;&#x5177;, &#x5177;&#x6709;&#x67E5;&#x770B;&#x5185;&#x5B58;,&#x5BC4;&#x5B58;&#x5668;,&#x8BBE;&#x7F6E;&#x65AD;&#x70B9;&#x7B49;&#x7B49;&#x529F;&#x80FD;. <b>&#x5728;&#x4F7F;&#x7528; kdb &#x4E4B;&#x524D;,&#x5FC5;&#x987B;&#x5148;&#x4F7F;&#x80FD; kgdb</b>.
 </p>
 
 <p>
-kgdb 是源码级别的调试工具, 与主机的 gdb 联合调试.
+kgdb &#x662F;&#x6E90;&#x7801;&#x7EA7;&#x522B;&#x7684;&#x8C03;&#x8BD5;&#x5DE5;&#x5177;, &#x4E0E;&#x4E3B;&#x673A;&#x7684; gdb &#x8054;&#x5408;&#x8C03;&#x8BD5;.
 </p>
 
-<div id="outline-container-org217e551" class="outline-2">
-<h2 id="org217e551">准备工作</h2>
-<div class="outline-text-2" id="text-org217e551">
+<div id="outline-container-orgcfd685c" class="outline-2">
+<h2 id="orgcfd685c">&#x51C6;&#x5907;&#x5DE5;&#x4F5C;</h2>
+<div class="outline-text-2" id="text-orgcfd685c">
 </div>
-<div id="outline-container-orgfe20600" class="outline-3">
-<h3 id="orgfe20600">kgdb内核配置</h3>
-<div class="outline-text-3" id="text-orgfe20600">
+<div id="outline-container-org3359758" class="outline-3">
+<h3 id="org3359758">kgdb&#x5185;&#x6838;&#x914D;&#x7F6E;</h3>
+<div class="outline-text-3" id="text-org3359758">
 <ol class="org-ol">
-<li>在 menuconfig 中选中 <code>Kernel hacking -> kernel debugging -> KGDB: kernel debugger</code>,使能 kgdb</li>
-<li>在 menuconfig 中选中 <code>Kernel hacking -> Compile-time checks and compiler options -> Compile the kernel with debug info</code>, 生成调试信息.</li>
-<li>检查最后的 config ,关闭选项 <code>CONFIG_STRICT_KERNEL_RWX</code>. 这个选项会使得运行周边内存为只读状态.</li>
-<li>使能串口或者网口驱动,使得主机可以连接嵌入式板.</li>
+<li>&#x5728; menuconfig &#x4E2D;&#x9009;&#x4E2D; <code>Kernel hacking -&gt; kernel debugging -&gt; KGDB: kernel debugger</code>,&#x4F7F;&#x80FD; kgdb</li>
+<li>&#x5728; menuconfig &#x4E2D;&#x9009;&#x4E2D; <code>Kernel hacking -&gt; Compile-time checks and compiler options -&gt; Compile the kernel with debug info</code>, &#x751F;&#x6210;&#x8C03;&#x8BD5;&#x4FE1;&#x606F;.</li>
+<li>&#x68C0;&#x67E5;&#x6700;&#x540E;&#x7684; config ,&#x5173;&#x95ED;&#x9009;&#x9879; <code>CONFIG_STRICT_KERNEL_RWX</code>. &#x8FD9;&#x4E2A;&#x9009;&#x9879;&#x4F1A;&#x4F7F;&#x5F97;&#x8FD0;&#x884C;&#x5468;&#x8FB9;&#x5185;&#x5B58;&#x4E3A;&#x53EA;&#x8BFB;&#x72B6;&#x6001;.</li>
+<li>&#x4F7F;&#x80FD;&#x4E32;&#x53E3;&#x6216;&#x8005;&#x7F51;&#x53E3;&#x9A71;&#x52A8;,&#x4F7F;&#x5F97;&#x4E3B;&#x673A;&#x53EF;&#x4EE5;&#x8FDE;&#x63A5;&#x5D4C;&#x5165;&#x5F0F;&#x677F;.</li>
 </ol>
 
 <p>
-使用串口连接的配置如下:
+&#x4F7F;&#x7528;&#x4E32;&#x53E3;&#x8FDE;&#x63A5;&#x7684;&#x914D;&#x7F6E;&#x5982;&#x4E0B;:
 </p>
 <pre class="example">
 # CONFIG_STRICT_KERNEL_RWX is not set
@@ -345,18 +345,18 @@ CONFIG_KGDB_SERIAL_CONSOLE=y
 CONFIG_DEBUG_INFO=y</pre>
 </div>
 </div>
-<div id="outline-container-org5a4f33e" class="outline-3">
-<h3 id="org5a4f33e">kdb 内核配置</h3>
-<div class="outline-text-3" id="text-org5a4f33e">
+<div id="outline-container-org970fd4b" class="outline-3">
+<h3 id="org970fd4b">kdb &#x5185;&#x6838;&#x914D;&#x7F6E;</h3>
+<div class="outline-text-3" id="text-org970fd4b">
 <p>
-kdb 配置要在 <code>kgdb内核配置</code> 的基础上继续进行如下配置:
+kdb &#x914D;&#x7F6E;&#x8981;&#x5728; <code>kgdb&#x5185;&#x6838;&#x914D;&#x7F6E;</code> &#x7684;&#x57FA;&#x7840;&#x4E0A;&#x7EE7;&#x7EED;&#x8FDB;&#x884C;&#x5982;&#x4E0B;&#x914D;&#x7F6E;:
 </p>
 <ol class="org-ol">
-<li>在 menuconfig 中选中 <code>Kernel hacking -> kernel debugging -> KGDB: kernel debugger -> KGDB_KDB: include kdb frontend for kgdb</code> 使能 kdb</li>
-<li>当需要使用键盘与 kdb 交互时, 需要在 menuconfig 中选中 <code>Kernel hacking -> kernel debugging -> KGDB: kernel debugger -> KGDB_KDB: keyboard as input device</code> 使能键盘</li>
+<li>&#x5728; menuconfig &#x4E2D;&#x9009;&#x4E2D; <code>Kernel hacking -&gt; kernel debugging -&gt; KGDB: kernel debugger -&gt; KGDB_KDB: include kdb frontend for kgdb</code> &#x4F7F;&#x80FD; kdb</li>
+<li>&#x5F53;&#x9700;&#x8981;&#x4F7F;&#x7528;&#x952E;&#x76D8;&#x4E0E; kdb &#x4EA4;&#x4E92;&#x65F6;, &#x9700;&#x8981;&#x5728; menuconfig &#x4E2D;&#x9009;&#x4E2D; <code>Kernel hacking -&gt; kernel debugging -&gt; KGDB: kernel debugger -&gt; KGDB_KDB: keyboard as input device</code> &#x4F7F;&#x80FD;&#x952E;&#x76D8;</li>
 </ol>
 <p>
-最终在 config 文件中的配置如下:
+&#x6700;&#x7EC8;&#x5728; config &#x6587;&#x4EF6;&#x4E2D;&#x7684;&#x914D;&#x7F6E;&#x5982;&#x4E0B;:
 </p>
 <pre class="example">
 #CONFIG_STRICT_KERNEL_RWX is not set
@@ -368,154 +368,154 @@ CONFIG_KGDB_KDB=y
 CONFIG_KDB_KEYBOARD=y</pre>
 </div>
 </div>
-<div id="outline-container-orgbe81463" class="outline-3">
-<h3 id="orgbe81463">启动参数设置</h3>
-<div class="outline-text-3" id="text-orgbe81463">
+<div id="outline-container-org0f5e0c8" class="outline-3">
+<h3 id="org0f5e0c8">&#x542F;&#x52A8;&#x53C2;&#x6570;&#x8BBE;&#x7F6E;</h3>
+<div class="outline-text-3" id="text-org0f5e0c8">
 <p>
-需要在设备树或者u-boot传递参数中加入一些启动参数, 让目标板与主机的GDB同步.
+&#x9700;&#x8981;&#x5728;&#x8BBE;&#x5907;&#x6811;&#x6216;&#x8005;u-boot&#x4F20;&#x9012;&#x53C2;&#x6570;&#x4E2D;&#x52A0;&#x5165;&#x4E00;&#x4E9B;&#x542F;&#x52A8;&#x53C2;&#x6570;, &#x8BA9;&#x76EE;&#x6807;&#x677F;&#x4E0E;&#x4E3B;&#x673A;&#x7684;GDB&#x540C;&#x6B65;.
 </p>
 </div>
-<div id="outline-container-org7637c86" class="outline-4">
-<h4 id="org7637c86">kgdboc(kgdb over console)</h4>
-<div class="outline-text-4" id="text-org7637c86">
+<div id="outline-container-org8dddc97" class="outline-4">
+<h4 id="org8dddc97">kgdboc(kgdb over console)</h4>
+<div class="outline-text-4" id="text-org8dddc97">
 <p>
-此参数配置了主机与目标板的交互方式.
+&#x6B64;&#x53C2;&#x6570;&#x914D;&#x7F6E;&#x4E86;&#x4E3B;&#x673A;&#x4E0E;&#x76EE;&#x6807;&#x677F;&#x7684;&#x4EA4;&#x4E92;&#x65B9;&#x5F0F;.
 </p>
 <pre class="example">
 kgdboc=[kms][[,]kdb][[,]serial_device][,baud]</pre>
 <ul class="org-ul">
-<li>kms : Kernel Mode Setting , 当具有视频驱动时, 可以进入到图形终端调试.</li>
+<li>kms : Kernel Mode Setting , &#x5F53;&#x5177;&#x6709;&#x89C6;&#x9891;&#x9A71;&#x52A8;&#x65F6;, &#x53EF;&#x4EE5;&#x8FDB;&#x5165;&#x5230;&#x56FE;&#x5F62;&#x7EC8;&#x7AEF;&#x8C03;&#x8BD5;.</li>
 <li>kbd : Keyboard</li>
 </ul>
 <pre class="example">
-#通过串口连接
-kgdboc=<tty-device>,[baud]  ; kgdboc=ttyS0,115200
-#通过串口和键盘连接
-kgdboc=kbd,<serial_device>,[baud] ; kgdboc=kbd,ttyS0,115200
-#通过串口和键盘连接并且打开KMS功能
+#&#x901A;&#x8FC7;&#x4E32;&#x53E3;&#x8FDE;&#x63A5;
+kgdboc=&lt;tty-device&gt;,[baud]  ; kgdboc=ttyS0,115200
+#&#x901A;&#x8FC7;&#x4E32;&#x53E3;&#x548C;&#x952E;&#x76D8;&#x8FDE;&#x63A5;
+kgdboc=kbd,&lt;serial_device&gt;,[baud] ; kgdboc=kbd,ttyS0,115200
+#&#x901A;&#x8FC7;&#x4E32;&#x53E3;&#x548C;&#x952E;&#x76D8;&#x8FDE;&#x63A5;&#x5E76;&#x4E14;&#x6253;&#x5F00;KMS&#x529F;&#x80FD;
 kgdboc=kms,kbd,ttyS0,115200
-#如果需要在启动阶段的时候也进入调试模式,那么需要加上 kgdbwait
+#&#x5982;&#x679C;&#x9700;&#x8981;&#x5728;&#x542F;&#x52A8;&#x9636;&#x6BB5;&#x7684;&#x65F6;&#x5019;&#x4E5F;&#x8FDB;&#x5165;&#x8C03;&#x8BD5;&#x6A21;&#x5F0F;,&#x90A3;&#x4E48;&#x9700;&#x8981;&#x52A0;&#x4E0A; kgdbwait
 kgdboc=ttyS0,115200 kgdbwait
 
 
-#在运行期间可以使能或关闭 kgdboc
+#&#x5728;&#x8FD0;&#x884C;&#x671F;&#x95F4;&#x53EF;&#x4EE5;&#x4F7F;&#x80FD;&#x6216;&#x5173;&#x95ED; kgdboc
 #enable 
-echo ttyS0 > /sys/module/kgdboc/parameters/kgdboc
+echo ttyS0 &gt; /sys/module/kgdboc/parameters/kgdboc
 #disable
-echo "" > /sys/module/kgdboc/paramters/kgdboc </pre>
+echo &quot;&quot; &gt; /sys/module/kgdboc/paramters/kgdboc </pre>
 
 <p>
-使用顺序:
+&#x4F7F;&#x7528;&#x987A;&#x5E8F;:
 </p>
 <ol class="org-ol">
-<li>先使用串口终端与目标板连接,然后内核启动时会输出信息,代表它正在等待主机的 gdb.</li>
-<li>关闭终端, 然后启动 gdb 连接目标机.</li>
-<li>如果想要中断目标机系统并且强制进入调试模式, 需要先后发送 <code>Sysrq</code> , <code>g</code> 信息,然后再断开终端启动 gdb.</li>
-<li>停止调试模式, 需要在终端中发送 <code>SysRq-G</code> 命令.</li>
+<li>&#x5148;&#x4F7F;&#x7528;&#x4E32;&#x53E3;&#x7EC8;&#x7AEF;&#x4E0E;&#x76EE;&#x6807;&#x677F;&#x8FDE;&#x63A5;,&#x7136;&#x540E;&#x5185;&#x6838;&#x542F;&#x52A8;&#x65F6;&#x4F1A;&#x8F93;&#x51FA;&#x4FE1;&#x606F;,&#x4EE3;&#x8868;&#x5B83;&#x6B63;&#x5728;&#x7B49;&#x5F85;&#x4E3B;&#x673A;&#x7684; gdb.</li>
+<li>&#x5173;&#x95ED;&#x7EC8;&#x7AEF;, &#x7136;&#x540E;&#x542F;&#x52A8; gdb &#x8FDE;&#x63A5;&#x76EE;&#x6807;&#x673A;.</li>
+<li>&#x5982;&#x679C;&#x60F3;&#x8981;&#x4E2D;&#x65AD;&#x76EE;&#x6807;&#x673A;&#x7CFB;&#x7EDF;&#x5E76;&#x4E14;&#x5F3A;&#x5236;&#x8FDB;&#x5165;&#x8C03;&#x8BD5;&#x6A21;&#x5F0F;, &#x9700;&#x8981;&#x5148;&#x540E;&#x53D1;&#x9001; <code>Sysrq</code> , <code>g</code> &#x4FE1;&#x606F;,&#x7136;&#x540E;&#x518D;&#x65AD;&#x5F00;&#x7EC8;&#x7AEF;&#x542F;&#x52A8; gdb.</li>
+<li>&#x505C;&#x6B62;&#x8C03;&#x8BD5;&#x6A21;&#x5F0F;, &#x9700;&#x8981;&#x5728;&#x7EC8;&#x7AEF;&#x4E2D;&#x53D1;&#x9001; <code>SysRq-G</code> &#x547D;&#x4EE4;.</li>
 </ol>
 </div>
 </div>
-<div id="outline-container-org74372db" class="outline-4">
-<h4 id="org74372db">kgdbwait</h4>
-<div class="outline-text-4" id="text-org74372db">
+<div id="outline-container-org6d687c8" class="outline-4">
+<h4 id="org6d687c8">kgdbwait</h4>
+<div class="outline-text-4" id="text-org6d687c8">
 <p>
-如果使用了此参数, 在启动内核时, 内核会等待 gdb 的连接
+&#x5982;&#x679C;&#x4F7F;&#x7528;&#x4E86;&#x6B64;&#x53C2;&#x6570;, &#x5728;&#x542F;&#x52A8;&#x5185;&#x6838;&#x65F6;, &#x5185;&#x6838;&#x4F1A;&#x7B49;&#x5F85; gdb &#x7684;&#x8FDE;&#x63A5;
 </p>
 </div>
 </div>
-<div id="outline-container-orgd27293c" class="outline-4">
-<h4 id="orgd27293c">kgdbcon</h4>
-<div class="outline-text-4" id="text-orgd27293c">
+<div id="outline-container-orge2a3895" class="outline-4">
+<h4 id="orge2a3895">kgdbcon</h4>
+<div class="outline-text-4" id="text-orge2a3895">
 <p>
-kgdbcon 使得 gdb 可以查看 <code>printk()</code> 内部参数.
+kgdbcon &#x4F7F;&#x5F97; gdb &#x53EF;&#x4EE5;&#x67E5;&#x770B; <code>printk()</code> &#x5185;&#x90E8;&#x53C2;&#x6570;.
 </p>
 
 <p>
-注意: <b>此功能不能在启动参数中使用!</b>
+&#x6CE8;&#x610F;: <b>&#x6B64;&#x529F;&#x80FD;&#x4E0D;&#x80FD;&#x5728;&#x542F;&#x52A8;&#x53C2;&#x6570;&#x4E2D;&#x4F7F;&#x7528;!</b>
 </p>
 <pre class="example">
-#在内核命令行中使能 kgdbcon
+#&#x5728;&#x5185;&#x6838;&#x547D;&#x4EE4;&#x884C;&#x4E2D;&#x4F7F;&#x80FD; kgdbcon
 kgdbcon
-#在sysfs 中使能
-echo 1 > /sys/module/kgdb/parameters/kgdb_use_con</pre>
+#&#x5728;sysfs &#x4E2D;&#x4F7F;&#x80FD;
+echo 1 &gt; /sys/module/kgdb/parameters/kgdb_use_con</pre>
 </div>
 </div>
-<div id="outline-container-org8cfa870" class="outline-4">
-<h4 id="org8cfa870">kgdbreboot</h4>
-<div class="outline-text-4" id="text-org8cfa870">
+<div id="outline-container-org7877e1c" class="outline-4">
+<h4 id="org7877e1c">kgdbreboot</h4>
+<div class="outline-text-4" id="text-org7877e1c">
 <p>
-指定调试器如何处理重启信息, 在sysfs中设置此项参数, 默认的值为0, 可以为 -1,1
+&#x6307;&#x5B9A;&#x8C03;&#x8BD5;&#x5668;&#x5982;&#x4F55;&#x5904;&#x7406;&#x91CD;&#x542F;&#x4FE1;&#x606F;, &#x5728;sysfs&#x4E2D;&#x8BBE;&#x7F6E;&#x6B64;&#x9879;&#x53C2;&#x6570;, &#x9ED8;&#x8BA4;&#x7684;&#x503C;&#x4E3A;0, &#x53EF;&#x4EE5;&#x4E3A; -1,1
 </p>
 <pre class="example">
-#忽略重启信息
-echo -1 > /sys/module/debug_core/parameters/kgdbreboot
-#发送重启信息到其他调试器终端
-echo 0 > /sys/module/debug_core/parameters/kgdbreboot
-#进入重启信息
-echo 1 > /sys/module/debug_core/parameters/kgdbreboot</pre>
+#&#x5FFD;&#x7565;&#x91CD;&#x542F;&#x4FE1;&#x606F;
+echo -1 &gt; /sys/module/debug_core/parameters/kgdbreboot
+#&#x53D1;&#x9001;&#x91CD;&#x542F;&#x4FE1;&#x606F;&#x5230;&#x5176;&#x4ED6;&#x8C03;&#x8BD5;&#x5668;&#x7EC8;&#x7AEF;
+echo 0 &gt; /sys/module/debug_core/parameters/kgdbreboot
+#&#x8FDB;&#x5165;&#x91CD;&#x542F;&#x4FE1;&#x606F;
+echo 1 &gt; /sys/module/debug_core/parameters/kgdbreboot</pre>
 </div>
 </div>
-<div id="outline-container-org638dfc5" class="outline-4">
-<h4 id="org638dfc5">nokaslr</h4>
-<div class="outline-text-4" id="text-org638dfc5">
+<div id="outline-container-org2200ce9" class="outline-4">
+<h4 id="org2200ce9">nokaslr</h4>
+<div class="outline-text-4" id="text-org2200ce9">
 <p>
-当内核使用了 KASLR 技术时, 需要在参数中加入此选项, 否则 GDB 会工作异常
+&#x5F53;&#x5185;&#x6838;&#x4F7F;&#x7528;&#x4E86; KASLR &#x6280;&#x672F;&#x65F6;, &#x9700;&#x8981;&#x5728;&#x53C2;&#x6570;&#x4E2D;&#x52A0;&#x5165;&#x6B64;&#x9009;&#x9879;, &#x5426;&#x5219; GDB &#x4F1A;&#x5DE5;&#x4F5C;&#x5F02;&#x5E38;
 </p>
 </div>
 </div>
 </div>
 </div>
-<div id="outline-container-org21f40f9" class="outline-2">
-<h2 id="org21f40f9">使用 kgdb/ gdb</h2>
-<div class="outline-text-2" id="text-org21f40f9">
+<div id="outline-container-orgfffcc56" class="outline-2">
+<h2 id="orgfffcc56">&#x4F7F;&#x7528; kgdb/ gdb</h2>
+<div class="outline-text-2" id="text-orgfffcc56">
 <ol class="org-ol">
-<li>启动参数中包含如下信息</li>
+<li>&#x542F;&#x52A8;&#x53C2;&#x6570;&#x4E2D;&#x5305;&#x542B;&#x5982;&#x4E0B;&#x4FE1;&#x606F;</li>
 </ol>
 <pre class="example">
 console=ttyS0,115200 kgdboc=ttyS0,115200 kgdbwait nokaslr</pre>
 <ol class="org-ol">
-<li>当参数中包含 kgdbwait 时,内核会主动等待调试器. 如果没有此参数, 那么需要如下操作以进入调试模式</li>
+<li>&#x5F53;&#x53C2;&#x6570;&#x4E2D;&#x5305;&#x542B; kgdbwait &#x65F6;,&#x5185;&#x6838;&#x4F1A;&#x4E3B;&#x52A8;&#x7B49;&#x5F85;&#x8C03;&#x8BD5;&#x5668;. &#x5982;&#x679C;&#x6CA1;&#x6709;&#x6B64;&#x53C2;&#x6570;, &#x90A3;&#x4E48;&#x9700;&#x8981;&#x5982;&#x4E0B;&#x64CD;&#x4F5C;&#x4EE5;&#x8FDB;&#x5165;&#x8C03;&#x8BD5;&#x6A21;&#x5F0F;</li>
 </ol>
 <pre class="example">
-#有的时候设置了 kgdbwait 也不会等待,所以还需要使用下面的命令强制进入
-#在输出等待主机信息后, 需要退出当前的终端!
-#方法1(推荐)
-echo ttyS0 > /sys/module/kgdboc/parameters/kgdboc
-#方法2, 在终端中输入命令
-echo g > /proc/sysrq-trigger
-#方法3, 在终端中发送命令,比如在 minicom 中使用
+#&#x6709;&#x7684;&#x65F6;&#x5019;&#x8BBE;&#x7F6E;&#x4E86; kgdbwait &#x4E5F;&#x4E0D;&#x4F1A;&#x7B49;&#x5F85;,&#x6240;&#x4EE5;&#x8FD8;&#x9700;&#x8981;&#x4F7F;&#x7528;&#x4E0B;&#x9762;&#x7684;&#x547D;&#x4EE4;&#x5F3A;&#x5236;&#x8FDB;&#x5165;
+#&#x5728;&#x8F93;&#x51FA;&#x7B49;&#x5F85;&#x4E3B;&#x673A;&#x4FE1;&#x606F;&#x540E;, &#x9700;&#x8981;&#x9000;&#x51FA;&#x5F53;&#x524D;&#x7684;&#x7EC8;&#x7AEF;!
+#&#x65B9;&#x6CD5;1(&#x63A8;&#x8350;)
+echo ttyS0 &gt; /sys/module/kgdboc/parameters/kgdboc
+#&#x65B9;&#x6CD5;2, &#x5728;&#x7EC8;&#x7AEF;&#x4E2D;&#x8F93;&#x5165;&#x547D;&#x4EE4;
+echo g &gt; /proc/sysrq-trigger
+#&#x65B9;&#x6CD5;3, &#x5728;&#x7EC8;&#x7AEF;&#x4E2D;&#x53D1;&#x9001;&#x547D;&#x4EE4;,&#x6BD4;&#x5982;&#x5728; minicom &#x4E2D;&#x4F7F;&#x7528;
 CTRL-A f g
-#方法4, 在远程终端登录时
-CTRL-] 然后 按下 ENTER g</pre>
+#&#x65B9;&#x6CD5;4, &#x5728;&#x8FDC;&#x7A0B;&#x7EC8;&#x7AEF;&#x767B;&#x5F55;&#x65F6;
+CTRL-] &#x7136;&#x540E; &#x6309;&#x4E0B; ENTER g</pre>
 <ol class="org-ol">
-<li>退出终端</li>
-<li>在主机使用 gdb 连接,需要使用到 <code>vmlinux</code> 文件</li>
+<li>&#x9000;&#x51FA;&#x7EC8;&#x7AEF;</li>
+<li>&#x5728;&#x4E3B;&#x673A;&#x4F7F;&#x7528; gdb &#x8FDE;&#x63A5;,&#x9700;&#x8981;&#x4F7F;&#x7528;&#x5230; <code>vmlinux</code> &#x6587;&#x4EF6;</li>
 </ol>
 <pre class="example">
-#使用串口连接
+#&#x4F7F;&#x7528;&#x4E32;&#x53E3;&#x8FDE;&#x63A5;
 % sudo gdb ./vmlinux
 (gdb) set serial baud 115200
 (gdb) target remote /dev/ttyUSB0
 
-#使用网口连接
+#&#x4F7F;&#x7528;&#x7F51;&#x53E3;&#x8FDE;&#x63A5;
 % gdb ./vmlinux
 (gdb) target remote 192.168.2.2:2012</pre>
 <ol class="org-ol">
-<li>重定向输入输出
+<li>&#x91CD;&#x5B9A;&#x5411;&#x8F93;&#x5165;&#x8F93;&#x51FA;
 <ul class="org-ul">
-<li>打开一个新的控制台,使用命令 <code>tty</code>,记住当前文件路径,比如 <code>/dev/pts/19</code></li>
-<li>在GDB中使用命令 <code>tty /dev/pts/19</code>, 这样就把输入输出定向到了新控制台</li>
+<li>&#x6253;&#x5F00;&#x4E00;&#x4E2A;&#x65B0;&#x7684;&#x63A7;&#x5236;&#x53F0;,&#x4F7F;&#x7528;&#x547D;&#x4EE4; <code>tty</code>,&#x8BB0;&#x4F4F;&#x5F53;&#x524D;&#x6587;&#x4EF6;&#x8DEF;&#x5F84;,&#x6BD4;&#x5982; <code>/dev/pts/19</code></li>
+<li>&#x5728;GDB&#x4E2D;&#x4F7F;&#x7528;&#x547D;&#x4EE4; <code>tty /dev/pts/19</code>, &#x8FD9;&#x6837;&#x5C31;&#x628A;&#x8F93;&#x5165;&#x8F93;&#x51FA;&#x5B9A;&#x5411;&#x5230;&#x4E86;&#x65B0;&#x63A7;&#x5236;&#x53F0;</li>
 </ul></li>
-<li>运行GDB
+<li>&#x8FD0;&#x884C;GDB
 <ul class="org-ul">
-<li>使用命令 <code>c</code> 即可</li>
+<li>&#x4F7F;&#x7528;&#x547D;&#x4EE4; <code>c</code> &#x5373;&#x53EF;</li>
 </ul></li>
 </ol>
 </div>
 </div>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-10-19 &#x4E00; 22:29.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.4)
 </div>
 
     </div>
@@ -601,7 +601,7 @@ Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/Code
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org217e551"><span class="nav-number">1.</span> <span class="nav-text">准备工作</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgfe20600"><span class="nav-number">1.1.</span> <span class="nav-text">kgdb内核配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org5a4f33e"><span class="nav-number">1.2.</span> <span class="nav-text">kdb 内核配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgbe81463"><span class="nav-number">1.3.</span> <span class="nav-text">启动参数设置</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org7637c86"><span class="nav-number">1.3.1.</span> <span class="nav-text">kgdboc(kgdb over console)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org74372db"><span class="nav-number">1.3.2.</span> <span class="nav-text">kgdbwait</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgd27293c"><span class="nav-number">1.3.3.</span> <span class="nav-text">kgdbcon</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org8cfa870"><span class="nav-number">1.3.4.</span> <span class="nav-text">kgdbreboot</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org638dfc5"><span class="nav-number">1.3.5.</span> <span class="nav-text">nokaslr</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org21f40f9"><span class="nav-number">2.</span> <span class="nav-text">使用 kgdb&#x2F; gdb</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#orgcfd685c"><span class="nav-number">1.</span> <span class="nav-text">&amp;#x51C6;&amp;#x5907;&amp;#x5DE5;&amp;#x4F5C;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org3359758"><span class="nav-number">1.1.</span> <span class="nav-text">kgdb&amp;#x5185;&amp;#x6838;&amp;#x914D;&amp;#x7F6E;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org970fd4b"><span class="nav-number">1.2.</span> <span class="nav-text">kdb &amp;#x5185;&amp;#x6838;&amp;#x914D;&amp;#x7F6E;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org0f5e0c8"><span class="nav-number">1.3.</span> <span class="nav-text">&amp;#x542F;&amp;#x52A8;&amp;#x53C2;&amp;#x6570;&amp;#x8BBE;&amp;#x7F6E;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org8dddc97"><span class="nav-number">1.3.1.</span> <span class="nav-text">kgdboc(kgdb over console)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org6d687c8"><span class="nav-number">1.3.2.</span> <span class="nav-text">kgdbwait</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orge2a3895"><span class="nav-number">1.3.3.</span> <span class="nav-text">kgdbcon</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org7877e1c"><span class="nav-number">1.3.4.</span> <span class="nav-text">kgdbreboot</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org2200ce9"><span class="nav-number">1.3.5.</span> <span class="nav-text">nokaslr</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgfffcc56"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x4F7F;&amp;#x7528; kgdb&#x2F; gdb</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 

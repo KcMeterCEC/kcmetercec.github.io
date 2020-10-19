@@ -21,12 +21,12 @@
     var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="总结在Linux内核下使用串口打印调试信息。">
+  <meta name="description" content="&amp;#x603B;&amp;#x7ED3;&amp;#x5728;Linux&amp;#x5185;&amp;#x6838;&amp;#x4E0B;&amp;#x4F7F;&amp;#x7528;&amp;#x4E32;&amp;#x53E3;&amp;#x6253;&amp;#x5370;&amp;#x8C03;&amp;#x8BD5;&amp;#x4FE1;&amp;#x606F;&amp;#x3002;">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[What]Linux内核调试之printk">
 <meta property="og:url" content="http://kcmetercec.top/2018/03/08/linux_debug_kernel_printk/index.html">
 <meta property="og:site_name" content="explorer">
-<meta property="og:description" content="总结在Linux内核下使用串口打印调试信息。">
+<meta property="og:description" content="&amp;#x603B;&amp;#x7ED3;&amp;#x5728;Linux&amp;#x5185;&amp;#x6838;&amp;#x4E0B;&amp;#x4F7F;&amp;#x7528;&amp;#x4E32;&amp;#x53E3;&amp;#x6253;&amp;#x5370;&amp;#x8C03;&amp;#x8BD5;&amp;#x4FE1;&amp;#x606F;&amp;#x3002;">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2018-03-07T16:00:00.000Z">
 <meta property="article:modified_time" content="2020-08-01T01:09:06.540Z">
@@ -299,247 +299,247 @@
       
         <div id="content">
 <p>
-总结在Linux内核下使用串口打印调试信息。
+&#x603B;&#x7ED3;&#x5728;Linux&#x5185;&#x6838;&#x4E0B;&#x4F7F;&#x7528;&#x4E32;&#x53E3;&#x6253;&#x5370;&#x8C03;&#x8BD5;&#x4FE1;&#x606F;&#x3002;
 </p>
 
 <a id="more"></a>
 
-<div id="outline-container-org098e9eb" class="outline-2">
-<h2 id="org098e9eb">printk 基本使用</h2>
-<div class="outline-text-2" id="text-org098e9eb">
+<div id="outline-container-org433ee56" class="outline-2">
+<h2 id="org433ee56">printk &#x57FA;&#x672C;&#x4F7F;&#x7528;</h2>
+<div class="outline-text-2" id="text-org433ee56">
 <p>
-printk() 函数用于打印内核的调试信息，同时会将这些信息输出到一个缓冲区中。
+printk() &#x51FD;&#x6570;&#x7528;&#x4E8E;&#x6253;&#x5370;&#x5185;&#x6838;&#x7684;&#x8C03;&#x8BD5;&#x4FE1;&#x606F;&#xFF0C;&#x540C;&#x65F6;&#x4F1A;&#x5C06;&#x8FD9;&#x4E9B;&#x4FE1;&#x606F;&#x8F93;&#x51FA;&#x5230;&#x4E00;&#x4E2A;&#x7F13;&#x51B2;&#x533A;&#x4E2D;&#x3002;
 </p>
 <pre class="example">
-可以通过 dmesg 命令查看内核打印缓冲区, 当使用 dmesg -c 则不仅会显示 __log_buf 还会清除该缓冲区的内容.也可以通过 cat /proc/kmsg 命令来一直显示内核信息.</pre>
+&#x53EF;&#x4EE5;&#x901A;&#x8FC7; dmesg &#x547D;&#x4EE4;&#x67E5;&#x770B;&#x5185;&#x6838;&#x6253;&#x5370;&#x7F13;&#x51B2;&#x533A;, &#x5F53;&#x4F7F;&#x7528; dmesg -c &#x5219;&#x4E0D;&#x4EC5;&#x4F1A;&#x663E;&#x793A; __log_buf &#x8FD8;&#x4F1A;&#x6E05;&#x9664;&#x8BE5;&#x7F13;&#x51B2;&#x533A;&#x7684;&#x5185;&#x5BB9;.&#x4E5F;&#x53EF;&#x4EE5;&#x901A;&#x8FC7; cat /proc/kmsg &#x547D;&#x4EE4;&#x6765;&#x4E00;&#x76F4;&#x663E;&#x793A;&#x5185;&#x6838;&#x4FE1;&#x606F;.</pre>
 </div>
-<div id="outline-container-org5c071b3" class="outline-3">
-<h3 id="org5c071b3">信息缓冲区大小设置</h3>
-<div class="outline-text-3" id="text-org5c071b3">
+<div id="outline-container-org930c6b5" class="outline-3">
+<h3 id="org930c6b5">&#x4FE1;&#x606F;&#x7F13;&#x51B2;&#x533A;&#x5927;&#x5C0F;&#x8BBE;&#x7F6E;</h3>
+<div class="outline-text-3" id="text-org930c6b5">
 <p>
-信息缓冲区的填写是一个环形队列的形式，所以如果消息太多以前的消息就会被覆盖掉，有的时候需要设置更大的缓冲区显示更多的信息。
+&#x4FE1;&#x606F;&#x7F13;&#x51B2;&#x533A;&#x7684;&#x586B;&#x5199;&#x662F;&#x4E00;&#x4E2A;&#x73AF;&#x5F62;&#x961F;&#x5217;&#x7684;&#x5F62;&#x5F0F;&#xFF0C;&#x6240;&#x4EE5;&#x5982;&#x679C;&#x6D88;&#x606F;&#x592A;&#x591A;&#x4EE5;&#x524D;&#x7684;&#x6D88;&#x606F;&#x5C31;&#x4F1A;&#x88AB;&#x8986;&#x76D6;&#x6389;&#xFF0C;&#x6709;&#x7684;&#x65F6;&#x5019;&#x9700;&#x8981;&#x8BBE;&#x7F6E;&#x66F4;&#x5927;&#x7684;&#x7F13;&#x51B2;&#x533A;&#x663E;&#x793A;&#x66F4;&#x591A;&#x7684;&#x4FE1;&#x606F;&#x3002;
 </p>
 
 <p>
-信息缓冲区代码位于 <code>kernel/printk/printk.c</code> 中：
+&#x4FE1;&#x606F;&#x7F13;&#x51B2;&#x533A;&#x4EE3;&#x7801;&#x4F4D;&#x4E8E; <code>kernel/printk/printk.c</code> &#x4E2D;&#xFF1A;
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __LOG_BUF_LEN (1 << CONFIG_LOG_BUF_SHIFT)</span></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">char</span> __log_buf[__LOG_BUF_LEN] __aligned(LOG_ALIGN)</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __LOG_BUF_LEN (1 &lt;&lt; CONFIG_LOG_BUF_SHIFT)</span></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">char</span> __log_buf[__LOG_BUF_LEN] __aligned(LOG_ALIGN)</span><br></pre></td></tr></table></figure>
 </div>
 <p>
-可以看出缓存的大小是 2 ^ CONFIG_LOG_BUF_SHIFT 个字节， <code>CONFIG_LOG_BUF_SHIFT</code> 的设置是由 <code>init/Kconfig</code> 来完成的，在Menuconfig中的路径为：
+&#x53EF;&#x4EE5;&#x770B;&#x51FA;&#x7F13;&#x5B58;&#x7684;&#x5927;&#x5C0F;&#x662F; 2 ^ CONFIG_LOG_BUF_SHIFT &#x4E2A;&#x5B57;&#x8282;&#xFF0C; <code>CONFIG_LOG_BUF_SHIFT</code> &#x7684;&#x8BBE;&#x7F6E;&#x662F;&#x7531; <code>init/Kconfig</code> &#x6765;&#x5B8C;&#x6210;&#x7684;&#xFF0C;&#x5728;Menuconfig&#x4E2D;&#x7684;&#x8DEF;&#x5F84;&#x4E3A;&#xFF1A;
 </p>
 <pre class="example">
-General setup -> Kernel log buffer size(16 => 64KB, 17 => 128kB)</pre>
+General setup -&gt; Kernel log buffer size(16 =&gt; 64KB, 17 =&gt; 128kB)</pre>
 </div>
 </div>
-<div id="outline-container-org416c3e4" class="outline-3">
-<h3 id="org416c3e4">消息级别</h3>
-<div class="outline-text-3" id="text-org416c3e4">
+<div id="outline-container-org55a4682" class="outline-3">
+<h3 id="org55a4682">&#x6D88;&#x606F;&#x7EA7;&#x522B;</h3>
+<div class="outline-text-3" id="text-org55a4682">
 <p>
-printk()定义了8个消息级别(0~7), <b>数值越低,级别越高</b>.
+printk()&#x5B9A;&#x4E49;&#x4E86;8&#x4E2A;&#x6D88;&#x606F;&#x7EA7;&#x522B;(0~7), <b>&#x6570;&#x503C;&#x8D8A;&#x4F4E;,&#x7EA7;&#x522B;&#x8D8A;&#x9AD8;</b>.
 </p>
 
 <p>
-在实际使用中，会有默认的消息级别打印， <b>只有低于消息级别的消息才会打印</b> 。
+&#x5728;&#x5B9E;&#x9645;&#x4F7F;&#x7528;&#x4E2D;&#xFF0C;&#x4F1A;&#x6709;&#x9ED8;&#x8BA4;&#x7684;&#x6D88;&#x606F;&#x7EA7;&#x522B;&#x6253;&#x5370;&#xFF0C; <b>&#x53EA;&#x6709;&#x4F4E;&#x4E8E;&#x6D88;&#x606F;&#x7EA7;&#x522B;&#x7684;&#x6D88;&#x606F;&#x624D;&#x4F1A;&#x6253;&#x5370;</b> &#x3002;
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_SOH   <span class="meta-string">"\001"</span>  <span class="comment">/*ASCII Start of header*/</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_SOH_ASCII <span class="meta-string">'\001'</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_EMERG   KERN_SOH <span class="meta-string">"0"</span> <span class="comment">//紧急事件,一般是系统崩溃之前提示的消息</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_ALERT   KERN_SOH <span class="meta-string">"1"</span> <span class="comment">//必须立即采取行动</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_CRIT    KERN_SOH <span class="meta-string">"2"</span> <span class="comment">//临界状态,通常涉及严重的硬件或软件操作失败</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_ERR     KERN_SOH <span class="meta-string">"3"</span> <span class="comment">//用于报告错误状态,设备驱动代码经常使用它报告硬件问题</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_WARNING KERN_SOH <span class="meta-string">"4"</span> <span class="comment">//对可能出现问题的情况进行警告,不会对系统造成严重的问题</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_NOTICE  KERN_SOH <span class="meta-string">"5"</span> <span class="comment">//有必要进行提示的正常情形,许多与安全攸关的情况用这个级别</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_INFO    KERN_SOH <span class="meta-string">"6"</span> <span class="comment">//提示性的信息,驱动程序使用它打印出一般信息</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_DEBUG   KERN_SOH <span class="meta-string">"7"</span> <span class="comment">//调试信息</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_DEFAULT KERN_SOH <span class="meta-string">"d"</span> <span class="comment">//默认级别</span></span></span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_SOH   <span class="meta-string">&quot;\001&quot;</span>  <span class="comment">/*ASCII Start of header*/</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_SOH_ASCII <span class="meta-string">&apos;\001&apos;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_EMERG   KERN_SOH <span class="meta-string">&quot;0&quot;</span> <span class="comment">//&#x7D27;&#x6025;&#x4E8B;&#x4EF6;,&#x4E00;&#x822C;&#x662F;&#x7CFB;&#x7EDF;&#x5D29;&#x6E83;&#x4E4B;&#x524D;&#x63D0;&#x793A;&#x7684;&#x6D88;&#x606F;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_ALERT   KERN_SOH <span class="meta-string">&quot;1&quot;</span> <span class="comment">//&#x5FC5;&#x987B;&#x7ACB;&#x5373;&#x91C7;&#x53D6;&#x884C;&#x52A8;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_CRIT    KERN_SOH <span class="meta-string">&quot;2&quot;</span> <span class="comment">//&#x4E34;&#x754C;&#x72B6;&#x6001;,&#x901A;&#x5E38;&#x6D89;&#x53CA;&#x4E25;&#x91CD;&#x7684;&#x786C;&#x4EF6;&#x6216;&#x8F6F;&#x4EF6;&#x64CD;&#x4F5C;&#x5931;&#x8D25;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_ERR     KERN_SOH <span class="meta-string">&quot;3&quot;</span> <span class="comment">//&#x7528;&#x4E8E;&#x62A5;&#x544A;&#x9519;&#x8BEF;&#x72B6;&#x6001;,&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#x4EE3;&#x7801;&#x7ECF;&#x5E38;&#x4F7F;&#x7528;&#x5B83;&#x62A5;&#x544A;&#x786C;&#x4EF6;&#x95EE;&#x9898;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_WARNING KERN_SOH <span class="meta-string">&quot;4&quot;</span> <span class="comment">//&#x5BF9;&#x53EF;&#x80FD;&#x51FA;&#x73B0;&#x95EE;&#x9898;&#x7684;&#x60C5;&#x51B5;&#x8FDB;&#x884C;&#x8B66;&#x544A;,&#x4E0D;&#x4F1A;&#x5BF9;&#x7CFB;&#x7EDF;&#x9020;&#x6210;&#x4E25;&#x91CD;&#x7684;&#x95EE;&#x9898;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_NOTICE  KERN_SOH <span class="meta-string">&quot;5&quot;</span> <span class="comment">//&#x6709;&#x5FC5;&#x8981;&#x8FDB;&#x884C;&#x63D0;&#x793A;&#x7684;&#x6B63;&#x5E38;&#x60C5;&#x5F62;,&#x8BB8;&#x591A;&#x4E0E;&#x5B89;&#x5168;&#x6538;&#x5173;&#x7684;&#x60C5;&#x51B5;&#x7528;&#x8FD9;&#x4E2A;&#x7EA7;&#x522B;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_INFO    KERN_SOH <span class="meta-string">&quot;6&quot;</span> <span class="comment">//&#x63D0;&#x793A;&#x6027;&#x7684;&#x4FE1;&#x606F;,&#x9A71;&#x52A8;&#x7A0B;&#x5E8F;&#x4F7F;&#x7528;&#x5B83;&#x6253;&#x5370;&#x51FA;&#x4E00;&#x822C;&#x4FE1;&#x606F;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_DEBUG   KERN_SOH <span class="meta-string">&quot;7&quot;</span> <span class="comment">//&#x8C03;&#x8BD5;&#x4FE1;&#x606F;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_DEFAULT KERN_SOH <span class="meta-string">&quot;d&quot;</span> <span class="comment">//&#x9ED8;&#x8BA4;&#x7EA7;&#x522B;</span></span></span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </div>
-<div id="outline-container-org0324998" class="outline-3">
-<h3 id="org0324998">修改消息级别的方法</h3>
-<div class="outline-text-3" id="text-org0324998">
+<div id="outline-container-orgc59b3ec" class="outline-3">
+<h3 id="orgc59b3ec">&#x4FEE;&#x6539;&#x6D88;&#x606F;&#x7EA7;&#x522B;&#x7684;&#x65B9;&#x6CD5;</h3>
+<div class="outline-text-3" id="text-orgc59b3ec">
 </div>
-<div id="outline-container-org542be67" class="outline-4">
-<h4 id="org542be67">在menuconfig中修改</h4>
-<div class="outline-text-4" id="text-org542be67">
+<div id="outline-container-org8b717e3" class="outline-4">
+<h4 id="org8b717e3">&#x5728;menuconfig&#x4E2D;&#x4FEE;&#x6539;</h4>
+<div class="outline-text-4" id="text-org8b717e3">
 <p>
-对应的路径为：
+&#x5BF9;&#x5E94;&#x7684;&#x8DEF;&#x5F84;&#x4E3A;&#xFF1A;
 </p>
 <pre class="example">
-Kernel hacking -> printk and dmesg options -> Default message log level(1-7)</pre>
+Kernel hacking -&gt; printk and dmesg options -&gt; Default message log level(1-7)</pre>
 </div>
 </div>
-<div id="outline-container-orgbda4fcc" class="outline-4">
-<h4 id="orgbda4fcc">在系统中修改 prink 文件:</h4>
-<div class="outline-text-4" id="text-orgbda4fcc">
+<div id="outline-container-orgbba5405" class="outline-4">
+<h4 id="orgbba5405">&#x5728;&#x7CFB;&#x7EDF;&#x4E2D;&#x4FEE;&#x6539; prink &#x6587;&#x4EF6;:</h4>
+<div class="outline-text-4" id="text-orgbba5405">
 <p>
-通过 <code>/proc/sys/kernel/printk</code> 文件可以调节 printk() 的输出等级,该文件的4个数值表示为:
+&#x901A;&#x8FC7; <code>/proc/sys/kernel/printk</code> &#x6587;&#x4EF6;&#x53EF;&#x4EE5;&#x8C03;&#x8282; printk() &#x7684;&#x8F93;&#x51FA;&#x7B49;&#x7EA7;,&#x8BE5;&#x6587;&#x4EF6;&#x7684;4&#x4E2A;&#x6570;&#x503C;&#x8868;&#x793A;&#x4E3A;:
 </p>
 <ol class="org-ol">
-<li>控制台的日志级别:当前的打印级别,优先级高于该值(值越小,优先级越高)的消息将被打印至控制台</li>
-<li>默认的消息日志级别: 将用该优先级来打印没有优先级前缀的消息,也就是直接写 <code>printk("xxx")</code> 而不带打印级别的情况下,会使用该打印级别</li>
-<li>最低的控制台日志级别: 控制台日志级别可被设置的最小值(一般是1)</li>
-<li>默认的控制台日志级别: 控制台日志级别的默认值</li>
+<li>&#x63A7;&#x5236;&#x53F0;&#x7684;&#x65E5;&#x5FD7;&#x7EA7;&#x522B;:&#x5F53;&#x524D;&#x7684;&#x6253;&#x5370;&#x7EA7;&#x522B;,&#x4F18;&#x5148;&#x7EA7;&#x9AD8;&#x4E8E;&#x8BE5;&#x503C;(&#x503C;&#x8D8A;&#x5C0F;,&#x4F18;&#x5148;&#x7EA7;&#x8D8A;&#x9AD8;)&#x7684;&#x6D88;&#x606F;&#x5C06;&#x88AB;&#x6253;&#x5370;&#x81F3;&#x63A7;&#x5236;&#x53F0;</li>
+<li>&#x9ED8;&#x8BA4;&#x7684;&#x6D88;&#x606F;&#x65E5;&#x5FD7;&#x7EA7;&#x522B;: &#x5C06;&#x7528;&#x8BE5;&#x4F18;&#x5148;&#x7EA7;&#x6765;&#x6253;&#x5370;&#x6CA1;&#x6709;&#x4F18;&#x5148;&#x7EA7;&#x524D;&#x7F00;&#x7684;&#x6D88;&#x606F;,&#x4E5F;&#x5C31;&#x662F;&#x76F4;&#x63A5;&#x5199; <code>printk(&quot;xxx&quot;)</code> &#x800C;&#x4E0D;&#x5E26;&#x6253;&#x5370;&#x7EA7;&#x522B;&#x7684;&#x60C5;&#x51B5;&#x4E0B;,&#x4F1A;&#x4F7F;&#x7528;&#x8BE5;&#x6253;&#x5370;&#x7EA7;&#x522B;</li>
+<li>&#x6700;&#x4F4E;&#x7684;&#x63A7;&#x5236;&#x53F0;&#x65E5;&#x5FD7;&#x7EA7;&#x522B;: &#x63A7;&#x5236;&#x53F0;&#x65E5;&#x5FD7;&#x7EA7;&#x522B;&#x53EF;&#x88AB;&#x8BBE;&#x7F6E;&#x7684;&#x6700;&#x5C0F;&#x503C;(&#x4E00;&#x822C;&#x662F;1)</li>
+<li>&#x9ED8;&#x8BA4;&#x7684;&#x63A7;&#x5236;&#x53F0;&#x65E5;&#x5FD7;&#x7EA7;&#x522B;: &#x63A7;&#x5236;&#x53F0;&#x65E5;&#x5FD7;&#x7EA7;&#x522B;&#x7684;&#x9ED8;&#x8BA4;&#x503C;</li>
 </ol>
 
 <p>
-使用如下命令打印所有信息:
+&#x4F7F;&#x7528;&#x5982;&#x4E0B;&#x547D;&#x4EE4;&#x6253;&#x5370;&#x6240;&#x6709;&#x4FE1;&#x606F;:
 </p>
 <pre class="example">
-#echo 8 > /proc/sys/kernel/printk</pre>
+#echo 8 &gt; /proc/sys/kernel/printk</pre>
 <p>
-<b>注意</b>:
-此文件并不控制内核消息进入 __log_buf 的门槛,因此无论消息级别是多少,都会进入 __log_buf 中,但是最终只有高于当前打印级别的内核消息才会从控制台打印.
+<b>&#x6CE8;&#x610F;</b>:
+&#x6B64;&#x6587;&#x4EF6;&#x5E76;&#x4E0D;&#x63A7;&#x5236;&#x5185;&#x6838;&#x6D88;&#x606F;&#x8FDB;&#x5165; __log_buf &#x7684;&#x95E8;&#x69DB;,&#x56E0;&#x6B64;&#x65E0;&#x8BBA;&#x6D88;&#x606F;&#x7EA7;&#x522B;&#x662F;&#x591A;&#x5C11;,&#x90FD;&#x4F1A;&#x8FDB;&#x5165; __log_buf &#x4E2D;,&#x4F46;&#x662F;&#x6700;&#x7EC8;&#x53EA;&#x6709;&#x9AD8;&#x4E8E;&#x5F53;&#x524D;&#x6253;&#x5370;&#x7EA7;&#x522B;&#x7684;&#x5185;&#x6838;&#x6D88;&#x606F;&#x624D;&#x4F1A;&#x4ECE;&#x63A7;&#x5236;&#x53F0;&#x6253;&#x5370;.
 </p>
 </div>
 </div>
-<div id="outline-container-org183a37c" class="outline-4">
-<h4 id="org183a37c">修改启动参数</h4>
-<div class="outline-text-4" id="text-org183a37c">
+<div id="outline-container-org57f3825" class="outline-4">
+<h4 id="org57f3825">&#x4FEE;&#x6539;&#x542F;&#x52A8;&#x53C2;&#x6570;</h4>
+<div class="outline-text-4" id="text-org57f3825">
 <p>
-通过在 bootargs 中设置 <code>ignore_loglevel</code> 来忽略打印级别.
-在系统启动后,也可以通过写 <code>/sys/module/printk/parameters/ignore_loglevel</code> 文件来动态设置是否忽略打印级别.
+&#x901A;&#x8FC7;&#x5728; bootargs &#x4E2D;&#x8BBE;&#x7F6E; <code>ignore_loglevel</code> &#x6765;&#x5FFD;&#x7565;&#x6253;&#x5370;&#x7EA7;&#x522B;.
+&#x5728;&#x7CFB;&#x7EDF;&#x542F;&#x52A8;&#x540E;,&#x4E5F;&#x53EF;&#x4EE5;&#x901A;&#x8FC7;&#x5199; <code>/sys/module/printk/parameters/ignore_loglevel</code> &#x6587;&#x4EF6;&#x6765;&#x52A8;&#x6001;&#x8BBE;&#x7F6E;&#x662F;&#x5426;&#x5FFD;&#x7565;&#x6253;&#x5370;&#x7EA7;&#x522B;.
 </p>
 </div>
 </div>
 </div>
-<div id="outline-container-org8d21071" class="outline-3">
-<h3 id="org8d21071">带时间戳的输出</h3>
-<div class="outline-text-3" id="text-org8d21071">
+<div id="outline-container-org15c5996" class="outline-3">
+<h3 id="org15c5996">&#x5E26;&#x65F6;&#x95F4;&#x6233;&#x7684;&#x8F93;&#x51FA;</h3>
+<div class="outline-text-3" id="text-org15c5996">
 <p>
-在 menuconfig 中使能printk带时间戳输出，有助于判断代码执行时间。
+&#x5728; menuconfig &#x4E2D;&#x4F7F;&#x80FD;printk&#x5E26;&#x65F6;&#x95F4;&#x6233;&#x8F93;&#x51FA;&#xFF0C;&#x6709;&#x52A9;&#x4E8E;&#x5224;&#x65AD;&#x4EE3;&#x7801;&#x6267;&#x884C;&#x65F6;&#x95F4;&#x3002;
 </p>
 
 <p>
-路径:
+&#x8DEF;&#x5F84;:
 </p>
 <pre class="example">
-Kernel hacking -> printk and dmesg options -> Show timing information on printks</pre>
+Kernel hacking -&gt; printk and dmesg options -&gt; Show timing information on printks</pre>
 </div>
 </div>
 </div>
-<div id="outline-container-org2d6d0c3" class="outline-2">
-<h2 id="org2d6d0c3">调试信息的输出</h2>
-<div class="outline-text-2" id="text-org2d6d0c3">
+<div id="outline-container-orgf08c66f" class="outline-2">
+<h2 id="orgf08c66f">&#x8C03;&#x8BD5;&#x4FE1;&#x606F;&#x7684;&#x8F93;&#x51FA;</h2>
+<div class="outline-text-2" id="text-orgf08c66f">
 <ul class="org-ul">
-<li>pr_xxx(): 位于 <code>/include/linux/printk.h</code></li>
+<li>pr_xxx(): &#x4F4D;&#x4E8E; <code>/include/linux/printk.h</code></li>
 </ul>
 <p>
-通常使用封装了 printk() 的宏,来显示调试信息.比如 pr_debug(),pr_info().
-使用 pr_xxx() API的好处是,可以在文件最开头通过 pr_fmt() 定义一个打印格式.
+&#x901A;&#x5E38;&#x4F7F;&#x7528;&#x5C01;&#x88C5;&#x4E86; printk() &#x7684;&#x5B8F;,&#x6765;&#x663E;&#x793A;&#x8C03;&#x8BD5;&#x4FE1;&#x606F;.&#x6BD4;&#x5982; pr_debug(),pr_info().
+&#x4F7F;&#x7528; pr_xxx() API&#x7684;&#x597D;&#x5904;&#x662F;,&#x53EF;&#x4EE5;&#x5728;&#x6587;&#x4EF6;&#x6700;&#x5F00;&#x5934;&#x901A;&#x8FC7; pr_fmt() &#x5B9A;&#x4E49;&#x4E00;&#x4E2A;&#x6253;&#x5370;&#x683C;&#x5F0F;.
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//打印消息头带有 "[driver] watchdog:"前缀</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> pr_fmt(fmt) <span class="meta-string">"[driver] watchdog:"</span> fmt</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//&#x6253;&#x5370;&#x6D88;&#x606F;&#x5934;&#x5E26;&#x6709; &quot;[driver] watchdog:&quot;&#x524D;&#x7F00;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> pr_fmt(fmt) <span class="meta-string">&quot;[driver] watchdog:&quot;</span> fmt</span></span><br></pre></td></tr></table></figure>
 </div>
 <ul class="org-ul">
-<li>dev_xxx(): 位于 <code>include/linux/device.h</code></li>
+<li>dev_xxx(): &#x4F4D;&#x4E8E; <code>include/linux/device.h</code></li>
 </ul>
 <p>
-使用dec_xxx()打印的时候,设备名称会被自动打印到打印消息的前面:
+&#x4F7F;&#x7528;dec_xxx()&#x6253;&#x5370;&#x7684;&#x65F6;&#x5019;,&#x8BBE;&#x5907;&#x540D;&#x79F0;&#x4F1A;&#x88AB;&#x81EA;&#x52A8;&#x6253;&#x5370;&#x5230;&#x6253;&#x5370;&#x6D88;&#x606F;&#x7684;&#x524D;&#x9762;:
 </p>
 </div>
-<div id="outline-container-org7a14616" class="outline-3">
-<h3 id="org7a14616">使用规则</h3>
-<div class="outline-text-3" id="text-org7a14616">
+<div id="outline-container-orgc643418" class="outline-3">
+<h3 id="orgc643418">&#x4F7F;&#x7528;&#x89C4;&#x5219;</h3>
+<div class="outline-text-3" id="text-orgc643418">
 <ul class="org-ul">
-<li>能使用 <code>dev_xxx()</code> 的时候就尽量使用它，因为它可以打印出设备的名称。
+<li>&#x80FD;&#x4F7F;&#x7528; <code>dev_xxx()</code> &#x7684;&#x65F6;&#x5019;&#x5C31;&#x5C3D;&#x91CF;&#x4F7F;&#x7528;&#x5B83;&#xFF0C;&#x56E0;&#x4E3A;&#x5B83;&#x53EF;&#x4EE5;&#x6253;&#x5370;&#x51FA;&#x8BBE;&#x5907;&#x7684;&#x540D;&#x79F0;&#x3002;
 <ul class="org-ul">
-<li>这在一个驱动对应多个设备，而某个设备出问题的情况下比较好排查。</li>
+<li>&#x8FD9;&#x5728;&#x4E00;&#x4E2A;&#x9A71;&#x52A8;&#x5BF9;&#x5E94;&#x591A;&#x4E2A;&#x8BBE;&#x5907;&#xFF0C;&#x800C;&#x67D0;&#x4E2A;&#x8BBE;&#x5907;&#x51FA;&#x95EE;&#x9898;&#x7684;&#x60C5;&#x51B5;&#x4E0B;&#x6BD4;&#x8F83;&#x597D;&#x6392;&#x67E5;&#x3002;</li>
 </ul></li>
-<li>在不能使用 <code>dev_xxx()</code> 的场合才使用 <code>pr_xxx()</code> 
+<li>&#x5728;&#x4E0D;&#x80FD;&#x4F7F;&#x7528; <code>dev_xxx()</code> &#x7684;&#x573A;&#x5408;&#x624D;&#x4F7F;&#x7528; <code>pr_xxx()</code> 
 <ul class="org-ul">
-<li>为了明确信息是由 <code>pr_xxx()</code> 输出的信息，建议在信息头中加上标识符。
+<li>&#x4E3A;&#x4E86;&#x660E;&#x786E;&#x4FE1;&#x606F;&#x662F;&#x7531; <code>pr_xxx()</code> &#x8F93;&#x51FA;&#x7684;&#x4FE1;&#x606F;&#xFF0C;&#x5EFA;&#x8BAE;&#x5728;&#x4FE1;&#x606F;&#x5934;&#x4E2D;&#x52A0;&#x4E0A;&#x6807;&#x8BC6;&#x7B26;&#x3002;
 <ul class="org-ul">
-<li>驱动中调试加上 [driver]</li>
-<li>内存中调试加上 [mem]</li>
+<li>&#x9A71;&#x52A8;&#x4E2D;&#x8C03;&#x8BD5;&#x52A0;&#x4E0A; [driver]</li>
+<li>&#x5185;&#x5B58;&#x4E2D;&#x8C03;&#x8BD5;&#x52A0;&#x4E0A; [mem]</li>
 </ul></li>
 </ul></li>
 </ul>
 </div>
 </div>
-<div id="outline-container-orga7e9902" class="outline-3">
-<h3 id="orga7e9902">默认调试信息输出</h3>
-<div class="outline-text-3" id="text-orga7e9902">
+<div id="outline-container-org8fece0c" class="outline-3">
+<h3 id="org8fece0c">&#x9ED8;&#x8BA4;&#x8C03;&#x8BD5;&#x4FE1;&#x606F;&#x8F93;&#x51FA;</h3>
+<div class="outline-text-3" id="text-org8fece0c">
 <p>
-内核默认有很多使用 <code>pr_debug()/dev_dbg()</code> 的输出,但需要满足如下条件:
+&#x5185;&#x6838;&#x9ED8;&#x8BA4;&#x6709;&#x5F88;&#x591A;&#x4F7F;&#x7528; <code>pr_debug()/dev_dbg()</code> &#x7684;&#x8F93;&#x51FA;,&#x4F46;&#x9700;&#x8981;&#x6EE1;&#x8DB3;&#x5982;&#x4E0B;&#x6761;&#x4EF6;:
 </p>
 <ol class="org-ol">
-<li>开启了 DEBUG 宏</li>
-<li>kernel printk 的默认日志级别大于7</li>
+<li>&#x5F00;&#x542F;&#x4E86; DEBUG &#x5B8F;</li>
+<li>kernel printk &#x7684;&#x9ED8;&#x8BA4;&#x65E5;&#x5FD7;&#x7EA7;&#x522B;&#x5927;&#x4E8E;7</li>
 </ol>
 </div>
-<div id="outline-container-orgb86924b" class="outline-4">
-<h4 id="orgb86924b">开启DEBUG</h4>
-<div class="outline-text-4" id="text-orgb86924b">
+<div id="outline-container-org2c92be9" class="outline-4">
+<h4 id="org2c92be9">&#x5F00;&#x542F;DEBUG</h4>
+<div class="outline-text-4" id="text-org2c92be9">
 <ul class="org-ul">
-<li>方法1</li>
+<li>&#x65B9;&#x6CD5;1</li>
 </ul>
 <p>
-在要输出信息的文件开头加上宏定义 <code>#define DEBUG</code>
+&#x5728;&#x8981;&#x8F93;&#x51FA;&#x4FE1;&#x606F;&#x7684;&#x6587;&#x4EF6;&#x5F00;&#x5934;&#x52A0;&#x4E0A;&#x5B8F;&#x5B9A;&#x4E49; <code>#define DEBUG</code>
 </p>
 <ul class="org-ul">
-<li>方法2</li>
+<li>&#x65B9;&#x6CD5;2</li>
 </ul>
 <p>
-在编译内核的时候传入参数 KCFLAGS=-DDEBUG 打开全局输出
+&#x5728;&#x7F16;&#x8BD1;&#x5185;&#x6838;&#x7684;&#x65F6;&#x5019;&#x4F20;&#x5165;&#x53C2;&#x6570; KCFLAGS=-DDEBUG &#x6253;&#x5F00;&#x5168;&#x5C40;&#x8F93;&#x51FA;
 </p>
 </div>
 </div>
 </div>
 </div>
-<div id="outline-container-orgca5e974" class="outline-2">
-<h2 id="orgca5e974">早期信息的打印</h2>
-<div class="outline-text-2" id="text-orgca5e974">
+<div id="outline-container-orgd954a0e" class="outline-2">
+<h2 id="orgd954a0e">&#x65E9;&#x671F;&#x4FE1;&#x606F;&#x7684;&#x6253;&#x5370;</h2>
+<div class="outline-text-2" id="text-orgd954a0e">
 </div>
-<div id="outline-container-org83d3e56" class="outline-3">
-<h3 id="org83d3e56">使能</h3>
-<div class="outline-text-3" id="text-org83d3e56">
+<div id="outline-container-orgda77c71" class="outline-3">
+<h3 id="orgda77c71">&#x4F7F;&#x80FD;</h3>
+<div class="outline-text-3" id="text-orgda77c71">
 <p>
-为了能够在控制台驱动初始化之前就打印信息,需要在menuconfig中设置:
+&#x4E3A;&#x4E86;&#x80FD;&#x591F;&#x5728;&#x63A7;&#x5236;&#x53F0;&#x9A71;&#x52A8;&#x521D;&#x59CB;&#x5316;&#x4E4B;&#x524D;&#x5C31;&#x6253;&#x5370;&#x4FE1;&#x606F;,&#x9700;&#x8981;&#x5728;menuconfig&#x4E2D;&#x8BBE;&#x7F6E;:
 </p>
 <ul class="org-ul">
-<li>选择 Kernel low-level debug</li>
+<li>&#x9009;&#x62E9; Kernel low-level debug</li>
 </ul>
 <pre class="example">
-Kernel hacking -> Kernel low-level debugging functions(read help!)</pre>
+Kernel hacking -&gt; Kernel low-level debugging functions(read help!)</pre>
 <ul class="org-ul">
-<li>选择 Early printk</li>
+<li>&#x9009;&#x62E9; Early printk</li>
 </ul>
 <pre class="example">
-Kernel hacking -> Early printk</pre>
+Kernel hacking -&gt; Early printk</pre>
 <ul class="org-ul">
-<li>在 bootargs 中添加 earlyprintk 字符串</li>
+<li>&#x5728; bootargs &#x4E2D;&#x6DFB;&#x52A0; earlyprintk &#x5B57;&#x7B26;&#x4E32;</li>
 </ul>
 </div>
 </div>
-<div id="outline-container-org5cf61cf" class="outline-3">
-<h3 id="org5cf61cf">使用</h3>
-<div class="outline-text-3" id="text-org5cf61cf">
+<div id="outline-container-orgb140228" class="outline-3">
+<h3 id="orgb140228">&#x4F7F;&#x7528;</h3>
+<div class="outline-text-3" id="text-orgb140228">
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><asm/early_printk.h></span></span></span><br><span class="line"></span><br><span class="line">early_printk(<span class="string">"Hello world\n"</span>);</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;asm/early_printk.h&gt;</span></span></span><br><span class="line"></span><br><span class="line">early_printk(<span class="string">&quot;Hello world\n&quot;</span>);</span><br></pre></td></tr></table></figure>
 </div>
 </div>
 </div>
 </div>
-<div id="outline-container-orgfb20538" class="outline-2">
-<h2 id="orgfb20538">与用户空间顺序输出</h2>
-<div class="outline-text-2" id="text-orgfb20538">
+<div id="outline-container-org004d24b" class="outline-2">
+<h2 id="org004d24b">&#x4E0E;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x987A;&#x5E8F;&#x8F93;&#x51FA;</h2>
+<div class="outline-text-2" id="text-org004d24b">
 <p>
-当用户空间在使用 <code>printf</code> 的同时内核在使用 <code>printk</code> 时会造成两个输出相互干扰，与造成竞态的效果一样。
+&#x5F53;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x5728;&#x4F7F;&#x7528; <code>printf</code> &#x7684;&#x540C;&#x65F6;&#x5185;&#x6838;&#x5728;&#x4F7F;&#x7528; <code>printk</code> &#x65F6;&#x4F1A;&#x9020;&#x6210;&#x4E24;&#x4E2A;&#x8F93;&#x51FA;&#x76F8;&#x4E92;&#x5E72;&#x6270;&#xFF0C;&#x4E0E;&#x9020;&#x6210;&#x7ADE;&#x6001;&#x7684;&#x6548;&#x679C;&#x4E00;&#x6837;&#x3002;
 </p>
 
 <p>
-内核为用户空间提供了设备文件 <code>/dev/ttyprintk</code> 以让用户空间的log可以在内核中打印，打印的Log前会加上 <code>[U]</code> 标识，
-这样便不会造成二者干扰了。
+&#x5185;&#x6838;&#x4E3A;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x63D0;&#x4F9B;&#x4E86;&#x8BBE;&#x5907;&#x6587;&#x4EF6; <code>/dev/ttyprintk</code> &#x4EE5;&#x8BA9;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x7684;log&#x53EF;&#x4EE5;&#x5728;&#x5185;&#x6838;&#x4E2D;&#x6253;&#x5370;&#xFF0C;&#x6253;&#x5370;&#x7684;Log&#x524D;&#x4F1A;&#x52A0;&#x4E0A; <code>[U]</code> &#x6807;&#x8BC6;&#xFF0C;
+&#x8FD9;&#x6837;&#x4FBF;&#x4E0D;&#x4F1A;&#x9020;&#x6210;&#x4E8C;&#x8005;&#x5E72;&#x6270;&#x4E86;&#x3002;
 </p>
 <ul class="org-ul">
-<li>在嵌入式内核中，可能没有 <code>/dev/ttyprintk</code> 设备，可以使用 <code>/dev/kmsg</code> 来达到目的。
+<li>&#x5728;&#x5D4C;&#x5165;&#x5F0F;&#x5185;&#x6838;&#x4E2D;&#xFF0C;&#x53EF;&#x80FD;&#x6CA1;&#x6709; <code>/dev/ttyprintk</code> &#x8BBE;&#x5907;&#xFF0C;&#x53EF;&#x4EE5;&#x4F7F;&#x7528; <code>/dev/kmsg</code> &#x6765;&#x8FBE;&#x5230;&#x76EE;&#x7684;&#x3002;
 <ul class="org-ul">
-<li>通过 <code>/dev/kmsg</code> 没有前缀输出，但是我们可以自己加入前缀以达到同样的效果。</li>
+<li>&#x901A;&#x8FC7; <code>/dev/kmsg</code> &#x6CA1;&#x6709;&#x524D;&#x7F00;&#x8F93;&#x51FA;&#xFF0C;&#x4F46;&#x662F;&#x6211;&#x4EEC;&#x53EF;&#x4EE5;&#x81EA;&#x5DF1;&#x52A0;&#x5165;&#x524D;&#x7F00;&#x4EE5;&#x8FBE;&#x5230;&#x540C;&#x6837;&#x7684;&#x6548;&#x679C;&#x3002;</li>
 </ul></li>
 </ul>
 
 <p>
-如下用户空间代码:
+&#x5982;&#x4E0B;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x4EE3;&#x7801;:
 </p>
 <div class="org-src-container">
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><stdarg.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><stdio.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><stdlib.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><unistd.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><sys/types.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><sys/stat.h></span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string"><fcntl.h></span></span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">int</span> fd = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">kernel_write</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *fmt, ...)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	va_list ap;</span><br><span class="line">	<span class="keyword">char</span> buf[<span class="number">256</span>];</span><br><span class="line">	<span class="keyword">int</span> n;</span><br><span class="line"></span><br><span class="line">	va_start(ap, fmt);</span><br><span class="line">	n = vsnprintf(buf, <span class="number">256</span>, fmt, ap);</span><br><span class="line">	va_end(ap);</span><br><span class="line">	write(fd, buf, n);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[])</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	fd = open(<span class="string">"/dev/ttyprintk"</span>, O_WRONLY);</span><br><span class="line">	<span class="keyword">if</span>(fd < <span class="number">0</span>)</span><br><span class="line">	{</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">"open file failed!\n"</span>);</span><br><span class="line">		<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	kernel_write(<span class="string">"The ttyprintk index is %d\n"</span>, fd);</span><br><span class="line"></span><br><span class="line">	close(fd);</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdarg.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/stat.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">int</span> fd = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">kernel_write</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *fmt, ...)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	va_list ap;</span><br><span class="line">	<span class="keyword">char</span> buf[<span class="number">256</span>];</span><br><span class="line">	<span class="keyword">int</span> n;</span><br><span class="line"></span><br><span class="line">	va_start(ap, fmt);</span><br><span class="line">	n = vsnprintf(buf, <span class="number">256</span>, fmt, ap);</span><br><span class="line">	va_end(ap);</span><br><span class="line">	write(fd, buf, n);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[])</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">	fd = open(<span class="string">&quot;/dev/ttyprintk&quot;</span>, O_WRONLY);</span><br><span class="line">	<span class="keyword">if</span>(fd &lt; <span class="number">0</span>)</span><br><span class="line">	{</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;open file failed!\n&quot;</span>);</span><br><span class="line">		<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	kernel_write(<span class="string">&quot;The ttyprintk index is %d\n&quot;</span>, fd);</span><br><span class="line"></span><br><span class="line">	close(fd);</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 </div>
 <p>
-输出为:
+&#x8F93;&#x51FA;&#x4E3A;:
 </p>
 <pre class="example">
 [U] The ttyprintk index is 3</pre>
@@ -547,7 +547,7 @@ Kernel hacking -> Early printk</pre>
 </div>
 </div>
 <div id="postamble" class="status">
-Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.3.7)
+Last Updated 2020-10-19 &#x4E00; 22:29.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.4)
 </div>
 
     </div>
@@ -633,7 +633,7 @@ Last Updated 2020-08-20 四 17:38.<br>Render by <a href="https://github.com/Code
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org098e9eb"><span class="nav-number">1.</span> <span class="nav-text">printk 基本使用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org5c071b3"><span class="nav-number">1.1.</span> <span class="nav-text">信息缓冲区大小设置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org416c3e4"><span class="nav-number">1.2.</span> <span class="nav-text">消息级别</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org0324998"><span class="nav-number">1.3.</span> <span class="nav-text">修改消息级别的方法</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org542be67"><span class="nav-number">1.3.1.</span> <span class="nav-text">在menuconfig中修改</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgbda4fcc"><span class="nav-number">1.3.2.</span> <span class="nav-text">在系统中修改 prink 文件:</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org183a37c"><span class="nav-number">1.3.3.</span> <span class="nav-text">修改启动参数</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org8d21071"><span class="nav-number">1.4.</span> <span class="nav-text">带时间戳的输出</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org2d6d0c3"><span class="nav-number">2.</span> <span class="nav-text">调试信息的输出</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org7a14616"><span class="nav-number">2.1.</span> <span class="nav-text">使用规则</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orga7e9902"><span class="nav-number">2.2.</span> <span class="nav-text">默认调试信息输出</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#orgb86924b"><span class="nav-number">2.2.1.</span> <span class="nav-text">开启DEBUG</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgca5e974"><span class="nav-number">3.</span> <span class="nav-text">早期信息的打印</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org83d3e56"><span class="nav-number">3.1.</span> <span class="nav-text">使能</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org5cf61cf"><span class="nav-number">3.2.</span> <span class="nav-text">使用</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgfb20538"><span class="nav-number">4.</span> <span class="nav-text">与用户空间顺序输出</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#org433ee56"><span class="nav-number">1.</span> <span class="nav-text">printk &amp;#x57FA;&amp;#x672C;&amp;#x4F7F;&amp;#x7528;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#org930c6b5"><span class="nav-number">1.1.</span> <span class="nav-text">&amp;#x4FE1;&amp;#x606F;&amp;#x7F13;&amp;#x51B2;&amp;#x533A;&amp;#x5927;&amp;#x5C0F;&amp;#x8BBE;&amp;#x7F6E;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org55a4682"><span class="nav-number">1.2.</span> <span class="nav-text">&amp;#x6D88;&amp;#x606F;&amp;#x7EA7;&amp;#x522B;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgc59b3ec"><span class="nav-number">1.3.</span> <span class="nav-text">&amp;#x4FEE;&amp;#x6539;&amp;#x6D88;&amp;#x606F;&amp;#x7EA7;&amp;#x522B;&amp;#x7684;&amp;#x65B9;&amp;#x6CD5;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org8b717e3"><span class="nav-number">1.3.1.</span> <span class="nav-text">&amp;#x5728;menuconfig&amp;#x4E2D;&amp;#x4FEE;&amp;#x6539;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orgbba5405"><span class="nav-number">1.3.2.</span> <span class="nav-text">&amp;#x5728;&amp;#x7CFB;&amp;#x7EDF;&amp;#x4E2D;&amp;#x4FEE;&amp;#x6539; prink &amp;#x6587;&amp;#x4EF6;:</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#org57f3825"><span class="nav-number">1.3.3.</span> <span class="nav-text">&amp;#x4FEE;&amp;#x6539;&amp;#x542F;&amp;#x52A8;&amp;#x53C2;&amp;#x6570;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org15c5996"><span class="nav-number">1.4.</span> <span class="nav-text">&amp;#x5E26;&amp;#x65F6;&amp;#x95F4;&amp;#x6233;&amp;#x7684;&amp;#x8F93;&amp;#x51FA;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgf08c66f"><span class="nav-number">2.</span> <span class="nav-text">&amp;#x8C03;&amp;#x8BD5;&amp;#x4FE1;&amp;#x606F;&amp;#x7684;&amp;#x8F93;&amp;#x51FA;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgc643418"><span class="nav-number">2.1.</span> <span class="nav-text">&amp;#x4F7F;&amp;#x7528;&amp;#x89C4;&amp;#x5219;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#org8fece0c"><span class="nav-number">2.2.</span> <span class="nav-text">&amp;#x9ED8;&amp;#x8BA4;&amp;#x8C03;&amp;#x8BD5;&amp;#x4FE1;&amp;#x606F;&amp;#x8F93;&amp;#x51FA;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#org2c92be9"><span class="nav-number">2.2.1.</span> <span class="nav-text">&amp;#x5F00;&amp;#x542F;DEBUG</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#orgd954a0e"><span class="nav-number">3.</span> <span class="nav-text">&amp;#x65E9;&amp;#x671F;&amp;#x4FE1;&amp;#x606F;&amp;#x7684;&amp;#x6253;&amp;#x5370;</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#orgda77c71"><span class="nav-number">3.1.</span> <span class="nav-text">&amp;#x4F7F;&amp;#x80FD;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orgb140228"><span class="nav-number">3.2.</span> <span class="nav-text">&amp;#x4F7F;&amp;#x7528;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#org004d24b"><span class="nav-number">4.</span> <span class="nav-text">&amp;#x4E0E;&amp;#x7528;&amp;#x6237;&amp;#x7A7A;&amp;#x95F4;&amp;#x987A;&amp;#x5E8F;&amp;#x8F93;&amp;#x51FA;</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
