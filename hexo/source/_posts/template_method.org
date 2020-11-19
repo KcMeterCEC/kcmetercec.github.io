@@ -1,0 +1,257 @@
+#+TITLE: [What] 模板方法
+#+DATE:<2020-10-10 六> 
+#+TAGS: c++
+#+LAYOUT: post 
+#+CATEGORIES: language, c/c++, GoF
+#+NAME: <template_method.org>
+#+OPTIONS: ^:nil
+#+OPTIONS: ^:{}
+
+学习视频：《c++ 设计模式》
+
+从封装变化角度对模式分类：
+- 组件协作：通过 *晚期绑定* ，来实现框架和应用之间的松耦合
+  + Template Method
+  + Strategy
+  + Observer / Event
+- 单一职责
+  + Decorator
+  + Bridge
+- 对象创建
+  + Factory Method
+  + Abstract Factory
+  + Prototype
+  + Builder
+- 对象性能
+  + Singleton
+  + Flyweight
+- 接口隔离
+  + Facade
+  + Proxy
+  + Mediator
+  + Adapter
+- 状态变化
+  + Memento
+  + State
+- 数据结构
+  + Composite
+  + Iterator
+  + Chain of Resposibility
+- 行为变化
+  + Command
+  + Visitor
+- 领域问题
+  + Interpreter
+
+
+#+BEGIN_EXPORT html
+<!--more-->
+#+END_EXPORT
+
+* 问题
+在软件开发过程中，一般是会先开发软件的整体框架。这个框架是由最开始的需求所决定的，一般来讲框架具有稳定的操作结构。
+- 如果到了软件开发后期仍然在改软件框架，说明最开始的需求分析和解决方案的制定步骤出了大问题
+  
+但与框架所交互的组件确实会有很多改变的需求，那么就需要一些方法来应对保证架构稳定的前期下，满足组件的灵活变化。
+* 解决思路
+#+BEGIN_EXAMPLE
+  定义一个操作中的算法的骨架（稳定），将一些步骤延迟（变化）到子类中。
+  Template Method 使得子类可以不改变（复用）一个算法的结构即可重定义（override 重定义）该算法的某些特定步骤。
+#+END_EXAMPLE
+
+以 c++ 的角度来理解就是：
+1. 框架完成了方法的调用流程，这个流程是相对稳定的。
+2. 流程中调用了部分虚函数，这些虚函数是易变化的。
+3. 子类来重定义这些虚函数，以达到不同功能。
+   
+按照 UML 类图的简易逻辑如下：
+
+#+HTML:<img src="https://github.com/KcMeterCEC/explore/blob/master/[language]/[What]c_cpp--base/gof/pic/templateMethod.jpg?raw=true" alt="pic/templateMethod.jpg">
+* 示例
+** 应用调用框架
+按照面向过程的思想，是由应用来调用框架的方法：
+#+BEGIN_SRC cpp
+  //Framework.h
+  #ifndef __FRAMEWORK_H__
+  #define __FRAMEWORK_H__
+
+  class Framework
+  {
+  public:
+    void step1(void);
+    void step3(void);
+    void step4(void);
+  };
+  #endif
+  //Framework.cpp
+  #include <iostream>
+
+  #include "Framework.h"
+
+  void Framework::step1(void)
+  {
+    std::cout << "func step1" << std::endl;
+  }
+  void Framework::step3(void)
+  {
+    std::cout << "func step3" << std::endl;
+  }
+  void Framework::step4(void)
+  {
+    std::cout << "func step4" << std::endl;
+  }
+  //Application.h
+  #ifndef __APPLICATION_H__
+  #define __APPLICATION_H__
+  class Application
+  {
+  public:
+    bool step2(void);
+  };
+  #endif
+  //Application.cpp
+  #include <iostream>
+
+  #include "Application.h"
+
+  bool Application::step2(void)
+  {
+    std::cout << "func step2" << std::endl;
+
+    return true;
+  }
+  //main.cpp
+  #include "Framework.h"
+  #include "Application.h"
+
+  int main(void)
+  {
+    Framework frame;
+    Application app;
+
+    frame.step1();
+
+    if(app.step2())
+      {
+        frame.step3();
+      }
+
+    frame.step4();
+  }
+#+END_SRC
+
+这种方式将稳定的框架执行流程和易变的用户代码混杂在一起，不利于后期维护。
+** 延迟绑定
+应用仅需要填充易变的部分，稳定的框架执行流程应该对用户不可见：
+
+#+BEGIN_SRC cpp
+  //Framework.h
+  #ifndef __FRAMEWORK_H__
+  #define __FRAMEWORK_H__
+
+  class Framework
+  {
+  public:
+    virtual ~Framework();
+    void templateMethod(void);
+  protected:
+    virtual bool step2(void);
+    virtual void step4(void);
+  private:
+    void step1(void);
+    void step3(void);
+  };
+  #endif
+  //Framework.cpp
+  #include <iostream>
+
+  #include "Framework.h"
+
+  Framework::~Framework()
+  {
+
+  }
+
+  void Framework::templateMethod(void)
+  {
+    step1();
+
+    if(step2())
+      {
+        step3();
+      }
+
+    step4();
+  }
+
+  void Framework::step1(void)
+  {
+    std::cout << "func step1" << std::endl;
+  }
+  void Framework::step3(void)
+  {
+    std::cout << "func step3" << std::endl;
+  }
+
+  bool Framework::step2(void)
+  {
+    std::cout << "framework func step2" << std::endl;
+
+    return false;
+  }
+  void Framework::step4(void)
+  {
+    std::cout << "framework func step4" << std::endl;
+  }
+
+  //Application.h
+  #ifndef __APPLICATION_H__
+  #define __APPLICATION_H__
+
+  #include "Framework.h"
+
+  class Application : public Framework
+  {
+  protected:
+    bool step2(void) override;
+    void step4(void) override;
+  };
+  #endif
+
+  //Application.cpp
+  #include <iostream>
+
+  #include "Application.h"
+
+  bool Application::step2(void)
+  {
+    std::cout << "app func step2" << std::endl;
+
+    return true;
+  }
+
+  void Application::step4(void)
+  {
+    std::cout << "app func step4" << std::endl;
+  }
+
+  //main.cpp
+  #include "Framework.h"
+  #include "Application.h"
+
+  int main(void)
+  {
+    Framework *frame = new Application();
+
+    frame->templateMethod();
+
+    delete frame;
+  }
+#+END_SRC
+
+很明显，上面这种方式既易于维护，也很优雅。
+
+* 特别注意
+模板方法是为了提高 *一个算法* 的复用性，也就是说该算法的具体步骤是确定的，仅仅是会改变一个算法中的几个小点。
+
+如果站在更高的层面上来讲，解决一个问题需要多个不同的算法，那就应该使用 *策略模式* 。
