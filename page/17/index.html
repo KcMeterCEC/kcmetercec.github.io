@@ -212,7 +212,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2018/05/24/linux_ps_overview/">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2018/06/17/linux_memory_overview_consume/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
@@ -226,7 +226,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2018/05/24/linux_ps_overview/" class="post-title-link" itemprop="url">[What]Linux下进程和线程的基本概念及操作</a>
+            <a href="/2018/06/17/linux_memory_overview_consume/" class="post-title-link" itemprop="url">[What]Linux 进程(用户空间)内存的消耗与泄露</a>
         </h2>
 
         <div class="post-meta">
@@ -236,7 +236,7 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2018-05-24 00:00:00" itemprop="dateCreated datePublished" datetime="2018-05-24T00:00:00+08:00">2018-05-24</time>
+              <time title="创建时间：2018-06-17 00:00:00" itemprop="dateCreated datePublished" datetime="2018-06-17T00:00:00+08:00">2018-06-17</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
@@ -255,16 +255,16 @@
                 </span>
                   ，
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/linux/ps/" itemprop="url" rel="index"><span itemprop="name">ps</span></a>
+                  <a href="/categories/linux/memory/" itemprop="url" rel="index"><span itemprop="name">memory</span></a>
                 </span>
                   ，
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/linux/ps/overview/" itemprop="url" rel="index"><span itemprop="name">overview</span></a>
+                  <a href="/categories/linux/memory/overview/" itemprop="url" rel="index"><span itemprop="name">overview</span></a>
                 </span>
             </span>
 
           
-            <span id="/2018/05/24/linux_ps_overview/" class="post-meta-item leancloud_visitors" data-flag-title="[What]Linux下进程和线程的基本概念及操作" title="阅读次数">
+            <span id="/2018/06/17/linux_memory_overview_consume/" class="post-meta-item leancloud_visitors" data-flag-title="[What]Linux 进程(用户空间)内存的消耗与泄露" title="阅读次数">
               <span class="post-meta-item-icon">
                 <i class="fa fa-eye"></i>
               </span>
@@ -279,8 +279,8 @@
       </span>
       <span class="post-meta-item-text">Valine：</span>
     
-    <a title="valine" href="/2018/05/24/linux_ps_overview/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2018/05/24/linux_ps_overview/" itemprop="commentCount"></span>
+    <a title="valine" href="/2018/06/17/linux_memory_overview_consume/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2018/06/17/linux_memory_overview_consume/" itemprop="commentCount"></span>
     </a>
   </span>
   
@@ -297,9 +297,391 @@
       
           <div id="content">
 <p>
-&#x8BFE;&#x7A0B;: &#x5B8B;&#x5B9D;&#x534E;&#x8001;&#x5E08;&#x7684;&#x8FDB;&#x7A0B;&#x8BFE;&#x7A0B;
+&#x8BFE;&#x7A0B;: &#x5B8B;&#x5B9D;&#x534E;&#x8001;&#x5E08;&#x7684;&#x5185;&#x5B58;&#x7BA1;&#x7406;
 </p>
 
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">kernel version</th>
+<th scope="col" class="org-left">arch</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">v4.4.0</td>
+<td class="org-left">arm32</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+&#x7406;&#x89E3;&#x8FDB;&#x7A0B;(&#x7528;&#x6237;&#x7A7A;&#x95F4;)&#x5BF9;&#x5185;&#x5B58;&#x7684;&#x6D88;&#x8017;&#x548C;&#x6CC4;&#x9732;&#xFF0C;&#x53EF;&#x4EE5;&#x66F4;&#x597D;&#x7684;&#x76D1;&#x63A7;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x5185;&#x5B58;&#x3002;
+</p>
+
+<p>
+&#x901A;&#x8FC7;&#x524D;&#x9762;&#x7684;&#x8BF4;&#x660E;&#xFF0C;&#x53EF;&#x4EE5;&#x77E5;&#x9053;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x83B7;&#x5F97;&#x7684;&#x5185;&#x5B58;&#x90FD;&#x662F;lazy&#x673A;&#x5236;&#xFF0C;&#x4F46;&#x5728;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x4E2D;&#x7684;&#x865A;&#x62DF;&#x5730;&#x5740;&#x5374;&#x662F;&#x8BA4;&#x4E3A;&#x5DF2;&#x7ECF;&#x88AB;&#x5168;&#x90E8;&#x5206;&#x914D;&#x4E86;&#xFF0C;&#x90A3;&#x4E48;&#x8FD9;&#x4E9B;&#x5730;&#x5740;&#x7A7A;&#x95F4;&#x662F;&#x5982;&#x4F55;&#x8868;&#x793A;&#x7684;&#x5462;&#xFF1F;
+</p>
+
+<p>
+&#x540C;&#x65F6;&#x7528;&#x6237;&#x7A7A;&#x95F4;&#x4E2D;&#x6709;&#x5F88;&#x591A;&#x7684;&#x5171;&#x4EAB;&#x5185;&#x5B58;(&#x6BD4;&#x5982;&#x4EE3;&#x7801;&#x6BB5;)&#xFF0C;&#x8FD9;&#x4E9B;&#x53C8;&#x662F;&#x5982;&#x4F55;&#x8868;&#x793A;&#x7684;&#x5462;&#xFF1F;
+</p>
+<ul class="org-ul">
+<li>VSS(virtual set size)</li>
+<li>RSS(resident set size)</li>
+<li>PSS(proporitional set size)</li>
+<li>USS(unique set size)</li>
+</ul>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2018/06/17/linux_memory_overview_consume/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2018/06/15/linux_debug_perf_flameGraph/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="我的世界">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2018/06/15/linux_debug_perf_flameGraph/" class="post-title-link" itemprop="url">[What]perf 与 Flame Graph联立显示</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-06-15 00:00:00" itemprop="dateCreated datePublished" datetime="2018-06-15T00:00:00+08:00">2018-06-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-08-01 09:09:06" itemprop="dateModified" datetime="2020-08-01T09:09:06+08:00">2020-08-01</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/debug/" itemprop="url" rel="index"><span itemprop="name">debug</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/debug/perf/" itemprop="url" rel="index"><span itemprop="name">perf</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2018/06/15/linux_debug_perf_flameGraph/" class="post-meta-item leancloud_visitors" data-flag-title="[What]perf 与 Flame Graph联立显示" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2018/06/15/linux_debug_perf_flameGraph/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2018/06/15/linux_debug_perf_flameGraph/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <div id="content">
+<p>
+perf &#x662F;Linux(2.6+)&#x5185;&#x7F6E;&#x7684;&#x5F3A;&#x5927;&#x7684;&#x5206;&#x6790;&#x5DE5;&#x5177;&#xFF0C;&#x4F46;&#x662F;&#x5176;&#x8F93;&#x51FA;&#x5E76;&#x4E0D;&#x76F4;&#x89C2;&#xFF0C;&#x914D;&#x5408;&#x706B;&#x7130;&#x56FE;&#x66F4;&#x80FD;&#x603B;&#x89C8;&#x5168;&#x5C40;&#x3002;
+</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2018/06/15/linux_debug_perf_flameGraph/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2018/06/14/linux_debug_gdb_sourcedir/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="我的世界">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2018/06/14/linux_debug_gdb_sourcedir/" class="post-title-link" itemprop="url">[What]GDB 设置源文件路径</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-06-14 00:00:00" itemprop="dateCreated datePublished" datetime="2018-06-14T00:00:00+08:00">2018-06-14</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-08-01 09:09:06" itemprop="dateModified" datetime="2020-08-01T09:09:06+08:00">2020-08-01</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/debug/" itemprop="url" rel="index"><span itemprop="name">debug</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/debug/gdb/" itemprop="url" rel="index"><span itemprop="name">gdb</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2018/06/14/linux_debug_gdb_sourcedir/" class="post-meta-item leancloud_visitors" data-flag-title="[What]GDB 设置源文件路径" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2018/06/14/linux_debug_gdb_sourcedir/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2018/06/14/linux_debug_gdb_sourcedir/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <div id="content">
+<p>
+&#x5728;gdb&#x65E0;&#x6CD5;&#x627E;&#x5230;&#x6E90;&#x6587;&#x4EF6;&#x65F6;&#xFF0C;&#x4E3A;gdb&#x6307;&#x5B9A;&#x6E90;&#x6587;&#x4EF6;&#x7684;&#x8DEF;&#x5F84;&#x3002;
+</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2018/06/14/linux_debug_gdb_sourcedir/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2018/06/14/linux_memory_overview_allocAndFree/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="我的世界">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2018/06/14/linux_memory_overview_allocAndFree/" class="post-title-link" itemprop="url">[What]Linux 内存的申请与释放</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-06-14 00:00:00" itemprop="dateCreated datePublished" datetime="2018-06-14T00:00:00+08:00">2018-06-14</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-08-01 09:09:06" itemprop="dateModified" datetime="2020-08-01T09:09:06+08:00">2020-08-01</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/memory/" itemprop="url" rel="index"><span itemprop="name">memory</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/memory/overview/" itemprop="url" rel="index"><span itemprop="name">overview</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2018/06/14/linux_memory_overview_allocAndFree/" class="post-meta-item leancloud_visitors" data-flag-title="[What]Linux 内存的申请与释放" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2018/06/14/linux_memory_overview_allocAndFree/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2018/06/14/linux_memory_overview_allocAndFree/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <div id="content">
+<p>
+&#x8BFE;&#x7A0B;: &#x5B8B;&#x5B9D;&#x534E;&#x8001;&#x5E08;&#x7684;&#x5185;&#x5B58;&#x7BA1;&#x7406;
+</p>
+
+<p>
+&#x6574;&#x7406;Linux&#x4E2D;&#x7684;&#x5185;&#x5B58;&#x7533;&#x8BF7;&#x4E0E;&#x91CA;&#x653E;&#x7684;&#x539F;&#x7406;&#x3002;
+</p>
 
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
@@ -324,7 +706,7 @@
 </table>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2018/05/24/linux_ps_overview/#more" rel="contents">
+              <a class="btn" href="/2018/06/14/linux_memory_overview_allocAndFree/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -348,7 +730,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2018/05/17/rf_dsp_liquid_base/">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2018/06/07/linux_fs_framebuffer_overview/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
@@ -362,7 +744,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2018/05/17/rf_dsp_liquid_base/" class="post-title-link" itemprop="url">[What]liquid-dsp 体验</a>
+            <a href="/2018/06/07/linux_fs_framebuffer_overview/" class="post-title-link" itemprop="url">[What]Linux framebuffer 基础操作</a>
         </h2>
 
         <div class="post-meta">
@@ -372,7 +754,7 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2018-05-17 00:00:00" itemprop="dateCreated datePublished" datetime="2018-05-17T00:00:00+08:00">2018-05-17</time>
+              <time title="创建时间：2018-06-07 00:00:00" itemprop="dateCreated datePublished" datetime="2018-06-07T00:00:00+08:00">2018-06-07</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
@@ -387,20 +769,20 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/RF/" itemprop="url" rel="index"><span itemprop="name">RF</span></a>
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
                 </span>
                   ，
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/RF/DSP/" itemprop="url" rel="index"><span itemprop="name">DSP</span></a>
+                  <a href="/categories/linux/driver/" itemprop="url" rel="index"><span itemprop="name">driver</span></a>
                 </span>
                   ，
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/RF/DSP/liquid/" itemprop="url" rel="index"><span itemprop="name">liquid</span></a>
+                  <a href="/categories/linux/driver/framebuffer/" itemprop="url" rel="index"><span itemprop="name">framebuffer</span></a>
                 </span>
             </span>
 
           
-            <span id="/2018/05/17/rf_dsp_liquid_base/" class="post-meta-item leancloud_visitors" data-flag-title="[What]liquid-dsp 体验" title="阅读次数">
+            <span id="/2018/06/07/linux_fs_framebuffer_overview/" class="post-meta-item leancloud_visitors" data-flag-title="[What]Linux framebuffer 基础操作" title="阅读次数">
               <span class="post-meta-item-icon">
                 <i class="fa fa-eye"></i>
               </span>
@@ -415,8 +797,8 @@
       </span>
       <span class="post-meta-item-text">Valine：</span>
     
-    <a title="valine" href="/2018/05/17/rf_dsp_liquid_base/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2018/05/17/rf_dsp_liquid_base/" itemprop="commentCount"></span>
+    <a title="valine" href="/2018/06/07/linux_fs_framebuffer_overview/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2018/06/07/linux_fs_framebuffer_overview/" itemprop="commentCount"></span>
     </a>
   </span>
   
@@ -433,11 +815,19 @@
       
           <div id="content">
 <p>
-<a href="https://github.com/jgaeddert/liquid-dsp" target="_blank" rel="noopener">liquid-dsp</a> &#x662F;&#x7528;&#x4E8E;&#x5D4C;&#x5165;&#x5F0F;&#x5E73;&#x53F0;&#x7684;SDR&#x5E93;&#xFF0C;&#x5305;&#x542B;&#x7684;&#x529F;&#x80FD;&#x76F8;&#x5F53;&#x4E30;&#x5BCC;&#xFF0C;&#x5927;&#x5927;&#x63D0;&#x9AD8;&#x4E86;&#x5F00;&#x53D1;&#x6548;&#x7387;&#x3002;
+<b>&#x53C2;&#x8003;&#x8D44;&#x6599;</b>: 
+</p>
+<ol class="org-ol">
+<li><code>linux&#x8BBE;&#x5907;&#x9A71;&#x52A8;&#x5F00;&#x53D1;&#x8BE6;&#x89E3;</code></li>
+<li><a href="http://betteros.org/tut/graphics1.php" target="_blank" rel="noopener">http://betteros.org/tut/graphics1.php</a></li>
+</ol>
+
+<p>
+&#x56DE;&#x987E; <code>framebuffer</code> &#x9A71;&#x52A8;&#x3002;
 </p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2018/05/17/rf_dsp_liquid_base/#more" rel="contents">
+              <a class="btn" href="/2018/06/07/linux_fs_framebuffer_overview/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -461,7 +851,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2018/05/11/scm_git_basic/">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2018/06/04/linux_fs_struct_skeleton/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
@@ -475,7 +865,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2018/05/11/scm_git_basic/" class="post-title-link" itemprop="url">[What]git -> 基本操作</a>
+            <a href="/2018/06/04/linux_fs_struct_skeleton/" class="post-title-link" itemprop="url">[What]Linux文件系统底层流程</a>
         </h2>
 
         <div class="post-meta">
@@ -485,466 +875,7 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2018-05-11 00:00:00" itemprop="dateCreated datePublished" datetime="2018-05-11T00:00:00+08:00">2018-05-11</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-08-01 09:09:06" itemprop="dateModified" datetime="2020-08-01T09:09:06+08:00">2020-08-01</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/scm/" itemprop="url" rel="index"><span itemprop="name">scm</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/scm/git/" itemprop="url" rel="index"><span itemprop="name">git</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/scm/git/base/" itemprop="url" rel="index"><span itemprop="name">base</span></a>
-                </span>
-            </span>
-
-          
-            <span id="/2018/05/11/scm_git_basic/" class="post-meta-item leancloud_visitors" data-flag-title="[What]git -> 基本操作" title="阅读次数">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-eye"></i>
-              </span>
-              <span class="post-meta-item-text">阅读次数：</span>
-              <span class="leancloud-visitors-count"></span>
-            </span>
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="far fa-comment"></i>
-      </span>
-      <span class="post-meta-item-text">Valine：</span>
-    
-    <a title="valine" href="/2018/05/11/scm_git_basic/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2018/05/11/scm_git_basic/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <div id="content">
-<p>
-&#x8BB0;&#x5F55;&#x5BB9;&#x6613;&#x9057;&#x5FD8;&#x7684;&#x4E00;&#x4E9B;&#x64CD;&#x4F5C;&#x3002;
-</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2018/05/11/scm_git_basic/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2018/05/08/matlab_curve_test/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
-      <meta itemprop="name" content="kcmetercec">
-      <meta itemprop="description" content="我的世界">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="explorer">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2018/05/08/matlab_curve_test/" class="post-title-link" itemprop="url">[What]Matlab 测试曲线</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2018-05-08 00:00:00" itemprop="dateCreated datePublished" datetime="2018-05-08T00:00:00+08:00">2018-05-08</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-08-01 09:09:06" itemprop="dateModified" datetime="2020-08-01T09:09:06+08:00">2020-08-01</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/matlab/" itemprop="url" rel="index"><span itemprop="name">matlab</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/matlab/curve/" itemprop="url" rel="index"><span itemprop="name">curve</span></a>
-                </span>
-            </span>
-
-          
-            <span id="/2018/05/08/matlab_curve_test/" class="post-meta-item leancloud_visitors" data-flag-title="[What]Matlab 测试曲线" title="阅读次数">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-eye"></i>
-              </span>
-              <span class="post-meta-item-text">阅读次数：</span>
-              <span class="leancloud-visitors-count"></span>
-            </span>
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="far fa-comment"></i>
-      </span>
-      <span class="post-meta-item-text">Valine：</span>
-    
-    <a title="valine" href="/2018/05/08/matlab_curve_test/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2018/05/08/matlab_curve_test/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <div id="content">
-<p>
-&#x5728;&#x5D4C;&#x5165;&#x5F0F;&#x5F00;&#x53D1;&#x4E2D;&#xFF0C;&#x7ECF;&#x5E38;&#x9700;&#x8981;&#x5BF9;&#x6570;&#x636E;&#x6D41;&#x8FDB;&#x884C;&#x9A8C;&#x8BC1;&#xFF0C;&#x6BD4;&#x8F83;&#x597D;&#x7684;&#x65B9;&#x5F0F;&#x5C31;&#x662F;&#x901A;&#x8FC7; matlab &#x6765;&#x56FE;&#x5F62;&#x5316;&#x7684;&#x663E;&#x793A;&#x66F2;&#x7EBF;&#x3002;
-</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2018/05/08/matlab_curve_test/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2018/05/07/processor_zynq_dbg_axidma/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
-      <meta itemprop="name" content="kcmetercec">
-      <meta itemprop="description" content="我的世界">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="explorer">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2018/05/07/processor_zynq_dbg_axidma/" class="post-title-link" itemprop="url">zynq debug -> axi dma</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2018-05-07 00:00:00" itemprop="dateCreated datePublished" datetime="2018-05-07T00:00:00+08:00">2018-05-07</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-08-01 09:09:06" itemprop="dateModified" datetime="2020-08-01T09:09:06+08:00">2020-08-01</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/processor/" itemprop="url" rel="index"><span itemprop="name">processor</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/processor/zynq/" itemprop="url" rel="index"><span itemprop="name">zynq</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/processor/zynq/debug/" itemprop="url" rel="index"><span itemprop="name">debug</span></a>
-                </span>
-            </span>
-
-          
-            <span id="/2018/05/07/processor_zynq_dbg_axidma/" class="post-meta-item leancloud_visitors" data-flag-title="zynq debug -> axi dma" title="阅读次数">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-eye"></i>
-              </span>
-              <span class="post-meta-item-text">阅读次数：</span>
-              <span class="leancloud-visitors-count"></span>
-            </span>
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="far fa-comment"></i>
-      </span>
-      <span class="post-meta-item-text">Valine：</span>
-    
-    <a title="valine" href="/2018/05/07/processor_zynq_dbg_axidma/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2018/05/07/processor_zynq_dbg_axidma/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <div id="content">
-<p>
-&#x8BB0;&#x5F55;&#x5728;&#x8C03;&#x8BD5;axi dma &#x8FC7;&#x7A0B;&#x4E2D;&#x6240;&#x9700;&#x8981;&#x7684;&#x95EE;&#x9898;&#x3002;
-</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2018/05/07/processor_zynq_dbg_axidma/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2018/05/02/processor_zynq_petalinux_mkfs/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
-      <meta itemprop="name" content="kcmetercec">
-      <meta itemprop="description" content="我的世界">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="explorer">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2018/05/02/processor_zynq_petalinux_mkfs/" class="post-title-link" itemprop="url">zynq petalinux -> 使能ext格式化</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2018-05-02 00:00:00" itemprop="dateCreated datePublished" datetime="2018-05-02T00:00:00+08:00">2018-05-02</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-08-01 09:09:06" itemprop="dateModified" datetime="2020-08-01T09:09:06+08:00">2020-08-01</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/processor/" itemprop="url" rel="index"><span itemprop="name">processor</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/processor/zynq/" itemprop="url" rel="index"><span itemprop="name">zynq</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/processor/zynq/petalinux/" itemprop="url" rel="index"><span itemprop="name">petalinux</span></a>
-                </span>
-            </span>
-
-          
-            <span id="/2018/05/02/processor_zynq_petalinux_mkfs/" class="post-meta-item leancloud_visitors" data-flag-title="zynq petalinux -> 使能ext格式化" title="阅读次数">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-eye"></i>
-              </span>
-              <span class="post-meta-item-text">阅读次数：</span>
-              <span class="leancloud-visitors-count"></span>
-            </span>
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="far fa-comment"></i>
-      </span>
-      <span class="post-meta-item-text">Valine：</span>
-    
-    <a title="valine" href="/2018/05/02/processor_zynq_petalinux_mkfs/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2018/05/02/processor_zynq_petalinux_mkfs/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <div id="content">
-<ul class="org-ul">
-<li>&#x95EE;&#x9898;&#xFF1A;</li>
-</ul>
-<p>
-&#x9ED8;&#x8BA4;&#x60C5;&#x51B5;&#x4E0B; petalinux(2016.2) &#x4E2D;&#x4F7F;&#x7528;&#x547D;&#x4EE4; <code>mkfs</code> &#x4EC5;&#x80FD;&#x627E;&#x5230; <code>mkfs.vfat</code> &#x4E00;&#x9879;&#x547D;&#x4EE4;&#xFF0C;&#x5E76;&#x6CA1;&#x6709;&#x627E;&#x5230; <code>mkfs.ext</code> &#x8FD9;&#x7C7B;&#x547D;&#x4EE4;&#x3002;
-</p>
-<ul class="org-ul">
-<li>&#x89E3;&#x51B3;&#xFF1A;</li>
-</ul>
-<p>
-&#x53EF;&#x4EE5;&#x731C;&#x60F3;&#xFF0C;&#x8FD9;&#x662F;&#x7531;&#x4E8E;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x4E2D;&#x5E76;&#x6CA1;&#x6709;&#x52A0;&#x5165;ext&#x76F8;&#x5173;&#x683C;&#x5F0F;&#x5316;&#x547D;&#x4EE4;&#x9020;&#x6210;&#x7684;&#xFF0C;&#x6240;&#x4EE5;&#x9700;&#x8981;&#x91CD;&#x65B0;&#x914D;&#x7F6E;&#x4E00;&#x4E0B;&#x6839;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x3002;
-</p>
-
-<p>
-&#x4F7F;&#x7528;&#x547D;&#x4EE4; <code>petalinux-config -c rootfs</code> &#x5E76;&#x627E;&#x5230;&#x8DEF;&#x5F84; <code>Filesystem Packages -&gt; base -&gt; e2fsprogs</code> &#x9009;&#x4E2D;&#x6B64;&#x8DEF;&#x5F84;&#x4E2D;&#x6240;&#x6709;&#x9009;&#x9879;&#xFF0C;
-&#x91CD;&#x65B0;&#x7F16;&#x8BD1;&#x5E76;&#x6253;&#x5305;&#xFF0C;&#x4FBF;&#x53EF;&#x4EE5;&#x53D1;&#x73B0;&#x5177;&#x6709;&#x547D;&#x4EE4; <code>mkfs.ext2, mkfs.ext3, mkfs.ext4</code> &#x4EE5;&#x53CA;&#x5BF9;&#x5E94;&#x7684;fsck&#x547D;&#x4EE4;&#x3002;
-</p>
-</div>
-<div id="postamble" class="status">
-Last Updated 2020-10-19 &#x4E00; 22:29.<br>Render by <a href="https://github.com/CodeFalling/hexo-renderer-org" target="_blank" rel="noopener">hexo-renderer-org</a> with <a href="https://www.gnu.org/software/emacs/" target="_blank" rel="noopener">Emacs</a> 26.3 (<a href="https://orgmode.org" target="_blank" rel="noopener">Org</a> mode 9.4)
-</div>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2018/04/29/linux_fs_struct_base/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
-      <meta itemprop="name" content="kcmetercec">
-      <meta itemprop="description" content="我的世界">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="explorer">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2018/04/29/linux_fs_struct_base/" class="post-title-link" itemprop="url">[What]Linux文件系统基本脉络</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2018-04-29 00:00:00" itemprop="dateCreated datePublished" datetime="2018-04-29T00:00:00+08:00">2018-04-29</time>
+              <time title="创建时间：2018-06-04 00:00:00" itemprop="dateCreated datePublished" datetime="2018-06-04T00:00:00+08:00">2018-06-04</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
@@ -972,7 +903,7 @@ Last Updated 2020-10-19 &#x4E00; 22:29.<br>Render by <a href="https://github.com
             </span>
 
           
-            <span id="/2018/04/29/linux_fs_struct_base/" class="post-meta-item leancloud_visitors" data-flag-title="[What]Linux文件系统基本脉络" title="阅读次数">
+            <span id="/2018/06/04/linux_fs_struct_skeleton/" class="post-meta-item leancloud_visitors" data-flag-title="[What]Linux文件系统底层流程" title="阅读次数">
               <span class="post-meta-item-icon">
                 <i class="fa fa-eye"></i>
               </span>
@@ -987,8 +918,8 @@ Last Updated 2020-10-19 &#x4E00; 22:29.<br>Render by <a href="https://github.com
       </span>
       <span class="post-meta-item-text">Valine：</span>
     
-    <a title="valine" href="/2018/04/29/linux_fs_struct_base/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2018/04/29/linux_fs_struct_base/" itemprop="commentCount"></span>
+    <a title="valine" href="/2018/06/04/linux_fs_struct_skeleton/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2018/06/04/linux_fs_struct_skeleton/" itemprop="commentCount"></span>
     </a>
   </span>
   
@@ -1005,12 +936,11 @@ Last Updated 2020-10-19 &#x4E00; 22:29.<br>Render by <a href="https://github.com
       
           <div id="content">
 <p>
-&#x8BB0;&#x5F55;&#x4ECE;&#x4E0A;&#x5C42;&#x7528;&#x6237;&#x64CD;&#x4F5C;&#x5230;&#x5E95;&#x5C42;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x4E4B;&#x95F4;&#x7684;&#x8C03;&#x7528;&#x6D41;&#x7A0B;&#x4EE5;&#x53CA;&#x6570;&#x636E;&#x6D41;&#x3002;
+&#x68B3;&#x7406;&#x5176;&#x5E95;&#x5C42;&#x6D41;&#x7A0B;&#xFF0C;&#x7406;&#x89E3;&#x6700;&#x540E;&#x662F;&#x5982;&#x4F55;&#x8BBF;&#x95EE;&#x5230;&#x786C;&#x76D8;&#x7684;&#x3002;
 </p>
-<img src="https://github.com/KcMeterCEC/explore/blob/master/[Linux]/[fs]/[What]Linux--fs_struct/vfs_fileoperations.jpg?raw=true" alt="vfs_fileoperations.jpg">
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2018/04/29/linux_fs_struct_base/#more" rel="contents">
+              <a class="btn" href="/2018/06/04/linux_fs_struct_skeleton/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -1034,7 +964,7 @@ Last Updated 2020-10-19 &#x4E00; 22:29.<br>Render by <a href="https://github.com
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2018/04/28/processor_zynq_hd_ttc/">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2018/06/01/linux_Makefile_overview/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
@@ -1048,7 +978,7 @@ Last Updated 2020-10-19 &#x4E00; 22:29.<br>Render by <a href="https://github.com
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2018/04/28/processor_zynq_hd_ttc/" class="post-title-link" itemprop="url">zynq hardware -> ttc</a>
+            <a href="/2018/06/01/linux_Makefile_overview/" class="post-title-link" itemprop="url">[What]Makefile 基本使用</a>
         </h2>
 
         <div class="post-meta">
@@ -1058,120 +988,7 @@ Last Updated 2020-10-19 &#x4E00; 22:29.<br>Render by <a href="https://github.com
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2018-04-28 00:00:00" itemprop="dateCreated datePublished" datetime="2018-04-28T00:00:00+08:00">2018-04-28</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-08-01 09:09:06" itemprop="dateModified" datetime="2020-08-01T09:09:06+08:00">2020-08-01</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/processor/" itemprop="url" rel="index"><span itemprop="name">processor</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/processor/zynq/" itemprop="url" rel="index"><span itemprop="name">zynq</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/processor/zynq/hardware/" itemprop="url" rel="index"><span itemprop="name">hardware</span></a>
-                </span>
-            </span>
-
-          
-            <span id="/2018/04/28/processor_zynq_hd_ttc/" class="post-meta-item leancloud_visitors" data-flag-title="zynq hardware -> ttc" title="阅读次数">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-eye"></i>
-              </span>
-              <span class="post-meta-item-text">阅读次数：</span>
-              <span class="leancloud-visitors-count"></span>
-            </span>
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="far fa-comment"></i>
-      </span>
-      <span class="post-meta-item-text">Valine：</span>
-    
-    <a title="valine" href="/2018/04/28/processor_zynq_hd_ttc/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2018/04/28/processor_zynq_hd_ttc/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <div id="content">
-<p>
-&#x7531;&#x4E8E;xilinx&#x5B98;&#x65B9;&#x63D0;&#x4F9B;&#x7684;TTC&#x7684;linux&#x9A71;&#x52A8;&#x5E76;&#x6CA1;&#x6709;&#x63D0;&#x4F9B;PWM&#x529F;&#x80FD;&#xFF0C;&#x6240;&#x4EE5;&#x6B64;&#x90E8;&#x5206;&#x9700;&#x8981;&#x81EA;&#x5DF1;&#x6765;&#x5B9E;&#x73B0;&#xFF0C;&#x5F53;&#x7136;&#x5C31;&#x8981;&#x6765;&#x4E86;&#x89E3;&#x4E00;&#x4E0B;&#x786C;&#x4EF6;&#x54AF;&#x3002;
-</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2018/04/28/processor_zynq_hd_ttc/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2018/04/26/linux_driver_chip_inc_encoder/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
-      <meta itemprop="name" content="kcmetercec">
-      <meta itemprop="description" content="我的世界">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="explorer">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2018/04/26/linux_driver_chip_inc_encoder/" class="post-title-link" itemprop="url">[What]linux -> incremental rotary encoder</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2018-04-26 00:00:00" itemprop="dateCreated datePublished" datetime="2018-04-26T00:00:00+08:00">2018-04-26</time>
+              <time title="创建时间：2018-06-01 00:00:00" itemprop="dateCreated datePublished" datetime="2018-06-01T00:00:00+08:00">2018-06-01</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
@@ -1190,16 +1007,16 @@ Last Updated 2020-10-19 &#x4E00; 22:29.<br>Render by <a href="https://github.com
                 </span>
                   ，
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/linux/driver/" itemprop="url" rel="index"><span itemprop="name">driver</span></a>
+                  <a href="/categories/linux/make/" itemprop="url" rel="index"><span itemprop="name">make</span></a>
                 </span>
                   ，
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/linux/driver/chip/" itemprop="url" rel="index"><span itemprop="name">chip</span></a>
+                  <a href="/categories/linux/make/Makefile/" itemprop="url" rel="index"><span itemprop="name">Makefile</span></a>
                 </span>
             </span>
 
           
-            <span id="/2018/04/26/linux_driver_chip_inc_encoder/" class="post-meta-item leancloud_visitors" data-flag-title="[What]linux -> incremental rotary encoder" title="阅读次数">
+            <span id="/2018/06/01/linux_Makefile_overview/" class="post-meta-item leancloud_visitors" data-flag-title="[What]Makefile 基本使用" title="阅读次数">
               <span class="post-meta-item-icon">
                 <i class="fa fa-eye"></i>
               </span>
@@ -1214,8 +1031,8 @@ Last Updated 2020-10-19 &#x4E00; 22:29.<br>Render by <a href="https://github.com
       </span>
       <span class="post-meta-item-text">Valine：</span>
     
-    <a title="valine" href="/2018/04/26/linux_driver_chip_inc_encoder/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2018/04/26/linux_driver_chip_inc_encoder/" itemprop="commentCount"></span>
+    <a title="valine" href="/2018/06/01/linux_Makefile_overview/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2018/06/01/linux_Makefile_overview/" itemprop="commentCount"></span>
     </a>
   </span>
   
@@ -1232,12 +1049,11 @@ Last Updated 2020-10-19 &#x4E00; 22:29.<br>Render by <a href="https://github.com
       
           <div id="content">
 <p>
-&#x672C;&#x6765;&#x60F3;&#x81EA;&#x5DF1;&#x5199;&#x4E2A;&#x589E;&#x91CF;&#x7F16;&#x7801;&#x5668;&#x7684;client driver&#xFF0C;&#x7ED3;&#x679C;&#x4E00;&#x641C; <code>Documentation/input/rotary-encoder.txt</code> &#x53D1;&#x73B0;&#x5185;&#x6838;&#x5DF2;&#x7ECF;&#x63D0;&#x4F9B;&#x4E86;&#x901A;&#x7528;&#x6846;&#x67B6;&#x4E86;&#x3002;
-&#x8FD9;&#x91CC;&#x5C31;&#x8BB0;&#x5F55;&#x4EE5;&#x4E0B;&#x6B64;&#x6846;&#x67B6;&#x7684;&#x4F7F;&#x7528;&#x3002;
+Makefile &#x4E45;&#x4E86;&#x4E0D;&#x7528;&#x5C31;&#x53C8;&#x5FD8;&#x4E86;&#x2026;&#x2026;
 </p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2018/04/26/linux_driver_chip_inc_encoder/#more" rel="contents">
+              <a class="btn" href="/2018/06/01/linux_Makefile_overview/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -1261,7 +1077,7 @@ Last Updated 2020-10-19 &#x4E00; 22:29.<br>Render by <a href="https://github.com
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2018/04/26/linux_fs_overview_struct/">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2018/05/31/book_csapp_chapter_1_1/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
@@ -1275,7 +1091,7 @@ Last Updated 2020-10-19 &#x4E00; 22:29.<br>Render by <a href="https://github.com
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2018/04/26/linux_fs_overview_struct/" class="post-title-link" itemprop="url">[What]Linux文件系统结构概览</a>
+            <a href="/2018/05/31/book_csapp_chapter_1_1/" class="post-title-link" itemprop="url">[What]A Tour of Computer Systems</a>
         </h2>
 
         <div class="post-meta">
@@ -1285,7 +1101,116 @@ Last Updated 2020-10-19 &#x4E00; 22:29.<br>Render by <a href="https://github.com
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2018-04-26 00:00:00" itemprop="dateCreated datePublished" datetime="2018-04-26T00:00:00+08:00">2018-04-26</time>
+              <time title="创建时间：2018-05-31 00:00:00" itemprop="dateCreated datePublished" datetime="2018-05-31T00:00:00+08:00">2018-05-31</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-08-01 09:09:06" itemprop="dateModified" datetime="2020-08-01T09:09:06+08:00">2020-08-01</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/book/" itemprop="url" rel="index"><span itemprop="name">book</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/book/CS-APP/" itemprop="url" rel="index"><span itemprop="name">CS:APP</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2018/05/31/book_csapp_chapter_1_1/" class="post-meta-item leancloud_visitors" data-flag-title="[What]A Tour of Computer Systems" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2018/05/31/book_csapp_chapter_1_1/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2018/05/31/book_csapp_chapter_1_1/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <div id="content">
+<p>
+&#x91CD;&#x65B0;&#x8BA4;&#x8BC6;&#x8BA1;&#x7B97;&#x673A;&#x7CFB;&#x7EDF;&#x3002;
+</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2018/05/31/book_csapp_chapter_1_1/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2018/05/29/linux_fs_struct_detail/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="我的世界">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2018/05/29/linux_fs_struct_detail/" class="post-title-link" itemprop="url">[What]Linux文件系统基本实现</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-05-29 00:00:00" itemprop="dateCreated datePublished" datetime="2018-05-29T00:00:00+08:00">2018-05-29</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
@@ -1308,12 +1233,12 @@ Last Updated 2020-10-19 &#x4E00; 22:29.<br>Render by <a href="https://github.com
                 </span>
                   ，
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/linux/fs/overview/" itemprop="url" rel="index"><span itemprop="name">overview</span></a>
+                  <a href="/categories/linux/fs/struct/" itemprop="url" rel="index"><span itemprop="name">struct</span></a>
                 </span>
             </span>
 
           
-            <span id="/2018/04/26/linux_fs_overview_struct/" class="post-meta-item leancloud_visitors" data-flag-title="[What]Linux文件系统结构概览" title="阅读次数">
+            <span id="/2018/05/29/linux_fs_struct_detail/" class="post-meta-item leancloud_visitors" data-flag-title="[What]Linux文件系统基本实现" title="阅读次数">
               <span class="post-meta-item-icon">
                 <i class="fa fa-eye"></i>
               </span>
@@ -1328,8 +1253,8 @@ Last Updated 2020-10-19 &#x4E00; 22:29.<br>Render by <a href="https://github.com
       </span>
       <span class="post-meta-item-text">Valine：</span>
     
-    <a title="valine" href="/2018/04/26/linux_fs_overview_struct/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2018/04/26/linux_fs_overview_struct/" itemprop="commentCount"></span>
+    <a title="valine" href="/2018/05/29/linux_fs_struct_detail/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2018/05/29/linux_fs_struct_detail/" itemprop="commentCount"></span>
     </a>
   </span>
   
@@ -1344,17 +1269,130 @@ Last Updated 2020-10-19 &#x4E00; 22:29.<br>Render by <a href="https://github.com
     <div class="post-body" itemprop="articleBody">
 
       
-          &#xFEFF;<div id="content">
+          <div id="content">
 <p>
-&#x590D;&#x4E60;&#x7F51;&#x7AD9;&#xFF1A; <a href="http://linux.vbird.org/linux_basic/0230filesystem.php#" target="_blank" rel="noopener">&#x9E1F;&#x54E5;&#x79C1;&#x623F;&#x83DC;</a>
-</p>
-
-<p>
-&#x91CD;&#x6E29;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;(ext)&#x7684;&#x76F8;&#x5173;&#x64CD;&#x4F5C;&#x5E76;&#x505A;&#x6574;&#x7406;&#xFF0C;&#x4E0D;&#x7136;&#x6211;&#x8FD9;&#x5C3F;&#x8BB0;&#x6027;&#x8981;&#x4E0D;&#x4E86;&#x591A;&#x4E45;&#x53C8;&#x4F1A;&#x5FD8;&#x3002;&#x3002;&#x3002;
+&#x7EE7;&#x7EED;&#x6DF1;&#x5165;&#x7406;&#x89E3;&#x6587;&#x4EF6;&#x7CFB;&#x7EDF;&#x7684;&#x5B9E;&#x73B0;&#x3002;
 </p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2018/04/26/linux_fs_overview_struct/#more" rel="contents">
+              <a class="btn" href="/2018/05/29/linux_fs_struct_detail/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2018/05/26/linux_ps_schedule/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="我的世界">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2018/05/26/linux_ps_schedule/" class="post-title-link" itemprop="url">[What]Linux下进程和线程的调度</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-05-26 00:00:00" itemprop="dateCreated datePublished" datetime="2018-05-26T00:00:00+08:00">2018-05-26</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-08-01 09:09:06" itemprop="dateModified" datetime="2020-08-01T09:09:06+08:00">2020-08-01</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/ps/" itemprop="url" rel="index"><span itemprop="name">ps</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/ps/overview/" itemprop="url" rel="index"><span itemprop="name">overview</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2018/05/26/linux_ps_schedule/" class="post-meta-item leancloud_visitors" data-flag-title="[What]Linux下进程和线程的调度" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2018/05/26/linux_ps_schedule/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2018/05/26/linux_ps_schedule/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <div id="content">
+<p>
+&#x8BFE;&#x7A0B;&#xFF1A;&#x5B8B;&#x5B9D;&#x534E;&#x8001;&#x5E08;&#x7684;&#x8FDB;&#x7A0B;&#x8BFE;&#x7A0B;
+</p>
+
+<p>
+&#x6574;&#x7406;Linux&#x4E0B;&#x7684;&#x8FDB;&#x7A0B;&#x548C;&#x7EBF;&#x7A0B;&#x7684;&#x8C03;&#x5EA6;&#x3002;
+</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2018/05/26/linux_ps_schedule/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -1377,7 +1415,7 @@ Last Updated 2020-10-19 &#x4E00; 22:29.<br>Render by <a href="https://github.com
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/16/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/16/">16</a><span class="page-number current">17</span><a class="page-number" href="/page/18/">18</a><span class="space">&hellip;</span><a class="page-number" href="/page/26/">26</a><a class="extend next" rel="next" href="/page/18/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/16/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/16/">16</a><span class="page-number current">17</span><a class="page-number" href="/page/18/">18</a><span class="space">&hellip;</span><a class="page-number" href="/page/27/">27</a><a class="extend next" rel="next" href="/page/18/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -1445,7 +1483,7 @@ Last Updated 2020-10-19 &#x4E00; 22:29.<br>Render by <a href="https://github.com
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">252</span>
+          <span class="site-state-item-count">263</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
