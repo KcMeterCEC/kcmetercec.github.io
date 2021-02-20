@@ -64,7 +64,7 @@ std::vector<std::shared_ptr<Widget>> vpw{ pw1, pw2 };
 
 `unique_ptr`在使用自定义`delete`函数后，其占用会增大。但是，`shared_ptr`的大小确不会改变。
 
-![]("https://github.com/KcMeterCEC/explore/blob/master/[language]/[What]c_cpp--base/effective_modern/pic/item19/shared_ptr.jpg?raw=true")
+![](https://github.com/KcMeterCEC/explore/blob/master/[language]/[What]c_cpp--base/effective_modern/pic/item19/shared_ptr.jpg?raw=true)
 如上图所示，这是因为`shared_ptr`中的成员变量一个是指向类型的指针，一个是指向 Control Block 的指针。
 
 所以新增的内容都会位于 Control Block 的堆区，而不会影响`shared_ptr`的大小。
