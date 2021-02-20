@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="zLSyD2CN1AkyJqei3qKraT6372nBgMFKWe6kAj5JDeY">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习书籍：  《QmlBook》  Qt 版本：Qt 5.12.10 前面学了基础元素的基本操作部分，现在来学习一下动画。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="[What]Qt Quick QML 中的动画元素">
+<meta property="og:url" content="http://kcmetercec.top/2021/02/08/Qt_quick_qml_fluid_overview/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="学习书籍：  《QmlBook》  Qt 版本：Qt 5.12.10 前面学了基础元素的基本操作部分，现在来学习一下动画。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2021-02-07T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-02-07T16:00:00.000Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="Qt">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://kcmetercec.top/2021/02/08/Qt_quick_qml_fluid_overview/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>[What]Qt Quick QML 中的动画元素 | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=112423075-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '112423075-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2ab4cc06d0da36106a4426465d0cb00d";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2021/02/08/Qt_quick_qml_fluid_overview/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="我的世界">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          [What]Qt Quick QML 中的动画元素
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-02-08 00:00:00" itemprop="dateCreated datePublished" datetime="2021-02-08T00:00:00+08:00">2021-02-08</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Qt/" itemprop="url" rel="index"><span itemprop="name">Qt</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Qt/Quick/" itemprop="url" rel="index"><span itemprop="name">Quick</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2021/02/08/Qt_quick_qml_fluid_overview/" class="post-meta-item leancloud_visitors" data-flag-title="[What]Qt Quick QML 中的动画元素" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2021/02/08/Qt_quick_qml_fluid_overview/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2021/02/08/Qt_quick_qml_fluid_overview/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>8.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>7 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>学习书籍：</p>
+<ol>
+<li><a href="http://qmlbook.github.io/index.html" target="_blank" rel="noopener">《QmlBook》</a></li>
+</ol>
+<p>Qt 版本：Qt 5.12.10</p>
+<p>前面学了基础元素的基本操作部分，现在来学习一下动画。</p>
+<a id="more"></a>
+
+<h1 id="基础属性"><a href="#基础属性" class="headerlink" title="基础属性"></a>基础属性</h1><p>动画（Animations）用于控制一个对象的属性在改变时的中间插值过程。</p>
+<p>所有的动画都共用一个定时器，所以这些动画可以实现同步。</p>
+<p>一个动画是改变了一个对象的多个属性来完成的，所以动画具有很多元素来实现这些属性的修改，以下是常用的元素：</p>
+<ul>
+<li><code>PropertyAnimation</code> : 动态的修改属性的值</li>
+<li><code>NumberAnimation</code> : 动态的修改类型为 qreal 的值</li>
+<li><code>ColorAnimation</code> : 动态的修改颜色值</li>
+<li><code>RotationAnimation</code> : 动态的修改旋转角度</li>
+</ul>
+<p>除此之外还有以下元素用于特定场合：</p>
+<ul>
+<li><code>PauseAnimation</code> : 暂停动画</li>
+<li><code>SequentialAnimation</code> : 将多个动画串联</li>
+<li><code>ParallelAnimation</code> : 将多个动画并联</li>
+<li><code>AnchorAnimation</code> : 动态修改 anchor 的值</li>
+<li><code>ParentAnimation</code> : 动态修改父元素的值</li>
+<li><code>SmoothedAnimation</code> : 平滑的修改一个值</li>
+<li><code>SpringAnimation</code> : 弹性修改值</li>
+<li><code>PathAnimation</code> : 根据一个路径来修改</li>
+<li><code>Vector3dAnimation</code> : 动态修改 QVector3d 的值</li>
+</ul>
+<p>而有些时候，我们还会需要动画期间修改属性值或运行一个脚本，为此 Qt Quick 提供了：</p>
+<ul>
+<li><code>PropertyAction</code> : 在动画期间立即修改的属性</li>
+<li><code>ScriptAction</code> : 在动画期间运行脚本 </li>
+</ul>
+<p>当我们想点击一下鼠标将一个对象动态移动时，可以如下：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> QtQuick <span class="number">2.12</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">//以一张图片作为根 root</span></span><br><span class="line">  Image&#123;</span><br><span class="line">      id: root</span><br><span class="line"></span><br><span class="line">      source: <span class="string">"images/background.png"</span></span><br><span class="line"></span><br><span class="line">      <span class="comment">//定义图像间隔，动画执行时间，运行标志</span></span><br><span class="line">      property int padding: <span class="number">40</span></span><br><span class="line">      property int duration: <span class="number">4000</span></span><br><span class="line">      property bool running: <span class="literal">false</span></span><br><span class="line"></span><br><span class="line">      Image&#123;</span><br><span class="line">          id: box</span><br><span class="line">          <span class="comment">//图像位于起始 x 处，y 轴位于父图像中间</span></span><br><span class="line">          x : root.padding</span><br><span class="line">          y : (root.height - height) / <span class="number">2</span></span><br><span class="line">          source : <span class="string">"images/box_green.png"</span></span><br><span class="line"></span><br><span class="line">          <span class="comment">//修改图片 x 坐标的动画</span></span><br><span class="line">          NumberAnimation on x&#123;</span><br><span class="line">              <span class="comment">//终点位置</span></span><br><span class="line">              to: root.width - box.width - root.padding</span><br><span class="line">              <span class="comment">//运行时间</span></span><br><span class="line">              duration: root.duration</span><br><span class="line">              <span class="comment">//开始执行动画的标记</span></span><br><span class="line">              running: root.running</span><br><span class="line">          &#125;</span><br><span class="line"></span><br><span class="line">          <span class="comment">//修改图片的旋转角度</span></span><br><span class="line">          RotationAnimation on rotation&#123;</span><br><span class="line">              <span class="comment">//最终要旋转 360°</span></span><br><span class="line">              to: <span class="number">360</span></span><br><span class="line">              <span class="comment">//运行时间</span></span><br><span class="line">              duration: root.duration</span><br><span class="line">              <span class="comment">//开始执行动画的标记</span></span><br><span class="line">              running: root.running</span><br><span class="line">          &#125;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="comment">//当鼠标点击后，将运行标志位置为真</span></span><br><span class="line">      MouseArea&#123;</span><br><span class="line">          anchors.fill: parent</span><br><span class="line">          onClicked: root.running = <span class="literal">true</span></span><br><span class="line">      &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<h1 id="使用动画"><a href="#使用动画" class="headerlink" title="使用动画"></a>使用动画</h1><p>动画的触发方式有以下 3 种：</p>
+<ol>
+<li><em>Animation on property</em>，当所有的元素被加载后，动画自动启动</li>
+<li><em>Behavior on property</em>，当属性的值被改变后，动画启动</li>
+<li><em>Standalone Animatioin</em>，当显示的使用 <code>stat()</code> 或 <code>running</code> 被设置为真时</li>
+</ol>
+<p>为了更好的理解这几种触发方式，先创建一个组件“ClickableImage”：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//ClickAbleImage.qml</span></span><br><span class="line"><span class="keyword">import</span> QtQuick <span class="number">2.12</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//这次是继承自基类</span></span><br><span class="line">Item &#123;</span><br><span class="line">    id: root</span><br><span class="line">    <span class="comment">//Item 的大小就是子控件的组合大小</span></span><br><span class="line">	width: container.childrenRect.width</span><br><span class="line">	height: container.childrenRect.height</span><br><span class="line">	<span class="comment">//导出组件的 text 和 soruce 属性</span></span><br><span class="line">	property alias text: label.text</span><br><span class="line">	property alias source: image.source</span><br><span class="line">    signal clicked</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//元素排成一列</span></span><br><span class="line">    Column&#123;</span><br><span class="line">		id: container</span><br><span class="line">		Image&#123;</span><br><span class="line">			id: image</span><br><span class="line">		&#125;</span><br><span class="line">		Text&#123;</span><br><span class="line">			id: label</span><br><span class="line">			width: image.width</span><br><span class="line">			horizontalAlignment: Text.AlighHCenter</span><br><span class="line">			wrapMode: Text.WordWrap</span><br><span class="line">			color: <span class="string">"#ececec"</span></span><br><span class="line">		&#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//当捕捉到点击事件后，便发送 clicked 信号</span></span><br><span class="line">    MouseArea&#123;</span><br><span class="line">        anchors.fill: parent</span><br><span class="line">        onClicked: root.clicked()</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>需要注意的是：</strong>该组件的长宽是由其子元素而决定的，所以外部调用者不能再设置其长宽了，否则会破坏该组件的正常显示。</p>
+<p>然后是通过这些触发方式来使用这个组件：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> QtQuick <span class="number">2.12</span></span><br><span class="line"></span><br><span class="line">Rectangle&#123;</span><br><span class="line">    id: root</span><br><span class="line"></span><br><span class="line">    width: <span class="number">500</span>;height: <span class="number">500</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">//这个元素的动画在脚本启动后便会运行</span></span><br><span class="line">    ClickableImage&#123;</span><br><span class="line">        id: greenBox</span><br><span class="line">        x:<span class="number">40</span>;y :root.height - height</span><br><span class="line"></span><br><span class="line">        source:<span class="string">"./images/box_green.png"</span></span><br><span class="line">        text:<span class="string">"animation on property"</span></span><br><span class="line">        </span><br><span class="line">        <span class="comment">//动态的修改 y 值</span></span><br><span class="line">        NumberAnimation on y &#123;</span><br><span class="line">			to: <span class="number">40</span>; duration: <span class="number">4000</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    ClickableImage&#123;</span><br><span class="line">		id: blueBox</span><br><span class="line">		x: (root.width - width) / <span class="number">2</span>;</span><br><span class="line">		y: root.height - height</span><br><span class="line">		</span><br><span class="line">		source:<span class="string">"./images/box_blue.png"</span></span><br><span class="line">		text: <span class="string">"behavior on property"</span></span><br><span class="line">		</span><br><span class="line">		<span class="comment">//动画又 y 值而确定</span></span><br><span class="line">		Behavior on y&#123;</span><br><span class="line">			NumberAnimation&#123;</span><br><span class="line">				duration: <span class="number">4000</span></span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		<span class="comment">//当被点击后，y 坐标通过动画设置到目标值</span></span><br><span class="line">		onClicked: y = <span class="number">40</span> + (<span class="built_in">Math</span>.random() * (<span class="number">205</span><span class="number">-40</span>))</span><br><span class="line">    &#125;</span><br><span class="line">    ClickableImage&#123;</span><br><span class="line">		id: redBox</span><br><span class="line">		x: root.width - width - <span class="number">40</span></span><br><span class="line">		y: root.height - height</span><br><span class="line">		</span><br><span class="line">		source: <span class="string">"./images/box_red.png"</span></span><br><span class="line">		text:<span class="string">"standalone animation"</span></span><br><span class="line">		</span><br><span class="line">		<span class="comment">//这个动画不主动的关联任何属性</span></span><br><span class="line">		NumberAnimation&#123;</span><br><span class="line">			id: anim</span><br><span class="line">			target: redBox</span><br><span class="line">			properties: <span class="string">"y"</span></span><br><span class="line">			to: <span class="number">40</span></span><br><span class="line">			duration: <span class="number">4000</span></span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		<span class="comment">//当被点击后，主动执行动画</span></span><br><span class="line">		onClicked: anim.start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="组合动画"><a href="#组合动画" class="headerlink" title="组合动画"></a>组合动画</h1><ul>
+<li><code>ParallelAnimation</code>使得其子动画可以被并行的执行</li>
+<li><code>SequentialAnimation</code>使得其子动画以串行的方式执行</li>
+</ul>
+<p>如下便是使用并行动画的例子：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> QtQuick <span class="number">2.12</span></span><br><span class="line">Rectangle &#123;</span><br><span class="line">    id: root</span><br><span class="line">    width: <span class="number">600</span></span><br><span class="line">    height: <span class="number">400</span></span><br><span class="line">    color: <span class="string">"#f0f0f0"</span></span><br><span class="line">    border.color: Qt.lighter(color)</span><br><span class="line"></span><br><span class="line">    property int duration: <span class="number">3000</span></span><br><span class="line">    property Item ufo: ufo</span><br><span class="line"></span><br><span class="line">    Image &#123;</span><br><span class="line">        anchors.fill: parent</span><br><span class="line">        source: <span class="string">"./images/ufo_background.png"</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//当该图片被点击后，动画被启动</span></span><br><span class="line">    ClickableImage &#123;</span><br><span class="line">        id: ufo</span><br><span class="line">        x: <span class="number">20</span>; y: root.height-height</span><br><span class="line">        text: <span class="string">'ufo'</span></span><br><span class="line">        source: <span class="string">"./images/ufo.png"</span></span><br><span class="line">        onClicked: anim.restart()</span><br><span class="line">    &#125;</span><br><span class="line">    ParallelAnimation &#123;</span><br><span class="line">        id: anim</span><br><span class="line">        <span class="comment">//此动画用于改变 ufo 的 y 值</span></span><br><span class="line">        NumberAnimation &#123;</span><br><span class="line">            target: ufo</span><br><span class="line">            properties: <span class="string">"y"</span></span><br><span class="line">            to: <span class="number">20</span></span><br><span class="line">            duration: root.duration</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//此动画用于改变 ufo 的 x 值</span></span><br><span class="line">        NumberAnimation &#123;</span><br><span class="line">            target: ufo</span><br><span class="line">            properties: <span class="string">"x"</span></span><br><span class="line">            to: <span class="number">160</span></span><br><span class="line">            duration: root.duration</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>只要将<code>ParallelAnimation</code>修改为<code>SequentialAnimation</code>，图片的移动方式便是串行的了，先改变 y 值，然后改变 x 值。</p>
+<p>并行和串行动画还可以进行嵌套以实现更为复杂的动画:</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> QtQuick <span class="number">2.12</span></span><br><span class="line">Item &#123;</span><br><span class="line">    id: root</span><br><span class="line">    width: <span class="number">570</span></span><br><span class="line">    height: <span class="number">390</span></span><br><span class="line"></span><br><span class="line">    property int duration: <span class="number">3000</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * @brief: 画背景</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    Rectangle &#123;</span><br><span class="line">        id: sky</span><br><span class="line">        width: parent.width</span><br><span class="line">        height: <span class="number">200</span></span><br><span class="line">        gradient: Gradient &#123;</span><br><span class="line">            GradientStop &#123; <span class="attr">position</span>: <span class="number">0.0</span>; color: <span class="string">"#0080FF"</span> &#125;</span><br><span class="line">            GradientStop &#123; <span class="attr">position</span>: <span class="number">1.0</span>; color: <span class="string">"#66CCFF"</span> &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    Rectangle &#123;</span><br><span class="line">        id: ground</span><br><span class="line">        anchors.top: sky.bottom</span><br><span class="line">        anchors.bottom: root.bottom</span><br><span class="line">        width: parent.width</span><br><span class="line">        gradient: Gradient &#123;</span><br><span class="line">            GradientStop &#123; <span class="attr">position</span>: <span class="number">0.0</span>; color: <span class="string">"#00FF00"</span> &#125;</span><br><span class="line">            GradientStop &#123; <span class="attr">position</span>: <span class="number">1.0</span>; color: <span class="string">"#00803F"</span> &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//当图片被点击后，球回到起始位置，动画便开始执行</span></span><br><span class="line">    Image &#123;</span><br><span class="line">        id: ball</span><br><span class="line">        x: <span class="number">0</span>; y: root.height-height</span><br><span class="line">        source: <span class="string">"./images/soccer_ball.png"</span></span><br><span class="line">        MouseArea &#123;</span><br><span class="line">            anchors.fill: parent</span><br><span class="line">            onClicked: &#123;</span><br><span class="line">                    ball.x = <span class="number">0</span>;</span><br><span class="line">                    ball.y = root.height - ball.height;</span><br><span class="line">                    ball.rotation = <span class="number">0</span>;</span><br><span class="line">                    anim.restart()</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 将上下运动和左右运行进行并行</span></span><br><span class="line">    ParallelAnimation &#123;</span><br><span class="line">        id: anim</span><br><span class="line">        <span class="comment">//先做一个顺序动画</span></span><br><span class="line">        SequentialAnimation &#123;</span><br><span class="line">            <span class="comment">//先改变 y 的值，由下到上</span></span><br><span class="line">            NumberAnimation &#123;</span><br><span class="line">                target: ball</span><br><span class="line">                properties: <span class="string">"y"</span></span><br><span class="line">                to: <span class="number">20</span></span><br><span class="line">                duration: root.duration * <span class="number">0.4</span></span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//再改变 y 的值，由上到下</span></span><br><span class="line">            NumberAnimation &#123;</span><br><span class="line">                target: ball</span><br><span class="line">                properties: <span class="string">"y"</span></span><br><span class="line">                to: <span class="number">240</span></span><br><span class="line">                duration: root.duration * <span class="number">0.6</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//这个动画用于改变 x 的值</span></span><br><span class="line">        NumberAnimation &#123;</span><br><span class="line">            target: ball</span><br><span class="line">            properties: <span class="string">"x"</span></span><br><span class="line">            to: <span class="number">400</span></span><br><span class="line">            duration: root.duration</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//运动的同时旋转</span></span><br><span class="line">        RotationAnimation &#123;</span><br><span class="line">            target: ball</span><br><span class="line">            properties: <span class="string">"rotation"</span></span><br><span class="line">            to: <span class="number">720</span></span><br><span class="line">            duration: root.duration</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="状态与转换"><a href="#状态与转换" class="headerlink" title="状态与转换"></a>状态与转换</h1><h2 id="状态"><a href="#状态" class="headerlink" title="状态"></a>状态</h2><p>用户接口可以被设置为多种状态，在状态的切换过程中还可以定义转换的附加动作。</p>
+<p>状态使用<code>State</code>元素来表示，这些元素被放置于<code>states</code>数组中：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> QtQuick <span class="number">2.12</span></span><br><span class="line">Item &#123;</span><br><span class="line">    id: root</span><br><span class="line">    <span class="comment">//注意这里使用的是方括号</span></span><br><span class="line">    states: [</span><br><span class="line">        State &#123;</span><br><span class="line">            name: <span class="string">"go"</span></span><br><span class="line">            PropertyChanges &#123;  &#125;</span><br><span class="line">        &#125;,</span><br><span class="line">        State &#123;</span><br><span class="line">            name: <span class="string">"stop"</span></span><br><span class="line">            PropertyChanges &#123;  &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    ]</span><br><span class="line">    <span class="comment">//状态的散转是通过修改 state 属性来完成的</span></span><br><span class="line">    Button &#123;</span><br><span class="line">        id: goButton</span><br><span class="line">        onClicked: root.state = <span class="string">"go"</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>下面以一个红绿灯的例子来说明操作状态的散转：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> QtQuick <span class="number">2.12</span></span><br><span class="line">Rectangle &#123;</span><br><span class="line">    id: root</span><br><span class="line">    width: <span class="number">150</span></span><br><span class="line">    height: <span class="number">250</span></span><br><span class="line"></span><br><span class="line">    property color black: <span class="string">'#1f1f21'</span></span><br><span class="line">    property color red: <span class="string">'#fc3d39'</span></span><br><span class="line">    property color green: <span class="string">'#53d769'</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    gradient: Gradient &#123;</span><br><span class="line">        GradientStop &#123; <span class="attr">position</span>: <span class="number">0.0</span>; color: <span class="string">"#2ed5fa"</span> &#125;</span><br><span class="line">        GradientStop &#123; <span class="attr">position</span>: <span class="number">1.0</span>; color: <span class="string">"#2467ec"</span> &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    Rectangle &#123;</span><br><span class="line">        id: light1</span><br><span class="line">        x: <span class="number">25</span>; y: <span class="number">15</span></span><br><span class="line">        width: <span class="number">100</span>; height: width</span><br><span class="line">        radius: width/<span class="number">2</span></span><br><span class="line">        color: root.black</span><br><span class="line">        border.color: Qt.lighter(color, <span class="number">1.1</span>)</span><br><span class="line">    &#125;</span><br><span class="line">    Rectangle &#123;</span><br><span class="line">        id: light2</span><br><span class="line">        x: <span class="number">25</span>; y: <span class="number">135</span></span><br><span class="line">        width: <span class="number">100</span>; height: width</span><br><span class="line">        radius: width/<span class="number">2</span></span><br><span class="line">        color: root.black</span><br><span class="line">        border.color: Qt.lighter(color, <span class="number">1.1</span>)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//默认的状态是 stop</span></span><br><span class="line">    state: <span class="string">"stop"</span></span><br><span class="line">    <span class="comment">//状态列表里面有 stop 和 go 两种状态</span></span><br><span class="line">    states: [</span><br><span class="line">        State &#123;</span><br><span class="line">            name: <span class="string">"stop"</span></span><br><span class="line">            PropertyChanges &#123; <span class="attr">target</span>: light1; color: root.red &#125;</span><br><span class="line">            PropertyChanges &#123; <span class="attr">target</span>: light2; color: root.black &#125;</span><br><span class="line">        &#125;,</span><br><span class="line">        State &#123;</span><br><span class="line">            name: <span class="string">"go"</span></span><br><span class="line">            PropertyChanges &#123; <span class="attr">target</span>: light1; color: root.black &#125;</span><br><span class="line">            PropertyChanges &#123; <span class="attr">target</span>: light2; color: root.green &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    ]</span><br><span class="line"></span><br><span class="line">    <span class="comment">//当被点击后，状态就可以切换</span></span><br><span class="line">    MouseArea &#123;</span><br><span class="line">        anchors.fill: parent</span><br><span class="line">        onClicked: parent.state = (parent.state == <span class="string">"stop"</span>? <span class="string">"go"</span> : <span class="string">"stop"</span>)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="转换"><a href="#转换" class="headerlink" title="转换"></a>转换</h2><p>转换也是由多个<code>Transition</code>元素所组成，放置在<code>transitions</code>数组中，以指定状态散转的时候插入中间动作：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> QtQuick <span class="number">2.12</span></span><br><span class="line">Rectangle &#123;</span><br><span class="line">    id: root</span><br><span class="line">    width: <span class="number">150</span></span><br><span class="line">    height: <span class="number">250</span></span><br><span class="line"></span><br><span class="line">    property color black: <span class="string">'#1f1f21'</span></span><br><span class="line">    property color red: <span class="string">'#fc3d39'</span></span><br><span class="line">    property color green: <span class="string">'#53d769'</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    gradient: Gradient &#123;</span><br><span class="line">        GradientStop &#123; <span class="attr">position</span>: <span class="number">0.0</span>; color: <span class="string">"#2ed5fa"</span> &#125;</span><br><span class="line">        GradientStop &#123; <span class="attr">position</span>: <span class="number">1.0</span>; color: <span class="string">"#2467ec"</span> &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    Rectangle &#123;</span><br><span class="line">        id: light1</span><br><span class="line">        x: <span class="number">25</span>; y: <span class="number">15</span></span><br><span class="line">        width: <span class="number">100</span>; height: width</span><br><span class="line">        radius: width/<span class="number">2</span></span><br><span class="line">        color: root.black</span><br><span class="line">        border.color: Qt.lighter(color, <span class="number">1.1</span>)</span><br><span class="line">    &#125;</span><br><span class="line">    Rectangle &#123;</span><br><span class="line">        id: light2</span><br><span class="line">        x: <span class="number">25</span>; y: <span class="number">135</span></span><br><span class="line">        width: <span class="number">100</span>; height: width</span><br><span class="line">        radius: width/<span class="number">2</span></span><br><span class="line">        color: root.black</span><br><span class="line">        border.color: Qt.lighter(color, <span class="number">1.1</span>)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//默认的状态是 stop</span></span><br><span class="line">    state: <span class="string">"stop"</span></span><br><span class="line">    <span class="comment">//状态列表里面有 stop 和 go 两种状态</span></span><br><span class="line">    states: [</span><br><span class="line">        State &#123;</span><br><span class="line">            name: <span class="string">"stop"</span></span><br><span class="line">            PropertyChanges &#123; <span class="attr">target</span>: light1; color: root.red &#125;</span><br><span class="line">            PropertyChanges &#123; <span class="attr">target</span>: light2; color: root.black &#125;</span><br><span class="line">        &#125;,</span><br><span class="line">        State &#123;</span><br><span class="line">            name: <span class="string">"go"</span></span><br><span class="line">            PropertyChanges &#123; <span class="attr">target</span>: light1; color: root.black &#125;</span><br><span class="line">            PropertyChanges &#123; <span class="attr">target</span>: light2; color: root.green &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    ]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    transitions: [</span><br><span class="line">        Transition &#123;</span><br><span class="line">            <span class="comment">//从 stop 状态变化为 go 状态后，将会执行这个转换</span></span><br><span class="line">            <span class="keyword">from</span>: <span class="string">"stop"</span>; to: <span class="string">"go"</span></span><br><span class="line">            <span class="comment">//如果使用通配符的话，则意味着所有状态的转变都会使用该转换</span></span><br><span class="line">            <span class="comment">// from: "*"; to: "*"</span></span><br><span class="line">            <span class="comment">//从 stop 到 go 需要两秒的时间来缓慢切换</span></span><br><span class="line">            ColorAnimation &#123; <span class="attr">target</span>: light1; properties: <span class="string">"color"</span>; duration: <span class="number">2000</span> &#125;</span><br><span class="line">            ColorAnimation &#123; <span class="attr">target</span>: light2; properties: <span class="string">"color"</span>; duration: <span class="number">2000</span> &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    ]</span><br><span class="line"></span><br><span class="line">    <span class="comment">//当被点击后，状态就可以切换</span></span><br><span class="line">    MouseArea &#123;</span><br><span class="line">        anchors.fill: parent</span><br><span class="line">        onClicked: parent.state = (parent.state == <span class="string">"stop"</span>? <span class="string">"go"</span> : <span class="string">"stop"</span>)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Qt/" rel="tag"># Qt</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/02/06/chapter3/" rel="prev" title="[What] C++ Concurrency in Action 2nd ：线程间共享数据">
+      <i class="fa fa-chevron-left"></i> [What] C++ Concurrency in Action 2nd ：线程间共享数据
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/02/08/Qt_quick_control2/" rel="next" title="[What]Qt Quick control 2">
+      [What]Qt Quick control 2 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#基础属性"><span class="nav-number">1.</span> <span class="nav-text">基础属性</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#使用动画"><span class="nav-number">2.</span> <span class="nav-text">使用动画</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#组合动画"><span class="nav-number">3.</span> <span class="nav-text">组合动画</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#状态与转换"><span class="nav-number">4.</span> <span class="nav-text">状态与转换</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#状态"><span class="nav-number">4.1.</span> <span class="nav-text">状态</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#转换"><span class="nav-number">4.2.</span> <span class="nav-text">转换</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">我的世界</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">278</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">113</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">38</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+  
+  <span class="post-meta-divider">|</span>
+  <span>Hosted by <a href="https://pages.coding.me" target="_blank" rel="noopener" style="font-weight: bold">Coding Pages</a></span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">3.7m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">55:33</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+<script>
+  (function() {
+    function leancloudSelector(url) {
+      url = encodeURI(url);
+      return document.getElementById(url).querySelector('.leancloud-visitors-count');
+    }
+
+    function addCount(Counter) {
+      var visitors = document.querySelector('.leancloud_visitors');
+      var url = decodeURI(visitors.id);
+      var title = visitors.dataset.flagTitle;
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          if (results.length > 0) {
+            var counter = results[0];
+            leancloudSelector(url).innerText = counter.time + 1;
+            Counter('put', '/classes/Counter/' + counter.objectId, { time: { '__op': 'Increment', 'amount': 1 } })
+              .catch(error => {
+                console.error('Failed to save visitor count', error);
+              });
+          } else {
+              Counter('post', '/classes/Counter', { title, url, time: 1 })
+                .then(response => response.json())
+                .then(() => {
+                  leancloudSelector(url).innerText = 1;
+                })
+                .catch(error => {
+                  console.error('Failed to create', error);
+                });
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    function showTime(Counter) {
+      var visitors = document.querySelectorAll('.leancloud_visitors');
+      var entries = [...visitors].map(element => {
+        return decodeURI(element.id);
+      });
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url: { '$in': entries } })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          for (let url of entries) {
+            let target = results.find(item => item.url === url);
+            leancloudSelector(url).innerText = target ? target.time : 0;
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    let { app_id, app_key, server_url } = {"enable":true,"app_id":"ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI","app_key":"yh4vrfnscme1utPMpk65wcxn","server_url":null,"security":false};
+    function fetchData(api_server) {
+      var Counter = (method, url, data) => {
+        return fetch(`${api_server}/1.1${url}`, {
+          method,
+          headers: {
+            'X-LC-Id'     : app_id,
+            'X-LC-Key'    : app_key,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+      };
+      if (CONFIG.page.isPost) {
+        if (CONFIG.hostname !== location.hostname) return;
+        addCount(Counter);
+      } else if (document.querySelectorAll('.post-title-link').length >= 1) {
+        showTime(Counter);
+      }
+    }
+
+    let api_server = app_id.slice(-9) !== '-MdYXbMMI' ? server_url : `https://${app_id.slice(0, 8).toLowerCase()}.api.lncldglobal.com`;
+
+    if (api_server) {
+      fetchData(api_server);
+    } else {
+      fetch('https://app-router.leancloud.cn/2/route?appId=' + app_id)
+        .then(response => response.json())
+        .then(({ api_server }) => {
+          fetchData('https://' + api_server);
+        });
+    }
+  })();
+</script>
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+  <script defer src="/lib/three/three.min.js"></script>
+    <script defer src="/lib/three/three-waves.min.js"></script>
+    <script defer src="/lib/three/canvas_lines.min.js"></script>
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI',
+      appKey     : 'yh4vrfnscme1utPMpk65wcxn',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
