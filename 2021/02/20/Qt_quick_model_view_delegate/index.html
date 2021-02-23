@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="zLSyD2CN1AkyJqei3qKraT6372nBgMFKWe6kAj5JDeY">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习书籍：  《QmlBook》  数据以及数据的表现形式是可以分开的，于是便形成了模型-视图-代理这种架构。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="[What]Qt Quick Model view delegate">
+<meta property="og:url" content="http://kcmetercec.top/2021/02/20/Qt_quick_model_view_delegate/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="学习书籍：  《QmlBook》  数据以及数据的表现形式是可以分开的，于是便形成了模型-视图-代理这种架构。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BQt%5D/%5BQuick%5D/QML/model_view_delegate/pic/mode_view_concept.jpg?raw=true">
+<meta property="article:published_time" content="2021-02-19T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-02-19T16:00:00.000Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="Qt">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BQt%5D/%5BQuick%5D/QML/model_view_delegate/pic/mode_view_concept.jpg?raw=true">
+
+<link rel="canonical" href="http://kcmetercec.top/2021/02/20/Qt_quick_model_view_delegate/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>[What]Qt Quick Model view delegate | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=112423075-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '112423075-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2ab4cc06d0da36106a4426465d0cb00d";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2021/02/20/Qt_quick_model_view_delegate/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="我的世界">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          [What]Qt Quick Model view delegate
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-02-20 00:00:00" itemprop="dateCreated datePublished" datetime="2021-02-20T00:00:00+08:00">2021-02-20</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Qt/" itemprop="url" rel="index"><span itemprop="name">Qt</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Qt/Quick/" itemprop="url" rel="index"><span itemprop="name">Quick</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2021/02/20/Qt_quick_model_view_delegate/" class="post-meta-item leancloud_visitors" data-flag-title="[What]Qt Quick Model view delegate" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2021/02/20/Qt_quick_model_view_delegate/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2021/02/20/Qt_quick_model_view_delegate/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>13k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>11 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>学习书籍：</p>
+<ol>
+<li><a href="http://qmlbook.github.io/index.html" target="_blank" rel="noopener">《QmlBook》</a></li>
+</ol>
+<p>数据以及数据的表现形式是可以分开的，于是便形成了<code>模型-视图-代理</code>这种架构。</p>
+<a id="more"></a>
+
+<h1 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h1><p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BQt%5D/%5BQuick%5D/QML/model_view_delegate/pic/mode_view_concept.jpg?raw=true" alt=""></p>
+<ul>
+<li>model: 结构化的数据</li>
+<li>view: 展现数据的前端</li>
+<li>delegate: 关联 model 和 view，view 排列所有的 delegate，而一个 delegate 负责展示 model 中的一个条目（Item）</li>
+</ul>
+<h1 id="基本的模型"><a href="#基本的模型" class="headerlink" title="基本的模型"></a>基本的模型</h1><h2 id="模型内容为数值"><a href="#模型内容为数值" class="headerlink" title="模型内容为数值"></a>模型内容为数值</h2><p>最简易的模型就是使用<code>Repeater</code>来生成 model，model 中的值使用<code>modelData</code>来获取：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> QtQuick <span class="number">2.12</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//Repeater 实例化的显示对象以列排列</span></span><br><span class="line">Column&#123;</span><br><span class="line">    id: root</span><br><span class="line"></span><br><span class="line">    spacing: <span class="number">2</span></span><br><span class="line"></span><br><span class="line">    Repeater&#123;</span><br><span class="line">        <span class="comment">//创建 1 个 model，这个 model 的每个 Item 就是一个数值，总共从 0~9</span></span><br><span class="line">        model: <span class="number">10</span></span><br><span class="line">        <span class="comment">//使用带有 text 的矩形来显示 Item</span></span><br><span class="line">        Rectangle&#123;</span><br><span class="line">            width: <span class="number">120</span></span><br><span class="line">            height: <span class="number">32</span></span><br><span class="line">            color: <span class="string">"#157efb"</span></span><br><span class="line">            border.color: Qt.darker(color, <span class="number">1.2</span>)</span><br><span class="line">            Text &#123;</span><br><span class="line">                id: label</span><br><span class="line">                anchors.centerIn: parent</span><br><span class="line">                font.pixelSize: <span class="number">14</span></span><br><span class="line">                color: <span class="string">'#1f1f1f'</span></span><br><span class="line">                text: modelData</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="模型内容为字符串"><a href="#模型内容为字符串" class="headerlink" title="模型内容为字符串"></a>模型内容为字符串</h2><p><code>Repeater</code>的 model 除了可以用数值方式产生外，还可以以字符串的方式：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> QtQuick <span class="number">2.12</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//Repeater 实例化的显示对象以列排列</span></span><br><span class="line">Column&#123;</span><br><span class="line">    id: root</span><br><span class="line"></span><br><span class="line">    spacing: <span class="number">2</span></span><br><span class="line"></span><br><span class="line">    Repeater&#123;</span><br><span class="line">        <span class="comment">//创建 1 个 model，这个 model 的每个 Item 就是一个数值，总共从 0~9</span></span><br><span class="line">        model: [<span class="string">"Enterprise"</span>, <span class="string">"Columbia"</span>, <span class="string">"Challenger"</span>, <span class="string">"Discovery"</span>, <span class="string">"Endeavour"</span>, <span class="string">"Atlantis"</span>]</span><br><span class="line">        <span class="comment">//使用带有 text 的矩形来显示 Item</span></span><br><span class="line">        Rectangle&#123;</span><br><span class="line">            width: <span class="number">120</span></span><br><span class="line">            height: <span class="number">32</span></span><br><span class="line">            color: <span class="string">"#157efb"</span></span><br><span class="line">            border.color: Qt.darker(color, <span class="number">1.2</span>)</span><br><span class="line">            Text &#123;</span><br><span class="line">                id: label</span><br><span class="line">                anchors.centerIn: parent</span><br><span class="line">                font.pixelSize: <span class="number">14</span></span><br><span class="line">                color: <span class="string">'#1f1f1f'</span></span><br><span class="line">                <span class="comment">//index 就是对应 model 中的每个索引</span></span><br><span class="line">                text: modelData + <span class="string">'('</span> + index + <span class="string">')'</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="模型内容为列表"><a href="#模型内容为列表" class="headerlink" title="模型内容为列表"></a>模型内容为列表</h2><p>当模型中的每个 Item 为复合数据类型时，可以使用<code>ListModel</code>将复合数据绑定为一个 Item：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> QtQuick <span class="number">2.12</span></span><br><span class="line"></span><br><span class="line">Column &#123;</span><br><span class="line">    spacing: <span class="number">2</span></span><br><span class="line">    Repeater &#123;</span><br><span class="line">        model: ListModel &#123;</span><br><span class="line">            ListElement &#123; <span class="attr">name</span>: <span class="string">"Mercury"</span>; surfaceColor: <span class="string">"gray"</span> &#125;</span><br><span class="line">            ListElement &#123; <span class="attr">name</span>: <span class="string">"Venus"</span>; surfaceColor: <span class="string">"yellow"</span> &#125;</span><br><span class="line">            ListElement &#123; <span class="attr">name</span>: <span class="string">"Earth"</span>; surfaceColor: <span class="string">"blue"</span> &#125;</span><br><span class="line">            ListElement &#123; <span class="attr">name</span>: <span class="string">"Mars"</span>; surfaceColor: <span class="string">"orange"</span> &#125;</span><br><span class="line">            ListElement &#123; <span class="attr">name</span>: <span class="string">"Jupiter"</span>; surfaceColor: <span class="string">"orange"</span> &#125;</span><br><span class="line">            ListElement &#123; <span class="attr">name</span>: <span class="string">"Saturn"</span>; surfaceColor: <span class="string">"yellow"</span> &#125;</span><br><span class="line">            ListElement &#123; <span class="attr">name</span>: <span class="string">"Uranus"</span>; surfaceColor: <span class="string">"lightBlue"</span> &#125;</span><br><span class="line">            ListElement &#123; <span class="attr">name</span>: <span class="string">"Neptune"</span>; surfaceColor: <span class="string">"lightBlue"</span> &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        Rectangle &#123;</span><br><span class="line">            width: <span class="number">120</span></span><br><span class="line">            height: <span class="number">32</span></span><br><span class="line">            color: <span class="string">"#157efb"</span></span><br><span class="line">            border.color: Qt.darker(color, <span class="number">1.2</span>)</span><br><span class="line">            Text &#123;</span><br><span class="line">                id: label</span><br><span class="line">                anchors.centerIn: parent</span><br><span class="line">                font.pixelSize: <span class="number">14</span></span><br><span class="line">                color: <span class="string">'#1f1f1f'</span></span><br><span class="line">                <span class="comment">//依次获取 Item 的 name</span></span><br><span class="line">                text: name</span><br><span class="line">            &#125;</span><br><span class="line">            Rectangle &#123;</span><br><span class="line">                anchors.left: parent.left</span><br><span class="line">                anchors.verticalCenter: parent.verticalCenter</span><br><span class="line">                anchors.leftMargin: <span class="number">4</span></span><br><span class="line">                width: <span class="number">16</span></span><br><span class="line">                height: <span class="number">16</span></span><br><span class="line">                radius: <span class="number">8</span></span><br><span class="line">                color: surfaceColor</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="动态视图"><a href="#动态视图" class="headerlink" title="动态视图"></a>动态视图</h1><p><code>Repeater</code>适合用于固定不变的一组数据，但是很多情况下数据都是需要动态变化的，这种情况下就需要使用<code>ListView</code>和<code>GridView</code>。</p>
+<p><code>ListView</code>和<code>GridView</code>支持很多与用户交互的动态操作，比如滑动、拖动等。</p>
+<h2 id="ListView"><a href="#ListView" class="headerlink" title="ListView"></a>ListView</h2><p><code>Repeater</code>会将 Item 的内容显示完整，而 <code>ListView</code>则仅仅显示其中一部分。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> QtQuick <span class="number">2.12</span></span><br><span class="line">Rectangle &#123;</span><br><span class="line">    width: <span class="number">80</span></span><br><span class="line">    height: <span class="number">300</span></span><br><span class="line">    ListView &#123;</span><br><span class="line">        anchors.fill: parent</span><br><span class="line">        anchors.margins: <span class="number">20</span></span><br><span class="line">        clip: <span class="literal">true</span></span><br><span class="line">        model: <span class="number">100</span></span><br><span class="line">        <span class="comment">//delegate 指定显示对象</span></span><br><span class="line">        delegate: numberDelegate</span><br><span class="line">        spacing: <span class="number">5</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//使用 component 打包成一个独立模块</span></span><br><span class="line">    Component &#123;</span><br><span class="line">        id: numberDelegate</span><br><span class="line">        Rectangle &#123;</span><br><span class="line">            id: root</span><br><span class="line">            width: <span class="number">64</span></span><br><span class="line">            height: <span class="number">64</span></span><br><span class="line">            color: <span class="string">"#ffffff"</span></span><br><span class="line">            border.color: Qt.darker(color, <span class="number">1.2</span>)</span><br><span class="line">            Text &#123;</span><br><span class="line">                id: label</span><br><span class="line">                anchors.centerIn: parent</span><br><span class="line">                font.pixelSize: <span class="number">14</span></span><br><span class="line">                color: <span class="string">'#1f1f1f'</span></span><br><span class="line">                text: modelData</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>为了更加好的显示效果，在<code>ListView</code>将属性<code>clip</code>设置为<code>true</code>是建议的。</p>
+<h3 id="方向"><a href="#方向" class="headerlink" title="方向"></a>方向</h3><p><code>ListView</code>默认的方向是竖向排列，可以通过：</p>
+<ul>
+<li><code>orientation: ListView.Horizontal</code>将其设置为横向排列</li>
+<li><code>layoutDirection : ListView.RightToLeft</code>设置为从右向左排列 </li>
+</ul>
+<h3 id="与键盘联动"><a href="#与键盘联动" class="headerlink" title="与键盘联动"></a>与键盘联动</h3><p>如果希望通过键盘来操作选择 model 的 Item，那么需要设置：</p>
+<ul>
+<li><code>focus</code>为<code>true</code>以捕获键盘事件</li>
+<li><code>highlight</code>以绑定高亮显示块</li>
+</ul>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> QtQuick <span class="number">2.12</span></span><br><span class="line">Rectangle &#123;</span><br><span class="line">    width: <span class="number">80</span></span><br><span class="line">    height: <span class="number">300</span></span><br><span class="line">    ListView &#123;</span><br><span class="line">        anchors.fill: parent</span><br><span class="line">        anchors.margins: <span class="number">20</span></span><br><span class="line">        clip: <span class="literal">true</span></span><br><span class="line">        model: <span class="number">100</span></span><br><span class="line">        <span class="comment">//delegate 指定显示对象</span></span><br><span class="line">        delegate: numberDelegate</span><br><span class="line">        spacing: <span class="number">5</span></span><br><span class="line"></span><br><span class="line">        highlight: highlightComponent</span><br><span class="line">        focus: <span class="literal">true</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//使用 component 打包成一个独立模块</span></span><br><span class="line">    Component &#123;</span><br><span class="line">        id: numberDelegate</span><br><span class="line">        Item &#123;</span><br><span class="line">            id: root</span><br><span class="line">            width: ListView.view.width</span><br><span class="line">            height: <span class="number">64</span></span><br><span class="line">            Text &#123;</span><br><span class="line">                id: label</span><br><span class="line">                anchors.centerIn: parent</span><br><span class="line">                font.pixelSize: <span class="number">14</span></span><br><span class="line">                color: <span class="string">'#1f1f1f'</span></span><br><span class="line">                text: modelData</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    Component&#123;</span><br><span class="line">        id: highlightComponent</span><br><span class="line">        Rectangle &#123;</span><br><span class="line">            id: root</span><br><span class="line">            width: ListView.view.width</span><br><span class="line">            height: <span class="number">64</span></span><br><span class="line">            color: <span class="string">"#f8f8f8"</span></span><br><span class="line">            border.color: Qt.darker(color, <span class="number">1.2</span>)</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="头与尾"><a href="#头与尾" class="headerlink" title="头与尾"></a>头与尾</h3><p><code>ListView</code>还可以添加头和尾，以增强对列表的说明或控制。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> QtQuick <span class="number">2.12</span></span><br><span class="line">Rectangle &#123;</span><br><span class="line">    width: <span class="number">80</span></span><br><span class="line">    height: <span class="number">300</span></span><br><span class="line">    ListView &#123;</span><br><span class="line">        anchors.fill: parent</span><br><span class="line">        anchors.margins: <span class="number">20</span></span><br><span class="line">        clip: <span class="literal">true</span></span><br><span class="line">        model: <span class="number">100</span></span><br><span class="line">        <span class="comment">//delegate 指定显示对象</span></span><br><span class="line">        delegate: numberDelegate</span><br><span class="line">        spacing: <span class="number">5</span></span><br><span class="line"></span><br><span class="line">        highlight: highlightComponent</span><br><span class="line">        focus: <span class="literal">true</span></span><br><span class="line"></span><br><span class="line">        header: headerComponent</span><br><span class="line">        footer: footerComponent</span><br><span class="line">    &#125;</span><br><span class="line">    Component &#123;</span><br><span class="line">        id: headerComponent</span><br><span class="line">        Rectangle &#123;</span><br><span class="line">            id: root</span><br><span class="line">            width: ListView.view.width</span><br><span class="line">            height: <span class="number">64</span></span><br><span class="line">            color: <span class="string">"#63f3f3"</span></span><br><span class="line">            border.color: Qt.darker(color, <span class="number">1.2</span>)</span><br><span class="line">            Text &#123;</span><br><span class="line">                id: label</span><br><span class="line">                anchors.centerIn: parent</span><br><span class="line">                font.pixelSize: <span class="number">14</span></span><br><span class="line">                color: <span class="string">'#1f1f1f'</span></span><br><span class="line">                text: <span class="string">"Header"</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    Component &#123;</span><br><span class="line">        id: footerComponent</span><br><span class="line">        Rectangle &#123;</span><br><span class="line">            id: root</span><br><span class="line">            width: ListView.view.width</span><br><span class="line">            height: <span class="number">64</span></span><br><span class="line">            color: <span class="string">"#6363f3"</span></span><br><span class="line">            border.color: Qt.darker(color, <span class="number">1.2</span>)</span><br><span class="line">            Text &#123;</span><br><span class="line">                id: label</span><br><span class="line">                anchors.centerIn: parent</span><br><span class="line">                font.pixelSize: <span class="number">14</span></span><br><span class="line">                color: <span class="string">'#1f1f1f'</span></span><br><span class="line">                text: <span class="string">"Footer"</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//使用 component 打包成一个独立模块</span></span><br><span class="line">    Component &#123;</span><br><span class="line">        id: numberDelegate</span><br><span class="line">        Item &#123;</span><br><span class="line">            id: root</span><br><span class="line">            width: ListView.view.width</span><br><span class="line">            height: <span class="number">64</span></span><br><span class="line">            Text &#123;</span><br><span class="line">                id: label</span><br><span class="line">                anchors.centerIn: parent</span><br><span class="line">                font.pixelSize: <span class="number">14</span></span><br><span class="line">                color: <span class="string">'#1f1f1f'</span></span><br><span class="line">                text: modelData</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    Component&#123;</span><br><span class="line">        id: highlightComponent</span><br><span class="line">        Rectangle &#123;</span><br><span class="line">            id: root</span><br><span class="line">            width: ListView.view.width</span><br><span class="line">            height: <span class="number">64</span></span><br><span class="line">            color: <span class="string">"#f8f8f8"</span></span><br><span class="line">            border.color: Qt.darker(color, <span class="number">1.2</span>)</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="GridView"><a href="#GridView" class="headerlink" title="GridView"></a>GridView</h2><p><code>GridView</code>和<code>ListView</code>都是大同小异，在思想上几乎是一致的。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> QtQuick <span class="number">2.12</span></span><br><span class="line">Rectangle &#123;</span><br><span class="line">    width: <span class="number">80</span></span><br><span class="line">    height: <span class="number">300</span></span><br><span class="line">    GridView &#123;</span><br><span class="line">        anchors.fill: parent</span><br><span class="line">        anchors.margins: <span class="number">20</span></span><br><span class="line">        clip: <span class="literal">true</span></span><br><span class="line">        model: <span class="number">100</span></span><br><span class="line"></span><br><span class="line">        cellHeight: <span class="number">45</span></span><br><span class="line">        cellWidth: <span class="number">45</span></span><br><span class="line">        <span class="comment">//delegate 指定显示对象</span></span><br><span class="line">        delegate: numberDelegate</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//使用 component 打包成一个独立模块</span></span><br><span class="line">    Component &#123;</span><br><span class="line">        id: numberDelegate</span><br><span class="line">        Rectangle &#123;</span><br><span class="line">            id: root</span><br><span class="line">            width: <span class="number">64</span></span><br><span class="line">            height: <span class="number">64</span></span><br><span class="line">            color: <span class="string">"#ffffff"</span></span><br><span class="line">            border.color: Qt.darker(color, <span class="number">1.2</span>)</span><br><span class="line">            Text &#123;</span><br><span class="line">                id: label</span><br><span class="line">                anchors.centerIn: parent</span><br><span class="line">                font.pixelSize: <span class="number">14</span></span><br><span class="line">                color: <span class="string">'#1f1f1f'</span></span><br><span class="line">                text: modelData</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="委托"><a href="#委托" class="headerlink" title="委托"></a>委托</h1><p>模型的每个 item 是通过委托来完成显示的。</p>
+<p>委托相当于是模型与视图之间的桥梁：</p>
+<ul>
+<li>模型将 item 传达给委托</li>
+<li>视图将当前视图的状态信息传达给委托</li>
+</ul>
+<p>比如说下面这个例子，通过<code>isCurrentItem</code>获取键盘是否选择了当前<code>item</code>而决定其颜色：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> QtQuick <span class="number">2.12</span></span><br><span class="line">Rectangle &#123;</span><br><span class="line">    width: <span class="number">120</span></span><br><span class="line">    height: <span class="number">300</span></span><br><span class="line"></span><br><span class="line">    gradient: Gradient&#123;</span><br><span class="line">        GradientStop&#123;<span class="attr">position</span>: <span class="number">0.0</span>; color: <span class="string">"#f6f6f6"</span>&#125;</span><br><span class="line">        GradientStop&#123;<span class="attr">position</span>: <span class="number">1.0</span>; color: <span class="string">"#d7d7d7"</span>&#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    ListView&#123;</span><br><span class="line">        anchors.fill: parent</span><br><span class="line">        anchors.margins: <span class="number">20</span></span><br><span class="line"></span><br><span class="line">        clip: <span class="literal">true</span></span><br><span class="line"></span><br><span class="line">        model: <span class="number">100</span></span><br><span class="line"></span><br><span class="line">        delegate: numberDelegate</span><br><span class="line">        spacing: <span class="number">5</span></span><br><span class="line"></span><br><span class="line">        focus: <span class="literal">true</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    Component&#123;</span><br><span class="line">        id: numberDelegate</span><br><span class="line"></span><br><span class="line">        Rectangle&#123;</span><br><span class="line">            width: ListView.view.width</span><br><span class="line">            height: <span class="number">40</span></span><br><span class="line"></span><br><span class="line">            color: ListView.isCurrentItem ? <span class="string">"#157efb"</span>:<span class="string">"#53d769"</span></span><br><span class="line">            border.color:  Qt.lighter(color, <span class="number">1.1</span>)</span><br><span class="line"></span><br><span class="line">            Text&#123;</span><br><span class="line">                anchors.centerIn: parent</span><br><span class="line"></span><br><span class="line">                font.pixelSize: <span class="number">10</span></span><br><span class="line"></span><br><span class="line">                text:modelData</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="添加动画"><a href="#添加动画" class="headerlink" title="添加动画"></a>添加动画</h2><p>也就是将模型 item 的添加与删除和视图动作对应在一起：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> QtQuick <span class="number">2.5</span></span><br><span class="line"></span><br><span class="line">Rectangle &#123;</span><br><span class="line">    width: <span class="number">480</span></span><br><span class="line">    height: <span class="number">300</span></span><br><span class="line">    gradient: Gradient &#123;</span><br><span class="line">        GradientStop &#123; <span class="attr">position</span>: <span class="number">0.0</span>; color: <span class="string">"#dbddde"</span> &#125;</span><br><span class="line">        GradientStop &#123; <span class="attr">position</span>: <span class="number">1.0</span>; color: <span class="string">"#5fc9f8"</span> &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//创建模型</span></span><br><span class="line">    ListModel &#123;</span><br><span class="line">        id: theModel</span><br><span class="line">        ListElement &#123; <span class="attr">number</span>: <span class="number">0</span> &#125;</span><br><span class="line">        ListElement &#123; <span class="attr">number</span>: <span class="number">1</span> &#125;</span><br><span class="line">        ListElement &#123; <span class="attr">number</span>: <span class="number">2</span> &#125;</span><br><span class="line">        ListElement &#123; <span class="attr">number</span>: <span class="number">3</span> &#125;</span><br><span class="line">        ListElement &#123; <span class="attr">number</span>: <span class="number">4</span> &#125;</span><br><span class="line">        ListElement &#123; <span class="attr">number</span>: <span class="number">5</span> &#125;</span><br><span class="line">        ListElement &#123; <span class="attr">number</span>: <span class="number">6</span> &#125;</span><br><span class="line">        ListElement &#123; <span class="attr">number</span>: <span class="number">7</span> &#125;</span><br><span class="line">        ListElement &#123; <span class="attr">number</span>: <span class="number">8</span> &#125;</span><br><span class="line">        ListElement &#123; <span class="attr">number</span>: <span class="number">9</span> &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    Rectangle &#123;</span><br><span class="line">        anchors.left: parent.left</span><br><span class="line">        anchors.right: parent.right</span><br><span class="line">        anchors.bottom: parent.bottom</span><br><span class="line">        anchors.margins: <span class="number">20</span></span><br><span class="line">        height: <span class="number">40</span></span><br><span class="line">        color: <span class="string">"#53d769"</span></span><br><span class="line">        border.color: Qt.lighter(color, <span class="number">1.1</span>)</span><br><span class="line">        Text &#123;</span><br><span class="line">            anchors.centerIn: parent</span><br><span class="line">            text: <span class="string">"Add item!"</span></span><br><span class="line">        &#125;</span><br><span class="line">        MouseArea &#123;</span><br><span class="line">            anchors.fill: parent</span><br><span class="line">            <span class="comment">//当鼠标点击这块区域后，模型便增加一个 Item</span></span><br><span class="line">            onClicked: &#123;</span><br><span class="line">                theModel.append(&#123;<span class="string">"number"</span>: ++parent.count&#125;);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        property int count: <span class="number">9</span></span><br><span class="line">    &#125;</span><br><span class="line">    GridView &#123;</span><br><span class="line">        anchors.fill: parent</span><br><span class="line">        anchors.margins: <span class="number">20</span></span><br><span class="line">        anchors.bottomMargin: <span class="number">80</span></span><br><span class="line">        clip: <span class="literal">true</span></span><br><span class="line">        <span class="comment">//以表格视图的方式显示模型</span></span><br><span class="line">        model: theModel</span><br><span class="line">        cellWidth: <span class="number">45</span></span><br><span class="line">        cellHeight: <span class="number">45</span></span><br><span class="line">        delegate: numberDelegate</span><br><span class="line">    &#125;</span><br><span class="line">    Component &#123;</span><br><span class="line">        id: numberDelegate</span><br><span class="line">        Rectangle &#123;</span><br><span class="line">            id: wrapper</span><br><span class="line">            width: <span class="number">40</span></span><br><span class="line">            height: <span class="number">40</span></span><br><span class="line">            gradient: Gradient &#123;</span><br><span class="line">                GradientStop &#123; <span class="attr">position</span>: <span class="number">0.0</span>; color: <span class="string">"#f8306a"</span> &#125;</span><br><span class="line">                GradientStop &#123; <span class="attr">position</span>: <span class="number">1.0</span>; color: <span class="string">"#fb5b40"</span> &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            Text &#123;</span><br><span class="line">                anchors.centerIn: parent</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//点击对应视图后，删除当前视图对应的 item</span></span><br><span class="line">            MouseArea &#123;</span><br><span class="line">                anchors.fill: parent</span><br><span class="line">                onClicked: &#123;</span><br><span class="line">                    theModel.remove(index);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//删除时的动作</span></span><br><span class="line">            GridView.onRemove: SequentialAnimation &#123;</span><br><span class="line">                PropertyAction &#123; <span class="attr">target</span>: wrapper; property: <span class="string">"GridView.delayRemove"</span>;value: <span class="literal">true</span> &#125;</span><br><span class="line">                NumberAnimation &#123; <span class="attr">target</span>: wrapper; property: <span class="string">"scale"</span>; to: <span class="number">0</span>;duration: <span class="number">250</span>; easing.type: Easing.InOutQuad &#125;</span><br><span class="line">                PropertyAction &#123; <span class="attr">target</span>: wrapper; property: <span class="string">"GridView.delayRemove"</span>;value: <span class="literal">false</span> &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//添加时的动作</span></span><br><span class="line">            GridView.onAdd: SequentialAnimation &#123;</span><br><span class="line">                NumberAnimation &#123; <span class="attr">target</span>: wrapper; property: <span class="string">"scale"</span>; <span class="keyword">from</span>: <span class="number">0</span>; to:<span class="number">1</span>; duration: <span class="number">250</span>; easing.type: Easing.InOutQuad &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="可变换形态的委托"><a href="#可变换形态的委托" class="headerlink" title="可变换形态的委托"></a>可变换形态的委托</h2><p>在使用列表视图时，通常是用户点击哪个列表条目，哪个条目就扩展。</p>
+<p><code>expanded</code>状态特性就可以支持这种显示效果：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> QtQuick <span class="number">2.12</span></span><br><span class="line"></span><br><span class="line">Item &#123;</span><br><span class="line">    width: <span class="number">300</span></span><br><span class="line">    height: <span class="number">480</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">//作为显示区的背景</span></span><br><span class="line">    Rectangle &#123;</span><br><span class="line">        anchors.fill: parent</span><br><span class="line">        gradient: Gradient &#123;</span><br><span class="line">            GradientStop &#123; <span class="attr">position</span>: <span class="number">0.0</span>; color: <span class="string">"#4a4a4a"</span> &#125;</span><br><span class="line">            GradientStop &#123; <span class="attr">position</span>: <span class="number">1.0</span>; color: <span class="string">"#2b2b2b"</span> &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//创建一个 listview</span></span><br><span class="line">    ListView &#123;</span><br><span class="line">        id: listView</span><br><span class="line">        anchors.fill: parent</span><br><span class="line">        <span class="comment">//每个 item 的显示关联于 detailsDelegate</span></span><br><span class="line">        delegate: detailsDelegate</span><br><span class="line">        <span class="comment">//模型关联于 planets</span></span><br><span class="line">        model: planets</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//产生一个 list 型的模型</span></span><br><span class="line">    ListModel &#123;</span><br><span class="line">        id: planets</span><br><span class="line">        <span class="comment">//定义每一个 item 的属性</span></span><br><span class="line">        ListElement &#123; <span class="attr">name</span>: <span class="string">"Mercury"</span>; imageSource: <span class="string">"images/mercury.jpeg"</span>; facts:</span><br><span class="line">        <span class="string">"Mercury is the smallest planet in the Solar System. It is the closest planet to</span></span><br><span class="line"><span class="string">        the sun. It makes one trip around the Sun once every 87.969 days."</span> &#125;</span><br><span class="line">        ListElement &#123; <span class="attr">name</span>: <span class="string">"Venus"</span>; imageSource: <span class="string">"images/venus.jpeg"</span>; facts:</span><br><span class="line">        <span class="string">"Venus is the second planet from the Sun. It is a terrestrial planet because it</span></span><br><span class="line"><span class="string">        has a solid, rocky surface. The other terrestrial planets are Mercury, Earth and</span></span><br><span class="line"><span class="string">        Mars. Astronomers have known Venus for thousands of years."</span> &#125;</span><br><span class="line">        ListElement &#123; <span class="attr">name</span>: <span class="string">"Earth"</span>; imageSource: <span class="string">"images/earth.jpeg"</span>; facts: <span class="string">"The</span></span><br><span class="line"><span class="string">        Earth is the third planet from the Sun. It is one of the four terrestrial</span></span><br><span class="line"><span class="string">        planets in our Solar System. This means most of its mass is solid. The other</span></span><br><span class="line"><span class="string">        three are Mercury, Venus and Mars. The Earth is also called the Blue Planet,</span></span><br><span class="line"><span class="string">        'Planet Earth', and 'Terra'."</span> &#125;</span><br><span class="line">        ListElement &#123; <span class="attr">name</span>: <span class="string">"Mars"</span>; imageSource: <span class="string">"images/mars.jpeg"</span>; facts: <span class="string">"Mars</span></span><br><span class="line"><span class="string">        is the fourth planet from the Sun in the Solar System. Mars is dry, rocky and</span></span><br><span class="line"><span class="string">        cold. It is home to the largest volcano in the Solar System. Mars is named after</span></span><br><span class="line"><span class="string">        the mythological Roman god of war because it is a red planet, which signifies</span></span><br><span class="line"><span class="string">        the colour of blood."</span> &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    Component &#123;</span><br><span class="line">        id: detailsDelegate</span><br><span class="line">        Item &#123;</span><br><span class="line">            id: wrapper</span><br><span class="line">            width: listView.width</span><br><span class="line">            height: <span class="number">30</span></span><br><span class="line">            <span class="comment">//每一个 item 显示的大小</span></span><br><span class="line">            Rectangle &#123;</span><br><span class="line">                anchors.left: parent.left</span><br><span class="line">                anchors.right: parent.right</span><br><span class="line">                anchors.top: parent.top</span><br><span class="line">                height: <span class="number">30</span></span><br><span class="line">                color: <span class="string">"#333"</span></span><br><span class="line">                border.color: Qt.lighter(color, <span class="number">1.2</span>)</span><br><span class="line">                <span class="comment">//Text 显示 item 的名称，位于左边</span></span><br><span class="line">                Text &#123;</span><br><span class="line">                    anchors.left: parent.left</span><br><span class="line">                    anchors.verticalCenter: parent.verticalCenter</span><br><span class="line">                    anchors.leftMargin: <span class="number">4</span></span><br><span class="line">                    font.pixelSize: parent.height<span class="number">-4</span></span><br><span class="line">                    color: <span class="string">'#fff'</span></span><br><span class="line">                    text: name</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//图片显示在 item 的右边</span></span><br><span class="line">            Rectangle &#123;</span><br><span class="line">                id: image</span><br><span class="line">                width: <span class="number">26</span></span><br><span class="line">                height: <span class="number">26</span></span><br><span class="line">                anchors.right: parent.right</span><br><span class="line">                anchors.top: parent.top</span><br><span class="line">                anchors.rightMargin: <span class="number">2</span></span><br><span class="line">                anchors.topMargin: <span class="number">2</span></span><br><span class="line">                color: <span class="string">"black"</span></span><br><span class="line">                Image &#123;</span><br><span class="line">                    anchors.fill: parent</span><br><span class="line">                    fillMode: Image.PreserveAspectFit</span><br><span class="line">                    source: imageSource</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//当鼠标点击以后，view 的状态就变成 expanded</span></span><br><span class="line">            MouseArea &#123;</span><br><span class="line">                anchors.fill: parent</span><br><span class="line">                onClicked: parent.state = <span class="string">"expanded"</span></span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//此显示区默认透明，显示 item 的说明</span></span><br><span class="line">            Item &#123;</span><br><span class="line">                id: factsView</span><br><span class="line">                anchors.top: image.bottom</span><br><span class="line">                anchors.left: parent.left</span><br><span class="line">                anchors.right: parent.right</span><br><span class="line">                anchors.bottom: parent.bottom</span><br><span class="line">                opacity: <span class="number">0</span></span><br><span class="line">                Rectangle &#123;</span><br><span class="line">                    anchors.fill: parent</span><br><span class="line">                    gradient: Gradient &#123;</span><br><span class="line">                        GradientStop &#123; <span class="attr">position</span>: <span class="number">0.0</span>; color: <span class="string">"#fed958"</span> &#125;</span><br><span class="line">                        GradientStop &#123; <span class="attr">position</span>: <span class="number">1.0</span>; color: <span class="string">"#fecc2f"</span> &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                    border.color: <span class="string">'#000000'</span></span><br><span class="line">                    border.width: <span class="number">2</span></span><br><span class="line">                    Text &#123;</span><br><span class="line">                        anchors.fill: parent</span><br><span class="line">                        anchors.margins: <span class="number">5</span></span><br><span class="line">                        clip: <span class="literal">true</span></span><br><span class="line">                        wrapMode: Text.WordWrap</span><br><span class="line">                        color: <span class="string">'#1f1f21'</span></span><br><span class="line">                        font.pixelSize: <span class="number">12</span></span><br><span class="line">                        text: facts</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//关闭按钮默认也是透明的</span></span><br><span class="line">            Rectangle &#123;</span><br><span class="line">                id: closeButton</span><br><span class="line">                anchors.right: parent.right</span><br><span class="line">                anchors.top: parent.top</span><br><span class="line">                anchors.rightMargin: <span class="number">2</span></span><br><span class="line">                anchors.topMargin: <span class="number">2</span></span><br><span class="line">                width: <span class="number">26</span></span><br><span class="line">                height: <span class="number">26</span></span><br><span class="line">                color: <span class="string">"#157efb"</span></span><br><span class="line">                border.color: Qt.lighter(color, <span class="number">1.1</span>)</span><br><span class="line">                opacity: <span class="number">0</span></span><br><span class="line">                <span class="comment">//关闭按钮被触发后，状态被还原</span></span><br><span class="line">                MouseArea &#123;</span><br><span class="line">                    anchors.fill: parent</span><br><span class="line">                    onClicked: wrapper.state = <span class="string">""</span></span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            states: [</span><br><span class="line">                <span class="comment">//当状态是 expanded 时，修改组件的状态</span></span><br><span class="line">                State &#123;</span><br><span class="line">                    name: <span class="string">"expanded"</span></span><br><span class="line">                    <span class="comment">//将当前 item 的高度设置为和 listview 一致，也就是填充全屏</span></span><br><span class="line">                    PropertyChanges &#123; <span class="attr">target</span>: wrapper; height: listView.height &#125;</span><br><span class="line">                    <span class="comment">//将图片的高度和宽度都扩展</span></span><br><span class="line">                    PropertyChanges &#123; <span class="attr">target</span>: image; width: listView.width;</span><br><span class="line">                    height: listView.width; anchors.rightMargin: <span class="number">0</span>; anchors.topMargin: <span class="number">30</span> &#125;</span><br><span class="line">                    <span class="comment">//说明信息和关闭按钮都显示出来</span></span><br><span class="line">                    PropertyChanges &#123; <span class="attr">target</span>: factsView; opacity: <span class="number">1</span> &#125;</span><br><span class="line">                    PropertyChanges &#123; <span class="attr">target</span>: closeButton; opacity: <span class="number">1</span> &#125;</span><br><span class="line">                    PropertyChanges &#123; <span class="attr">target</span>: wrapper.ListView.view; contentY:</span><br><span class="line">                    wrapper.y; interactive: <span class="literal">false</span> &#125;</span><br><span class="line">                &#125;</span><br><span class="line">                ]</span><br><span class="line">            transitions: [</span><br><span class="line">                Transition &#123;</span><br><span class="line">                    NumberAnimation &#123;</span><br><span class="line">                    duration: <span class="number">200</span>;</span><br><span class="line">                    properties: <span class="string">"height,width,anchors.rightMargin,anchors.topMargin,opacity,contentY"</span></span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            ]</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Qt/" rel="tag"># Qt</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/02/08/Qt_quick_control2/" rel="prev" title="[What]Qt Quick control 2">
+      <i class="fa fa-chevron-left"></i> [What]Qt Quick control 2
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#概念"><span class="nav-number">1.</span> <span class="nav-text">概念</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#基本的模型"><span class="nav-number">2.</span> <span class="nav-text">基本的模型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#模型内容为数值"><span class="nav-number">2.1.</span> <span class="nav-text">模型内容为数值</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#模型内容为字符串"><span class="nav-number">2.2.</span> <span class="nav-text">模型内容为字符串</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#模型内容为列表"><span class="nav-number">2.3.</span> <span class="nav-text">模型内容为列表</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#动态视图"><span class="nav-number">3.</span> <span class="nav-text">动态视图</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#ListView"><span class="nav-number">3.1.</span> <span class="nav-text">ListView</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#方向"><span class="nav-number">3.1.1.</span> <span class="nav-text">方向</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#与键盘联动"><span class="nav-number">3.1.2.</span> <span class="nav-text">与键盘联动</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#头与尾"><span class="nav-number">3.1.3.</span> <span class="nav-text">头与尾</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#GridView"><span class="nav-number">3.2.</span> <span class="nav-text">GridView</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#委托"><span class="nav-number">4.</span> <span class="nav-text">委托</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#添加动画"><span class="nav-number">4.1.</span> <span class="nav-text">添加动画</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#可变换形态的委托"><span class="nav-number">4.2.</span> <span class="nav-text">可变换形态的委托</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">我的世界</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">279</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">113</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">38</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+  
+  <span class="post-meta-divider">|</span>
+  <span>Hosted by <a href="https://pages.coding.me" target="_blank" rel="noopener" style="font-weight: bold">Coding Pages</a></span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">3.7m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">55:45</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+<script>
+  (function() {
+    function leancloudSelector(url) {
+      url = encodeURI(url);
+      return document.getElementById(url).querySelector('.leancloud-visitors-count');
+    }
+
+    function addCount(Counter) {
+      var visitors = document.querySelector('.leancloud_visitors');
+      var url = decodeURI(visitors.id);
+      var title = visitors.dataset.flagTitle;
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          if (results.length > 0) {
+            var counter = results[0];
+            leancloudSelector(url).innerText = counter.time + 1;
+            Counter('put', '/classes/Counter/' + counter.objectId, { time: { '__op': 'Increment', 'amount': 1 } })
+              .catch(error => {
+                console.error('Failed to save visitor count', error);
+              });
+          } else {
+              Counter('post', '/classes/Counter', { title, url, time: 1 })
+                .then(response => response.json())
+                .then(() => {
+                  leancloudSelector(url).innerText = 1;
+                })
+                .catch(error => {
+                  console.error('Failed to create', error);
+                });
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    function showTime(Counter) {
+      var visitors = document.querySelectorAll('.leancloud_visitors');
+      var entries = [...visitors].map(element => {
+        return decodeURI(element.id);
+      });
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url: { '$in': entries } })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          for (let url of entries) {
+            let target = results.find(item => item.url === url);
+            leancloudSelector(url).innerText = target ? target.time : 0;
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    let { app_id, app_key, server_url } = {"enable":true,"app_id":"ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI","app_key":"yh4vrfnscme1utPMpk65wcxn","server_url":null,"security":false};
+    function fetchData(api_server) {
+      var Counter = (method, url, data) => {
+        return fetch(`${api_server}/1.1${url}`, {
+          method,
+          headers: {
+            'X-LC-Id'     : app_id,
+            'X-LC-Key'    : app_key,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+      };
+      if (CONFIG.page.isPost) {
+        if (CONFIG.hostname !== location.hostname) return;
+        addCount(Counter);
+      } else if (document.querySelectorAll('.post-title-link').length >= 1) {
+        showTime(Counter);
+      }
+    }
+
+    let api_server = app_id.slice(-9) !== '-MdYXbMMI' ? server_url : `https://${app_id.slice(0, 8).toLowerCase()}.api.lncldglobal.com`;
+
+    if (api_server) {
+      fetchData(api_server);
+    } else {
+      fetch('https://app-router.leancloud.cn/2/route?appId=' + app_id)
+        .then(response => response.json())
+        .then(({ api_server }) => {
+          fetchData('https://' + api_server);
+        });
+    }
+  })();
+</script>
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+  <script defer src="/lib/three/three.min.js"></script>
+    <script defer src="/lib/three/three-waves.min.js"></script>
+    <script defer src="/lib/three/canvas_lines.min.js"></script>
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI',
+      appKey     : 'yh4vrfnscme1utPMpk65wcxn',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
