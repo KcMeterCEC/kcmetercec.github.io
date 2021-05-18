@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="zLSyD2CN1AkyJqei3qKraT6372nBgMFKWe6kAj5JDeY">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="静态链接使得内存浪费太大并且更新不方便，而动态链接则弥补了这个不足。 动态链接的基本思想是把程序按照模块拆分成各个相对独立部分，在程序运行时才将它们链接在一起形成一个完整程序。而不像静态链接一样把所有程序模块都链接成一个单独的可执行文件。  linux下为动态共享对象(DSO, Dynamic Shared Objects)， 以 .so 为扩展名 windows下为动态链接库(Dynamical">
+<meta property="og:type" content="article">
+<meta property="og:title" content="[What]链接、装载与库 --&gt; 动态链接">
+<meta property="og:url" content="http://kcmetercec.top/2018/11/25/chapter7/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="静态链接使得内存浪费太大并且更新不方便，而动态链接则弥补了这个不足。 动态链接的基本思想是把程序按照模块拆分成各个相对独立部分，在程序运行时才将它们链接在一起形成一个完整程序。而不像静态链接一样把所有程序模块都链接成一个单独的可执行文件。  linux下为动态共享对象(DSO, Dynamic Shared Objects)， 以 .so 为扩展名 windows下为动态链接库(Dynamical">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BgoodBook%5D/%5BWhat%5DgoodBook--linker_load/process_stack.jpg?raw=true">
+<meta property="article:published_time" content="2018-11-24T16:00:00.000Z">
+<meta property="article:modified_time" content="2018-11-24T16:00:00.000Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="CS">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BgoodBook%5D/%5BWhat%5DgoodBook--linker_load/process_stack.jpg?raw=true">
+
+<link rel="canonical" href="http://kcmetercec.top/2018/11/25/chapter7/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>[What]链接、装载与库 --> 动态链接 | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=112423075-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '112423075-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2ab4cc06d0da36106a4426465d0cb00d";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2018/11/25/chapter7/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="我的世界">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          [What]链接、装载与库 --> 动态链接
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-11-25 00:00:00" itemprop="dateCreated datePublished" datetime="2018-11-25T00:00:00+08:00">2018-11-25</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/book/" itemprop="url" rel="index"><span itemprop="name">book</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/book/%E7%A8%8B%E5%BA%8F%E5%91%98%E7%9A%84%E8%87%AA%E6%88%91%E4%BC%91%E5%85%BB/" itemprop="url" rel="index"><span itemprop="name">程序员的自我休养</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2018/11/25/chapter7/" class="post-meta-item leancloud_visitors" data-flag-title="[What]链接、装载与库 --> 动态链接" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2018/11/25/chapter7/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2018/11/25/chapter7/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>15k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>14 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>静态链接使得内存浪费太大并且更新不方便，而动态链接则弥补了这个不足。</p>
+<p>动态链接的基本思想是把程序按照模块拆分成各个相对独立部分，在程序运行时才将它们链接在一起形成一个完整程序。<br>而不像静态链接一样把所有程序模块都链接成一个单独的可执行文件。</p>
+<ul>
+<li>linux下为<strong>动态共享对象(DSO, Dynamic Shared Objects)</strong>， 以 <code>.so</code> 为扩展名</li>
+<li>windows下为<strong>动态链接库(Dynamical Linking Library)</strong>， 以 <code>.dll</code> 为扩展名</li>
+</ul>
+<p>动态链接的优点如下:</p>
+<ol>
+<li>一个动态链接库被多个进程所使用，节省了内存空间</li>
+<li>由于多个进程共享同一模块，使得 cpu cache 命中率很高</li>
+<li>动态模块升级时不用更新程序其他部分，使得升级方便</li>
+<li>程序在运行时可以动态加载各种程序模块，可以被用于制作插件</li>
+<li>只要操作系统提供了相应的接口，模块就可以跨操作系统兼容<ul>
+<li>如何接口没有管理好，那么兼容性将会是个问题<a id="more"></a>
+<h1 id="实例感受"><a href="#实例感受" class="headerlink" title="实例感受"></a>实例感受</h1>测试代码如下：<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//file program1.c</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"lib.h"</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  foobar(<span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//file program2.c</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"lib.h"</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  foobar(<span class="number">2</span>);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//file lib.c</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">foobar</span><span class="params">(<span class="keyword">int</span> i)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"printing from lib.so %d\n"</span>, i);</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//file lib.h</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> __LIB_H__</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __LIB_H__</span></span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">void</span> <span class="title">foobar</span><span class="params">(<span class="keyword">int</span> i)</span></span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br></pre></td></tr></table></figure>
+编译共享库及执行验证<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> gcc -fPIC -shared -o lib.so lib.c</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> gcc -o program1 program1.c ./lib.so</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> gcc -o program2 program2.c ./lib.so</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> ls</span></span><br><span class="line">lib.c  lib.h  lib.so  program1  program1.c  program2  program2.c</span><br><span class="line"><span class="meta">$</span><span class="bash"> ./program1</span></span><br><span class="line">printing from lib.so 1</span><br><span class="line"><span class="meta">$</span><span class="bash"> ./program2</span></span><br><span class="line">printing from lib.so 2</span><br></pre></td></tr></table></figure>
+为了能够观察代码在虚拟地址中的映射关系，修改 <code>lib.c</code> :<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">foobar</span><span class="params">(<span class="keyword">int</span> i)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"printing from lib.so %d\n"</span>, i);</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"sleep\n"</span>);</span><br><span class="line">  <span class="keyword">while</span>(<span class="number">1</span>)</span><br><span class="line">    &#123;</span><br><span class="line">      sleep(<span class="number">1</span>);  </span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+可以看到它映射格局如下:<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">  $</span><span class="bash"> ./program1&amp;</span></span><br><span class="line">  [3] 549</span><br><span class="line">  printing from lib.so 1</span><br><span class="line">  sleep</span><br><span class="line"><span class="meta">  $</span><span class="bash"> cat /proc/549/maps </span></span><br><span class="line">55c3030fc000-55c3030fd000 r-xp 00000000 08:10 44885                      /home/cec/lab/linux/link/program1</span><br><span class="line">55c3032fc000-55c3032fd000 r--p 00000000 08:10 44885                      /home/cec/lab/linux/link/program1</span><br><span class="line">55c3032fd000-55c3032fe000 rw-p 00001000 08:10 44885                      /home/cec/lab/linux/link/program1</span><br><span class="line">55c30507b000-55c30509c000 rw-p 00000000 00:00 0                          [heap]</span><br><span class="line">7fa47bf7e000-7fa47c165000 r-xp 00000000 08:10 42386                      /lib/x86_64-linux-gnu/libc-2.27.so</span><br><span class="line">7fa47c165000-7fa47c365000 ---p 001e7000 08:10 42386                      /lib/x86_64-linux-gnu/libc-2.27.so</span><br><span class="line">7fa47c365000-7fa47c369000 r--p 001e7000 08:10 42386                      /lib/x86_64-linux-gnu/libc-2.27.so</span><br><span class="line">7fa47c369000-7fa47c36b000 rw-p 001eb000 08:10 42386                      /lib/x86_64-linux-gnu/libc-2.27.so</span><br><span class="line">7fa47c36b000-7fa47c36f000 rw-p 00000000 00:00 0</span><br><span class="line">7fa47c36f000-7fa47c370000 r-xp 00000000 08:10 44884                      /home/cec/lab/linux/link/lib.so</span><br><span class="line">7fa47c370000-7fa47c56f000 ---p 00001000 08:10 44884                      /home/cec/lab/linux/link/lib.so</span><br><span class="line">7fa47c56f000-7fa47c570000 r--p 00000000 08:10 44884                      /home/cec/lab/linux/link/lib.so</span><br><span class="line">7fa47c570000-7fa47c571000 rw-p 00001000 08:10 44884                      /home/cec/lab/linux/link/lib.so</span><br><span class="line">7fa47c571000-7fa47c59a000 r-xp 00000000 08:10 42363                      /lib/x86_64-linux-gnu/ld-2.27.so</span><br><span class="line">7fa47c78e000-7fa47c791000 rw-p 00000000 00:00 0</span><br><span class="line">7fa47c798000-7fa47c79a000 rw-p 00000000 00:00 0</span><br><span class="line">7fa47c79a000-7fa47c79b000 r--p 00029000 08:10 42363                      /lib/x86_64-linux-gnu/ld-2.27.so</span><br><span class="line">7fa47c79b000-7fa47c79c000 rw-p 0002a000 08:10 42363                      /lib/x86_64-linux-gnu/ld-2.27.so</span><br><span class="line">7fa47c79c000-7fa47c79d000 rw-p 00000000 00:00 0</span><br><span class="line">7ffe11729000-7ffe1174a000 rw-p 00000000 00:00 0                          [stack]</span><br><span class="line">7ffe117be000-7ffe117c1000 r--p 00000000 00:00 0                          [vvar]</span><br><span class="line">7ffe117c1000-7ffe117c2000 r-xp 00000000 00:00 0                          [vdso]</span><br></pre></td></tr></table></figure>
+在堆与栈之间，映射了动态链接库 <code>libc,lib</code> 以及动态链接器 <code>ld</code> 。</li>
+</ul>
+</li>
+</ol>
+<ul>
+<li>在运行 program1 之前，动态链接器先完成链接工作，然后再把控制权交给 program1 执行。<h1 id="地址无关代码"><a href="#地址无关代码" class="headerlink" title="地址无关代码"></a>地址无关代码</h1>动态链接库在被装载时其地址是未知的，这是为了避免:</li>
+</ul>
+<ol>
+<li>多个动态库的干涉问题</li>
+<li>自身以后升级，内部函数和变量地址改变的问题</li>
+</ol>
+<p>所以使用了<strong>装载时重定位(Load Time Relocation)</strong>的方式： 在链接时，对所有绝对地址的引用不作重定位，而把这一步推迟到装载时再完成。<br>一旦模块装载地址确定，即目标地址确定，那么系统对程序中所有的绝对地址引用进行重定位。</p>
+<p>但这种方式依然有问题: 因为需要重定位，就需要修改动态链接库的代码(也就是地址会改变)。但是动态链接库是需要多个进程共享的，多个进程拥有独立的数据部分，但代码部分是共享的。这就无法满足此需求。</p>
+<p>于是，最终的<strong>地址无关代码(PIC, Position-independent Code)</strong>方式就产生了: 把指令中那些需要被修改的部分分离出来，跟数据部分放在一起，这样指令部分就可以保存不变。<br>而数据部分可以在每个进程拥有一个副本。</p>
+<ul>
+<li>在实现时，数据段中存放指向这些函数的指针数组(全局偏移表，Global Offset Table, GOT)，通过数组来间接找到动态链接库代码的位置。</li>
+</ul>
+<p>地址无关引用方式如下表:<br>|          | 指令跳转、调用      | 数据访问      |<br>|———-|——————-|—————|<br>| 模块内部 | 相对跳转和调用      | 相对地址访问  |<br>| 模块外部 | 间接跳转和调用(GOT) | 间接访问(GOT) |</p>
+<h1 id="延迟绑定"><a href="#延迟绑定" class="headerlink" title="延迟绑定"></a>延迟绑定</h1><p>动态链接在程序启动时装载一起运行时的 GOT 定位都会减慢程序的运行速度，为了优化启动速度使用延迟绑定（Lazy Binding）的方式来优化。</p>
+<ul>
+<li>延迟绑定使用 PLT（Procedure Linkage Table） 的方式实现</li>
+</ul>
+<p>其核心思想就是：当函数被第一次调用到的时候才执行符号绑定、重定位等操作。</p>
+<ul>
+<li>因为很多函数并不会被使用</li>
+</ul>
+<p>PLT在函数第一次被调用后，首先进行符号查找、重定位，然后才会填充 GOT 表。</p>
+<blockquote>
+<p>最开始 GOT 中只保存被引用函数在重定位表中的索引，PLT 代码根据此索引得到需要被重定位的函数，再结合当前被链接的模块调用查找功能函数获取函数地址。最终才将该函数的地址填充到 GOT 表。下一次再进行函数调用时，就直接可以通过 GOT 表地址来调用了。整个过程类似于操作系统使用 MMU 来实现虚拟内存到物理内存的 lazy 映射机制。</p>
+</blockquote>
+<p>ELF 将 GO T拆分成了两个表叫做<code>.got</code>和<code>.got.plt</code>，<code>.got</code>用来保存全局变量引用的地址，<code>.got.plt</code>用来保存函数引用的地址。</p>
+<h1 id="动态链接相关结构"><a href="#动态链接相关结构" class="headerlink" title="动态链接相关结构"></a>动态链接相关结构</h1><p>动态链接方式的elf文件启动步骤为：</p>
+<ol>
+<li>读取可执行文件头部，检查文件合法性，从头部中的<code>Program Header</code>中读取每个<code>Segment</code>的虚拟地址、文件地址和属性，并将它们映射到进程虚拟空间的相应位置</li>
+<li>将动态链接器加载到进程地址空间并将控制权交给动态链接器的入口地址。</li>
+<li>动态链接器执行一系列自身初始化操作，根据当前环境参数开始对可执行文件进行动态链接工作，当链接工作完成后将控制权转交到可执行文件的入口地址，程序开始运行<h2 id="“-interp”段"><a href="#“-interp”段" class="headerlink" title="“.interp”段"></a>“.interp”段</h2><code>.interp</code> 段保存一个字符串，指定该可执行文件所需要的动态连接器的路径。<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">program1:     file format elf64-x86-64</span><br><span class="line"></span><br><span class="line">Contents of section .interp:</span><br><span class="line"> 0238 2f6c6962 36342f6c 642d6c69 6e75782d  /lib64/ld-linux-</span><br><span class="line"> 0248 7838362d 36342e73 6f2e3200           x86-64.so.2.</span><br></pre></td></tr></table></figure>
+可以看到在x86-64系统上其为 <code>/lib64/ld-linux-x86-64.so.2</code> ,实际上它是一个符号链接，指向当前系统的动态连接器。</li>
+</ol>
+<p>这样的好处是：当动态连接器版本有所更新时，不需要重新编译可执行文件，因为符号链接的路径和名称都不会被改变。</p>
+<h2 id="“-dynamic”段-动态链接描述头"><a href="#“-dynamic”段-动态链接描述头" class="headerlink" title="“.dynamic”段(动态链接描述头)"></a>“.dynamic”段(动态链接描述头)</h2><p><code>.dynamic</code> 段保存了动态连接器所需要的基本信息，比如依赖于哪些共享对象、动态链接符号表的位置、动态链接重定位表的位置、共享对象初始化代码的地址等。</p>
+<ul>
+<li><code>.dynamic</code> 存在于动态链接文件中，类似于elf文件头，用于描述此文件的概览<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">  Elf64_Sxword	d_tag;			<span class="comment">/* Dynamic entry type */</span></span><br><span class="line">  <span class="keyword">union</span></span><br><span class="line">  &#123;</span><br><span class="line">    Elf64_Xword d_val;		<span class="comment">/* Integer value */</span></span><br><span class="line">    Elf64_Addr d_ptr;			<span class="comment">/* Address value */</span></span><br><span class="line">  &#125; d_un;</span><br><span class="line">&#125; Elf64_Dyn;</span><br></pre></td></tr></table></figure>
+比较常用的d_tag有下面这些值:<table>
+<thead>
+<tr>
+<th>d_tag类型</th>
+<th>d_un的含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>DT_SYMTAB</td>
+<td>动态链接符号表的地址，d_ptr表示”.dynsym”的地址</td>
+</tr>
+<tr>
+<td>DT_STRTAB</td>
+<td>动态链接字符串表地址，d_ptr表示”.dynstr”的地址</td>
+</tr>
+<tr>
+<td>DT_STRSZ</td>
+<td>动态链接字符串表大小，d_val表示大小</td>
+</tr>
+<tr>
+<td>DT_HASH</td>
+<td>动态链接哈希表地址,d_ptr表示”.hash”的地址</td>
+</tr>
+<tr>
+<td>DT_SONAME</td>
+<td>本共享对象的”SO-NAME”</td>
+</tr>
+<tr>
+<td>DT_RPATH</td>
+<td>动态链接共享对象搜索路径</td>
+</tr>
+<tr>
+<td>DT_INIT</td>
+<td>初始化代码地址</td>
+</tr>
+<tr>
+<td>DT_FINIT</td>
+<td>结束代码地址</td>
+</tr>
+<tr>
+<td>DT_NEED</td>
+<td>依赖的共享对象文件,d_ptr表示所依赖的共享对象文件名</td>
+</tr>
+<tr>
+<td>DT_REL/DT_RELA</td>
+<td>动态链接重定位表地址</td>
+</tr>
+<tr>
+<td>DT_RELENT/DT_RELAENT</td>
+<td>动态重读位表入口数量</td>
+</tr>
+<tr>
+<td><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> readelf -d lib.so</span></span><br><span class="line"></span><br><span class="line">Dynamic section at offset 0xe20 contains 24 entries:</span><br><span class="line">  Tag        Type                         Name/Value</span><br><span class="line"> 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]</span><br><span class="line"> 0x000000000000000c (INIT)               0x4e8</span><br><span class="line"> 0x000000000000000d (FINI)               0x644</span><br><span class="line"> 0x0000000000000019 (INIT_ARRAY)         0x200e10</span><br><span class="line"> 0x000000000000001b (INIT_ARRAYSZ)       8 (bytes)</span><br><span class="line"> 0x000000000000001a (FINI_ARRAY)         0x200e18</span><br><span class="line"> 0x000000000000001c (FINI_ARRAYSZ)       8 (bytes)</span><br><span class="line"> 0x000000006ffffef5 (GNU_HASH)           0x1f0</span><br><span class="line"> 0x0000000000000005 (STRTAB)             0x350</span><br><span class="line"> 0x0000000000000006 (SYMTAB)             0x230</span><br><span class="line"> 0x000000000000000a (STRSZ)              157 (bytes)</span><br><span class="line"> 0x000000000000000b (SYMENT)             24 (bytes)</span><br><span class="line"> 0x0000000000000003 (PLTGOT)             0x201000</span><br><span class="line"> 0x0000000000000002 (PLTRELSZ)           24 (bytes)</span><br><span class="line"> 0x0000000000000014 (PLTREL)             RELA</span><br><span class="line"> 0x0000000000000017 (JMPREL)             0x4d0</span><br><span class="line"> 0x0000000000000007 (RELA)               0x428</span><br><span class="line"> 0x0000000000000008 (RELASZ)             168 (bytes)</span><br><span class="line"> 0x0000000000000009 (RELAENT)            24 (bytes)</span><br><span class="line"> 0x000000006ffffffe (VERNEED)            0x408</span><br><span class="line"> 0x000000006fffffff (VERNEEDNUM)         1</span><br><span class="line"> 0x000000006ffffff0 (VERSYM)             0x3ee</span><br><span class="line"> 0x000000006ffffff9 (RELACOUNT)          3</span><br><span class="line"> 0x0000000000000000 (NULL)               0x0</span><br></pre></td></tr></table></figure></td>
+<td></td>
+</tr>
+<tr>
+<td>## 动态符号表</td>
+<td></td>
+</tr>
+<tr>
+<td>静态链接中，符号的建立和使用被分别称为定义和引用。</td>
+<td></td>
+</tr>
+<tr>
+<td>而动态链接中，动态链接库符号被外部使用时称为导出（Export），对应使用外部符号的部分称为导入（Import）。</td>
+<td></td>
+</tr>
+</tbody></table>
+</li>
+</ul>
+<p>和静态链接一样，为了表示符号的导入导出关系，elf使用<strong>动态符号表(Dynamic Symbol Table)</strong>来保存这些信息，段名 <code>.dynsym</code></p>
+<ul>
+<li>与符号表（.symtab）不同的是，.dynsym 只保存了与动态链接相关的符号。而所有的符号依然保存在 <code>.symtab</code> 中。</li>
+</ul>
+<p>同样的，动态符号表中实际包含的是符号的下标，真正的字符串内存存在于<strong>动态符号字符串表（.dynstr ,Dynamic String Table）</strong> 中</p>
+<ul>
+<li>由于动态链接下，需要在运行时查找符号，为了加快符号的查找过程，还需要有辅助的*<em>符号哈希表（.hash）</em>。</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> readelf --dyn-syms  lib.so </span></span><br><span class="line"></span><br><span class="line">Symbol table '.dynsym' contains 12 entries:</span><br><span class="line">   Num:    Value          Size Type    Bind   Vis      Ndx Name</span><br><span class="line">     0: 0000000000000000     0 NOTYPE  LOCAL  DEFAULT  UND</span><br><span class="line">     1: 0000000000000000     0 NOTYPE  WEAK   DEFAULT  UND _ITM_deregisterTMCloneTab</span><br><span class="line">     2: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND printf@GLIBC_2.2.5 (2)</span><br><span class="line">     3: 0000000000000000     0 NOTYPE  WEAK   DEFAULT  UND __gmon_start__</span><br><span class="line">     4: 0000000000000000     0 NOTYPE  WEAK   DEFAULT  UND _ITM_registerTMCloneTable</span><br><span class="line">     5: 0000000000000000     0 FUNC    WEAK   DEFAULT  UND __cxa_finalize@GLIBC_2.2.5 (2)</span><br><span class="line">     6: 000000000020102c     0 NOTYPE  GLOBAL DEFAULT   22 _edata</span><br><span class="line">     7: 0000000000201030     0 NOTYPE  GLOBAL DEFAULT   23 _end</span><br><span class="line">     8: 000000000020102c     0 NOTYPE  GLOBAL DEFAULT   23 __bss_start</span><br><span class="line">     9: 00000000000004e8     0 FUNC    GLOBAL DEFAULT    9 _init</span><br><span class="line">    10: 0000000000000644     0 FUNC    GLOBAL DEFAULT   13 _fini</span><br><span class="line">    11: 000000000000060a    57 FUNC    GLOBAL DEFAULT   12 foobar</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">$</span><span class="bash"> readelf -sD  lib.so </span></span><br><span class="line"></span><br><span class="line">Symbol table of `.gnu.hash' for image:</span><br><span class="line">  Num Buc:    Value          Size   Type   Bind Vis      Ndx Name</span><br><span class="line">    6   0: 000000000020102c     0 NOTYPE  GLOBAL DEFAULT  22 _edata</span><br><span class="line">    7   0: 0000000000201030     0 NOTYPE  GLOBAL DEFAULT  23 _end</span><br><span class="line">    8   1: 000000000020102c     0 NOTYPE  GLOBAL DEFAULT  23 __bss_start</span><br><span class="line">    9   1: 00000000000004e8     0 FUNC    GLOBAL DEFAULT   9 _init</span><br><span class="line">   10   2: 0000000000000644     0 FUNC    GLOBAL DEFAULT  13 _fini</span><br><span class="line">   11   2: 000000000000060a    57 FUNC    GLOBAL DEFAULT  12 foobar</span><br></pre></td></tr></table></figure>
+<h2 id="动态链接重定位表"><a href="#动态链接重定位表" class="headerlink" title="动态链接重定位表"></a>动态链接重定位表</h2><p>在动态链接下，无论是可执行文件或共享对象，一旦它依赖于其他共享对象，那么它代码或数据中就会有对于导入符号的引用。<br>在编译时这些导入符号的地址未知（在静态链接中，这些目标文件中的未知地址最终在链接阶段被修正），所以就需要在运行时将这些导入符号的引用修正，也就是重定位。</p>
+<ul>
+<li>如果一个共享对象不是以 PIC 模式编译的，那么它的代码段和数据段是需要在装载时重定位的</li>
+<li>如果一个共享对象是 PIC 模式编译的，那么它的数据段是需要重定位的<ul>
+<li>代码段通过 GOT 变为了相对地址引用，但 GOT 存在于数据段中，而数据段可能包含绝对地址引用。</li>
+</ul>
+</li>
+</ul>
+<p>静态链接的重定位是在静态链接时完成的，目标文件中包含有重定位表(.rel.text, .rel.data)。</p>
+<p>动态链接的重定位是在装载时完成的，动态链接文件中的重定位表分别叫做 <code>.rel.dyn, .rel.plt</code> 分别对应 <code>.rel.data, .rel.text</code> </p>
+<ul>
+<li><code>.rel.dyn</code> 是对数据引用的修正，修正的位置位于 <code>.got</code> 以及数据段</li>
+<li><code>.rel.plt</code> 是对函数引用的修改，修正的位置位于 <code>.got.plt</code> </li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> readelf -r lib.so</span></span><br><span class="line">Relocation section '.rela.dyn' at offset 0x428 contains 7 entries:</span><br><span class="line">  Offset          Info           Type           Sym. Value    Sym. Name + Addend</span><br><span class="line">000000200e10  000000000008 R_X86_64_RELATIVE                    600</span><br><span class="line">000000200e18  000000000008 R_X86_64_RELATIVE                    5c0</span><br><span class="line">000000201020  000000000008 R_X86_64_RELATIVE                    201020</span><br><span class="line">000000200fe0  000100000006 R_X86_64_GLOB_DAT 0000000000000000 _ITM_deregisterTMClone + 0</span><br><span class="line">000000200fe8  000300000006 R_X86_64_GLOB_DAT 0000000000000000 __gmon_start__ + 0</span><br><span class="line">000000200ff0  000400000006 R_X86_64_GLOB_DAT 0000000000000000 _ITM_registerTMCloneTa + 0</span><br><span class="line">000000200ff8  000500000006 R_X86_64_GLOB_DAT 0000000000000000 __cxa_finalize@GLIBC_2.2.5 + 0</span><br><span class="line"></span><br><span class="line">Relocation section '.rela.plt' at offset 0x4d0 contains 1 entry:</span><br><span class="line">  Offset          Info           Type           Sym. Value    Sym. Name + Addend</span><br><span class="line">000000201018  000200000007 R_X86_64_JUMP_SLO 0000000000000000 printf@GLIBC_2.2.5 + 0</span><br></pre></td></tr></table></figure>
+<h2 id="动态链接时进程堆栈初始化信息"><a href="#动态链接时进程堆栈初始化信息" class="headerlink" title="动态链接时进程堆栈初始化信息"></a>动态链接时进程堆栈初始化信息</h2><p>进程初始化的时候，堆栈里面保存了关于进程执行环境和命令行参数等信息，还保存了动态链接器所需要的一些<strong>辅助信息数组(Auxiliary Vector)</strong>。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">  <span class="keyword">uint64_t</span> a_type;		<span class="comment">/* Entry type */</span></span><br><span class="line">  <span class="keyword">union</span></span><br><span class="line">  &#123;</span><br><span class="line">    <span class="keyword">uint64_t</span> a_val;		<span class="comment">/* Integer value */</span></span><br><span class="line">    <span class="comment">/* We use to have pointer elements added here.  We cannot do that,</span></span><br><span class="line"><span class="comment">       though, since it does not work when using 32-bit definitions</span></span><br><span class="line"><span class="comment">       on 64-bit platforms and vice versa.  */</span></span><br><span class="line">  &#125; a_un;</span><br><span class="line">&#125; Elf64_auxv_t;</span><br></pre></td></tr></table></figure>
+<table>
+<thead>
+<tr>
+<th>a_type 定义</th>
+<th>a_type 值</th>
+<th>a_val含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>AT_NULL</td>
+<td>0</td>
+<td>数组结束</td>
+</tr>
+<tr>
+<td>AT_EXEFD</td>
+<td>2</td>
+<td>可执行文件的句柄，动态链接器通过此句柄访问可执行文件</td>
+</tr>
+<tr>
+<td>AT_PHDR</td>
+<td>3</td>
+<td>可执行文件中程序头表(Program Header)在进程中的地址</td>
+</tr>
+<tr>
+<td>AT_PHENT</td>
+<td>4</td>
+<td>可执行文件中程序头表每个入口的大小</td>
+</tr>
+<tr>
+<td>AT_PHNUM</td>
+<td>5</td>
+<td>可执行文件中程序头表中入口的数量</td>
+</tr>
+<tr>
+<td>AT_BASE</td>
+<td>7</td>
+<td>动态连接器本身的装载地址</td>
+</tr>
+<tr>
+<td>AT_ENTRY</td>
+<td>9</td>
+<td>可执行文件入口地址</td>
+</tr>
+</tbody></table>
+<p>进程栈的视图如下:<br><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BgoodBook%5D/%5BWhat%5DgoodBook--linker_load/process_stack.jpg?raw=true" alt=""><br>使用下面的代码可以验证: </p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdint.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;elf.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span>*argv[])</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">intptr_t</span> *p = (<span class="keyword">intptr_t</span> *)argv;</span><br><span class="line">  <span class="keyword">int</span> arg_cnt = *(p - <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"argument count is %d\n"</span>, arg_cnt);</span><br><span class="line">  <span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; arg_cnt; ++i, p += <span class="number">1</span>)&#123;</span><br><span class="line">      <span class="built_in">printf</span>(<span class="string">"%s\n"</span>, (<span class="keyword">char</span>*)*p);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">//跳过 0</span></span><br><span class="line">  p += <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"Environment:\n"</span>);</span><br><span class="line">  <span class="keyword">while</span>(*p)&#123;</span><br><span class="line">      <span class="built_in">printf</span>(<span class="string">"%s\n"</span>, (<span class="keyword">char</span>*)*p);</span><br><span class="line">      p += <span class="number">1</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//跳过 0</span></span><br><span class="line">  p += <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"Auxiliary Vectors:\n"</span>);</span><br><span class="line">  Elf64_auxv_t* aux;</span><br><span class="line">  aux = (Elf64_auxv_t*)p;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">while</span>(aux-&gt;a_type != AT_NULL)&#123;</span><br><span class="line">      <span class="built_in">printf</span>(<span class="string">"Type: %lu Value: %lx\n"</span>, aux-&gt;a_type, aux-&gt;a_un.a_val);</span><br><span class="line">      aux += <span class="number">1</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="动态链接的步骤和实现"><a href="#动态链接的步骤和实现" class="headerlink" title="动态链接的步骤和实现"></a>动态链接的步骤和实现</h1><p>动态链接的基本步骤分为3步:</p>
+<ol>
+<li>启动动态链接器本身</li>
+<li>装载所有需要的共享对象</li>
+<li>重定位和初始化<h2 id="动态链接器启动"><a href="#动态链接器启动" class="headerlink" title="动态链接器启动"></a>动态链接器启动</h2>动态链接器本身也是一个共享对象，所以动态链接器需要有些特殊性：</li>
+<li>动态链接器不可以依赖于其他任何共享对象</li>
+<li>动态链接器本身所需要的全局、静态变量以及函数的重定位工作由它本身完成。<ul>
+<li>这部分启动代码被称为<strong>自举(Bootstrap)</strong></li>
+</ul>
+</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">动态链接器入口地址即使自举代码的入口，当操作系统将进程控制权交给动态链接器时，</span><br><span class="line">动态链接器的自举代码即开始执行。自举代码首先会找到自己的 GOT ,而 GOT 的第一个入口保存的是".dynamic"段的偏移地址，由此找到了动态链接器本身的".dynamic"段。</span><br><span class="line"></span><br><span class="line">通过".dynamic"中的信息，自举代码便可以获得动态链接器本身的重定位表和符号表，从而得到动态链接器本身的重定位入口，先将它们全部重定位。从这一步开始，动态链接器代码中才可以开始使用自己的全局变量和静态变量。</span><br></pre></td></tr></table></figure>
+<h2 id="装载共享对象"><a href="#装载共享对象" class="headerlink" title="装载共享对象"></a>装载共享对象</h2><p>完成自举后，动态链接器将可执行文件的符号表和链接器本身的符号表合并到一个符号表中，称为<strong>全局符号表(Global Symbol Table)</strong>，链接器根据”.dynamic”段中内容(DT_NEEDED)来得到此文件的依赖对象。</p>
+<p>链接器列出可执行文件中所需要的所有共享对象，将这些对象的名字放入到一个装载集合中。然后从集合里取一个名字并打开该文件并映射。</p>
+<p>如果共享对象也依赖于其他对象，那么将所依赖的共享对象的名字放入到装载集合中，如此循环直到所有的依赖共享对象都被装载进来。</p>
+<h3 id="符号的优先级"><a href="#符号的优先级" class="headerlink" title="符号的优先级"></a>符号的优先级</h3><p>当多个共享库中有同名的全局变量被引用，应该使用哪一个呢？</p>
+<p>示例代码如下:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//file a1.c</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">a</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"a1.c\n"</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//file a2.c</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">a</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"a2.c\n"</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//file b1.c</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">a</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">b1</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  a();</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//file b2.c</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">a</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">b2</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  a();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>假设b1.c使用a1.c的变量，b2.c使用a2.c的变量:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">cec@ubuntu:~/exercise/linux/linker_loader/dynamical/symbol$ gcc -fPIC -shared a1.c -o a1.so</span><br><span class="line">cec@ubuntu:~/exercise/linux/linker_loader/dynamical/symbol$ gcc -fPIC -shared a2.c -o a2.so</span><br><span class="line">cec@ubuntu:~/exercise/linux/linker_loader/dynamical/symbol$ gcc -fPIC -shared b1.c a1.so -o b1.so</span><br><span class="line">cec@ubuntu:~/exercise/linux/linker_loader/dynamical/symbol$ gcc -fPIC -shared b2.c a2.so -o b2.so</span><br><span class="line">cec@ubuntu:~/exercise/linux/linker_loader/dynamical/symbol$ ldd b1.so </span><br><span class="line">  linux-vdso.so.1 (0x00007ffddabfe000)</span><br><span class="line">  a1.so =&gt; not found</span><br><span class="line">cec@ubuntu:~/exercise/linux/linker_loader/dynamical/symbol$ ldd b2.so</span><br><span class="line">  linux-vdso.so.1 (0x00007ffcdd59a000)</span><br><span class="line">  a2.so =&gt; not found</span><br></pre></td></tr></table></figure>
+<p>接下来调用b1和b2:<br>`` c<br>  //file main.c<br>  void b1();<br>  void b2();<br>  int main()<br>  {<br>    b1();<br>    b2();<br>    while(1);</p>
+<pre><code>return 0;</code></pre><p>  }</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">将a1.so,b1.so,a2.so,b2.so拷贝进&#x2F;usr&#x2F;lib后:</span><br></pre></td></tr></table></figure>
+<p>  cec@ubuntu:<del>/exercise/linux/linker_loader/dynamical/symbol$ ./main<br>  a1.c<br>  a1.c<br>  cec@ubuntu:</del>/exercise/linux/linker_loader/dynamical/symbol$ cat /proc/82889/maps<br>  55a2d2ab6000-55a2d2ab7000 r-xp 00000000 08:01 5382434                    /home/cec/exercise/linux/linker_loader/dynamical/symbol/main<br>  55a2d2cb6000-55a2d2cb7000 r–p 00000000 08:01 5382434                    /home/cec/exercise/linux/linker_loader/dynamical/symbol/main<br>  55a2d2cb7000-55a2d2cb8000 rw-p 00001000 08:01 5382434                    /home/cec/exercise/linux/linker_loader/dynamical/symbol/main<br>  55a2d365b000-55a2d367c000 rw-p 00000000 00:00 0                          [heap]<br>  7f3d46a43000-7f3d46a44000 r-xp 00000000 08:01 4328772                    /usr/lib/a2.so<br>  7f3d46a44000-7f3d46c43000 —p 00001000 08:01 4328772                    /usr/lib/a2.so<br>  7f3d46c43000-7f3d46c44000 r–p 00000000 08:01 4328772                    /usr/lib/a2.so<br>  7f3d46c44000-7f3d46c45000 rw-p 00001000 08:01 4328772                    /usr/lib/a2.so<br>  7f3d46c45000-7f3d46c46000 r-xp 00000000 08:01 4325633                    /usr/lib/a1.so<br>  7f3d46c46000-7f3d46e45000 —p 00001000 08:01 4325633                    /usr/lib/a1.so<br>  7f3d46e45000-7f3d46e46000 r–p 00000000 08:01 4325633                    /usr/lib/a1.so<br>  7f3d46e46000-7f3d46e47000 rw-p 00001000 08:01 4325633                    /usr/lib/a1.so<br>  7f3d46e47000-7f3d4702e000 r-xp 00000000 08:01 4985510                    /lib/x86_64-linux-gnu/libc-2.27.so<br>  7f3d4702e000-7f3d4722e000 —p 001e7000 08:01 4985510                    /lib/x86_64-linux-gnu/libc-2.27.so<br>  7f3d4722e000-7f3d47232000 r–p 001e7000 08:01 4985510                    /lib/x86_64-linux-gnu/libc-2.27.so<br>  7f3d47232000-7f3d47234000 rw-p 001eb000 08:01 4985510                    /lib/x86_64-linux-gnu/libc-2.27.so<br>  7f3d47234000-7f3d47238000 rw-p 00000000 00:00 0<br>  7f3d47238000-7f3d47239000 r-xp 00000000 08:01 4342578                    /usr/lib/b2.so<br>  7f3d47239000-7f3d47438000 —p 00001000 08:01 4342578                    /usr/lib/b2.so<br>  7f3d47438000-7f3d47439000 r–p 00000000 08:01 4342578                    /usr/lib/b2.so<br>  7f3d47439000-7f3d4743a000 rw-p 00001000 08:01 4342578                    /usr/lib/b2.so<br>  7f3d4743a000-7f3d4743b000 r-xp 00000000 08:01 4342577                    /usr/lib/b1.so<br>  7f3d4743b000-7f3d4763a000 —p 00001000 08:01 4342577                    /usr/lib/b1.so<br>  7f3d4763a000-7f3d4763b000 r–p 00000000 08:01 4342577                    /usr/lib/b1.so<br>  7f3d4763b000-7f3d4763c000 rw-p 00001000 08:01 4342577                    /usr/lib/b1.so<br>  7f3d4763c000-7f3d47663000 r-xp 00000000 08:01 4985482                    /lib/x86_64-linux-gnu/ld-2.27.so<br>  7f3d47844000-7f3d47846000 rw-p 00000000 00:00 0<br>  7f3d47861000-7f3d47863000 rw-p 00000000 00:00 0<br>  7f3d47863000-7f3d47864000 r–p 00027000 08:01 4985482                    /lib/x86_64-linux-gnu/ld-2.27.so<br>  7f3d47864000-7f3d47865000 rw-p 00028000 08:01 4985482                    /lib/x86_64-linux-gnu/ld-2.27.so<br>  7f3d47865000-7f3d47866000 rw-p 00000000 00:00 0<br>  7ffcf4861000-7ffcf4882000 rw-p 00000000 00:00 0                          [stack]<br>  7ffcf4888000-7ffcf488b000 r–p 00000000 00:00 0                          [vvar]<br>  7ffcf488b000-7ffcf488d000 r-xp 00000000 00:00 0                          [vdso]<br>  ffffffffff600000-ffffffffff601000 r-xp 00000000 00:00 0                  [vsyscall]</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line">这种一个共享对象里面的全局符号被另一个共享对象的同名全局符号覆盖的现象被称为共享对象全局符号介入（Global Symbol Interpose）.</span><br><span class="line"></span><br><span class="line">Linux下的规则为: 当一个符号需要被加入全局符号表时，如果相同的符号名已经存在，则 **后加入的符号被忽略。**</span><br><span class="line">- 在实际使用中就要避免这种符号重名的问题，否则就很可能出现莫名其妙的问题</span><br><span class="line"></span><br><span class="line">由于main先调用的b1，所以对应的a1先被加载，接下来要加载a2时，其符号便被忽略了。</span><br><span class="line">## 重定位和初始化</span><br><span class="line">此步开始重新遍历可执行文件和每个共享对象的重定位表，将需要重定位的位置进行修正。</span><br><span class="line"></span><br><span class="line">- 如果某个共享对象有 &#96;.init&#96; 段，那么动态链接器会执行&#96;.init&#96;段中的代码，用以实现共享对象特有的初始化过程。</span><br><span class="line">  + 可执行文件中的 &#96;.init&#96; 段由程序初始化部分完成。</span><br><span class="line">- 如果某个共享对象有 &#96;.finit&#96; 段，那么动态链接器会在进程退出时执行&#96;.finit&#96;段中的代码，用以实现共享对象特有的退出过程。</span><br><span class="line"># 显式运行时链接(Explicit Run time Linking)</span><br><span class="line">用户可以在运行时指定加载或卸载对应的模块，这就可以实现插件的功能，使得程序模块组织变得很灵活。</span><br><span class="line"></span><br><span class="line">动态连接器如果被指定以相对路径打开共享库，其查找顺序为：</span><br><span class="line">1. 查找有环境变量&#96;LD_LIBRARY_PATH&#96;指定的一系列目录</span><br><span class="line">2. 查找由 &#96;&#x2F;etc&#x2F;ld.so.cache&#96;里面所指定的共享库路径</span><br><span class="line">3. &#96;&#x2F;lib,&#x2F;usr&#x2F;lib&#96;</span><br><span class="line">​&#96;&#96;&#96; c</span><br><span class="line">  &#x2F;**</span><br><span class="line">   ,* @brief : 加载动态库</span><br><span class="line">   ,* @par: filename: 被加载动态库的路径</span><br><span class="line">   ,* @par : flag : 函数符号解析方式</span><br><span class="line">   ,* - RTLD_LAZY : 延迟绑定</span><br><span class="line">   ,* - RTLD_NOW : 立即加载</span><br><span class="line">   ,* @ret : 返回模块句柄，失败返回NULL</span><br><span class="line">   ,*&#x2F;</span><br><span class="line">  void *dlopen(const char *filename, int flag);</span><br><span class="line">  &#x2F;**</span><br><span class="line">   ,* @brief : 得到符号的地址</span><br><span class="line">   ,* @handle : dlopen句柄</span><br><span class="line">   ,* @symbol : 符号</span><br><span class="line">   ,*&#x2F;</span><br><span class="line">  void *dlsym(void *handle, char *symbol);</span><br><span class="line">  &#x2F;**</span><br><span class="line">   ,* @brief : 卸载动态库</span><br><span class="line">   ,*&#x2F;</span><br><span class="line">  int dlclose(void *handle);</span><br><span class="line">  &#x2F;**</span><br><span class="line">   ,* @brief 检查上次调用是否成功</span><br><span class="line">   ,* @ret :成功返回NULL,否则返回对应的错误消息</span><br><span class="line">   ,*&#x2F;</span><br><span class="line">  char *dlerror(void);</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/CS/" rel="tag"># CS</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/11/25/chapter8/" rel="prev" title="[What]链接、装载与库 --> Linux共享库组织">
+      <i class="fa fa-chevron-left"></i> [What]链接、装载与库 --> Linux共享库组织
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/12/19/program_DS_linear_sort/" rel="next" title="[What]数据结构与算法 -> 线性排序">
+      [What]数据结构与算法 -> 线性排序 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#实例感受"><span class="nav-number">1.</span> <span class="nav-text">实例感受</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#地址无关代码"><span class="nav-number">2.</span> <span class="nav-text">地址无关代码</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#延迟绑定"><span class="nav-number">3.</span> <span class="nav-text">延迟绑定</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#动态链接相关结构"><span class="nav-number">4.</span> <span class="nav-text">动态链接相关结构</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#“-interp”段"><span class="nav-number">4.1.</span> <span class="nav-text">“.interp”段</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#“-dynamic”段-动态链接描述头"><span class="nav-number">4.2.</span> <span class="nav-text">“.dynamic”段(动态链接描述头)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#动态链接重定位表"><span class="nav-number">4.3.</span> <span class="nav-text">动态链接重定位表</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#动态链接时进程堆栈初始化信息"><span class="nav-number">4.4.</span> <span class="nav-text">动态链接时进程堆栈初始化信息</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#动态链接的步骤和实现"><span class="nav-number">5.</span> <span class="nav-text">动态链接的步骤和实现</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#动态链接器启动"><span class="nav-number">5.1.</span> <span class="nav-text">动态链接器启动</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#装载共享对象"><span class="nav-number">5.2.</span> <span class="nav-text">装载共享对象</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#符号的优先级"><span class="nav-number">5.2.1.</span> <span class="nav-text">符号的优先级</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars3.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">我的世界</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">283</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">113</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">38</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+  
+  <span class="post-meta-divider">|</span>
+  <span>Hosted by <a href="https://pages.coding.me" target="_blank" rel="noopener" style="font-weight: bold">Coding Pages</a></span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">3.6m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">55:13</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+<script>
+  (function() {
+    function leancloudSelector(url) {
+      url = encodeURI(url);
+      return document.getElementById(url).querySelector('.leancloud-visitors-count');
+    }
+
+    function addCount(Counter) {
+      var visitors = document.querySelector('.leancloud_visitors');
+      var url = decodeURI(visitors.id);
+      var title = visitors.dataset.flagTitle;
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          if (results.length > 0) {
+            var counter = results[0];
+            leancloudSelector(url).innerText = counter.time + 1;
+            Counter('put', '/classes/Counter/' + counter.objectId, { time: { '__op': 'Increment', 'amount': 1 } })
+              .catch(error => {
+                console.error('Failed to save visitor count', error);
+              });
+          } else {
+              Counter('post', '/classes/Counter', { title, url, time: 1 })
+                .then(response => response.json())
+                .then(() => {
+                  leancloudSelector(url).innerText = 1;
+                })
+                .catch(error => {
+                  console.error('Failed to create', error);
+                });
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    function showTime(Counter) {
+      var visitors = document.querySelectorAll('.leancloud_visitors');
+      var entries = [...visitors].map(element => {
+        return decodeURI(element.id);
+      });
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url: { '$in': entries } })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          for (let url of entries) {
+            let target = results.find(item => item.url === url);
+            leancloudSelector(url).innerText = target ? target.time : 0;
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    let { app_id, app_key, server_url } = {"enable":true,"app_id":"ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI","app_key":"yh4vrfnscme1utPMpk65wcxn","server_url":null,"security":false};
+    function fetchData(api_server) {
+      var Counter = (method, url, data) => {
+        return fetch(`${api_server}/1.1${url}`, {
+          method,
+          headers: {
+            'X-LC-Id'     : app_id,
+            'X-LC-Key'    : app_key,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+      };
+      if (CONFIG.page.isPost) {
+        if (CONFIG.hostname !== location.hostname) return;
+        addCount(Counter);
+      } else if (document.querySelectorAll('.post-title-link').length >= 1) {
+        showTime(Counter);
+      }
+    }
+
+    let api_server = app_id.slice(-9) !== '-MdYXbMMI' ? server_url : `https://${app_id.slice(0, 8).toLowerCase()}.api.lncldglobal.com`;
+
+    if (api_server) {
+      fetchData(api_server);
+    } else {
+      fetch('https://app-router.leancloud.cn/2/route?appId=' + app_id)
+        .then(response => response.json())
+        .then(({ api_server }) => {
+          fetchData('https://' + api_server);
+        });
+    }
+  })();
+</script>
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+  <script defer src="/lib/three/three.min.js"></script>
+    <script defer src="/lib/three/three-waves.min.js"></script>
+    <script defer src="/lib/three/canvas_lines.min.js"></script>
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'ya6BPqVbYqaNRB0UfeBYw61l-MdYXbMMI',
+      appKey     : 'yh4vrfnscme1utPMpk65wcxn',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
