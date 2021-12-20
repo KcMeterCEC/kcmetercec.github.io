@@ -329,7 +329,7 @@
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @file: test_erpcdemo_client.c</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;erpc_client_setup.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;erpc_port.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;erpc_transport_setup.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&quot;erpcdemo.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[])</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 创建客户端</span></span><br><span class="line">    <span class="keyword">auto</span> transport = <span class="built_in">erpc_transport_tcp_init</span>(<span class="string">&quot;127.0.0.1&quot;</span>, <span class="number">60901</span>, <span class="literal">false</span>);</span><br><span class="line">    <span class="comment">// 初始化消息缓存</span></span><br><span class="line">    <span class="keyword">auto</span> message_buffer_factory = <span class="built_in">erpc_mbf_dynamic_init</span>();</span><br><span class="line">    <span class="comment">// 加入消息</span></span><br><span class="line">    <span class="built_in">erpc_client_init</span>(transport, message_buffer_factory);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">auto</span> message = <span class="string">&quot;Hello, this is client!\n&quot;</span>;</span><br><span class="line">    <span class="keyword">binary_t</span> cmd&#123;(<span class="keyword">uint8_t</span>*)message, (<span class="keyword">uint32_t</span>)(std::<span class="built_in">strlen</span>(message))&#125;;</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;Get message of server: &quot;</span> &lt;&lt; <span class="built_in">DemoHello</span>(&amp;cmd)-&gt;data &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line">    <span class="comment">// 关闭连接</span></span><br><span class="line">    <span class="built_in">erpc_transport_tcp_close</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <h2 id="编写-Makefile"><a href="#编写-Makefile" class="headerlink" title="编写 Makefile"></a>编写 Makefile</h2><p>Makefile 比较简单，如下：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">INCLUDE = /usr/local/include/erpc</span><br><span class="line">LIBRARY = /usr/local/lib</span><br><span class="line"></span><br><span class="line">all:</span><br><span class="line">        g++  test_erpcdemo_client.cpp erpcdemo_client.cpp erpc_setup_tcp.cpp -I$&#123;INCLUDE&#125; -L$&#123;LIBRARY&#125; -lerpc -lpthread -o client</span><br><span class="line">        g++  test_erpcdemo_server.cpp erpcdemo_server.cpp erpc_setup_tcp.cpp -I$&#123;INCLUDE&#125; -L$&#123;LIBRARY&#125; -lerpc -lpthread -o server</span><br></pre></td></tr></table></figure>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">INCLUDE = /usr/local/<span class="keyword">include</span>/erpc</span><br><span class="line">LIBRARY = /usr/local/lib</span><br><span class="line"></span><br><span class="line"><span class="section">all:</span></span><br><span class="line">        g++  test_erpcdemo_client.cpp erpcdemo_client.cpp erpc_setup_tcp.cpp -I$&#123;INCLUDE&#125; -L$&#123;LIBRARY&#125; -lerpc -lpthread -o client</span><br><span class="line">        g++  test_erpcdemo_server.cpp erpcdemo_server.cpp erpc_setup_tcp.cpp -I$&#123;INCLUDE&#125; -L$&#123;LIBRARY&#125; -lerpc -lpthread -o server</span><br></pre></td></tr></table></figure>
 
 <h2 id="运行"><a href="#运行" class="headerlink" title="运行"></a>运行</h2><p>服务端输出：</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">server is running!</span><br><span class="line">client message: Hello, this is client!</span><br></pre></td></tr></table></figure>
@@ -370,6 +370,13 @@
 
 
         
+    <div class="post-nav">
+      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/2021/12/20/framework_erpc_cs_together/" rel="next" title="ERPC 同时运行一个服务端和客户端">
+      ERPC 同时运行一个服务端和客户端 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
       </footer>
     
   </article>
@@ -444,7 +451,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">1</span>
+          <span class="site-state-item-count">2</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -508,7 +515,7 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">1k</span>
+    <span title="站点总字数">2k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
