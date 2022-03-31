@@ -470,4 +470,51 @@
         <tag>Qt</tag>
       </tags>
   </entry>
+  <entry>
+    <title>STM32 SPI 作为从机的注意事项</title>
+    <url>/2022/03/31/stm32spi_as_slave/</url>
+    <content><![CDATA[<p>两个 stm32 通过 SPI 进行通信，一主一从，但从机不能使用 CubeMX 的默认配置，不然会被带进坑……</p>
+<span id="more"></span>
+
+<h1 id="遇到问题"><a href="#遇到问题" class="headerlink" title="遇到问题"></a>遇到问题</h1><p>目前我两个 stm32f4 芯片通过 SPI 进行主从通信，但从机获取的<strong>第一帧</strong>数据会丢失一个位，其配置如下：</p>
+<p>主机：</p>
+<ul>
+<li>CPOL = 0，CPHA = 0</li>
+<li>软件片选</li>
+</ul>
+<p>从机：</p>
+<ul>
+<li>CPOL = 0，CPHA = 0</li>
+<li>硬件片选</li>
+</ul>
+<p>其现象如下：</p>
+<ul>
+<li>当主机启动，第一次发送 <code>0xA5</code> 时，从机会接收到<code>0xD2</code></li>
+<li>当主机启动，第一次发送 <code>0x53</code> 时，从机会接收到<code>0x29</code></li>
+</ul>
+<p>经过二进制对比可以发现：从机接收到的数据相比主机右移了一位，也就是说<strong>从机相比主机更早的接收到了一个时钟</strong>。</p>
+<h1 id="排查"><a href="#排查" class="headerlink" title="排查"></a>排查</h1><p>要找到这个问题，首先就需要缩小范围，判断是主机的问题还是从机的问题。</p>
+<p>逻辑分析仪抓取主机发送时序如下：<br><img src="https://github.com/KcMeterCEC/explore/blob/master/[processor]/[stm32]/[peripheral]/pic/spi_master_send.jpg?raw=true"><br>可以看到，SCK 在 MOSI 发送数据前，居然被拉高了！</p>
+<blockquote>
+<p>前面的配置中，CPOL = 0，那么此时 SCK 应该保持低电平才对。</p>
+</blockquote>
+<p>那可以猜想：从机判断 SCK 拉高了，误认为这是一个信号，所以从机会比主机提前接收一个 bit。</p>
+<h1 id="解决"><a href="#解决" class="headerlink" title="解决"></a>解决</h1><p>有以下几种解决办法：</p>
+<h2 id="配置管脚状态"><a href="#配置管脚状态" class="headerlink" title="配置管脚状态"></a>配置管脚状态</h2><p>既然主机会莫名其妙的提前将 SCK 拉高，那么我们在从机端也可以将 SCK 管脚配置为 <code>GPIO_PULLDOWN</code> 模式（默认 CubeMX 生成的代码是 <code>GPIO_NOPULL</code>）：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">// SCK Pin should be pulled down when CPOL = 0</span></span><br><span class="line">GPIO_InitStruct.Pin = GPIO_PIN_3;</span><br><span class="line">GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;</span><br><span class="line">GPIO_InitStruct.Pull = GPIO_PULLDOWN;</span><br><span class="line">GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;</span><br><span class="line">GPIO_InitStruct.Alternate = GPIO_AF5_SPI1;</span><br><span class="line"><span class="built_in">HAL_GPIO_Init</span>(GPIOB, &amp;GPIO_InitStruct);</span><br></pre></td></tr></table></figure>
+<p>经测试，这下就可以正常稳定的通信了。</p>
+<p>在解决后，我尝试搜索是否别人也遇到了这个问题，还是我这个是个例。</p>
+<p>最终发送在<a href="https://electronics.stackexchange.com/questions/492271/stm32f4-spi-communication-fails-when-polarity-is-low">stackexchange</a> 上也遇到了同样的问题，而且其逻辑分析仪结果与我的一致，看来这个是 ST 的锅了……</p>
+<h2 id="配置时钟极性"><a href="#配置时钟极性" class="headerlink" title="配置时钟极性"></a>配置时钟极性</h2><p>既然主机会莫名其妙的提前将 SCK 拉高，那么我们也可以将主从机 SCK 极性配置为高，已掩盖掉此问题：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line">hspi3.Instance = SPI3;</span><br><span class="line">hspi3.Init.Mode = SPI_MODE_MASTER;</span><br><span class="line">hspi3.Init.Direction = SPI_DIRECTION_2LINES;</span><br><span class="line">hspi3.Init.DataSize = SPI_DATASIZE_8BIT;</span><br><span class="line">hspi3.Init.CLKPolarity = SPI_POLARITY_HIGH;<span class="comment">//SPI_POLARITY_HIGH;//SPI_POLARITY_LOW;</span></span><br><span class="line">hspi3.Init.CLKPhase = SPI_PHASE_1EDGE;<span class="comment">//SPI_PHASE_1EDGE;</span></span><br><span class="line">hspi3.Init.NSS = SPI_NSS_SOFT;</span><br><span class="line">hspi3.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;</span><br><span class="line">hspi3.Init.FirstBit = SPI_FIRSTBIT_MSB;</span><br><span class="line">hspi3.Init.TIMode = SPI_TIMODE_DISABLE;</span><br><span class="line">hspi3.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;</span><br><span class="line">hspi3.Init.CRCPolynomial = <span class="number">10</span>;</span><br><span class="line"><span class="keyword">if</span> (<span class="built_in">HAL_SPI_Init</span>(&amp;hspi3) != HAL_OK)</span><br><span class="line">&#123;</span><br><span class="line">  <span class="built_in">Error_Handler</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个经过测试，也是可以稳定通信的。</p>
+]]></content>
+      <categories>
+        <category>processor</category>
+        <category>stm32</category>
+      </categories>
+      <tags>
+        <tag>stm32</tag>
+      </tags>
+  </entry>
 </search>
