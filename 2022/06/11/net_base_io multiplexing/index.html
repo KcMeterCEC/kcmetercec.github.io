@@ -277,14 +277,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>3.9k</span>
+              <span>3.7k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>4 分钟</span>
+              <span>3 分钟</span>
             </span>
 
         </div>
@@ -333,7 +333,58 @@
 <h1 id="poll"><a href="#poll" class="headerlink" title="poll"></a>poll</h1><p>poll 与 select 在使用上类似。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;poll.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">pollfd</span> &#123;</span></span><br><span class="line">    <span class="keyword">int</span>   fd;         <span class="comment">/* file descriptor */</span></span><br><span class="line">    <span class="keyword">short</span> events;     <span class="comment">/* requested events */</span></span><br><span class="line">    <span class="keyword">short</span> revents;    <span class="comment">/* returned events */</span></span><br><span class="line">&#125;;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">poll</span><span class="params">(struct pollfd *fds, <span class="keyword">nfds_t</span> nfds, <span class="keyword">int</span> timeout)</span></span>;</span><br></pre></td></tr></table></figure>
 <p>event 类型有：</p>
-<p>| 事件       | 描述                                 |<br>|————+————————————–|<br>| POLLIN     | 数据（包括普通数据和优先数据）可读   |<br>| POLLRDNORM | 普通数据可读                         |<br>| POLLRDBAND | 优先级带数据可读                     |<br>| POLLPRI    | 高优先级数据可读，比如 TCP 带外数据  |<br>| POLLOUT    | 数据（包括普通数据和优先数据）可写   |<br>| POLLWRNORM | 普通数据可写                         |<br>| POLLWRBAND | 优先级带数据可写                     |<br>| POLLRDHUP  | TCP 连接被对方关闭或对方关闭了写操作 |<br>| POLLERR    | 错误                                 |<br>| POLLHUP    | 挂起                                 |<br>| POLLNVAL   | 文件描述符没有打开                   |</p>
+<table>
+<thead>
+<tr>
+<th>事件</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>POLLIN</td>
+<td>数据（包括普通数据和优先数据）可读</td>
+</tr>
+<tr>
+<td>POLLRDNORM</td>
+<td>普通数据可读</td>
+</tr>
+<tr>
+<td>POLLRDBAND</td>
+<td>优先级带数据可读</td>
+</tr>
+<tr>
+<td>POLLPRI</td>
+<td>高优先级数据可读，比如 TCP 带外数据</td>
+</tr>
+<tr>
+<td>POLLOUT</td>
+<td>数据（包括普通数据和优先数据）可写</td>
+</tr>
+<tr>
+<td>POLLWRNORM</td>
+<td>普通数据可写</td>
+</tr>
+<tr>
+<td>POLLWRBAND</td>
+<td>优先级带数据可写</td>
+</tr>
+<tr>
+<td>POLLRDHUP</td>
+<td>TCP 连接被对方关闭或对方关闭了写操作</td>
+</tr>
+<tr>
+<td>POLLERR</td>
+<td>错误</td>
+</tr>
+<tr>
+<td>POLLHUP</td>
+<td>挂起</td>
+</tr>
+<tr>
+<td>POLLNVAL</td>
+<td>文件描述符没有打开</td>
+</tr>
+</tbody></table>
 <p>虽然 poll 和 select 类似，但是当有事件发生时，内核修改的是 pollfd 的 <code>revents</code>成员变量，而不会修改原来的<code>events</code>成员变量。</p>
 <p>所以其下次再来调用时，可以不用再次修改 pollfd，编程接口相对更为友好。</p>
 <h1 id="epoll"><a href="#epoll" class="headerlink" title="epoll"></a>epoll</h1><p>epoll 则与 select、poll 有以下差异：</p>
@@ -400,7 +451,46 @@
 
 <p>上面代码的 <code>sleep()</code> 是为了模拟该线程正在对此事件进行处理，可以通过多个 <code>telnet</code> 客户端来给服务端发送数据。</p>
 <p>可以看到：每个 <code>telent</code> 都有对应的唯一一个处理线程，在处理时间内发送新数据，原来的线程会继续处理。</p>
-<h1 id="三组-I-O-复用函数的比较"><a href="#三组-I-O-复用函数的比较" class="headerlink" title="三组 I/O 复用函数的比较"></a>三组 I/O 复用函数的比较</h1><p>| 系统调用                               | select                                                                                                                           | poll                                                                                                      | epoll                                                                                                                      |<br>|—————————————-+———————————————————————————————————————————-+———————————————————————————————————–+—————————————————————————————————————————-|<br>| 事件集合                               | 用户通过 3 个参数分别传入可读、可写及异常等事件，内核通过对这些参数的在线修改来反馈就绪事件。导致用户每次调用都要重置这 3 个参数 | 统一处理所有事件类型，因此只需一个事件集参数。用户通过 events 传入事件，内核通过修改 revents 反馈就绪事件 | 内核通过事件表管理事件。所以每次调用 epoll_wait 时不用反复传入用户感兴趣的事件。 epoll_wait 参数 events 仅用来反馈就绪事件 |<br>| 应用程序索引就绪文件描述符的事件复杂度 | O(n)                                                                                                                             | O(n)                                                                                                      | O(1)                                                                                                                       |<br>| 最大支持文件描述符数                   | 一般有最大值限制                                                                                                                 | 65535                                                                                                     | 65535                                                                                                                      |<br>| 工作模式                               | LT                                                                                                                               | LT                                                                                                        | LT，ET                                                                                                                     |<br>| 内核实现和工作效率                     | 采用轮询方式来检测就绪事件，事件复杂度为 O(n)                                                                                    | 采用轮询方式检测就绪事件，事件复杂度为 O(n)                                                               | 采用回调方式检测就绪事件，算法事件复杂度为 O(1)                                                                            |</p>
+<h1 id="三组-I-O-复用函数的比较"><a href="#三组-I-O-复用函数的比较" class="headerlink" title="三组 I/O 复用函数的比较"></a>三组 I/O 复用函数的比较</h1><table>
+<thead>
+<tr>
+<th>系统调用</th>
+<th>select</th>
+<th>poll</th>
+<th>epoll</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>事件集合</td>
+<td>用户通过 3 个参数分别传入可读、可写及异常等事件，内核通过对这些参数的在线修改来反馈就绪事件。导致用户每次调用都要重置这 3 个参数</td>
+<td>统一处理所有事件类型，因此只需一个事件集参数。用户通过 events 传入事件，内核通过修改 revents 反馈就绪事件</td>
+<td>内核通过事件表管理事件。所以每次调用 epoll_wait 时不用反复传入用户感兴趣的事件。 epoll_wait 参数 events 仅用来反馈就绪事件</td>
+</tr>
+<tr>
+<td>应用程序索引就绪文件描述符的事件复杂度</td>
+<td>O(n)</td>
+<td>O(n)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>最大支持文件描述符数</td>
+<td>一般有最大值限制</td>
+<td>65535</td>
+<td>65535</td>
+</tr>
+<tr>
+<td>工作模式</td>
+<td>LT</td>
+<td>LT</td>
+<td>LT，ET</td>
+</tr>
+<tr>
+<td>内核实现和工作效率</td>
+<td>采用轮询方式来检测就绪事件，事件复杂度为 O(n)</td>
+<td>采用轮询方式检测就绪事件，事件复杂度为 O(n)</td>
+<td>采用回调方式检测就绪事件，算法事件复杂度为 O(1)</td>
+</tr>
+</tbody></table>
 <h1 id="非阻塞-connect"><a href="#非阻塞-connect" class="headerlink" title="非阻塞 connect"></a>非阻塞 connect</h1><p>一个客户端为了能够同时发起多个连接，可以以非阻塞的方式调用 <code>connect()</code> ：</p>
 <ul>
 <li>将 socket 设置为非阻塞状态，然后调用 <code>connect()</code> </li>
@@ -613,13 +703,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">90k</span>
+    <span title="站点总字数">89k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">1:22</span>
+    <span title="站点阅读时长">1:21</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>

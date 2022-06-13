@@ -270,7 +270,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>607</span>
+              <span>551</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -299,7 +299,46 @@
 <span id="more"></span>
 
 <h1 id="socket-选项-SO-RECVTIMEO-和-SO-SNDTIMEO"><a href="#socket-选项-SO-RECVTIMEO-和-SO-SNDTIMEO" class="headerlink" title="socket 选项 SO_RECVTIMEO 和 SO_SNDTIMEO"></a>socket 选项 SO_RECVTIMEO 和 SO_SNDTIMEO</h1><p>SO_RECVTIMEO 和 SO_SNDTIMEO 分别对应设置接收和发送超时。</p>
-<p>| 系统调用 | 有效选项    | 系统调用超时后的行为                        |<br>|———-+————-+———————————————|<br>| send     | SO_SNDTIMEO | 返回 -1，errno 的值为 EAGAIN 或 EWOULDBLOCK |<br>| sendmsg  | SO_SNDTIMEO | 返回 -1，errno 的值为 EAGAIN 或 EWOULDBLOCK |<br>| recv     | SO_RCVTIMEO | 返回 -1，errno 的值为 EAGAIN 或 EWOULDBLOCK |<br>| recvmsg  | SO_RCVTIMEO | 返回 -1，errno 的值为 EAGAIN 或 EWOULDBLOCK |<br>| accept   | SO_RCVTIMEO | 返回 -1，errno 的值为 EAGAIN 或 EWOULDBLOCK |<br>| connect  | SO_SNDTIMEO | 返回 -1，errno 的值为 EINPROGRESS           |<br>如下所示为 socket 使用<code>connect</code> 超时的设置：</p>
+<table>
+<thead>
+<tr>
+<th>系统调用</th>
+<th>有效选项</th>
+<th>系统调用超时后的行为</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>send</td>
+<td>SO_SNDTIMEO</td>
+<td>返回 -1，errno 的值为 EAGAIN 或 EWOULDBLOCK</td>
+</tr>
+<tr>
+<td>sendmsg</td>
+<td>SO_SNDTIMEO</td>
+<td>返回 -1，errno 的值为 EAGAIN 或 EWOULDBLOCK</td>
+</tr>
+<tr>
+<td>recv</td>
+<td>SO_RCVTIMEO</td>
+<td>返回 -1，errno 的值为 EAGAIN 或 EWOULDBLOCK</td>
+</tr>
+<tr>
+<td>recvmsg</td>
+<td>SO_RCVTIMEO</td>
+<td>返回 -1，errno 的值为 EAGAIN 或 EWOULDBLOCK</td>
+</tr>
+<tr>
+<td>accept</td>
+<td>SO_RCVTIMEO</td>
+<td>返回 -1，errno 的值为 EAGAIN 或 EWOULDBLOCK</td>
+</tr>
+<tr>
+<td>connect</td>
+<td>SO_SNDTIMEO</td>
+<td>返回 -1，errno 的值为 EINPROGRESS</td>
+</tr>
+</tbody></table>
+<p>如下所示为 socket 使用<code>connect</code> 超时的设置：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;netinet/in.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;arpa/inet.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;assert.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;errno.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[])</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> ret = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">if</span> (argc != <span class="number">3</span>) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;usage: %s &lt;ip&gt; &lt;port&gt;\n&quot;</span>, argv[<span class="number">0</span>]);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">char</span> *ip = argv[<span class="number">1</span>];</span><br><span class="line">    <span class="keyword">int</span> port = atoi(argv[<span class="number">2</span>]);</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_in</span> <span class="title">address</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">memset</span>(&amp;address, <span class="number">0</span>, <span class="keyword">sizeof</span>(address));</span><br><span class="line">    address.sin_family = AF_INET;</span><br><span class="line">    inet_pton(AF_INET, ip, &amp;address.sin_addr);</span><br><span class="line">    address.sin_port = htons(port);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> sock_fd = socket(address.sin_family, SOCK_STREAM, <span class="number">0</span>);</span><br><span class="line">    assert(sock_fd &gt; <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timeval</span> <span class="title">timeout</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 设置超时时间为 5 s</span></span><br><span class="line">    timeout.tv_sec = <span class="number">5</span>;</span><br><span class="line">    timeout.tv_usec = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">socklen_t</span> len = <span class="keyword">sizeof</span>(timeout);</span><br><span class="line"></span><br><span class="line">    ret = setsockopt(sock_fd, SOL_SOCKET, SO_SNDTIMEO, &amp;timeout, len);</span><br><span class="line">    assert(ret == <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    ret = connect(sock_fd, (struct sockaddr *)&amp;address, <span class="keyword">sizeof</span>(address));</span><br><span class="line">    <span class="keyword">if</span> (ret == <span class="number">-1</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (errno == EINPROGRESS) &#123;</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;connecting timeout\n&quot;</span>);</span><br><span class="line">            <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        perror(<span class="string">&quot;connect failed:&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <h1 id="SIGALRM-信号"><a href="#SIGALRM-信号" class="headerlink" title="SIGALRM 信号"></a>SIGALRM 信号</h1><p><code>SIGALRM</code>和<code>setitimer</code>使用，可以实现高效的定时机制。</p>
@@ -483,13 +522,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">90k</span>
+    <span title="站点总字数">89k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">1:22</span>
+    <span title="站点阅读时长">1:21</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>

@@ -277,14 +277,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>3k</span>
+              <span>2.7k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>3 分钟</span>
+              <span>2 分钟</span>
             </span>
 
         </div>
@@ -310,7 +310,30 @@
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;signal.h&gt;</span></span></span><br><span class="line"><span class="comment">//将信号 sig 发送给 pid 进程</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">kill</span><span class="params">(<span class="keyword">pid_t</span> pid, <span class="keyword">int</span> sig)</span></span>;</span><br></pre></td></tr></table></figure>
 
 <p>pid 的取值如下：</p>
-<p>| pid 参数 | 含义                                                                         |<br>|———-+——————————————————————————|<br>| pid &gt; 0  | 信号发送给 PID 为 pid 的进程                                                 |<br>| pid = 0  | 信号发送给本进程组内的其他进程                                               |<br>| pid = -1 | 信号发送给除 init 进程外的所有进程，但发送者需要拥有对目标进程发送信号的权限 |<br>| pid &lt; -1 | 信号发送给组 ID 为 -pid 的进程组中的所有成员                                 |</p>
+<table>
+<thead>
+<tr>
+<th>pid 参数</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>pid &gt; 0</td>
+<td>信号发送给 PID 为 pid 的进程</td>
+</tr>
+<tr>
+<td>pid = 0</td>
+<td>信号发送给本进程组内的其他进程</td>
+</tr>
+<tr>
+<td>pid = -1</td>
+<td>信号发送给除 init 进程外的所有进程，但发送者需要拥有对目标进程发送信号的权限</td>
+</tr>
+<tr>
+<td>pid &lt; -1</td>
+<td>信号发送给组 ID 为 -pid 的进程组中的所有成员</td>
+</tr>
+</tbody></table>
 <h2 id="信号处理方式"><a href="#信号处理方式" class="headerlink" title="信号处理方式"></a>信号处理方式</h2><p>目标进程可以定义个回调函数来处理接收到的信号，信号原型为：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;signal.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">//传入信号类型</span></span><br><span class="line"><span class="function"><span class="keyword">typedef</span> <span class="title">void</span> <span class="params">(*<span class="keyword">sighandler_t</span>)</span><span class="params">(<span class="keyword">int</span>)</span></span>;</span><br></pre></td></tr></table></figure>
 
@@ -320,7 +343,226 @@
 <li><code>SIG_DFL</code> ：使用默认处理方式，可以结束进程（Term）、忽略信号（Ign）、结束并生成核心转储文件（Core）、暂停进程（Stop）、继续进程（Cont）</li>
 <li><code>SIG_IGN</code> ：忽略目标信号</li>
 </ul>
-<h2 id="Linux-标准信号"><a href="#Linux-标准信号" class="headerlink" title="Linux 标准信号"></a>Linux 标准信号</h2><p>| 信号      | 起源     | 默认行为 | 含义                                                    |<br>|———–+———-+———-+———————————————————|<br>| SIGHUP    | POSIX    | Term     | 控制终端挂起                                            |<br>| SIGINT    | ANSI     | Term     | 键盘输入以中断进程（Ctrl + C）                          |<br>| SIGQUIT   | POSIX    | Core     | 键盘输入使进程退出（Ctrl + \）                          |<br>| SIGILL    | ANSI     | Core     | 非法指令                                                |<br>| SIGTRAP   | POSIX    | Core     | 断点陷进，用于调试                                      |<br>| SIGABRT   | ANSI     | Core     | 进程调用 =abort= 函数时生成该信号                       |<br>| SIGIOT    | 4.2BSD   | Core     | 和 =SIGABRT= 相同                                       |<br>| SIGBUS    | 4.2BSD   | Core     | 总线错误，错误的内存访问                                |<br>| SIGFPE    | ANSI     | Core     | 浮点异常                                                |<br>| SIGKILL   | POSIX    | Term     | 终止一个进程，该信号不可被捕获或忽略                    |<br>| SIGUSR1   | POSIX    | Term     | 用户自定义信号1                                         |<br>| SIGSEGV   | ANSI     | Core     | 非法内存段引用                                          |<br>| SIGUSR2   | POSIX    | Term     | 用户自定义信号2                                         |<br>| SIGPIPE   | POSIX    | Term     | 往读端被关闭的管道或者 socket 的连接中写数据            |<br>| SIGALRM   | POSIX    | Term     | 由 =alarm= 或 =setitimer= 设置的实时闹钟超时引起        |<br>| SIGTERM   | ANSI     | Term     | 终止进程。kill 命令默认发送的信号就是 SIGTERM           |<br>| SIGSTKFLT | linux    | Term     | 早期的 Linux 使用该信号来报告数学协处理器栈错误         |<br>| SIGCLD    | System V | Ign      | 和 =SIGCHLD= 相同                                       |<br>| SIGCHILD  | POSIX    | Ign      | 子进程状态发生变化（退出或暂停）                        |<br>| SIGCONT   | POSIX    | Cont     | 启动被暂停的进程（Ctrl+Q)                               |<br>| SIGSTOP   | POSIX    | Stop     | 暂停进程（Ctrl + S）。该信号不可被捕获或忽略            |<br>| SIGTSTP   | POSIX    | Stop     | 挂起进程（Ctrl + Z）                                    |<br>| SIGTTIN   | POSIX    | Stop     | 后台进程试图从终端读取输入                              |<br>| SIGTTOU   | POSIX    | Stop     | 后台进程试图向终端输出内容                              |<br>| SIGURG    | 4.2BSD   | Ign      | socket 连接上接收到紧急数据                             |<br>| SIGXCPU   | 4.2BSD   | Core     | 进程的 CPU 使用时间超过其软限制                         |<br>| SIGXFSZ   | 4.2BSD   | Core     | 文件尺寸超过其软限制                                    |<br>| SIGVTALRM | 4.2BSD   | Term     | 与 =SIGALRM= 类似，但它只统计进程用户空间代码的运行时间 |<br>| SIGPROF   | 4.2BSD   | Term     | 与 =SIGALRM= 类似，同时统计用户代码和内核的运行时间     |<br>| SIGWINCH  | 4.3BSD   | Ign      | 终端窗口大小发送变化                                    |<br>| SIGPOLL   | System V | Term     | 与 =SIGIO= 类似                                         |<br>| SIGIO     | 4.2BSD   | Term     | IO 就绪事件                                             |<br>| SIGPWR    | System V | Term     | 对于使用 UPS 系统时电池电量过低时发出                   |<br>| SIGSYS    | POSIX    | Core     | 非法系统调用                                            |<br>| SIGUNUSED |          | Core     | 保留，通常和 =SIGSYS= 效果相同                          |</p>
+<h2 id="Linux-标准信号"><a href="#Linux-标准信号" class="headerlink" title="Linux 标准信号"></a>Linux 标准信号</h2><table>
+<thead>
+<tr>
+<th>信号</th>
+<th>起源</th>
+<th>默认行为</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SIGHUP</td>
+<td>POSIX</td>
+<td>Term</td>
+<td>控制终端挂起</td>
+</tr>
+<tr>
+<td>SIGINT</td>
+<td>ANSI</td>
+<td>Term</td>
+<td>键盘输入以中断进程（Ctrl + C）</td>
+</tr>
+<tr>
+<td>SIGQUIT</td>
+<td>POSIX</td>
+<td>Core</td>
+<td>键盘输入使进程退出（Ctrl + \）</td>
+</tr>
+<tr>
+<td>SIGILL</td>
+<td>ANSI</td>
+<td>Core</td>
+<td>非法指令</td>
+</tr>
+<tr>
+<td>SIGTRAP</td>
+<td>POSIX</td>
+<td>Core</td>
+<td>断点陷进，用于调试</td>
+</tr>
+<tr>
+<td>SIGABRT</td>
+<td>ANSI</td>
+<td>Core</td>
+<td>进程调用 =abort= 函数时生成该信号</td>
+</tr>
+<tr>
+<td>SIGIOT</td>
+<td>4.2BSD</td>
+<td>Core</td>
+<td>和 =SIGABRT= 相同</td>
+</tr>
+<tr>
+<td>SIGBUS</td>
+<td>4.2BSD</td>
+<td>Core</td>
+<td>总线错误，错误的内存访问</td>
+</tr>
+<tr>
+<td>SIGFPE</td>
+<td>ANSI</td>
+<td>Core</td>
+<td>浮点异常</td>
+</tr>
+<tr>
+<td>SIGKILL</td>
+<td>POSIX</td>
+<td>Term</td>
+<td>终止一个进程，该信号不可被捕获或忽略</td>
+</tr>
+<tr>
+<td>SIGUSR1</td>
+<td>POSIX</td>
+<td>Term</td>
+<td>用户自定义信号1</td>
+</tr>
+<tr>
+<td>SIGSEGV</td>
+<td>ANSI</td>
+<td>Core</td>
+<td>非法内存段引用</td>
+</tr>
+<tr>
+<td>SIGUSR2</td>
+<td>POSIX</td>
+<td>Term</td>
+<td>用户自定义信号2</td>
+</tr>
+<tr>
+<td>SIGPIPE</td>
+<td>POSIX</td>
+<td>Term</td>
+<td>往读端被关闭的管道或者 socket 的连接中写数据</td>
+</tr>
+<tr>
+<td>SIGALRM</td>
+<td>POSIX</td>
+<td>Term</td>
+<td>由 =alarm= 或 =setitimer= 设置的实时闹钟超时引起</td>
+</tr>
+<tr>
+<td>SIGTERM</td>
+<td>ANSI</td>
+<td>Term</td>
+<td>终止进程。kill 命令默认发送的信号就是 SIGTERM</td>
+</tr>
+<tr>
+<td>SIGSTKFLT</td>
+<td>linux</td>
+<td>Term</td>
+<td>早期的 Linux 使用该信号来报告数学协处理器栈错误</td>
+</tr>
+<tr>
+<td>SIGCLD</td>
+<td>System V</td>
+<td>Ign</td>
+<td>和 =SIGCHLD= 相同</td>
+</tr>
+<tr>
+<td>SIGCHILD</td>
+<td>POSIX</td>
+<td>Ign</td>
+<td>子进程状态发生变化（退出或暂停）</td>
+</tr>
+<tr>
+<td>SIGCONT</td>
+<td>POSIX</td>
+<td>Cont</td>
+<td>启动被暂停的进程（Ctrl+Q)</td>
+</tr>
+<tr>
+<td>SIGSTOP</td>
+<td>POSIX</td>
+<td>Stop</td>
+<td>暂停进程（Ctrl + S）。该信号不可被捕获或忽略</td>
+</tr>
+<tr>
+<td>SIGTSTP</td>
+<td>POSIX</td>
+<td>Stop</td>
+<td>挂起进程（Ctrl + Z）</td>
+</tr>
+<tr>
+<td>SIGTTIN</td>
+<td>POSIX</td>
+<td>Stop</td>
+<td>后台进程试图从终端读取输入</td>
+</tr>
+<tr>
+<td>SIGTTOU</td>
+<td>POSIX</td>
+<td>Stop</td>
+<td>后台进程试图向终端输出内容</td>
+</tr>
+<tr>
+<td>SIGURG</td>
+<td>4.2BSD</td>
+<td>Ign</td>
+<td>socket 连接上接收到紧急数据</td>
+</tr>
+<tr>
+<td>SIGXCPU</td>
+<td>4.2BSD</td>
+<td>Core</td>
+<td>进程的 CPU 使用时间超过其软限制</td>
+</tr>
+<tr>
+<td>SIGXFSZ</td>
+<td>4.2BSD</td>
+<td>Core</td>
+<td>文件尺寸超过其软限制</td>
+</tr>
+<tr>
+<td>SIGVTALRM</td>
+<td>4.2BSD</td>
+<td>Term</td>
+<td>与 =SIGALRM= 类似，但它只统计进程用户空间代码的运行时间</td>
+</tr>
+<tr>
+<td>SIGPROF</td>
+<td>4.2BSD</td>
+<td>Term</td>
+<td>与 =SIGALRM= 类似，同时统计用户代码和内核的运行时间</td>
+</tr>
+<tr>
+<td>SIGWINCH</td>
+<td>4.3BSD</td>
+<td>Ign</td>
+<td>终端窗口大小发送变化</td>
+</tr>
+<tr>
+<td>SIGPOLL</td>
+<td>System V</td>
+<td>Term</td>
+<td>与 =SIGIO= 类似</td>
+</tr>
+<tr>
+<td>SIGIO</td>
+<td>4.2BSD</td>
+<td>Term</td>
+<td>IO 就绪事件</td>
+</tr>
+<tr>
+<td>SIGPWR</td>
+<td>System V</td>
+<td>Term</td>
+<td>对于使用 UPS 系统时电池电量过低时发出</td>
+</tr>
+<tr>
+<td>SIGSYS</td>
+<td>POSIX</td>
+<td>Core</td>
+<td>非法系统调用</td>
+</tr>
+<tr>
+<td>SIGUNUSED</td>
+<td></td>
+<td>Core</td>
+<td>保留，通常和 =SIGSYS= 效果相同</td>
+</tr>
+</tbody></table>
 <h2 id="Linux-中断系统调用"><a href="#Linux-中断系统调用" class="headerlink" title="Linux 中断系统调用"></a>Linux 中断系统调用</h2><p>如果程序在执行系统调用时处于阻塞状态，此时接收到信号，并且设置了信号处理函数，那么此系统调用将被中断，errno 被设置为 EINTR。</p>
 <ul>
 <li>对于默认行为是暂停进程的信号，如果没有设置信号处理函数，也可以中断某些系统调用。</li>
@@ -544,13 +786,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">90k</span>
+    <span title="站点总字数">89k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">1:22</span>
+    <span title="站点阅读时长">1:21</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>
