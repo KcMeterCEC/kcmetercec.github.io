@@ -5212,4 +5212,89 @@
         <tag>Qt</tag>
       </tags>
   </entry>
+  <entry>
+    <title>C++ Core Guidelines：接口</title>
+    <url>/2022/07/26/cpp_coreguidelines_interface/</url>
+    <content><![CDATA[<p>通过阅读 <a href="https://github.com/isocpp/CppCoreGuidelines">CppCoreGuidelines</a> 来理解现代 c++ 编码规范，同时也是对 <a href="https://book.douban.com/subject/1842426/">Effective C++</a>，<a href="https://book.douban.com/subject/25923597/">Effective Modern C++</a>，<a href="https://book.douban.com/subject/27036085/">C++ Concurrency in Action</a> 的温习。</p>
+<span id="more"></span>
+
+<h1 id="让接口清晰"><a href="#让接口清晰" class="headerlink" title="让接口清晰"></a>让接口清晰</h1><p>不能让接口还有一些隐藏属性，导致接口的行为是用户无法预知的。</p>
+<p>比如下面的对浮点数取整：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">round</span><span class="params">(<span class="keyword">double</span> d)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> (round_up) ? std::<span class="built_in">ceil</span>(d) : d;    <span class="comment">// don&#x27;t: &quot;invisible&quot; dependency</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>有全局变量<code>round_up</code>来决定函数<code>round</code>来进行向上取整还是向下取整，这对用户来说是无法预知的。</p>
+<p>为了使得接口清晰，需要让用户了解有这个设置项：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">round</span><span class="params">(<span class="keyword">bool</span> round_up, <span class="keyword">double</span> d)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> (round_up) ? std::<span class="built_in">ceil</span>(d) : d;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="尽量避免non-const全局变量"><a href="#尽量避免non-const全局变量" class="headerlink" title="尽量避免non-const全局变量"></a>尽量避免<code>non-const</code>全局变量</h1><p><code>non-const</code>全局变量就可能：</p>
+<ol>
+<li>导致该变量被多处使用，造成依赖关系</li>
+<li>并发<code>data race</code></li>
+</ol>
+]]></content>
+      <categories>
+        <category>cpp</category>
+        <category>CoreGuidelines</category>
+      </categories>
+      <tags>
+        <tag>cpp</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>在 win10 中编译 KDE Qt5.15</title>
+    <url>/2022/08/11/qtmake_win_compile/</url>
+    <content><![CDATA[<p>Qt 5.15 是 Qt5 系列的最后一个 LTS，但是在 Qt 5.15.2 之后，需要付费用户才能获取其官方源码了。</p>
+<p>而 KDE 是基于 Qt5 开发的，所以他们宣布<a href="https://community.kde.org/Qt5PatchCollection">以开源的方式继续维护 5.15 分支</a>，直到 KDE 切换到 Qt6 分支。</p>
+<p>这对于我们普通用户来讲就是福音了，我们可以编译 KDE 维护的 5.15 。</p>
+<span id="more"></span>
+
+<h1 id="编译前的准备"><a href="#编译前的准备" class="headerlink" title="编译前的准备"></a>编译前的准备</h1><h2 id="安装编译需要的工具"><a href="#安装编译需要的工具" class="headerlink" title="安装编译需要的工具"></a>安装编译需要的工具</h2><p>为了完成编译，需要安装的工具有：</p>
+<ol>
+<li><a href="https://visualstudio.microsoft.com/zh-hans/">Visual Studio 2022</a>，安装 c++ 以及通用平台组件即可</li>
+<li><a href="https://www.python.org/">Python</a></li>
+<li><a href="https://strawberryperl.com/">strawberryperl</a></li>
+<li><a href="https://www.ruby-lang.org/en/">ruby</a></li>
+</ol>
+<p>以上工具，基本上按照提示即可完成安装。</p>
+<h2 id="获取分支源码"><a href="#获取分支源码" class="headerlink" title="获取分支源码"></a>获取分支源码</h2><blockquote>
+<p>获取源码要开代理，速度才快。</p>
+</blockquote>
+<p>在 <a href="https://invent.kde.org/qt/qt/qt5">KDE Qt 库</a>获取源码，并切换到<code>kde/5.15</code>分支：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">git clone --progress --verbose --branch kde/5.15 https://invent.kde.org/qt/qt/qt5.git qt-kde-5.15-LTS</span><br></pre></td></tr></table></figure>
+
+<p>然后获取其子模块：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">cd qt-kde-5.15-LTS</span><br><span class="line">git submodule update --init --recursive --progress</span><br></pre></td></tr></table></figure>
+
+<p>当然，子模块也需要切换到<code>kde/5.15</code>分支：</p>
+<blockquote>
+<p>以下这个脚本，是我在 WSL 下完成运行的，对 Windows 脚本不太熟悉……</p>
+</blockquote>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">!/bin/bash</span></span><br><span class="line"></span><br><span class="line">QT_SUBDIRS=$(ls -F | grep / | grep qt)</span><br><span class="line"></span><br><span class="line">echo &quot;Git module sub-directories to switch to kde/5.15 branch: $QT_SUBDIRS&quot;</span><br><span class="line"></span><br><span class="line">for SUBDIR in $QT_SUBDIRS ; do</span><br><span class="line"></span><br><span class="line">	echo &quot;Branching $SUBDIR to kde/5.15...&quot;</span><br><span class="line">	cd $SUBDIR</span><br><span class="line">	git checkout kde/5.15 || true</span><br><span class="line">	cd ..</span><br><span class="line"></span><br><span class="line">done</span><br></pre></td></tr></table></figure>
+
+<p>注意：</p>
+<ol>
+<li>这里的<code>qtwebengine</code>没有切换成功，因为其分支名称不叫这个，但我目前没有使用这个模块，所以就没有管它。</li>
+</ol>
+<h1 id="编译"><a href="#编译" class="headerlink" title="编译"></a>编译</h1><p>假设目前编译 X86 编码的库，那么就在“开始”中打开命令行窗口<code>x86 Native Tools Command Prompt for VS 2022</code>，然后切换到源码目录下。</p>
+<p>然后就开始配置并编译吧：</p>
+<figure class="highlight powershell"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 配置</span></span><br><span class="line">configure <span class="literal">-confirm</span><span class="literal">-license</span> <span class="literal">-opensource</span> <span class="literal">-debug</span> <span class="literal">-qt</span><span class="literal">-sqlite</span> <span class="literal">-qt</span><span class="literal">-zlib</span> <span class="literal">-qt</span><span class="literal">-libpng</span> <span class="literal">-qt</span><span class="literal">-libjpeg</span> <span class="literal">-nomake</span> tests <span class="literal">-no</span><span class="literal">-compile</span><span class="literal">-examples</span> <span class="literal">-nomake</span> examples</span><br><span class="line"><span class="comment"># 编译</span></span><br><span class="line">nmake</span><br><span class="line"><span class="comment"># 安装</span></span><br><span class="line">nmake install</span><br></pre></td></tr></table></figure>
+
+<p>编译完成后，可以在源码目录<code>qtbase/bin</code>下运行一下<code>qmake --version</code>来验证是否编译成功：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">D:\github\qt-kde-5.15-LTS\qtbase\bin&gt;qmake --version</span><br><span class="line">QMake version 3.1</span><br><span class="line">Using Qt version 5.15.5 in C:/Qt/Qt-5.15.5/lib</span><br></pre></td></tr></table></figure>
+
+<h1 id="QtCreator-使用编译好的库"><a href="#QtCreator-使用编译好的库" class="headerlink" title="QtCreator 使用编译好的库"></a>QtCreator 使用编译好的库</h1><p>安装最新的<a href="https://github.com/qt-creator/qt-creator">QtCreator</a>，目前我用的是 8.0.0。</p>
+<p>进入<code>编辑--preferences</code>中选择<code>Kit</code>选项卡，在<code>Qt Versions</code>中选择安装好的<code>qmake</code>路径：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/[Qt]/[Make]/compile/pic/qt_versions.jpg?raw=true"><br>然后进入<code>Kits</code>中选择当前 Qt 库的版本，选项 MSVC 编译器，和 CDB 调试器：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/[Qt]/[Make]/compile/pic/qt_kits.jpg?raw=true"><br>如果没有 CDB 调试器的话，可以进入<a href="https://developer.microsoft.com/zh-cn/windows/downloads/windows-sdk/">Windows SDK</a>安装下载器，然后选择安装调试器：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/[Qt]/[Make]/compile/pic/win10_sdk.jpg?raw=true"></p>
+<p>以上，便大功告成了！</p>
+]]></content>
+      <categories>
+        <category>Qt</category>
+        <category>Make</category>
+      </categories>
+      <tags>
+        <tag>Qt</tag>
+      </tags>
+  </entry>
 </search>
