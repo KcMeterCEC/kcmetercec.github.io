@@ -5229,9 +5229,9 @@
 <h1 id="尽量避免non-const全局变量"><a href="#尽量避免non-const全局变量" class="headerlink" title="尽量避免non-const全局变量"></a>尽量避免<code>non-const</code>全局变量</h1><p><code>non-const</code>全局变量就可能：</p>
 <ol>
 <li>导致该变量被多处使用，造成依赖关系</li>
-<li>并发<code>data race</code></li>
+<li><code>data race</code></li>
 </ol>
-]]></content>
+<h1 id="形参的检查"><a href="#形参的检查" class="headerlink" title="形参的检查"></a>形参的检查</h1>]]></content>
       <categories>
         <category>cpp</category>
         <category>CoreGuidelines</category>
@@ -5295,6 +5295,366 @@
       </categories>
       <tags>
         <tag>Qt</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>如何分析一个算法？</title>
+    <url>/2022/09/09/analysis_of_algorithms/</url>
+    <content><![CDATA[<ul>
+<li>学习书籍：<a href="https://algs4.cs.princeton.edu/home/">Algorithms 4th Edition</a></li>
+</ul>
+<p>我们在编写一段代码时，在需要其频繁运行或处理一大堆数据时，总会有一些疑问：</p>
+<ol>
+<li>这段代码的单次运行时间有多长，能否再优化？</li>
+<li>这段代码会占用多少内存，是否会触发 Stack overflow 或 Out of memory？</li>
+</ol>
+<p>如果仅仅是凭感觉来估算，真实解决往往是大相径庭，我们需要科学方法来量化代码的时间及空间复杂度。</p>
+<span id="more"></span>
+
+<h1 id="科学方法"><a href="#科学方法" class="headerlink" title="科学方法"></a>科学方法</h1><h2 id="观察"><a href="#观察" class="headerlink" title="观察"></a>观察</h2><p>分析一段代码的运行时间，那么就需要一定数量的样本输入，多个样本的输入对应多个运行时间，最后就可以画出一条曲线。</p>
+<h3 id="测试代码"><a href="#测试代码" class="headerlink" title="测试代码"></a>测试代码</h3><p>按照书籍上的代码来依次分析示例文件中的整数：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> edu.princeton.cs.algs4.In;</span><br><span class="line"><span class="keyword">import</span> edu.princeton.cs.algs4.Stopwatch;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Hello</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">count</span><span class="params">(<span class="keyword">int</span>[] a)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> n = a.length;</span><br><span class="line">        <span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; ++i) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = i + <span class="number">1</span>; j &lt; n; ++j) &#123;</span><br><span class="line">                <span class="keyword">for</span> (<span class="keyword">int</span> k = j + <span class="number">1</span>; k &lt; n; ++k) &#123;</span><br><span class="line">                    <span class="keyword">if</span> (a[i] + a[j] + a[k] == <span class="number">0</span>) &#123;</span><br><span class="line">                        count += <span class="number">1</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> count;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;working directory: &quot;</span> + System.getProperty(<span class="string">&quot;user.dir&quot;</span>));</span><br><span class="line">        <span class="keyword">if</span> (args.length == <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        System.out.println(<span class="string">&quot;analyze file: &quot;</span> + args[<span class="number">0</span>]);</span><br><span class="line"></span><br><span class="line">        In in = <span class="keyword">new</span> In(args[<span class="number">0</span>]);</span><br><span class="line">        <span class="keyword">int</span>[] a = in.readAllInts();</span><br><span class="line"></span><br><span class="line">        Stopwatch timer = <span class="keyword">new</span> Stopwatch();</span><br><span class="line">        <span class="keyword">int</span> count = count(a);</span><br><span class="line">        System.out.println(<span class="string">&quot;elapsed time = &quot;</span> + timer.elapsedTime());</span><br><span class="line">        System.out.println(<span class="string">&quot;count = &quot;</span> + count);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>测试文件与对应的输出时间关系如下表：</p>
+<table>
+<thead>
+<tr>
+<th>文件名称</th>
+<th>数量</th>
+<th>执行时间(秒)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1Kints.txt</td>
+<td>1000</td>
+<td>0.159</td>
+</tr>
+<tr>
+<td>2Kints.txt</td>
+<td>2000</td>
+<td>1.198</td>
+</tr>
+<tr>
+<td>4Kints.txt</td>
+<td>4000</td>
+<td>9.157</td>
+</tr>
+<tr>
+<td>8Kints.txt</td>
+<td>8000</td>
+<td>72.616</td>
+</tr>
+<tr>
+<td>16Kints.txt</td>
+<td>16000</td>
+<td>562.817</td>
+</tr>
+<tr>
+<td>32Kints.txt</td>
+<td>32000</td>
+<td>4584.773</td>
+</tr>
+<tr>
+<td>1Mints.txt</td>
+<td>1000000</td>
+<td></td>
+</tr>
+</tbody></table>
+<p>上面这段代码，执行时间主要在 for 循环上，是一个 <code>n * n * n</code> 的循环。也就是说其代码的时间复杂度是 <code>O(n^3)</code>，可以预测其时间会比较长。</p>
+<p>但是，对于 java 的这个测试结果，我试过 maven 和 Intellij 构建，得到的时间都相差不大，这么长的时间实在是让我目瞪口呆……</p>
+<p>为了做一下对比，我决定使用 c++ 来跑一下这个测试，看看时间差异有多大。</p>
+<p>c++ 代码如下：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;cstdlib&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fstream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;vector&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;array&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;chrono&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">count</span><span class="params">(<span class="keyword">const</span> std::vector&lt;<span class="keyword">int</span>&gt;&amp; a)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> n = a.<span class="built_in">size</span>();</span><br><span class="line">    <span class="keyword">int</span> cnt = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; ++i) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j = i + <span class="number">1</span>; j &lt; n; ++j) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> k = j + <span class="number">1</span>; k &lt; n; ++k) &#123;</span><br><span class="line">                <span class="keyword">if</span> (a[i] + a[j] + a[k] == <span class="number">0</span>) &#123;</span><br><span class="line">                    cnt += <span class="number">1</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> cnt;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;Input file name: &quot;</span>;</span><br><span class="line"></span><br><span class="line">    std::string file_name;</span><br><span class="line">    std::cin &gt;&gt; file_name;</span><br><span class="line"></span><br><span class="line">    <span class="function">std::ifstream <span class="title">istrm</span><span class="params">(file_name)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!istrm.<span class="built_in">is_open</span>()) &#123;</span><br><span class="line">        std::cout &lt;&lt; <span class="string">&quot;Can&#x27;t open file &quot;</span> &lt;&lt; file_name &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    std::vector&lt;<span class="keyword">int</span>&gt; bag;</span><br><span class="line">    std::array&lt;<span class="keyword">char</span>, 15&gt; tmp&#123;&#125;;</span><br><span class="line">    <span class="keyword">while</span> (!istrm.<span class="built_in">eof</span>()) &#123;</span><br><span class="line">        istrm.<span class="built_in">getline</span>(&amp;tmp[<span class="number">0</span>], tmp.<span class="built_in">size</span>());</span><br><span class="line">        <span class="keyword">int</span> value = std::<span class="built_in">atoi</span>(tmp.<span class="built_in">data</span>());</span><br><span class="line">        bag.<span class="built_in">push_back</span>(value);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;I have read &quot;</span> &lt;&lt; bag.<span class="built_in">size</span>() &lt;&lt; <span class="string">&quot; integers\n&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">auto</span> start = std::chrono::high_resolution_clock::<span class="built_in">now</span>();</span><br><span class="line">    <span class="keyword">int</span> cnt = <span class="built_in">count</span>(bag);</span><br><span class="line">    <span class="keyword">auto</span> stop = std::chrono::high_resolution_clock::<span class="built_in">now</span>();</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;result: &quot;</span> &lt;&lt; cnt &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">long</span> <span class="keyword">long</span> elapsed = std::chrono::duration_cast&lt;std::chrono::milliseconds&gt;(stop - start).<span class="built_in">count</span>();</span><br><span class="line">    <span class="keyword">double</span> took = elapsed / <span class="number">1000.0</span>;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;function `count` took &quot;</span></span><br><span class="line">        &lt;&lt; took</span><br><span class="line">        &lt;&lt; <span class="string">&quot; seconds\n&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>文件名称</th>
+<th>数量</th>
+<th>c++ 执行时间（秒）</th>
+<th>java 执行时间（秒）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1Kints.txt</td>
+<td>1000</td>
+<td>0.033</td>
+<td>0.159</td>
+</tr>
+<tr>
+<td>2Kints.txt</td>
+<td>2000</td>
+<td>0.277</td>
+<td>1.198</td>
+</tr>
+<tr>
+<td>4Kints.txt</td>
+<td>4000</td>
+<td>2.192</td>
+<td>9.157</td>
+</tr>
+<tr>
+<td>8Kints.txt</td>
+<td>8000</td>
+<td>17.608</td>
+<td>72.616</td>
+</tr>
+<tr>
+<td>16Kints.txt</td>
+<td>16000</td>
+<td>140.416</td>
+<td>562.817</td>
+</tr>
+<tr>
+<td>32Kints.txt</td>
+<td>32000</td>
+<td>1128.04</td>
+<td>4584.773</td>
+</tr>
+<tr>
+<td>1Mints.txt</td>
+<td>1000000</td>
+<td></td>
+<td></td>
+</tr>
+</tbody></table>
+<p>可以看出来：c++ 的运行效率大约是 java 的 4 倍，c++ 还是香啊……</p>
+<p>接下来，使用 excel 进行绘图，结果如下：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/[language]/[What]c_cpp--base/algorithm/analyze_algorithm/pic/three_sum_result.jpg?raw=true"><br>可以看到，虽然执行时间差异大，但是它们的趋势都是一样的。也就是说都可以用同样的公式来进行量化。</p>
+<p>由于其代码时间复杂度是<code>O(n^3)</code>，那么可以计算其系数：</p>
+<blockquote>
+<p>n^3 x a = time</p>
+</blockquote>
+<p>那么以 c++ 为例，可以算出 a 大约为 (0.033 / 1000^3) ≈ 3.3 x 10^(-11)</p>
+<p>那么就可以推算出来，一百万个输入大约需要 382 天！如果是 java 来算就需要大约 1528 天！</p>
+<p>这样一比较，就可以感性的认识到，代码时间复杂度<code>O(n^3)</code>是多么的丧心病狂！</p>
+<h3 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h3><p>前面是几个文件的测试结果，那我们参考书籍提供的<code>DoublingTest</code>类，完成可以生成多个结果的代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> edu.princeton.cs.algs4.Stopwatch;</span><br><span class="line"><span class="keyword">import</span> edu.princeton.cs.algs4.StdRandom;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">count</span><span class="params">(<span class="keyword">int</span>[] a)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> n = a.length;</span><br><span class="line">        <span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; ++i) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = i + <span class="number">1</span>; j &lt; n; ++j) &#123;</span><br><span class="line">                <span class="keyword">for</span> (<span class="keyword">int</span> k = j + <span class="number">1</span>; k &lt; n; ++k) &#123;</span><br><span class="line">                    <span class="keyword">if</span> (a[i] + a[j] + a[k] == <span class="number">0</span>) &#123;</span><br><span class="line">                        count += <span class="number">1</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> count;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">double</span> <span class="title">timeTrial</span><span class="params">(<span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span>[] a = <span class="keyword">new</span> <span class="keyword">int</span>[n];</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; ++i) &#123;</span><br><span class="line">            a[i] = StdRandom.uniformInt(-<span class="number">1000000</span>, <span class="number">1000000</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        Stopwatch timer = <span class="keyword">new</span> Stopwatch();</span><br><span class="line">        count(a);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> timer.elapsedTime();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> n = <span class="number">250</span>; <span class="keyword">true</span>; n += n) &#123;</span><br><span class="line">            System.out.printf(<span class="string">&quot;%7d %7.5f\n&quot;</span> , n , timeTrial(n));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其输出结果如下：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"> 250 0.01000</span><br><span class="line"> 500 0.02500</span><br><span class="line">1000 0.21100</span><br><span class="line">2000 1.41800</span><br><span class="line">4000 9.48900</span><br><span class="line">8000 74.05500</span><br></pre></td></tr></table></figure>
+
+<p>将这个结果绘制为图标也是和之前一致的：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/[language]/[What]c_cpp--base/algorithm/analyze_algorithm/pic/three_sum_linear_log.jpg?raw=true"><br>从右边的对数曲线，可以得出其公式为：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/[language]/[What]c_cpp--base/algorithm/analyze_algorithm/pic/three_sum_equation.jpg?raw=true"><br>上面是对数，转化为线性后，加减就变成了乘除，就是和之前的公式一致了。</p>
+<h2 id="数学模型"><a href="#数学模型" class="headerlink" title="数学模型"></a>数学模型</h2><p>代码的运行时间由两个主要因素决定：</p>
+<ol>
+<li><p>每个语句的执行时间</p>
+</li>
+<li><p>每个语句的执行频率</p>
+</li>
+</ol>
+<h3 id="计算执行次数"><a href="#计算执行次数" class="headerlink" title="计算执行次数"></a>计算执行次数</h3><p>上面的测试代码主要是<code>count()</code>函数的耗时，那么就来尝试以数学的方法来计算其执行频率，以 cpp 代码为例：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">count</span><span class="params">(<span class="keyword">const</span> std::vector&lt;<span class="keyword">int</span>&gt;&amp; a)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> n = a.<span class="built_in">size</span>();</span><br><span class="line">    <span class="keyword">int</span> cnt = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; ++i) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j = i + <span class="number">1</span>; j &lt; n; ++j) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> k = j + <span class="number">1</span>; k &lt; n; ++k) &#123;</span><br><span class="line">                <span class="keyword">if</span> (a[i] + a[j] + a[k] == <span class="number">0</span>) &#123;</span><br><span class="line">                    cnt += <span class="number">1</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> cnt;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>最开始的创建两个局部变量，它们的频率都是 1，这个是没有疑问的，重点是在于下面的 <code>for</code>循环语句的执行次数。</p>
+<p>由于上面是 3 层循环，对于我这种数学渣理解起来有点困难，那么我们先将 3 层循环简化为 2 层循环：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">count2</span><span class="params">(<span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">uint32_t</span> run_cnt = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; ++i) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j = i + <span class="number">1</span>; j &lt; n; ++j) &#123;</span><br><span class="line">            run_cnt += <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; __func__ &lt;&lt; <span class="string">&quot;: &quot;</span> &lt;&lt; run_cnt &lt;&lt; <span class="string">&quot; times\n&quot;</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>下面先列举出规律：</p>
+<table>
+<thead>
+<tr>
+<th>i 的值</th>
+<th>内层执行次数</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0</td>
+<td>n - 1</td>
+</tr>
+<tr>
+<td>1</td>
+<td>n - 2</td>
+</tr>
+<tr>
+<td>2</td>
+<td>n - 3</td>
+</tr>
+<tr>
+<td>…</td>
+<td>…</td>
+</tr>
+<tr>
+<td>n - 2</td>
+<td>2</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>那么总的执行次数就是内层执行次数之和（外层相对于内层每次执行次数就是 1）：</td>
+<td></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>1 + 2 + .…+(n-2) + (n-1)</p>
+</blockquote>
+<p>那么就可以简化公式：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/[language]/[What]c_cpp--base/algorithm/analyze_algorithm/pic/2level_for.jpg?raw=true">那么假设 n 为 10，最终两层<code>for</code>循环执行次数就是 45 次，实测结果也是一致的。</p>
+<p>下面再来看有三层<code>for</code>循环的情况，为了便于分析，同样也是以第二层和第三层<code>for</code>循环作为分析对象：</p>
+<table>
+<thead>
+<tr>
+<th>i 的值</th>
+<th>j 的值</th>
+<th>第三层执行次数</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0</td>
+<td>1</td>
+<td>n - 2</td>
+</tr>
+<tr>
+<td>1</td>
+<td>2</td>
+<td>n - 3</td>
+</tr>
+<tr>
+<td>…</td>
+<td>…</td>
+<td>…</td>
+</tr>
+<tr>
+<td>n-4</td>
+<td>n-3</td>
+<td>2</td>
+</tr>
+<tr>
+<td>n-3</td>
+<td>n-2</td>
+<td>1</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody></table>
+<p>当<code>i</code>的值为 0 时，<code>j</code>的值将从 1~(n-1)，其执行次数是：</p>
+<blockquote>
+<p>1 + 2 + … + (n-3) + (n-2)</p>
+</blockquote>
+<p>其公式为：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/[language]/[What]c_cpp--base/algorithm/analyze_algorithm/pic/3level_for.jpg?raw=true">那么依次计算当<code>i</code>的值增加时，第三层的执行次数为：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/[language]/[What]c_cpp--base/algorithm/analyze_algorithm/pic/3level_for_list.jpg?raw=true">那么将这些执行次数求和：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/[language]/[What]c_cpp--base/algorithm/analyze_algorithm/pic/3level_for_sum.jpg?raw=true"><br>最终推导：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/[language]/[What]c_cpp--base/algorithm/analyze_algorithm/pic/3level_for_result.jpg?raw=true">至此，结果就推导出来了。</p>
+<p>我顺便还查看了<a href="https://github.com/reneargento/algorithms-sedgewick-wayne/">github</a>上对此公式的解释：</p>
+<blockquote>
+<p>Counting argument:<br>When choosing the first element there are N possibilities.<br>When choosing the second element there are N - 1 possibilities.<br>When choosing the third element there are N - 2 possibilities.</p>
+</blockquote>
+<blockquote>
+<p>This is a total of N(N - 1)(N - 2). If the order of items mattered, this would be the result.<br>However, the order of items does not matter. For 3 items there is a total of 3! possible orderings.<br>3! = 6</p>
+</blockquote>
+<blockquote>
+<p>So, the number of triples that can be chosen from N items is equal to:<br>N(N - 1)(N - 2) / 6</p>
+</blockquote>
+<p>他的解释是，元素的顺序是无序的，得出一个 3 的阶层。</p>
+<p>这是因为他是以排列组合的思路来看待这个问题的，因为最终的代码是需要在最内层的循环执行的，而元素<code>i,j,k</code>的取值是可以随意组合的，所以去掉重复的部分就是要除以 6。</p>
+<blockquote>
+<p>比如 1，2，3 的重复组合就是：<br>123,  132,  213,   231, 312, 321</p>
+</blockquote>
+<h3 id="与-O-n-3"><a href="#与-O-n-3" class="headerlink" title="与 O(n^3)"></a>与 O(n^3)</h3><p>前面推导的公式进行展开就是：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/[language]/[What]c_cpp--base/algorithm/analyze_algorithm/pic/3level_for_formula_expand.jpg?raw=true">这个结果虽然很精准，但是在表示代码执行复杂度的时候会有点麻烦。如果遇到了更为复杂的代码，那其精确的公式会更加复杂。</p>
+<blockquote>
+<p>目前只是计算了最内层<code>for</code>的执行复杂度，而内部的<code>cnt+1</code>则更是一个不确定的执行时间，这完全根据输入的值而定。<br>所以，在工程应用中来评估代码执行复杂度，往往都是看执行时间最长的、完全可预测的那段。也就是抓住主要矛盾，忽略次要矛盾。</p>
+</blockquote>
+<p>这种复杂的表达方式会干扰我们对代码执行效率的分析，所以我们要抓住主要矛盾，忽略次要矛盾。</p>
+<p>从公式的展开结果可以推测，3 阶的<code>n</code>应该是最为主要的，其次的 2 阶、1 阶、系数都是次要的。</p>
+<p>为了能够验证这个推测，可以通过<code>octave</code>来绘制：</p>
+<figure class="highlight matlab"><table><tr><td class="code"><pre><span class="line">clear all;</span><br><span class="line">clc;</span><br><span class="line"></span><br><span class="line">set(<span class="number">0</span>, <span class="string">&quot;defaulttextfontsize&quot;</span>, <span class="number">36</span>);  <span class="comment">% title</span></span><br><span class="line">set(<span class="number">0</span>, <span class="string">&quot;defaultaxesfontsize&quot;</span>, <span class="number">24</span>);  <span class="comment">% axes labels</span></span><br><span class="line"></span><br><span class="line">point = [<span class="number">1</span>: <span class="number">2000</span>];</span><br><span class="line">formula_1 = (point.^<span class="number">3</span> / <span class="number">6</span>)</span><br><span class="line">formula_2 = (point.^<span class="number">3</span> / <span class="number">6</span> - point.^<span class="number">2</span> / <span class="number">2</span>)</span><br><span class="line">formula_3 = (point.^<span class="number">3</span> / <span class="number">6</span> - point.^<span class="number">2</span> / <span class="number">2</span> + point./<span class="number">3</span>)</span><br><span class="line"></span><br><span class="line">grid on;</span><br><span class="line"><span class="built_in">hold</span> on;</span><br><span class="line"></span><br><span class="line">title(<span class="string">&quot;compare formulas&quot;</span>);</span><br><span class="line">xlabel(<span class="string">&quot;points&quot;</span>);</span><br><span class="line">ylabel(<span class="string">&quot;result&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="built_in">plot</span>(point, formula_1);</span><br><span class="line"><span class="built_in">plot</span>(point, formula_2);</span><br><span class="line"><span class="built_in">plot</span>(point, formula_3);</span><br><span class="line"><span class="built_in">legend</span>(<span class="string">&quot;n^3/6&quot;</span>, <span class="string">&quot;n^3/6 - n^2/2&quot;</span>, <span class="string">&quot;n^3/6 - n^2/2 + n/3&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="built_in">hold</span> off;</span><br></pre></td></tr></table></figure>
+
+
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/[language]/[What]c_cpp--base/algorithm/analyze_algorithm/pic/3level_for_formula_tilde.jpg?raw=true"></p>
+<p>从绘制结果可以看出来，果然是高阶的影响最大，次阶几乎没有影响。</p>
+<p>虽然说高阶下还有个除以 6 的运算，但是其增长趋势和<code>n^3</code>是一模一样的，所以除以 6 也是可以省略的，最终计算其代码运行复杂度就是以 O(n^3) 来表示了。</p>
+<p>所以，对于精确公式的估计方式如下表：</p>
+<table>
+<thead>
+<tr>
+<th>精确的公式</th>
+<th>近似的公式</th>
+<th>增长趋势</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>N^3/6 - N^2/2 + N/3</td>
+<td>N^3/6</td>
+<td>N^3</td>
+</tr>
+<tr>
+<td>N^2/2 - N/2</td>
+<td>N^2/2</td>
+<td>N^2</td>
+</tr>
+<tr>
+<td>lgN+1</td>
+<td>lgN</td>
+<td>lgN</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody></table>
+<p>下面便是代码中常会遇到的时间复杂度：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/[language]/[What]c_cpp--base/algorithm/analyze_algorithm/pic/algorithm_complex.jpg?raw=true"><br>从这个趋势和左侧的数值可以看出来各种时间复杂度的执行时间差异是多么的大。</p>
+<p>octave 测试代码如下：</p>
+<figure class="highlight matlab"><table><tr><td class="code"><pre><span class="line">clear all;</span><br><span class="line">clc;</span><br><span class="line">close all;</span><br><span class="line"></span><br><span class="line">set(<span class="number">0</span>, <span class="string">&quot;defaulttextfontsize&quot;</span>, <span class="number">36</span>);  <span class="comment">% title</span></span><br><span class="line">set(<span class="number">0</span>, <span class="string">&quot;defaultaxesfontsize&quot;</span>, <span class="number">24</span>);  <span class="comment">% axes labels</span></span><br><span class="line"></span><br><span class="line">points = [<span class="number">1</span>:<span class="number">1</span>:<span class="number">15</span>];</span><br><span class="line"></span><br><span class="line">ratio = <span class="number">1e-6</span>;</span><br><span class="line"></span><br><span class="line">algo_1 = <span class="built_in">ones</span>(<span class="number">1</span>, <span class="built_in">length</span>(points));# O(<span class="number">1</span>)</span><br><span class="line">algo_2 = <span class="built_in">log10</span>(points); # O(<span class="built_in">log</span>(N))</span><br><span class="line">algo_3 = points; # O(N)</span><br><span class="line">algo_4 = points .* <span class="built_in">log10</span>(points); # O(N * <span class="built_in">log</span>(N))</span><br><span class="line"></span><br><span class="line">algo_5 = points .^ <span class="number">2</span>; # O(N^<span class="number">2</span>)</span><br><span class="line">algo_6 = points .^ <span class="number">3</span>; # O(N^<span class="number">3</span>)</span><br><span class="line">algo_7 = <span class="number">2</span> .^ points; # O(<span class="number">2</span>^N)</span><br><span class="line">algo_8 = <span class="built_in">factorial</span>(points); # O(N!)</span><br><span class="line"></span><br><span class="line">grid on;</span><br><span class="line"><span class="built_in">hold</span> on;</span><br><span class="line"></span><br><span class="line">title(<span class="string">&quot;compare formulas&quot;</span>);</span><br><span class="line">xlabel(<span class="string">&quot;points&quot;</span>);</span><br><span class="line">ylabel(<span class="string">&quot;result&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="built_in">plot</span>(points, algo_1);</span><br><span class="line"><span class="built_in">plot</span>(points, algo_2);</span><br><span class="line"><span class="built_in">plot</span>(points, algo_3);</span><br><span class="line"><span class="built_in">plot</span>(points, algo_4);</span><br><span class="line"><span class="built_in">legend</span>(<span class="string">&quot;O(1)&quot;</span>, <span class="string">&quot;O(log(N))&quot;</span>, <span class="string">&quot;O(N)&quot;</span>, <span class="string">&quot;O(Nlog(N))&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="built_in">hold</span> off;</span><br><span class="line"></span><br><span class="line"><span class="built_in">figure</span>;</span><br><span class="line">grid on;</span><br><span class="line"><span class="built_in">hold</span> on;</span><br><span class="line"></span><br><span class="line"><span class="built_in">plot</span>(points, algo_5);</span><br><span class="line"><span class="built_in">plot</span>(points, algo_6);</span><br><span class="line"><span class="built_in">plot</span>(points, algo_7);</span><br><span class="line"><span class="built_in">legend</span>(<span class="string">&quot;O(N^2)&quot;</span>,<span class="string">&quot;O(N^3)&quot;</span>,<span class="string">&quot;O(2^N)&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="built_in">hold</span> off;</span><br><span class="line"></span><br><span class="line"><span class="built_in">figure</span>;</span><br><span class="line">grid on;</span><br><span class="line"><span class="built_in">hold</span> on;</span><br><span class="line"></span><br><span class="line"><span class="built_in">plot</span>(points, algo_8);</span><br><span class="line"><span class="built_in">legend</span>(<span class="string">&quot;O(N!)&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="built_in">hold</span> off;</span><br></pre></td></tr></table></figure>]]></content>
+      <categories>
+        <category>cpp</category>
+        <category>Algorithms</category>
+      </categories>
+      <tags>
+        <tag>cpp</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>如何绘制 smith chart？</title>
+    <url>/2022/09/03/rf_smith_chart_draw/</url>
+    <content><![CDATA[<p>Smith chart 对于射频领域的重要性不言而喻，但我们应该如何通过 CPU 将其绘制出来呢？</p>
+<span id="more"></span>
+
+<h1 id="绘制的理论"><a href="#绘制的理论" class="headerlink" title="绘制的理论"></a>绘制的理论</h1><p>在 <a href="https://www.maximintegrated.com/en/design/technical-documents/tutorials/7/742.html">这篇文章</a> 中已经说明了，对于史密斯圆图，其核心公式是：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/[RF]/[implement]/[smith_chart]/pic/simple_expression.jpg?raw=true"><br>由于其是复数，所以展开是：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/[RF]/[implement]/[smith_chart]/pic/complex_expression.jpg?raw=true"><br>最终经过展开后，便可以得到标准的圆方程：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/[RF]/[implement]/[smith_chart]/pic/circle_expression.jpg?raw=true"></p>
+<p>也就是说：</p>
+<ul>
+<li>对于电阻圆，圆心是<code>[r/(r+1), 0]</code>，半径是<code>1/(1+r)</code></li>
+<li>对于电抗圆，圆心是<code>[1,1/x]</code>，半径是<code>1/|x|</code></li>
+</ul>
+<p>比如当电阻 r 为<strong>归一化</strong>的 0 时，得到的圆心就是（0，0），半径就是 1，也就是最大的理论极限圆：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/[RF]/[implement]/[smith_chart]/pic/resistance.jpg?raw=true"><br>当电抗 x 为归一化的<code>1</code>时，圆心就是（1，1），半径就是 1：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/[RF]/[implement]/[smith_chart]/pic/reactance.jpg?raw=true"><br>有了上面的理论，圆就好画了。</p>
+<h1 id="绘制弧线"><a href="#绘制弧线" class="headerlink" title="绘制弧线"></a>绘制弧线</h1><p>由于电抗圆是弧线，所以有两种办法来绘制电抗部分：</p>
+<ol>
+<li>仍然以圆的方式进行绘制，绘制完成后再来擦除多余的部分</li>
+<li>计算要绘制圆的起始和终止角度，仅绘制需要的弧度部分</li>
+</ol>
+<p>第一种办法虽然画圆很简单，但是擦除的时候由于需要计算擦除的部分，也是需要避开最外面的极限圆。</p>
+<p>所以用第二种办法显然是更为合理的方式。</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/[RF]/[implement]/[smith_chart]/pic/get_phase.jpg?raw=true"><br>如上图所示：</p>
+<ul>
+<li>由于已知电抗圆、电阻圆的圆心和半径，所以可以根据<strong>勾股定理</strong>求得斜边 b</li>
+<li>由于已知三角形的三个边，那么根据<strong>余弦定理</strong>就可以求得弧线的角度了</li>
+</ul>
+<h1 id="示例代码"><a href="#示例代码" class="headerlink" title="示例代码"></a>示例代码</h1><p>以下便是使用 Qt 绘制示例的主要代码：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&quot;widget.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;cmath&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> M_PI</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> M_PI    (3.141592653)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LOGIC_WIDTH     (435)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LOGIC_HEIGHT    (435)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DEVIDER_CNT     (50)</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Widget::paintEvent</span><span class="params">(QPaintEvent* event)</span> </span>&#123;</span><br><span class="line">    <span class="function">QPainter <span class="title">painter</span><span class="params">(<span class="keyword">this</span>)</span></span>;</span><br><span class="line"></span><br><span class="line">    painter.<span class="built_in">setPen</span>(<span class="built_in">QColor</span>(Qt::red));</span><br><span class="line">    qint16 side = <span class="built_in">qMin</span>(<span class="built_in">width</span>(), <span class="built_in">height</span>());</span><br><span class="line"></span><br><span class="line">    painter.<span class="built_in">setViewport</span>((<span class="built_in">width</span>() - side) / <span class="number">2</span>,</span><br><span class="line">                        (<span class="built_in">height</span>() - side) / <span class="number">2</span>,</span><br><span class="line">                        side,</span><br><span class="line">                        side);</span><br><span class="line">    painter.<span class="built_in">setWindow</span>(<span class="number">0</span>, <span class="number">0</span>, LOGIC_WIDTH, LOGIC_HEIGHT);</span><br><span class="line"></span><br><span class="line">    painter.<span class="built_in">setPen</span>(<span class="built_in">QColor</span>(<span class="number">253</span>, <span class="number">189</span>, <span class="number">19</span>));</span><br><span class="line">    painter.<span class="built_in">drawLine</span>(LOGIC_WIDTH / <span class="number">2</span>, <span class="number">0</span>, LOGIC_WIDTH / <span class="number">2</span>, LOGIC_HEIGHT - <span class="number">1</span>);</span><br><span class="line">    painter.<span class="built_in">drawLine</span>(<span class="number">0</span>, LOGIC_WIDTH / <span class="number">2</span>, LOGIC_WIDTH - <span class="number">1</span>, LOGIC_WIDTH / <span class="number">2</span>);</span><br><span class="line"></span><br><span class="line">    painter.<span class="built_in">setPen</span>(<span class="built_in">QColor</span>(<span class="number">165</span>, <span class="number">206</span>, <span class="number">57</span>));</span><br><span class="line"></span><br><span class="line">    <span class="built_in">DrawResistance</span>(painter, <span class="number">0</span>);</span><br><span class="line">    <span class="built_in">DrawResistance</span>(painter, <span class="number">0.25</span>);</span><br><span class="line">    <span class="built_in">DrawResistance</span>(painter, <span class="number">0.5</span>);</span><br><span class="line">    <span class="built_in">DrawResistance</span>(painter, <span class="number">1</span>);</span><br><span class="line">    <span class="built_in">DrawResistance</span>(painter, <span class="number">2</span>);</span><br><span class="line">    <span class="built_in">DrawResistance</span>(painter, <span class="number">4</span>);</span><br><span class="line">    <span class="built_in">DrawResistance</span>(painter, <span class="number">10</span>);</span><br><span class="line"></span><br><span class="line">    painter.<span class="built_in">setPen</span>(<span class="built_in">QColor</span>(<span class="number">165</span>, <span class="number">35</span>, <span class="number">142</span>));</span><br><span class="line">    <span class="built_in">DrawReactance</span>(painter, <span class="number">0.25</span>);</span><br><span class="line">    <span class="built_in">DrawReactance</span>(painter, <span class="number">0.5</span>);</span><br><span class="line">    <span class="built_in">DrawReactance</span>(painter, <span class="number">1</span>);</span><br><span class="line">    <span class="built_in">DrawReactance</span>(painter, <span class="number">2</span>);</span><br><span class="line">    <span class="built_in">DrawReactance</span>(painter, <span class="number">4</span>);</span><br><span class="line">    <span class="built_in">DrawReactance</span>(painter, <span class="number">-0.25</span>);</span><br><span class="line">    <span class="built_in">DrawReactance</span>(painter, <span class="number">-0.5</span>);</span><br><span class="line">    <span class="built_in">DrawReactance</span>(painter, <span class="number">-1</span>);</span><br><span class="line">    <span class="built_in">DrawReactance</span>(painter, <span class="number">-2</span>);</span><br><span class="line">    <span class="built_in">DrawReactance</span>(painter, <span class="number">-4</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Widget::DrawResistance</span><span class="params">(QPainter&amp; painter, <span class="keyword">float</span> val)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> x = val / (val + <span class="number">1</span>) * LOGIC_WIDTH / <span class="number">2</span> + LOGIC_WIDTH / <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">int</span> y = LOGIC_HEIGHT / <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">int</span> r = <span class="number">1</span> / (<span class="number">1</span> + val) * LOGIC_HEIGHT / <span class="number">2</span>;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">DrawCircle</span>(painter, x, y, r);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Widget::DrawReactance</span><span class="params">(QPainter&amp; painter, <span class="keyword">float</span> val)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> x = LOGIC_WIDTH - <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">int</span> y = LOGIC_HEIGHT / <span class="number">2</span> - <span class="number">1</span> / val * LOGIC_HEIGHT / <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">int</span> r = <span class="number">1</span> / <span class="built_in">abs</span>(val) * LOGIC_HEIGHT / <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">float</span> r2 = LOGIC_HEIGHT / <span class="number">2</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">float</span> d = <span class="built_in">sqrt</span>(r * r + r2 * r2);</span><br><span class="line">    <span class="keyword">float</span> phase = <span class="built_in">acos</span>((r2 * r2 - d * d - r * r) /</span><br><span class="line">                       (<span class="number">-2</span> * d * r)) * <span class="number">2</span>;</span><br><span class="line">    phase = phase * <span class="number">180</span> / M_PI;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">float</span> start = (<span class="number">-90</span> - phase) * <span class="number">16</span>;</span><br><span class="line">    <span class="keyword">if</span> (val &lt; <span class="number">0</span>) &#123;</span><br><span class="line">          start = <span class="number">90</span> * <span class="number">16</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    painter.<span class="built_in">drawArc</span>(x - r, y - r, <span class="number">2</span> * r, <span class="number">2</span> * r,</span><br><span class="line">                    start, phase * <span class="number">16</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Widget::DrawCircle</span><span class="params">(QPainter&amp; painter, <span class="keyword">int</span> x, <span class="keyword">int</span> y, <span class="keyword">int</span> r)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">float</span> step = <span class="number">2</span> * M_PI / DEVIDER_CNT;</span><br><span class="line">    <span class="keyword">float</span> phase = step;</span><br><span class="line">    <span class="keyword">int</span> prev_x = x + <span class="built_in">cos</span>(<span class="number">0</span>) * r;</span><br><span class="line">    <span class="keyword">int</span> prev_y = y + <span class="built_in">sin</span>(<span class="number">0</span>) * r;</span><br><span class="line">    <span class="keyword">int</span> cur_x, cur_y;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= DEVIDER_CNT; ++i) &#123;</span><br><span class="line">        <span class="keyword">int</span> diff_x = <span class="built_in">cos</span>(phase) * r;</span><br><span class="line">        <span class="keyword">int</span> diff_y = <span class="built_in">sin</span>(phase) * r;</span><br><span class="line">        cur_x = x + diff_x;</span><br><span class="line">        cur_y = y + diff_y;</span><br><span class="line"></span><br><span class="line">        painter.<span class="built_in">drawLine</span>(prev_x, prev_y, cur_x, cur_y);</span><br><span class="line"></span><br><span class="line">        phase += step;</span><br><span class="line">        prev_x = cur_x;</span><br><span class="line">        prev_y = cur_y;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>效果如下图：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/[RF]/[implement]/[smith_chart]/pic/chart.jpg?raw=true"></p>
+]]></content>
+      <categories>
+        <category>RF</category>
+        <category>Smith chart</category>
+      </categories>
+      <tags>
+        <tag>RF</tag>
       </tags>
   </entry>
 </search>
