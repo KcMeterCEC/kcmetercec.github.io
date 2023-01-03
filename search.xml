@@ -5664,7 +5664,7 @@
 <p>运行时间如下：</p>
 <figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">Input file name: 32Kints.txt</span><br><span class="line">I have read 32000 integers</span><br><span class="line">result: 2052358</span><br><span class="line">function `count` took 8.445 seconds</span><br></pre></td></tr></table></figure>
 
-<h3 id="java-优化-1"><a href="#java-优化-1" class="headerlink" title="java 优化"></a>java 优化</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">count</span><span class="params">(<span class="keyword">int</span>[] a)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">int</span> n = a.length;</span><br><span class="line">	<span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	Arrays.sort(a);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; ++i) &#123;</span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> j = i + <span class="number">1</span>; j &lt; n; ++j) &#123;</span><br><span class="line">			<span class="keyword">if</span> (BinarySearch.indexOf(a, -(a[i] + a[j])) &gt; j) &#123;</span><br><span class="line">				count += <span class="number">1</span>;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> count;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="java-优化-1"><a href="#java-优化-1" class="headerlink" title="java 优化"></a>java 优化</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">count</span><span class="params">(<span class="keyword">int</span>[] a)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> n = a.length;</span><br><span class="line">    <span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    Arrays.sort(a);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; ++i) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j = i + <span class="number">1</span>; j &lt; n; ++j) &#123;</span><br><span class="line">            <span class="keyword">if</span> (BinarySearch.indexOf(a, -(a[i] + a[j])) &gt; j) &#123;</span><br><span class="line">                count += <span class="number">1</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> count;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <p>运行时间如下：</p>
 <figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">working directory: D:\lab\java\ij_hello</span><br><span class="line">analyze file: 32Kints.txt</span><br><span class="line">elapsed time = 19.039</span><br><span class="line">count = 2052358</span><br></pre></td></tr></table></figure>
@@ -5816,6 +5816,51 @@
       </categories>
       <tags>
         <tag>linux</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>对 ARM 指令 WFI，WFE 的粗浅理解</title>
+    <url>/2022/12/29/arm_instructions_wfi_wfe/</url>
+    <content><![CDATA[<p>ARM 具有 <code>WFI</code> 和 <code>WFE</code> 两个指令，都可以让 SOC 进入低功耗模式，但在使用时有些注意的地方。</p>
+<p>参考链接：</p>
+<ul>
+<li><p>窝窝科技 <a href="http://www.wowotech.net/armv8a_arch/wfe_wfi.html">ARM WFI和WFE指令</a></p>
+</li>
+<li><p><a href="https://developer.arm.com/documentation/ka001283/latest">Arm Developer</a> 上的回答</p>
+</li>
+<li><p>文档 <a href="https://www.arterytek.com/download/FAQ/FAQ0111_How_to_enter_low_power_mode_through_WFI_EN_V2.0.0.pdf">How to enter low-power mode through WFI instruction</a></p>
+</li>
+</ul>
+<span id="more"></span>
+
+<h1 id="WFI-和-WFE-的异同"><a href="#WFI-和-WFE-的异同" class="headerlink" title="WFI 和 WFE 的异同"></a><code>WFI</code> 和 <code>WFE</code> 的异同</h1><p><code>WFI</code> 是 Wait For Interrupt 的缩写，<code>WFE</code> 是 Wait For Event 的缩写。</p>
+<p>显然 Event 是包含 Interrupt 的，也就是说 <code>WFE</code> 是可以被除中断外的其它事件唤醒的。</p>
+<p>由于 <code>WFE</code> 可以被软件主动发出事件唤醒，那么在多核场景下就可以让部分核心进入低功耗的状态。</p>
+<blockquote>
+<p>比如 Linux kernel 里面使用的 spin lock，按照原始的定义：未获取到资源的核心应该进入 <code>while(1)</code>的状态。</p>
+<p>如果使用了 WFE 就可以让未获取资源的核心主动进入低功耗模式省电，而获取到资源的核心在释放自旋锁时，就发送事件唤醒进入低功耗的核心。</p>
+</blockquote>
+<h1 id="WFI-的使用注意事项"><a href="#WFI-的使用注意事项" class="headerlink" title="WFI 的使用注意事项"></a><code>WFI</code> 的使用注意事项</h1><p><code>WFI</code> 由于可以被中断唤醒，所以需要在使用 <code>WFI</code> 指令前先关闭中断并清除 pending flags，否则具有 pending flags 的情况下，<code>WFI</code> 指令就会退化为 NOP 指令。</p>
+<p>整个过程有严格的顺序：</p>
+<ol>
+<li><p>配置 NVIC 以关闭中断（首先关闭中断，以避免会产生新的 pending flags）</p>
+</li>
+<li><p>清除外设的 pending flags</p>
+</li>
+<li><p>清除 NVIC 的 pending flags（由于 NVIC pending flags 是由外设 pending flags 触发的，所以要先清除外设 pending flags）</p>
+</li>
+<li><p>使用<code>DSB</code>，<code>DSI</code>指令确保数据和指令的同步</p>
+</li>
+<li><p>调用<code>WFI</code>进入低功耗模式</p>
+</li>
+</ol>
+]]></content>
+      <categories>
+        <category>processor</category>
+        <category>arm</category>
+      </categories>
+      <tags>
+        <tag>arm</tag>
       </tags>
   </entry>
 </search>
