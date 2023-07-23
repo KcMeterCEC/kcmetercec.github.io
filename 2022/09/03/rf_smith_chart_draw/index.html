@@ -29,19 +29,11 @@
 <meta property="og:site_name" content="explorer">
 <meta property="og:description" content="Smith chart 对于射频领域的重要性不言而喻，但我们应该如何通过 CPU 将其绘制出来呢？">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[RF]/[implement]/[smith_chart]/pic/simple_expression.jpg?raw=true">
-<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[RF]/[implement]/[smith_chart]/pic/complex_expression.jpg?raw=true">
-<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[RF]/[implement]/[smith_chart]/pic/circle_expression.jpg?raw=true">
-<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[RF]/[implement]/[smith_chart]/pic/resistance.jpg?raw=true">
-<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[RF]/[implement]/[smith_chart]/pic/reactance.jpg?raw=true">
-<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[RF]/[implement]/[smith_chart]/pic/get_phase.jpg?raw=true">
-<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[RF]/[implement]/[smith_chart]/pic/chart.jpg?raw=true">
 <meta property="article:published_time" content="2022-09-02T16:00:00.000Z">
 <meta property="article:modified_time" content="2022-09-02T16:00:00.000Z">
 <meta property="article:author" content="kcmetercec">
 <meta property="article:tag" content="RF">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://github.com/KcMeterCEC/explore/blob/master/[RF]/[implement]/[smith_chart]/pic/simple_expression.jpg?raw=true">
 
 <link rel="canonical" href="http://kcmetercec.top/2022/09/03/rf_smith_chart_draw/">
 
@@ -278,7 +270,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>500</span>
+              <span>508</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -297,38 +289,50 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>Smith chart 对于射频领域的重要性不言而喻，但我们应该如何通过 CPU 将其绘制出来呢？</p>
+        <p>Smith chart 对于射频领域的重要性不言而喻，但我们应该如何通过 CPU
+将其绘制出来呢？</p>
 <span id="more"></span>
-
-<h1 id="绘制的理论"><a href="#绘制的理论" class="headerlink" title="绘制的理论"></a>绘制的理论</h1><p>在 <a target="_blank" rel="noopener" href="https://www.maximintegrated.com/en/design/technical-documents/tutorials/7/742.html">这篇文章</a> 中已经说明了，对于史密斯圆图，其核心公式是：</p>
-<p><img src="https://github.com/KcMeterCEC/explore/blob/master/[RF]/[implement]/[smith_chart]/pic/simple_expression.jpg?raw=true"><br>由于其是复数，所以展开是：</p>
-<p><img src="https://github.com/KcMeterCEC/explore/blob/master/[RF]/[implement]/[smith_chart]/pic/complex_expression.jpg?raw=true"><br>最终经过展开后，便可以得到标准的圆方程：</p>
-<p><img src="https://github.com/KcMeterCEC/explore/blob/master/[RF]/[implement]/[smith_chart]/pic/circle_expression.jpg?raw=true"></p>
-<p>也就是说：</p>
-<ul>
-<li>对于电阻圆，圆心是<code>[r/(r+1), 0]</code>，半径是<code>1/(1+r)</code></li>
-<li>对于电抗圆，圆心是<code>[1,1/x]</code>，半径是<code>1/|x|</code></li>
-</ul>
-<p>比如当电阻 r 为<strong>归一化</strong>的 0 时，得到的圆心就是（0，0），半径就是 1，也就是最大的理论极限圆：</p>
-<p><img src="https://github.com/KcMeterCEC/explore/blob/master/[RF]/[implement]/[smith_chart]/pic/resistance.jpg?raw=true"><br>当电抗 x 为归一化的<code>1</code>时，圆心就是（1，1），半径就是 1：</p>
-<p><img src="https://github.com/KcMeterCEC/explore/blob/master/[RF]/[implement]/[smith_chart]/pic/reactance.jpg?raw=true"><br>有了上面的理论，圆就好画了。</p>
-<h1 id="绘制弧线"><a href="#绘制弧线" class="headerlink" title="绘制弧线"></a>绘制弧线</h1><p>由于电抗圆是弧线，所以有两种办法来绘制电抗部分：</p>
-<ol>
-<li>仍然以圆的方式进行绘制，绘制完成后再来擦除多余的部分</li>
-<li>计算要绘制圆的起始和终止角度，仅绘制需要的弧度部分</li>
-</ol>
+<h1 id="绘制的理论">绘制的理论</h1>
+<p>在 <a
+target="_blank" rel="noopener" href="https://www.maximintegrated.com/en/design/technical-documents/tutorials/7/742.html">这篇文章</a>
+中已经说明了，对于史密斯圆图，其核心公式是：</p>
+<p><img
+src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5Bimplement%5D/%5Bsmith_chart%5D/pic/simple_expression.jpg?raw=true" />
+由于其是复数，所以展开是：</p>
+<p><img
+src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5Bimplement%5D/%5Bsmith_chart%5D/pic/complex_expression.jpg?raw=true" />
+最终经过展开后，便可以得到标准的圆方程：</p>
+<p><img
+src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5Bimplement%5D/%5Bsmith_chart%5D/pic/circle_expression.jpg?raw=true" /></p>
+<p>也就是说： -
+对于电阻圆，圆心是<code>[r/(r+1), 0]</code>，半径是<code>1/(1+r)</code>
+- 对于电抗圆，圆心是<code>[1,1/x]</code>，半径是<code>1/|x|</code></p>
+<p>比如当电阻 r 为<strong>归一化</strong>的 0
+时，得到的圆心就是（0，0），半径就是 1，也就是最大的理论极限圆：</p>
+<p><img
+src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5Bimplement%5D/%5Bsmith_chart%5D/pic/resistance.jpg?raw=true" />
+当电抗 x 为归一化的<code>1</code>时，圆心就是（1，1），半径就是 1：</p>
+<p><img
+src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5Bimplement%5D/%5Bsmith_chart%5D/pic/reactance.jpg?raw=true" />
+有了上面的理论，圆就好画了。</p>
+<h1 id="绘制弧线">绘制弧线</h1>
+<p>由于电抗圆是弧线，所以有两种办法来绘制电抗部分： 1.
+仍然以圆的方式进行绘制，绘制完成后再来擦除多余的部分 2.
+计算要绘制圆的起始和终止角度，仅绘制需要的弧度部分</p>
 <p>第一种办法虽然画圆很简单，但是擦除的时候由于需要计算擦除的部分，也是需要避开最外面的极限圆。</p>
 <p>所以用第二种办法显然是更为合理的方式。</p>
-<p><img src="https://github.com/KcMeterCEC/explore/blob/master/[RF]/[implement]/[smith_chart]/pic/get_phase.jpg?raw=true"><br>如上图所示：</p>
-<ul>
-<li>由于已知电抗圆、电阻圆的圆心和半径，所以可以根据<strong>勾股定理</strong>求得斜边 b</li>
-<li>由于已知三角形的三个边，那么根据<strong>余弦定理</strong>就可以求得弧线的角度了</li>
-</ul>
-<h1 id="示例代码"><a href="#示例代码" class="headerlink" title="示例代码"></a>示例代码</h1><p>以下便是使用 Qt 绘制示例的主要代码：</p>
+<p><img
+src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5Bimplement%5D/%5Bsmith_chart%5D/pic/get_phase.jpg?raw=true" />
+如上图所示： -
+由于已知电抗圆、电阻圆的圆心和半径，所以可以根据<strong>勾股定理</strong>求得斜边
+b -
+由于已知三角形的三个边，那么根据<strong>余弦定理</strong>就可以求得弧线的角度了</p>
+<h1 id="示例代码">示例代码</h1>
+<p>以下便是使用 Qt 绘制示例的主要代码：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&quot;widget.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;cmath&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> M_PI</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> M_PI    (3.141592653)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LOGIC_WIDTH     (435)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LOGIC_HEIGHT    (435)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DEVIDER_CNT     (50)</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Widget::paintEvent</span><span class="params">(QPaintEvent* event)</span> </span>&#123;</span><br><span class="line">    <span class="function">QPainter <span class="title">painter</span><span class="params">(<span class="keyword">this</span>)</span></span>;</span><br><span class="line"></span><br><span class="line">    painter.<span class="built_in">setPen</span>(<span class="built_in">QColor</span>(Qt::red));</span><br><span class="line">    qint16 side = <span class="built_in">qMin</span>(<span class="built_in">width</span>(), <span class="built_in">height</span>());</span><br><span class="line"></span><br><span class="line">    painter.<span class="built_in">setViewport</span>((<span class="built_in">width</span>() - side) / <span class="number">2</span>,</span><br><span class="line">                        (<span class="built_in">height</span>() - side) / <span class="number">2</span>,</span><br><span class="line">                        side,</span><br><span class="line">                        side);</span><br><span class="line">    painter.<span class="built_in">setWindow</span>(<span class="number">0</span>, <span class="number">0</span>, LOGIC_WIDTH, LOGIC_HEIGHT);</span><br><span class="line"></span><br><span class="line">    painter.<span class="built_in">setPen</span>(<span class="built_in">QColor</span>(<span class="number">253</span>, <span class="number">189</span>, <span class="number">19</span>));</span><br><span class="line">    painter.<span class="built_in">drawLine</span>(LOGIC_WIDTH / <span class="number">2</span>, <span class="number">0</span>, LOGIC_WIDTH / <span class="number">2</span>, LOGIC_HEIGHT - <span class="number">1</span>);</span><br><span class="line">    painter.<span class="built_in">drawLine</span>(<span class="number">0</span>, LOGIC_WIDTH / <span class="number">2</span>, LOGIC_WIDTH - <span class="number">1</span>, LOGIC_WIDTH / <span class="number">2</span>);</span><br><span class="line"></span><br><span class="line">    painter.<span class="built_in">setPen</span>(<span class="built_in">QColor</span>(<span class="number">165</span>, <span class="number">206</span>, <span class="number">57</span>));</span><br><span class="line"></span><br><span class="line">    <span class="built_in">DrawResistance</span>(painter, <span class="number">0</span>);</span><br><span class="line">    <span class="built_in">DrawResistance</span>(painter, <span class="number">0.25</span>);</span><br><span class="line">    <span class="built_in">DrawResistance</span>(painter, <span class="number">0.5</span>);</span><br><span class="line">    <span class="built_in">DrawResistance</span>(painter, <span class="number">1</span>);</span><br><span class="line">    <span class="built_in">DrawResistance</span>(painter, <span class="number">2</span>);</span><br><span class="line">    <span class="built_in">DrawResistance</span>(painter, <span class="number">4</span>);</span><br><span class="line">    <span class="built_in">DrawResistance</span>(painter, <span class="number">10</span>);</span><br><span class="line"></span><br><span class="line">    painter.<span class="built_in">setPen</span>(<span class="built_in">QColor</span>(<span class="number">165</span>, <span class="number">35</span>, <span class="number">142</span>));</span><br><span class="line">    <span class="built_in">DrawReactance</span>(painter, <span class="number">0.25</span>);</span><br><span class="line">    <span class="built_in">DrawReactance</span>(painter, <span class="number">0.5</span>);</span><br><span class="line">    <span class="built_in">DrawReactance</span>(painter, <span class="number">1</span>);</span><br><span class="line">    <span class="built_in">DrawReactance</span>(painter, <span class="number">2</span>);</span><br><span class="line">    <span class="built_in">DrawReactance</span>(painter, <span class="number">4</span>);</span><br><span class="line">    <span class="built_in">DrawReactance</span>(painter, <span class="number">-0.25</span>);</span><br><span class="line">    <span class="built_in">DrawReactance</span>(painter, <span class="number">-0.5</span>);</span><br><span class="line">    <span class="built_in">DrawReactance</span>(painter, <span class="number">-1</span>);</span><br><span class="line">    <span class="built_in">DrawReactance</span>(painter, <span class="number">-2</span>);</span><br><span class="line">    <span class="built_in">DrawReactance</span>(painter, <span class="number">-4</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Widget::DrawResistance</span><span class="params">(QPainter&amp; painter, <span class="keyword">float</span> val)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> x = val / (val + <span class="number">1</span>) * LOGIC_WIDTH / <span class="number">2</span> + LOGIC_WIDTH / <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">int</span> y = LOGIC_HEIGHT / <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">int</span> r = <span class="number">1</span> / (<span class="number">1</span> + val) * LOGIC_HEIGHT / <span class="number">2</span>;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">DrawCircle</span>(painter, x, y, r);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Widget::DrawReactance</span><span class="params">(QPainter&amp; painter, <span class="keyword">float</span> val)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> x = LOGIC_WIDTH - <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">int</span> y = LOGIC_HEIGHT / <span class="number">2</span> - <span class="number">1</span> / val * LOGIC_HEIGHT / <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">int</span> r = <span class="number">1</span> / <span class="built_in">abs</span>(val) * LOGIC_HEIGHT / <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">float</span> r2 = LOGIC_HEIGHT / <span class="number">2</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">float</span> d = <span class="built_in">sqrt</span>(r * r + r2 * r2);</span><br><span class="line">    <span class="keyword">float</span> phase = <span class="built_in">acos</span>((r2 * r2 - d * d - r * r) /</span><br><span class="line">                       (<span class="number">-2</span> * d * r)) * <span class="number">2</span>;</span><br><span class="line">    phase = phase * <span class="number">180</span> / M_PI;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">float</span> start = (<span class="number">-90</span> - phase) * <span class="number">16</span>;</span><br><span class="line">    <span class="keyword">if</span> (val &lt; <span class="number">0</span>) &#123;</span><br><span class="line">          start = <span class="number">90</span> * <span class="number">16</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    painter.<span class="built_in">drawArc</span>(x - r, y - r, <span class="number">2</span> * r, <span class="number">2</span> * r,</span><br><span class="line">                    start, phase * <span class="number">16</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Widget::DrawCircle</span><span class="params">(QPainter&amp; painter, <span class="keyword">int</span> x, <span class="keyword">int</span> y, <span class="keyword">int</span> r)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">float</span> step = <span class="number">2</span> * M_PI / DEVIDER_CNT;</span><br><span class="line">    <span class="keyword">float</span> phase = step;</span><br><span class="line">    <span class="keyword">int</span> prev_x = x + <span class="built_in">cos</span>(<span class="number">0</span>) * r;</span><br><span class="line">    <span class="keyword">int</span> prev_y = y + <span class="built_in">sin</span>(<span class="number">0</span>) * r;</span><br><span class="line">    <span class="keyword">int</span> cur_x, cur_y;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= DEVIDER_CNT; ++i) &#123;</span><br><span class="line">        <span class="keyword">int</span> diff_x = <span class="built_in">cos</span>(phase) * r;</span><br><span class="line">        <span class="keyword">int</span> diff_y = <span class="built_in">sin</span>(phase) * r;</span><br><span class="line">        cur_x = x + diff_x;</span><br><span class="line">        cur_y = y + diff_y;</span><br><span class="line"></span><br><span class="line">        painter.<span class="built_in">drawLine</span>(prev_x, prev_y, cur_x, cur_y);</span><br><span class="line"></span><br><span class="line">        phase += step;</span><br><span class="line">        prev_x = cur_x;</span><br><span class="line">        prev_y = cur_y;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
 <p>效果如下图：</p>
-<p><img src="https://github.com/KcMeterCEC/explore/blob/master/[RF]/[implement]/[smith_chart]/pic/chart.jpg?raw=true"></p>
+<p><img
+src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5Bimplement%5D/%5Bsmith_chart%5D/pic/chart.jpg?raw=true" /></p>
 
     </div>
 
@@ -446,14 +450,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">70</span>
+          <span class="site-state-item-count">72</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-count">33</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
@@ -510,13 +514,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">111k</span>
+    <span title="站点总字数">115k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">1:41</span>
+    <span title="站点阅读时长">1:44</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>
@@ -670,6 +674,8 @@ document.querySelectorAll('.pdfobject-container').forEach(element => {
 
 
     <div id="pjax">
+  
+
   
 
   

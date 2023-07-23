@@ -270,7 +270,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>434</span>
+              <span>438</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -289,34 +289,30 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>声明一个右值引用，使用<code>T&amp;&amp;</code>这种格式，但是这玩意并不是表面上看到的那么简单。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">f</span><span class="params">(Widget&amp;&amp; param)</span></span>;             <span class="comment">// 右值引用</span></span><br><span class="line">Widget&amp;&amp; var1 = <span class="built_in">Widget</span>();           <span class="comment">// 右值引用</span></span><br><span class="line"><span class="keyword">auto</span>&amp;&amp; var2 = var1;                 <span class="comment">// 通用引用</span></span><br><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">f</span><span class="params">(std::vector&lt;T&gt;&amp;&amp; param)</span></span>;     <span class="comment">// 右值引用</span></span><br><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">f</span><span class="params">(T&amp;&amp; param)</span></span>;                  <span class="comment">// 通用引用</span></span><br></pre></td></tr></table></figure>
-<span id="more"></span>
-
-<h1 id="T-amp-amp-的意义"><a href="#T-amp-amp-的意义" class="headerlink" title="T&amp;&amp;的意义"></a><code>T&amp;&amp;</code>的意义</h1><p><code>T&amp;&amp;</code>实际上具有两种意义：</p>
+        <p>声明一个右值引用，使用<code>T&amp;&amp;</code>这种格式，但是这玩意并不是表面上看到的那么简单。
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">f</span><span class="params">(Widget&amp;&amp; param)</span></span>;             <span class="comment">// 右值引用</span></span><br><span class="line">Widget&amp;&amp; var1 = <span class="built_in">Widget</span>();           <span class="comment">// 右值引用</span></span><br><span class="line"><span class="keyword">auto</span>&amp;&amp; var2 = var1;                 <span class="comment">// 通用引用</span></span><br><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">f</span><span class="params">(std::vector&lt;T&gt;&amp;&amp; param)</span></span>;     <span class="comment">// 右值引用</span></span><br><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">f</span><span class="params">(T&amp;&amp; param)</span></span>;                  <span class="comment">// 通用引用</span></span><br></pre></td></tr></table></figure> <span id="more"></span></p>
+<h1 id="t的意义"><code>T&amp;&amp;</code>的意义</h1>
+<p><code>T&amp;&amp;</code>实际上具有两种意义：</p>
 <ul>
 <li>一种意义是其代表的是右值引用，具有满足移动语义的可能性</li>
 <li>一种意义是它既可以是右值引用，也可以是左值引用。它可以绑定多种类型<code>const</code>或非<code>const</code>，<code>volatile</code>或非<code>volatile</code>等等，所以也将其称为通用引用。</li>
 </ul>
-<h1 id="通用引用"><a href="#通用引用" class="headerlink" title="通用引用"></a>通用引用</h1><p>通用引用出现在两种场合。</p>
+<h1 id="通用引用">通用引用</h1>
+<p>通用引用出现在两种场合。</p>
 <p>一种是作为函数模板的参数：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">f</span><span class="params">(T&amp;&amp; param)</span></span>;             <span class="comment">// param is a universal reference</span></span><br></pre></td></tr></table></figure>
-
 <p>一种是使用<code>auto</code>做推导时：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">auto</span>&amp;&amp; var2 = var1;            <span class="comment">// var2 is a universal reference</span></span><br></pre></td></tr></table></figure>
-
 <p>可以看到，通用引用都是出现在有推导的情况下，也就是说它们到底最终是左右还是右值引用，得要更具传入的参数或给其赋值的对象而决定：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Widget w;</span><br><span class="line"><span class="built_in">f</span>(w);                  <span class="comment">// lvalue passed to f; param&#x27;s type is</span></span><br><span class="line">                       <span class="comment">// Widget&amp; (i.e., an lvalue reference)</span></span><br><span class="line"><span class="built_in">f</span>(std::<span class="built_in">move</span>(w));       <span class="comment">// rvalue passed to f; param&#x27;s type is</span></span><br><span class="line">                       <span class="comment">// Widget&amp;&amp; (i.e., an rvalue reference)</span></span><br></pre></td></tr></table></figure>
-
-<p>需要注意的是：<strong>通用引用必须要严格遵从<code>T&amp;&amp;</code>的格式</strong>。</p>
-<blockquote>
-<p><code>auto</code>也是同理，遵从<code>auto&amp;&amp;</code>格式，也是通用引用。</p>
-</blockquote>
+<p>需要注意的是：<strong>通用引用必须要严格遵从<code>T&amp;&amp;</code>的格式</strong>。
+&gt;
+<code>auto</code>也是同理，遵从<code>auto&amp;&amp;</code>格式，也是通用引用。</p>
 <p>比如以下两种都是右值引用：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">f</span><span class="params">(std::vector&lt;T&gt;&amp;&amp; param)</span></span>;  <span class="comment">// param is an rvalue reference</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">f</span><span class="params">(<span class="keyword">const</span> T&amp;&amp; param)</span></span>;         <span class="comment">// param is an rvalue reference</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span>&lt;<span class="class"><span class="keyword">class</span> <span class="title">T</span>, <span class="keyword">class</span> <span class="title">Allocator</span> =</span> allocator&lt;T&gt;&gt;  </span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">vector</span> &#123;</span>                                     </span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">  <span class="comment">//虽然 push_back 满足 T&amp;&amp;，但是其并没有推导过程</span></span><br><span class="line">  <span class="comment">//而是由对象创建时指明给类的（std::vector&lt;widget&gt; v;）</span></span><br><span class="line">  <span class="comment">//所以它还是一个右值引用</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">push_back</span><span class="params">(T&amp;&amp; x)</span></span>;</span><br><span class="line">  …</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
 <p>由于<code>push_back</code>并没有推导过程，所以其不是通用引用，但是<code>emplace_back</code>因为有推导过程，所以它是通用引用：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="class"><span class="keyword">class</span> <span class="title">T</span>, <span class="keyword">class</span> <span class="title">Allocator</span> =</span> allocator&lt;T&gt;&gt;  <span class="comment">// still from</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">vector</span> &#123;</span>                                     <span class="comment">// C++</span></span><br><span class="line"><span class="keyword">public</span>:                                            <span class="comment">// Standards</span></span><br><span class="line">  <span class="keyword">template</span> &lt;class... Args&gt;</span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">emplace_back</span><span class="params">(Args&amp;&amp;... args)</span></span>;</span><br><span class="line">  …</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
     </div>
 
     
@@ -417,7 +413,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#T-amp-amp-%E7%9A%84%E6%84%8F%E4%B9%89"><span class="nav-number">1.</span> <span class="nav-text">T&amp;&amp;的意义</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%80%9A%E7%94%A8%E5%BC%95%E7%94%A8"><span class="nav-number">2.</span> <span class="nav-text">通用引用</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#t%E7%9A%84%E6%84%8F%E4%B9%89"><span class="nav-number">1.</span> <span class="nav-text">T&amp;&amp;的意义</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%80%9A%E7%94%A8%E5%BC%95%E7%94%A8"><span class="nav-number">2.</span> <span class="nav-text">通用引用</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -433,14 +429,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">70</span>
+          <span class="site-state-item-count">72</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-count">33</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
@@ -497,13 +493,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">111k</span>
+    <span title="站点总字数">115k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">1:41</span>
+    <span title="站点阅读时长">1:44</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>
@@ -657,6 +653,8 @@ document.querySelectorAll('.pdfobject-container').forEach(element => {
 
 
     <div id="pjax">
+  
+
   
 
   

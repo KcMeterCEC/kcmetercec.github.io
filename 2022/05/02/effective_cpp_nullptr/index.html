@@ -270,7 +270,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>724</span>
+              <span>722</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -289,37 +289,41 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>在 c 中，通常使用<code>NULL</code>表示一个空指针，但是在 cpp 中有更优的<code>nullptr</code>可供选择。</p>
+        <p>在 c 中，通常使用<code>NULL</code>表示一个空指针，但是在 cpp
+中有更优的<code>nullptr</code>可供选择。</p>
 <span id="more"></span>
-
 <p>首先需要明白：</p>
-<ol>
+<ol type="1">
 <li><code>0</code> 是一个<code>int</code>型的数，而不是指针类型</li>
-<li><code>NULL</code>也是一个宏定义的<code>0</code><ul>
-<li>在 c++11 及以后的版本中， <code>NULL</code>的宏定义为：<code>#define NULL nullptr</code></li>
-</ul>
-</li>
+<li><code>NULL</code>也是一个宏定义的<code>0</code>
+<ul>
+<li>在 c++11 及以后的版本中，
+<code>NULL</code>的宏定义为：<code>#define NULL nullptr</code></li>
+</ul></li>
 <li><code>nullptr</code>实际上是<code>std::nullptr_t</code>类型，它可以转换为任何指针类型，且不会有二义性</li>
 </ol>
-<h1 id="nullptr与二义性"><a href="#nullptr与二义性" class="headerlink" title="nullptr与二义性"></a><code>nullptr</code>与二义性</h1><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;vector&gt;</span><br><span class="line">#include &lt;iostream&gt;</span><br><span class="line"></span><br><span class="line">void f(int i) &#123;</span><br><span class="line">    std::cout &lt;&lt; &quot;int parameter &quot; &lt;&lt; i &lt;&lt; &quot;\n&quot;;</span><br><span class="line">&#125;</span><br><span class="line">void f(int *i) &#123;</span><br><span class="line">    std::cout &lt;&lt; &quot;pointer paramter &quot; &lt;&lt; i &lt;&lt; &quot;\n&quot;;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">int main(void) &#123;</span><br><span class="line">    f(0);</span><br><span class="line">    f(NULL);</span><br><span class="line">    f(nullptr);</span><br><span class="line"></span><br><span class="line">    return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
+<h1 id="nullptr与二义性"><code>nullptr</code>与二义性</h1>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;vector&gt;</span><br><span class="line">#include &lt;iostream&gt;</span><br><span class="line"></span><br><span class="line">void f(int i) &#123;</span><br><span class="line">    std::cout &lt;&lt; &quot;int parameter &quot; &lt;&lt; i &lt;&lt; &quot;\n&quot;;</span><br><span class="line">&#125;</span><br><span class="line">void f(int *i) &#123;</span><br><span class="line">    std::cout &lt;&lt; &quot;pointer paramter &quot; &lt;&lt; i &lt;&lt; &quot;\n&quot;;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">int main(void) &#123;</span><br><span class="line">    f(0);</span><br><span class="line">    f(NULL);</span><br><span class="line">    f(nullptr);</span><br><span class="line"></span><br><span class="line">    return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>上述代码，在<code>msvc</code>编译环境中输出为：</p>
 <blockquote>
-<p>int parameter 0<br>int parameter 0<br>pointer paramter 00000000</p>
+<p>int parameter 0 int parameter 0 pointer paramter 00000000</p>
 </blockquote>
 <p>而在<code>g++</code>编译环境中，由于这种使用<code>NULL</code>的方式具有二义性，编译器干脆就报错：</p>
 <blockquote>
-<p>$ g++ main.cpp<br>main.cpp: In function ‘int main()’:<br>main.cpp:13:11: error: call of overloaded ‘f(NULL)’ is ambiguous<br>     f(NULL);<br>           ^<br>main.cpp:4:6: note: candidate: void f(int)<br> void f(int i){<br>      ^<br>main.cpp:7:6: note: candidate: void f(int*)<br> void f(int *i){<br>      ^</p>
+<p>$ g++ main.cpp main.cpp: In function ‘int main()’: main.cpp:13:11:
+error: call of overloaded ‘f(NULL)’ is ambiguous f(NULL); ^
+main.cpp:4:6: note: candidate: void f(int) void f(int i){ ^
+main.cpp:7:6: note: candidate: void f(int<em>) void f(int </em>i){ ^</p>
 </blockquote>
 <p>所以，当明确要使用指针类型时，使用<code>nullptr</code>是最好的选择。</p>
-<h1 id="nullptr与可读性"><a href="#nullptr与可读性" class="headerlink" title="nullptr与可读性"></a><code>nullptr</code>与可读性</h1><p>比如使用如下代码：</p>
+<h1 id="nullptr与可读性"><code>nullptr</code>与可读性</h1>
+<p>比如使用如下代码：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">auto</span> result = <span class="built_in">Record</span>();</span><br><span class="line"><span class="keyword">if</span>(result == <span class="number">0</span>) &#123;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
 <p>上面这样的代码，并不易于阅读，读代码的人并不能确定<code>result</code>一定是整型，或是指针。</p>
 <p>但如果改为下面这样，那么<code>result</code>的类型就确认无疑是指针，这就增加了代码的可读性。</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">auto</span> result = <span class="built_in">Record</span>();</span><br><span class="line"><span class="keyword">if</span>(result == <span class="literal">nullptr</span>) &#123;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h1 id="nullptr与正确性"><a href="#nullptr与正确性" class="headerlink" title="nullptr与正确性"></a><code>nullptr</code>与正确性</h1><p>由于<code>0</code>和<code>NULL</code>并不能转换为任意指针类型，所以在调用有些需要特定指针类型的函数时，编译器就会报错。</p>
+<h1 id="nullptr与正确性"><code>nullptr</code>与正确性</h1>
+<p>由于<code>0</code>和<code>NULL</code>并不能转换为任意指针类型，所以在调用有些需要特定指针类型的函数时，编译器就会报错。</p>
 <p>而<code>nullptr</code>却可以转为该类型，保证编译的正确执行。</p>
 
     </div>
@@ -438,14 +442,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">70</span>
+          <span class="site-state-item-count">72</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-count">33</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
@@ -502,13 +506,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">111k</span>
+    <span title="站点总字数">115k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">1:41</span>
+    <span title="站点阅读时长">1:44</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>
@@ -662,6 +666,8 @@ document.querySelectorAll('.pdfobject-container').forEach(element => {
 
 
     <div id="pjax">
+  
+
   
 
   

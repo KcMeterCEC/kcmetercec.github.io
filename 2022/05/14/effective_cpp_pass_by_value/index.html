@@ -289,32 +289,28 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>为了兼顾性能和功能性，有些类会提供拷贝和移动两个版本：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Widget</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">addName</span><span class="params">(<span class="keyword">const</span> std::string&amp; newName)</span>    <span class="comment">// take lvalue;</span></span></span><br><span class="line"><span class="function">  </span>&#123; names.<span class="built_in">push_back</span>(newName); &#125;               <span class="comment">// copy it</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">addName</span><span class="params">(std::string&amp;&amp; newName)</span>         <span class="comment">// take rvalue;</span></span></span><br><span class="line"><span class="function">  </span>&#123; names.<span class="built_in">push_back</span>(std::<span class="built_in">move</span>(newName)); &#125;    <span class="comment">// move it;</span></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">  std::vector&lt;std::string&gt; names;</span><br><span class="line">&#125;; </span><br></pre></td></tr></table></figure>
-
-<p>使用完美转发来实现一个简易版本：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Widget</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">  <span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;                          <span class="comment">// take lvalues</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">addName</span><span class="params">(T&amp;&amp; newName)</span>                     <span class="comment">// and rvalues;</span></span></span><br><span class="line"><span class="function">  </span>&#123;                                             <span class="comment">// copy lvalues,</span></span><br><span class="line">    names.<span class="built_in">push_back</span>(std::forward&lt;T&gt;(newName));  <span class="comment">// move rvalues;</span></span><br><span class="line">  &#125;                                             </span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
+        <p>为了兼顾性能和功能性，有些类会提供拷贝和移动两个版本：
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Widget</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">addName</span><span class="params">(<span class="keyword">const</span> std::string&amp; newName)</span>    <span class="comment">// take lvalue;</span></span></span><br><span class="line"><span class="function">  </span>&#123; names.<span class="built_in">push_back</span>(newName); &#125;               <span class="comment">// copy it</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">addName</span><span class="params">(std::string&amp;&amp; newName)</span>         <span class="comment">// take rvalue;</span></span></span><br><span class="line"><span class="function">  </span>&#123; names.<span class="built_in">push_back</span>(std::<span class="built_in">move</span>(newName)); &#125;    <span class="comment">// move it;</span></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">  std::vector&lt;std::string&gt; names;</span><br><span class="line">&#125;; </span><br></pre></td></tr></table></figure></p>
+<p>使用完美转发来实现一个简易版本： <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Widget</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">  <span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;                          <span class="comment">// take lvalues</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">addName</span><span class="params">(T&amp;&amp; newName)</span>                     <span class="comment">// and rvalues;</span></span></span><br><span class="line"><span class="function">  </span>&#123;                                             <span class="comment">// copy lvalues,</span></span><br><span class="line">    names.<span class="built_in">push_back</span>(std::forward&lt;T&gt;(newName));  <span class="comment">// move rvalues;</span></span><br><span class="line">  &#125;                                             </span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></p>
 <p>但通用引用可以接收各种类型的参数，这在传入错误的参数时，编译器的报错信息会异常繁琐。其实还有更好的选择。</p>
 <span id="more"></span>
-
-<p>如果使用值传递：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Widget</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">addName</span><span class="params">(std::string newName)</span>           <span class="comment">// take lvalue or</span></span></span><br><span class="line"><span class="function">  </span>&#123; names.<span class="built_in">push_back</span>(std::<span class="built_in">move</span>(newName)); &#125;    <span class="comment">// rvalue; move it</span></span><br><span class="line">  …</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>对于 c++ 11，如果传入的参数是左值，则会进行一次拷贝构造。而如果传入的是右值，则进行的是移动构造：</p>
+<p>如果使用值传递： <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Widget</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">addName</span><span class="params">(std::string newName)</span>           <span class="comment">// take lvalue or</span></span></span><br><span class="line"><span class="function">  </span>&#123; names.<span class="built_in">push_back</span>(std::<span class="built_in">move</span>(newName)); &#125;    <span class="comment">// rvalue; move it</span></span><br><span class="line">  …</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></p>
+<p>对于 c++
+11，如果传入的参数是左值，则会进行一次拷贝构造。而如果传入的是右值，则进行的是移动构造：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Widget w;</span><br><span class="line"></span><br><span class="line"><span class="function">std::string <span class="title">name</span><span class="params">(<span class="string">&quot;Bart&quot;</span>)</span></span>;</span><br><span class="line">w.<span class="built_in">addName</span>(name);                 <span class="comment">// call addName with lvalue</span></span><br><span class="line"></span><br><span class="line">w.<span class="built_in">addName</span>(name + <span class="string">&quot;Jenne&quot;</span>);       <span class="comment">// call addName with rvalue</span></span><br></pre></td></tr></table></figure>
-
 <p>下面比较这 3 种方法的性能：</p>
 <ul>
 <li>拷贝构造和移动构造：传入左值时，会进行一次拷贝。传入右值时，会进行一次移动。</li>
-<li>完美转发构造：完美转发会匹配对应的左值和右值函数，所以性能和方法 1 一样</li>
-<li>值传递：传入左值时，一次拷贝加一次移动。传入右值时，两次移动<ul>
+<li>完美转发构造：完美转发会匹配对应的左值和右值函数，所以性能和方法 1
+一样</li>
+<li>值传递：传入左值时，一次拷贝加一次移动。传入右值时，两次移动
+<ul>
 <li>首先是构造形参，传入左值时，会调用拷贝构造函数。传入右值时，会调用移动构造函数（<code>std::string</code>具有移动构造函数）。</li>
 <li>然后是将形参移动到内部容器中</li>
+</ul></li>
 </ul>
-</li>
-</ul>
-<p>可以看到，方法 3 相比方法 1，2 多了一次移动操作，如果移动操作耗时很低，那么可以考虑使用方法 3。</p>
+<p>可以看到，方法 3 相比方法 1，2
+多了一次移动操作，如果移动操作耗时很低，那么可以考虑使用方法 3。</p>
 <p>因为方法 3 足够简单，阅读性也好。</p>
 
     </div>
@@ -351,8 +347,8 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2022/05/12/effective_cpp_lambda/" rel="prev" title="Effective C++ ：正确使用 lambda">
-      <i class="fa fa-chevron-left"></i> Effective C++ ：正确使用 lambda
+    <a href="/2022/05/12/effective_cpp_forward_failed/" rel="prev" title="Effective C++ ：熟悉完美转发的错误情况">
+      <i class="fa fa-chevron-left"></i> Effective C++ ：熟悉完美转发的错误情况
     </a></div>
       <div class="post-nav-item">
     <a href="/2022/05/14/effective_cpp_emplacement/" rel="next" title="Effective C++ ：考虑用 emplacement 替代 insertion">
@@ -432,14 +428,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">70</span>
+          <span class="site-state-item-count">72</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-count">33</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
@@ -496,13 +492,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">111k</span>
+    <span title="站点总字数">115k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">1:41</span>
+    <span title="站点阅读时长">1:44</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>
@@ -656,6 +652,8 @@ document.querySelectorAll('.pdfobject-container').forEach(element => {
 
 
     <div id="pjax">
+  
+
   
 
   

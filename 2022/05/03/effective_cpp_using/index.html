@@ -289,25 +289,24 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>在 c 中，<code>typedef</code>是我经常使用的别名语法。但在 cpp 中，<code>using</code>才是更好的选择。</p>
+        <p>在 c 中，<code>typedef</code>是我经常使用的别名语法。但在 cpp
+中，<code>using</code>才是更好的选择。</p>
 <span id="more"></span>
-
-<h1 id="可读性比较"><a href="#可读性比较" class="headerlink" title="可读性比较"></a>可读性比较</h1><p>在 cpp 中为了避免命名污染，通常会在使用一个对象、方法时都要输入其完整的命名空间：</p>
+<h1 id="可读性比较">可读性比较</h1>
+<p>在 cpp
+中为了避免命名污染，通常会在使用一个对象、方法时都要输入其完整的命名空间：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">std::vector&lt;<span class="keyword">int</span>&gt; val;</span><br><span class="line"></span><br><span class="line">std::unique_ptr&lt;std::unordered_map&lt;std::string, std::string&gt;&gt; val;</span><br></pre></td></tr></table></figure>
-
 <p>上面第二种写法实在是累，就算使用复制粘贴的方式，以后如果要修改，改起来也非常麻烦。</p>
 <p>这种情况下可以使用 <code>typedef</code> 或<code>using</code>：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span></span><br><span class="line">  std::unique_ptr&lt;std::unordered_map&lt;std::string, std::string&gt;&gt;</span><br><span class="line">  UPtrMapSS;</span><br><span class="line"><span class="keyword">using</span> UPtrMapSS =</span><br><span class="line">  std::unique_ptr&lt;std::unordered_map&lt;std::string, std::string&gt;&gt;;</span><br></pre></td></tr></table></figure>
-
 <p>上面这两种方式看不出孰优孰劣，但如果在函数指针的情况下：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// FP is a synonym for a pointer to a function taking an int and</span></span><br><span class="line"><span class="comment">// a const std::string&amp; and returning nothing</span></span><br><span class="line"><span class="function"><span class="keyword">typedef</span> <span class="title">void</span> <span class="params">(*FP)</span><span class="params">(<span class="keyword">int</span>, <span class="keyword">const</span> std::string&amp;)</span></span>;      <span class="comment">// typedef</span></span><br><span class="line"><span class="comment">// same meaning as above</span></span><br><span class="line"><span class="keyword">using</span> FP = <span class="built_in"><span class="keyword">void</span></span> (*)(<span class="keyword">int</span>, <span class="keyword">const</span> std::string&amp;);     <span class="comment">// alias</span></span><br><span class="line">                                                  <span class="comment">// declaration</span></span><br></pre></td></tr></table></figure>
-
 <p>很明显，使用<code>using</code>的可读性比<code>typedef</code>要好得多。</p>
 <p>下面再看别名一个模板：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//使用 using</span></span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;                           <span class="comment">// MyAllocList&lt;T&gt;</span></span><br><span class="line"><span class="keyword">using</span> MyAllocList = std::list&lt;T, MyAlloc&lt;T&gt;&gt;;  <span class="comment">// is synonym for</span></span><br><span class="line">                                               <span class="comment">// std::list&lt;T,</span></span><br><span class="line">                                               <span class="comment">//   MyAlloc&lt;T&gt;&gt;</span></span><br><span class="line">MyAllocList&lt;Widget&gt; lw;                        <span class="comment">// client code</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Widget</span> &#123;</span></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">  MyAllocList&lt;T&gt; list;                         <span class="comment">// no &quot;typename&quot;,</span></span><br><span class="line">  …                                            <span class="comment">// no &quot;::type&quot;</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">//使用 typedef</span></span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;                     <span class="comment">// MyAllocList&lt;T&gt;::type</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">MyAllocList</span> &#123;</span>                     <span class="comment">// is synonym for</span></span><br><span class="line">  <span class="keyword">typedef</span> std::list&lt;T, MyAlloc&lt;T&gt;&gt; type; <span class="comment">// std::list&lt;T,</span></span><br><span class="line">&#125;;                                       <span class="comment">//   MyAlloc&lt;T&gt;&gt;</span></span><br><span class="line">MyAllocList&lt;Widget&gt;::type lw;            <span class="comment">// client code</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Widget</span> &#123;</span>                         <span class="comment">// Widget&lt;T&gt; contains</span></span><br><span class="line"><span class="keyword">private</span>:                               <span class="comment">// a MyAllocList&lt;T&gt;</span></span><br><span class="line">  <span class="keyword">typename</span> MyAllocList&lt;T&gt;::type list;  <span class="comment">// as a data member</span></span><br><span class="line">  …</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
 <p>可以说是高下立判了，并且在使用<code>typedef</code>的情况下，还有可能使得编译结果不是自己所预期的……</p>
-<h1 id="模板"><a href="#模板" class="headerlink" title="模板"></a>模板</h1><p><code>typedef</code>对模板的支持度不够，很多时候会导致编译错误，而<code>using</code>则不会。</p>
+<h1 id="模板">模板</h1>
+<p><code>typedef</code>对模板的支持度不够，很多时候会导致编译错误，而<code>using</code>则不会。</p>
 
     </div>
 
@@ -425,14 +424,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">70</span>
+          <span class="site-state-item-count">72</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-count">33</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
@@ -489,13 +488,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">111k</span>
+    <span title="站点总字数">115k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">1:41</span>
+    <span title="站点阅读时长">1:44</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>
@@ -649,6 +648,8 @@ document.querySelectorAll('.pdfobject-container').forEach(element => {
 
 
     <div id="pjax">
+  
+
   
 
   

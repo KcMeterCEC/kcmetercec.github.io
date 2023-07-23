@@ -270,7 +270,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>716</span>
+              <span>728</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -289,34 +289,33 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>宏在 c++ 中要尽可能少的使用，在<a target="_blank" rel="noopener" href="https://zh-google-styleguide.readthedocs.io/en/latest/google-cpp-styleguide/others/#preprocessor-macros">google c++ 编码规范中</a>也是建议使用宏要谨慎。</p>
+        <p>宏在 c++ 中要尽可能少的使用，在<a
+target="_blank" rel="noopener" href="https://zh-google-styleguide.readthedocs.io/en/latest/google-cpp-styleguide/others/#preprocessor-macros">google
+c++ 编码规范中</a>也是建议使用宏要谨慎。</p>
 <span id="more"></span>
-
-<h1 id="宏的弊端"><a href="#宏的弊端" class="headerlink" title="宏的弊端"></a>宏的弊端</h1><h2 id="宏无法产生符号"><a href="#宏无法产生符号" class="headerlink" title="宏无法产生符号"></a>宏无法产生符号</h2><p>由于宏是在预编译过程中进行替换的，那么在随后生成的目标文件/可执行文件中，就不会包含有该宏的符号。这在某些调试的情况下，不那么方便。</p>
+<h1 id="宏的弊端">宏的弊端</h1>
+<h2 id="宏无法产生符号">宏无法产生符号</h2>
+<p>由于宏是在预编译过程中进行替换的，那么在随后生成的目标文件/可执行文件中，就不会包含有该宏的符号。这在某些调试的情况下，不那么方便。</p>
 <p>比如下面的示例，先使用宏：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ASPECT_RATION (1.653f)</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">float</span> val = ASPECT_RATION;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
 <p>那么在符号表中无法找到该符号：</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">~/lab/cpp$</span><span class="bash"> readelf -s a.out | grep <span class="string">&quot;ASPECT_RATION&quot;</span></span></span><br></pre></td></tr></table></figure>
-
 <p>下面使用 <code>const</code> 变量来替换宏：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> <span class="keyword">float</span> kAspectRation = <span class="number">1.653f</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">float</span> val = kAspectRation;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
 <p>这样就可以找到符号表：</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">~/lab/cpp$</span><span class="bash"> readelf -s a.out | grep <span class="string">&quot;kAspectRation&quot;</span></span></span><br><span class="line">    37: 0000000000000838     4 OBJECT  LOCAL  DEFAULT   16 _ZL13kAspectRation</span><br></pre></td></tr></table></figure>
-
-<h2 id="写宏时需要小心翼翼"><a href="#写宏时需要小心翼翼" class="headerlink" title="写宏时需要小心翼翼"></a>写宏时需要小心翼翼</h2><p>宏展开后的真实代码和我们以为的代码可能会不同，遇到这种问题还需要去查看预编译后的文件才能清楚。</p>
+<h2 id="写宏时需要小心翼翼">写宏时需要小心翼翼</h2>
+<p>宏展开后的真实代码和我们以为的代码可能会不同，遇到这种问题还需要去查看预编译后的文件才能清楚。</p>
 <p>所以写宏的时候需要小心翼翼，尤其是宏内容较复杂，有多个换行的情况下。这无疑是增加了程序员的负担。</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MAX(a, b) ((a) &gt; (b) ? (a) : (b))</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> a = <span class="number">10</span>;</span><br><span class="line">    <span class="keyword">int</span> b = <span class="number">8</span>;</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;The maximum is &quot;</span> &lt;&lt; <span class="built_in">MAX</span>(++a, b) &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>比如上面这个宏，除了要注意使用括号外，最终得到的结果也是非预期的。</p>
-<blockquote>
-<p>以为返回的是 11，结果返回了 12……</p>
-</blockquote>
-<h2 id="宏没有类内范围性"><a href="#宏没有类内范围性" class="headerlink" title="宏没有类内范围性"></a>宏没有类内范围性</h2><p>比如我们只想在类内使用该宏，但其实它的作用范围已经超出了宏：</p>
+<p>比如上面这个宏，除了要注意使用括号外，最终得到的结果也是非预期的。
+&gt; 以为返回的是 11，结果返回了 12……</p>
+<h2 id="宏没有类内范围性">宏没有类内范围性</h2>
+<p>比如我们只想在类内使用该宏，但其实它的作用范围已经超出了宏：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">GamePlayer</span> &#123;</span></span><br><span class="line">    <span class="keyword">public</span>:</span><br><span class="line">        <span class="function"><span class="keyword">int</span> <span class="title">GetArraySize</span><span class="params">(<span class="keyword">void</span>)</span> <span class="keyword">const</span></span>;</span><br><span class="line">    <span class="keyword">private</span>:</span><br><span class="line">        <span class="meta">#<span class="meta-keyword">define</span> NUM_TURNS   (5)</span></span><br><span class="line">        <span class="keyword">int</span> scores_[NUM_TURNS];</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">GamePlayer::GetArraySize</span><span class="params">(<span class="keyword">void</span>)</span> <span class="keyword">const</span></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in"><span class="keyword">sizeof</span></span>(scores_);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    GamePlayer game_player;</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;size of array is &quot;</span> &lt;&lt; game_player.<span class="built_in">GetArraySize</span>() &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;macro value &quot;</span> &lt;&lt; NUM_TURNS &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h1 id="使用常量替换-define"><a href="#使用常量替换-define" class="headerlink" title="使用常量替换 #define"></a>使用常量替换 <code>#define</code></h1><h2 id="全局常量"><a href="#全局常量" class="headerlink" title="全局常量"></a>全局常量</h2><p>通常使用常量来替换<code>#define</code>时，为了常量可以被多个文件所使用，需要将其放在头文件内。</p>
+<h1 id="使用常量替换-define">使用常量替换 <code>#define</code></h1>
+<h2 id="全局常量">全局常量</h2>
+<p>通常使用常量来替换<code>#define</code>时，为了常量可以被多个文件所使用，需要将其放在头文件内。</p>
 <p>对于想要定义常量字符串，有两种做法：</p>
 <ul>
 <li><p>定义指向常量字符串的常量指针：</p>
@@ -325,20 +324,20 @@
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">const</span> std::string <span class="title">kAuthorName</span><span class="params">(<span class="string">&quot;Scott Meyers&quot;</span>)</span></span>;</span><br></pre></td></tr></table></figure></li>
 </ul>
 <p>定义常量<code>string</code>对象是更加合适的方法，因为不仅由于其不是指针而更好操作外，而且它还具有一系列成员函数，能满足更多的适用场合。</p>
-<h2 id="类内的常量"><a href="#类内的常量" class="headerlink" title="类内的常量"></a>类内的常量</h2><p>当仅需要在类内定义一个常量时，则需要在类的内部使用<code>static const</code>来修饰它：</p>
+<h2 id="类内的常量">类内的常量</h2>
+<p>当仅需要在类内定义一个常量时，则需要在类的内部使用<code>static const</code>来修饰它：</p>
 <blockquote>
 <p><code>static</code>修饰是为了在多个类中，仅占用一个变量的空间。</p>
 </blockquote>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">GamePlayer</span> &#123;</span></span><br><span class="line">    <span class="keyword">public</span>:</span><br><span class="line">        <span class="function"><span class="keyword">int</span> <span class="title">GetArraySize</span><span class="params">(<span class="keyword">void</span>)</span> <span class="keyword">const</span></span>;</span><br><span class="line">    <span class="keyword">private</span>:</span><br><span class="line">    	<span class="comment">// 如果不取 static 常量的地址，则无需提供定义</span></span><br><span class="line">        <span class="keyword">static</span> <span class="keyword">const</span> <span class="keyword">int</span> num_turns_ = <span class="number">5</span>;</span><br><span class="line">        <span class="keyword">int</span> scores_[num_turns_];</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">GamePlayer::GetArraySize</span><span class="params">(<span class="keyword">void</span>)</span> <span class="keyword">const</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in"><span class="keyword">sizeof</span></span>(scores_);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    GamePlayer game_player;</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;size of array is &quot;</span> &lt;&lt; game_player.<span class="built_in">GetArraySize</span>() &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
 <p>还有一种方式是使用枚举来完成常量的定义：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">GamePlayer</span> &#123;</span></span><br><span class="line">    <span class="keyword">public</span>:</span><br><span class="line">        <span class="function"><span class="keyword">int</span> <span class="title">GetArraySize</span><span class="params">(<span class="keyword">void</span>)</span> <span class="keyword">const</span></span>;</span><br><span class="line">    <span class="keyword">private</span>:</span><br><span class="line">        <span class="class"><span class="keyword">enum</span> &#123;</span>kNumTurns = <span class="number">5</span>&#125;;</span><br><span class="line">        <span class="keyword">int</span> scores_[kNumTurns];</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">GamePlayer::GetArraySize</span><span class="params">(<span class="keyword">void</span>)</span> <span class="keyword">const</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in"><span class="keyword">sizeof</span></span>(scores_);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    GamePlayer game_player;</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;size of array is &quot;</span> &lt;&lt; game_player.<span class="built_in">GetArraySize</span>() &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h1 id="使用内联函数替代宏函数"><a href="#使用内联函数替代宏函数" class="headerlink" title="使用内联函数替代宏函数"></a>使用内联函数替代宏函数</h1><p>使用<code>inline</code>函数则可以避免宏运行时无法预期的问题：</p>
-<blockquote>
-<p>其实用不用<code>inline</code>在绝大部分情况下都不影响。<br>所以简单粗暴的说应该是，使用函数来代替宏函数。</p>
-</blockquote>
+<h1 id="使用内联函数替代宏函数">使用内联函数替代宏函数</h1>
+<p>使用<code>inline</code>函数则可以避免宏运行时无法预期的问题： &gt;
+其实用不用<code>inline</code>在绝大部分情况下都不影响。 &gt;
+所以简单粗暴的说应该是，使用函数来代替宏函数。</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span></span><br><span class="line"><span class="function"><span class="keyword">inline</span> T <span class="title">Max</span><span class="params">(<span class="keyword">const</span> T&amp; a, <span class="keyword">const</span> T&amp;b)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> (a &gt; b ? a : b);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> a = <span class="number">10</span>, b = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 由于调用的是函数，所以这里 a 只会被加一次，完全符合语义</span></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;max is &quot;</span> &lt;&lt; <span class="built_in">Max</span>(++a, b) &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;value of a is &quot;</span> &lt;&lt; a &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
     </div>
 
     
@@ -455,14 +454,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">70</span>
+          <span class="site-state-item-count">72</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-count">33</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
@@ -519,13 +518,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">111k</span>
+    <span title="站点总字数">115k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">1:41</span>
+    <span title="站点阅读时长">1:44</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>
@@ -679,6 +678,8 @@ document.querySelectorAll('.pdfobject-container').forEach(element => {
 
 
     <div id="pjax">
+  
+
   
 
   

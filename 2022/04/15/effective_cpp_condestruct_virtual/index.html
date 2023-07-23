@@ -270,7 +270,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>454</span>
+              <span>458</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -289,36 +289,35 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <ol>
+        <ol type="1">
 <li>构造和析构函数中调用虚函数，由于其派生类还未被构造和已被析构，所以得到的结果不会是预期的。</li>
 <li>重载父类虚函数，需要加上<code>override</code>关键字</li>
 </ol>
 <span id="more"></span>
-
-<h1 id="构造和析构中使用虚函数"><a href="#构造和析构中使用虚函数" class="headerlink" title="构造和析构中使用虚函数"></a>构造和析构中使用虚函数</h1><p>直接看下面代码，一目了然：</p>
+<h1 id="构造和析构中使用虚函数">构造和析构中使用虚函数</h1>
+<p>直接看下面代码，一目了然：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">BasicClass</span> &#123;</span></span><br><span class="line">    <span class="keyword">public</span>:</span><br><span class="line">        <span class="built_in">BasicClass</span>() &#123;</span><br><span class="line">            std::cout &lt;&lt; <span class="string">&quot;BasicClass constructor!\n&quot;</span>;</span><br><span class="line">            <span class="comment">// 此时子类还没有被初始化，所以这里调用的还是自己的 func()</span></span><br><span class="line">            <span class="built_in">func</span>();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">virtual</span> ~<span class="built_in">BasicClass</span>() &#123;</span><br><span class="line">            std::cout &lt;&lt; <span class="string">&quot;BasicClass destructor!\n&quot;</span>;</span><br><span class="line">            <span class="comment">// 此时子类已经被释放了，所以这里调用的还是自己的 func2()</span></span><br><span class="line">            <span class="built_in">func2</span>();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">func</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">            std::cout &lt;&lt; <span class="string">&quot;BasicClass func!\n&quot;</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">func2</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">            std::cout &lt;&lt; <span class="string">&quot;BasicClass func2!\n&quot;</span>;</span><br><span class="line">        &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">DerivedClass</span>:</span> <span class="keyword">public</span> BasicClass &#123;</span><br><span class="line">    <span class="keyword">public</span>:</span><br><span class="line">        <span class="built_in">DerivedClass</span>() &#123;</span><br><span class="line">            std::cout &lt;&lt; <span class="string">&quot;DerivedClass constructor!\n&quot;</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        ~<span class="built_in">DerivedClass</span>() &#123;</span><br><span class="line">            std::cout &lt;&lt; <span class="string">&quot;DerivedClass destructor!\n&quot;</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="function"><span class="keyword">void</span> <span class="title">func</span><span class="params">(<span class="keyword">void</span>)</span> <span class="keyword">override</span> </span>&#123;</span><br><span class="line">            std::cout &lt;&lt; <span class="string">&quot;DerivedClass func!\n&quot;</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="function"><span class="keyword">void</span> <span class="title">func2</span><span class="params">(<span class="keyword">void</span>)</span> <span class="keyword">override</span> </span>&#123;</span><br><span class="line">            std::cout &lt;&lt; <span class="string">&quot;DerivedClass func2!\n&quot;</span>;</span><br><span class="line">        &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    &#123;</span><br><span class="line">        DerivedClass drived_class;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
 <p>输出：</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">BasicClass constructor!</span><br><span class="line">BasicClass func!</span><br><span class="line">DerivedClass constructor!</span><br><span class="line">DerivedClass destructor!</span><br><span class="line">BasicClass destructor!</span><br><span class="line">BasicClass func2!</span><br></pre></td></tr></table></figure>
-
-<h1 id="使用-override"><a href="#使用-override" class="headerlink" title="使用 override"></a>使用 <code>override</code></h1><h2 id="满足多态的条件"><a href="#满足多态的条件" class="headerlink" title="满足多态的条件"></a>满足多态的条件</h2><p>在 cpp 中，要使多态生效，那么必须满足下面这些条件：</p>
-<ol>
+<h1 id="使用-override">使用 <code>override</code></h1>
+<h2 id="满足多态的条件">满足多态的条件</h2>
+<p>在 cpp 中，要使多态生效，那么必须满足下面这些条件：</p>
+<ol type="1">
 <li>基类中的方法必须是虚方法（<code>virtual</code>）</li>
 <li>派生类的方法必须与基类虚方法名称及参数保持一致</li>
 <li>派生类的方法的<code>const</code>限定也必须与基类虚方法保持一致</li>
 <li>派生类的方法的返回类型必须与基类虚方法的返回保持<strong>兼容</strong></li>
 </ol>
 <p>到了 c++11 还增加了以下一个条件：</p>
-<ol>
-<li>基类中的方法的引用限定必须与基类虚方法保持一致<blockquote>
-<p>引用限定就是限定方法只能在对象是左值还是右值时被使用</p>
-</blockquote>
-</li>
+<ol type="1">
+<li>基类中的方法的引用限定必须与基类虚方法保持一致 &gt;
+引用限定就是限定方法只能在对象是左值还是右值时被使用</li>
 </ol>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Widget</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">doWork</span><span class="params">()</span> &amp;</span>;       <span class="comment">// this version of doWork applies</span></span><br><span class="line">                         <span class="comment">// only when *this is an lvalue</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">doWork</span><span class="params">()</span> &amp;&amp;</span>;      <span class="comment">// this version of doWork applies</span></span><br><span class="line">&#125;;                       <span class="comment">// only when *this is an rvalue</span></span><br><span class="line"></span><br><span class="line"><span class="function">Widget <span class="title">makeWidget</span><span class="params">()</span></span>;     <span class="comment">// factory function (returns rvalue)</span></span><br><span class="line">Widget w;                <span class="comment">// normal object (an lvalue)</span></span><br><span class="line"></span><br><span class="line">w.<span class="built_in">doWork</span>();              <span class="comment">// calls Widget::doWork for lvalues</span></span><br><span class="line">                         <span class="comment">// (i.e., Widget::doWork &amp;)</span></span><br><span class="line"><span class="built_in">makeWidget</span>().<span class="built_in">doWork</span>();   <span class="comment">// calls Widget::doWork for rvalues</span></span><br><span class="line">                         <span class="comment">// (i.e., Widget::doWork &amp;&amp;)</span></span><br></pre></td></tr></table></figure>
-
-<p>以上 5 个条件必须都要满足，所以在重载父类虚函数时，一定要多加审查。</p>
-<h2 id="为什么需要加-override"><a href="#为什么需要加-override" class="headerlink" title="为什么需要加 override?"></a>为什么需要加 <code>override</code>?</h2><p>根据上面的满足条件来看，我们平时是很容易写错的，并且编译器并不会报错。</p>
+<p>以上 5
+个条件必须都要满足，所以在重载父类虚函数时，一定要多加审查。</p>
+<h2 id="为什么需要加-override">为什么需要加 <code>override</code>?</h2>
+<p>根据上面的满足条件来看，我们平时是很容易写错的，并且编译器并不会报错。</p>
 <p>但如果在方法声明后增加了<code>override</code>关键字，编译器可以代我们完成检查。</p>
 <p>假设以后基类的虚函数这些元素发生了变化，编译器也可以帮我们检查。</p>
 
@@ -438,14 +437,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">70</span>
+          <span class="site-state-item-count">72</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-count">33</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
@@ -502,13 +501,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">111k</span>
+    <span title="站点总字数">115k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">1:41</span>
+    <span title="站点阅读时长">1:44</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>
@@ -662,6 +661,8 @@ document.querySelectorAll('.pdfobject-container').forEach(element => {
 
 
     <div id="pjax">
+  
+
   
 
   

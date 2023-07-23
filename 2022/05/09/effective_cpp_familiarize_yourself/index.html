@@ -277,7 +277,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>838</span>
+              <span>850</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -298,40 +298,36 @@
       
         <p>前面提到过，重载通用引用函数，得到的结果往往不是预期的，那么就应该以其它的方式来替代这种迷惑的方式。</p>
 <span id="more"></span>
-
-<h1 id="以其它的名字命名重载函数"><a href="#以其它的名字命名重载函数" class="headerlink" title="以其它的名字命名重载函数"></a>以其它的名字命名重载函数</h1><p>既然对通用引用函数的重载会导致非预期的调用，那么就将那些重载函数以其它名字命名，就绕过了这个坑。</p>
-<blockquote>
-<p>对于常年写 c 的人来说，这个方法是最自然而然地。</p>
-</blockquote>
-<h1 id="函数参数使用const-T-amp"><a href="#函数参数使用const-T-amp" class="headerlink" title="函数参数使用const T&amp;"></a>函数参数使用<code>const T&amp;</code></h1><p>当重载函数不会改变实参内容时，可以使用<code>const T&amp;</code>来做参数限定，以替代通用引用。</p>
-<blockquote>
-<p>这种方式在遇到右值时，也会以拷贝的方式进行创建新对象，虽然效率不高。但是很多时候可以让代码更易于理解。</p>
-</blockquote>
-<h1 id="参数以值传递，并且辅以std-move"><a href="#参数以值传递，并且辅以std-move" class="headerlink" title="参数以值传递，并且辅以std::move"></a>参数以值传递，并且辅以<code>std::move</code></h1><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Person</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">  <span class="function"><span class="keyword">explicit</span> <span class="title">Person</span><span class="params">(std::string n)</span> <span class="comment">// replaces T&amp;&amp; ctor</span></span></span><br><span class="line"><span class="function">        : name(std::move(n)) &#123;</span>&#125;        </span><br><span class="line">  </span><br><span class="line">  <span class="function"><span class="keyword">explicit</span> <span class="title">Person</span><span class="params">(<span class="keyword">int</span> idx)</span>       </span></span><br><span class="line"><span class="function">  : name(nameFromIdx(idx)) &#123;</span>&#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">  std::string name;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
+<h1 id="以其它的名字命名重载函数">以其它的名字命名重载函数</h1>
+<p>既然对通用引用函数的重载会导致非预期的调用，那么就将那些重载函数以其它名字命名，就绕过了这个坑。
+&gt; 对于常年写 c 的人来说，这个方法是最自然而然地。</p>
+<h1 id="函数参数使用const-t">函数参数使用<code>const T&amp;</code></h1>
+<p>当重载函数不会改变实参内容时，可以使用<code>const T&amp;</code>来做参数限定，以替代通用引用。
+&gt;
+这种方式在遇到右值时，也会以拷贝的方式进行创建新对象，虽然效率不高。但是很多时候可以让代码更易于理解。</p>
+<h1
+id="参数以值传递并且辅以stdmove">参数以值传递，并且辅以<code>std::move</code></h1>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Person</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">  <span class="function"><span class="keyword">explicit</span> <span class="title">Person</span><span class="params">(std::string n)</span> <span class="comment">// replaces T&amp;&amp; ctor</span></span></span><br><span class="line"><span class="function">        : name(std::move(n)) &#123;</span>&#125;        </span><br><span class="line">  </span><br><span class="line">  <span class="function"><span class="keyword">explicit</span> <span class="title">Person</span><span class="params">(<span class="keyword">int</span> idx)</span>       </span></span><br><span class="line"><span class="function">  : name(nameFromIdx(idx)) &#123;</span>&#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">  std::string name;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
 <p>这样既不会造成重载调用的非预期，还可以使用移动语义提高效率。</p>
-<h1 id="使用标记分发"><a href="#使用标记分发" class="headerlink" title="使用标记分发"></a>使用标记分发</h1><p>简单的说就是在通用引用函数中使用标记分发，使得编译器在编译时就可以确定调用匹配：</p>
+<h1 id="使用标记分发">使用标记分发</h1>
+<p>简单的说就是在通用引用函数中使用标记分发，使得编译器在编译时就可以确定调用匹配：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//当 std::false_type 满足后，此函数才会被调用</span></span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;                             <span class="comment">// non-integral</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">logAndAddImpl</span><span class="params">(T&amp;&amp; name, std::false_type)</span>    <span class="comment">// argument:</span></span></span><br><span class="line"><span class="function"></span>&#123;                                                <span class="comment">// add it to</span></span><br><span class="line">  <span class="keyword">auto</span> now = std::chrono::system_clock::<span class="built_in">now</span>();   <span class="comment">// global data</span></span><br><span class="line">  <span class="built_in">log</span>(now, <span class="string">&quot;logAndAdd&quot;</span>);                         <span class="comment">// structure</span></span><br><span class="line">  names.<span class="built_in">emplace</span>(std::forward&lt;T&gt;(name));</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//当 std::true_type 满足后，此函数才会被调用</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">logAndAddImpl</span><span class="params">(<span class="keyword">int</span> idx, std::true_type)</span>   <span class="comment">// integral</span></span></span><br><span class="line"><span class="function"></span>&#123;                                             <span class="comment">// argument: look</span></span><br><span class="line">  <span class="built_in">logAndAdd</span>(<span class="built_in">nameFromIdx</span>(idx));                <span class="comment">// up name and</span></span><br><span class="line">&#125;                                             <span class="comment">// call logAndAdd</span></span><br><span class="line">                                              <span class="comment">// with it</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//在编译期使用 std::is_intergral 来判定应该调用哪个函数</span></span><br><span class="line"><span class="comment">//当传入的是 int 型时，调用 idx 参数的函数</span></span><br><span class="line"><span class="comment">//当传入的不是 int 型时，才调用函数模板</span></span><br><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">logAndAdd</span><span class="params">(T&amp;&amp; name)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="built_in">logAndAddImpl</span>(</span><br><span class="line">    std::forward&lt;T&gt;(name),</span><br><span class="line">    <span class="comment">// 当实参是左值时，T 会被推导为左值引用，所以这里需要使用 std::remove_reference</span></span><br><span class="line">    <span class="comment">// 来去除引用</span></span><br><span class="line">    std::is_integral&lt;<span class="keyword">typename</span> std::remove_reference&lt;T&gt;::type&gt;()</span><br><span class="line">  );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h1 id="对通用引用进行限制"><a href="#对通用引用进行限制" class="headerlink" title="对通用引用进行限制"></a>对通用引用进行限制</h1><p>通过<code>std::enable_if</code>这种黑魔法，可以做到直接在通用引用函数上做限制，比如下面就限定，当实参类型不是<code>Person</code>时，才使用通用引用的构造函数。否则就使用拷贝构造、拷贝赋值这类构造函数。</p>
+<h1 id="对通用引用进行限制">对通用引用进行限制</h1>
+<p>通过<code>std::enable_if</code>这种黑魔法，可以做到直接在通用引用函数上做限制，比如下面就限定，当实参类型不是<code>Person</code>时，才使用通用引用的构造函数。否则就使用拷贝构造、拷贝赋值这类构造函数。</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Person</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">  <span class="keyword">template</span>&lt;</span><br><span class="line">    <span class="keyword">typename</span> T,</span><br><span class="line">    <span class="keyword">typename</span> = <span class="keyword">typename</span> std::enable_if&lt;</span><br><span class="line">                 !std::is_same&lt;Person,</span><br><span class="line">                               <span class="keyword">typename</span> std::decay&lt;T&gt;::type</span><br><span class="line">                              &gt;::value</span><br><span class="line">               &gt;::type</span><br><span class="line">  &gt;</span><br><span class="line">  <span class="keyword">explicit</span> <span class="built_in">Person</span>(T&amp;&amp; n);</span><br><span class="line">  <span class="comment">//…</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
 <ul>
-<li><code>std::decay</code>用于将推导出的 T 中的引用、<code>const</code>、<code>volatile</code>限定给去除。以表示带引用、<code>const</code>、<code>volatile</code>的<code>Person</code>对象都是一样的。<blockquote>
-<p><code>typename std::decay&lt;T&gt;::type</code> 之后得到的就是去除约束后的<code>T</code>。</p>
-</blockquote>
-</li>
+<li><code>std::decay</code>用于将推导出的 T
+中的引用、<code>const</code>、<code>volatile</code>限定给去除。以表示带引用、<code>const</code>、<code>volatile</code>的<code>Person</code>对象都是一样的。
+&gt; <code>typename std::decay&lt;T&gt;::type</code>
+之后得到的就是去除约束后的<code>T</code>。</li>
 <li><code>std::is_same</code>是用于比较，传入的类型是否与<code>Person</code>一致</li>
 <li><code>std::enable_if</code>则是当其条件为真时，才会使能该函数</li>
 </ul>
 <p>以上的所有步骤都是在编译期完成的，这就是模板元编程的魅力所在。</p>
-<p>对于有继承的情况下，情况还要复杂一点：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">SpecialPerson</span>:</span> <span class="keyword">public</span> Person &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">  <span class="built_in">SpecialPerson</span>(<span class="keyword">const</span> SpecialPerson&amp; rhs)  <span class="comment">// copy ctor; calls</span></span><br><span class="line">  : <span class="built_in">Person</span>(rhs)                            <span class="comment">// base class</span></span><br><span class="line">  &#123;  &#125;                                    <span class="comment">// forwarding ctor!</span></span><br><span class="line">  <span class="built_in">SpecialPerson</span>(SpecialPerson&amp;&amp; rhs)       <span class="comment">// move ctor; calls</span></span><br><span class="line">  : <span class="built_in">Person</span>(std::<span class="built_in">move</span>(rhs))                 <span class="comment">// base class</span></span><br><span class="line">  &#123;  &#125;                                    <span class="comment">// forwarding ctor!</span></span><br><span class="line">  <span class="comment">//…</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
+<p>对于有继承的情况下，情况还要复杂一点： <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">SpecialPerson</span>:</span> <span class="keyword">public</span> Person &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">  <span class="built_in">SpecialPerson</span>(<span class="keyword">const</span> SpecialPerson&amp; rhs)  <span class="comment">// copy ctor; calls</span></span><br><span class="line">  : <span class="built_in">Person</span>(rhs)                            <span class="comment">// base class</span></span><br><span class="line">  &#123;  &#125;                                    <span class="comment">// forwarding ctor!</span></span><br><span class="line">  <span class="built_in">SpecialPerson</span>(SpecialPerson&amp;&amp; rhs)       <span class="comment">// move ctor; calls</span></span><br><span class="line">  : <span class="built_in">Person</span>(std::<span class="built_in">move</span>(rhs))                 <span class="comment">// base class</span></span><br><span class="line">  &#123;  &#125;                                    <span class="comment">// forwarding ctor!</span></span><br><span class="line">  <span class="comment">//…</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></p>
 <p>上面这种情况下，基类<code>Person</code>被传入的是子类，所以原来的那种写法也会导致通用引用版本的构造函数被调用。</p>
-<p>这个时候，需要使用<code>std::is_base_of</code>来替换<code>std::is_same</code>：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Person</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">  <span class="keyword">template</span>&lt;</span><br><span class="line">    <span class="keyword">typename</span> T,</span><br><span class="line">    <span class="keyword">typename</span> = <span class="keyword">typename</span> std::enable_if&lt;</span><br><span class="line">                 !std::is_base_of&lt;Person,</span><br><span class="line">                                  <span class="keyword">typename</span> std::decay&lt;T&gt;::type</span><br><span class="line">                                 &gt;::value</span><br><span class="line">               &gt;::type</span><br><span class="line">  &gt;</span><br><span class="line">  <span class="keyword">explicit</span> <span class="built_in">Person</span>(T&amp;&amp; n);</span><br><span class="line">  <span class="comment">//…</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
+<p>这个时候，需要使用<code>std::is_base_of</code>来替换<code>std::is_same</code>：
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Person</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">  <span class="keyword">template</span>&lt;</span><br><span class="line">    <span class="keyword">typename</span> T,</span><br><span class="line">    <span class="keyword">typename</span> = <span class="keyword">typename</span> std::enable_if&lt;</span><br><span class="line">                 !std::is_base_of&lt;Person,</span><br><span class="line">                                  <span class="keyword">typename</span> std::decay&lt;T&gt;::type</span><br><span class="line">                                 &gt;::value</span><br><span class="line">               &gt;::type</span><br><span class="line">  &gt;</span><br><span class="line">  <span class="keyword">explicit</span> <span class="built_in">Person</span>(T&amp;&amp; n);</span><br><span class="line">  <span class="comment">//…</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></p>
 <p>使用<code>std::is_base_of</code>之后，无论<code>T</code>是基类还是子类，都得到结果为<code>true</code>，这样就可以避免上面的问题了。</p>
 
     </div>
@@ -434,7 +430,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%A5%E5%85%B6%E5%AE%83%E7%9A%84%E5%90%8D%E5%AD%97%E5%91%BD%E5%90%8D%E9%87%8D%E8%BD%BD%E5%87%BD%E6%95%B0"><span class="nav-number">1.</span> <span class="nav-text">以其它的名字命名重载函数</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%87%BD%E6%95%B0%E5%8F%82%E6%95%B0%E4%BD%BF%E7%94%A8const-T-amp"><span class="nav-number">2.</span> <span class="nav-text">函数参数使用const T&amp;</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E6%95%B0%E4%BB%A5%E5%80%BC%E4%BC%A0%E9%80%92%EF%BC%8C%E5%B9%B6%E4%B8%94%E8%BE%85%E4%BB%A5std-move"><span class="nav-number">3.</span> <span class="nav-text">参数以值传递，并且辅以std::move</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E6%A0%87%E8%AE%B0%E5%88%86%E5%8F%91"><span class="nav-number">4.</span> <span class="nav-text">使用标记分发</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AF%B9%E9%80%9A%E7%94%A8%E5%BC%95%E7%94%A8%E8%BF%9B%E8%A1%8C%E9%99%90%E5%88%B6"><span class="nav-number">5.</span> <span class="nav-text">对通用引用进行限制</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%A5%E5%85%B6%E5%AE%83%E7%9A%84%E5%90%8D%E5%AD%97%E5%91%BD%E5%90%8D%E9%87%8D%E8%BD%BD%E5%87%BD%E6%95%B0"><span class="nav-number">1.</span> <span class="nav-text">以其它的名字命名重载函数</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%87%BD%E6%95%B0%E5%8F%82%E6%95%B0%E4%BD%BF%E7%94%A8const-t"><span class="nav-number">2.</span> <span class="nav-text">函数参数使用const T&amp;</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E6%95%B0%E4%BB%A5%E5%80%BC%E4%BC%A0%E9%80%92%E5%B9%B6%E4%B8%94%E8%BE%85%E4%BB%A5stdmove"><span class="nav-number">3.</span> <span class="nav-text">参数以值传递，并且辅以std::move</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E6%A0%87%E8%AE%B0%E5%88%86%E5%8F%91"><span class="nav-number">4.</span> <span class="nav-text">使用标记分发</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AF%B9%E9%80%9A%E7%94%A8%E5%BC%95%E7%94%A8%E8%BF%9B%E8%A1%8C%E9%99%90%E5%88%B6"><span class="nav-number">5.</span> <span class="nav-text">对通用引用进行限制</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -450,14 +446,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">70</span>
+          <span class="site-state-item-count">72</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-count">33</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
@@ -514,13 +510,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">111k</span>
+    <span title="站点总字数">115k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">1:41</span>
+    <span title="站点阅读时长">1:44</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>
@@ -674,6 +670,8 @@ document.querySelectorAll('.pdfobject-container').forEach(element => {
 
 
     <div id="pjax">
+  
+
   
 
   

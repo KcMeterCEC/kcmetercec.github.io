@@ -298,39 +298,36 @@
 </ul>
 <p>Linux 在运行可执行文件时，可以显示多长的进程名称？</p>
 <span id="more"></span>
-
-<h1 id="task-struct"><a href="#task-struct" class="headerlink" title="task_struct"></a>task_struct</h1><p>进程或线程在内核中都由结构体<code>task_struct</code>来表示，在该结构体中具有一个字符串数组用于存放该运行进程的名称：</p>
+<h1 id="task_struct">task_struct</h1>
+<p>进程或线程在内核中都由结构体<code>task_struct</code>来表示，在该结构体中具有一个字符串数组用于存放该运行进程的名称：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Define the task command name length as enum, then it can be visible to</span></span><br><span class="line"><span class="comment"> * BPF programs.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">enum</span> &#123;</span></span><br><span class="line">	TASK_COMM_LEN = <span class="number">16</span>,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> &#123;</span></span><br><span class="line">    <span class="comment">//...</span></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * executable name, excluding path.</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 * - normally initialized setup_new_exec()</span></span><br><span class="line"><span class="comment">	 * - access it with [gs]et_task_comm()</span></span><br><span class="line"><span class="comment">	 * - lock it with task_lock()</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">char</span> comm[TASK_COMM_LEN];</span><br><span class="line">    <span class="comment">//...</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>从上面的代码可以看出：进程的最长名字是 15 个字符（最后再加上一个字符串结束符）。</p>
-<h2 id="proc-lt-pid-gt-stat"><a href="#proc-lt-pid-gt-stat" class="headerlink" title="/proc/&lt;pid&gt;/stat"></a>/proc/&lt;pid&gt;/stat</h2><p>每个进程的名称可以在<code>/proc/&lt;pid&gt;/stat</code>和<code>/proc/&lt;pid&gt;/status</code>中查看。</p>
+<p>从上面的代码可以看出：进程的最长名字是 15
+个字符（最后再加上一个字符串结束符）。</p>
+<h2 id="procpidstat">/proc/&lt;pid&gt;/stat</h2>
+<p>每个进程的名称可以在<code>/proc/&lt;pid&gt;/stat</code>和<code>/proc/&lt;pid&gt;/status</code>中查看。</p>
 <p>比如现在随便写一个测试代码：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;chrono&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;thread&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span>* argv[])</span> </span>&#123;</span><br><span class="line">    <span class="keyword">while</span> (<span class="number">1</span>) &#123;</span><br><span class="line">        std::cout &lt;&lt; <span class="string">&quot;Hello world!\n&quot;</span>;</span><br><span class="line"></span><br><span class="line">        std::this_thread::<span class="built_in">sleep_for</span>(std::chrono::<span class="built_in">seconds</span>(<span class="number">3</span>));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>并给它取一个较长的名字：<code>0123456789abcdefABCDEF</code>，包含除结束字符串外的 22 个字符。</p>
+<p>并给它取一个较长的名字：<code>0123456789abcdefABCDEF</code>，包含除结束字符串外的
+22 个字符。</p>
 <p>启动该进程后，在<code>/proc</code>对应的文件夹下查看：</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">cec@box:~$ cat /proc/1317/stat</span><br><span class="line">1317 (0123456789abcde) S 1226 1317 ......</span><br><span class="line">cec@box:~$ cat /proc/1317/status</span><br><span class="line">Name:   0123456789abcde</span><br><span class="line">Umask:  0002</span><br><span class="line">State:  S (sleeping)</span><br><span class="line"></span><br><span class="line">......</span><br></pre></td></tr></table></figure>
-
 <p>那可以看到，其名称的确是被限制到了 15 个字符。</p>
-<h2 id="对应内核的代码"><a href="#对应内核的代码" class="headerlink" title="对应内核的代码"></a>对应内核的代码</h2><p>当对<code>/proc/&lt;pid&gt;/stat</code>和<code>/proc/&lt;pid&gt;/status</code>进行查看时，对应代码位于<code>/fs/proc/array.c</code>中：</p>
+<h2 id="对应内核的代码">对应内核的代码</h2>
+<p>当对<code>/proc/&lt;pid&gt;/stat</code>和<code>/proc/&lt;pid&gt;/status</code>进行查看时，对应代码位于<code>/fs/proc/array.c</code>中：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">proc_pid_status</span><span class="params">(struct seq_file *m, struct pid_namespace *ns,</span></span></span><br><span class="line"><span class="params"><span class="function">			struct pid *pid, struct task_struct *task)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">mm_struct</span> *<span class="title">mm</span> =</span> get_task_mm(task);</span><br><span class="line"></span><br><span class="line">	seq_puts(m, <span class="string">&quot;Name:\t&quot;</span>);</span><br><span class="line">	proc_task_name(m, task, <span class="literal">true</span>);</span><br><span class="line">	seq_putc(m, <span class="string">&#x27;\n&#x27;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//...</span></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">do_task_stat</span><span class="params">(struct seq_file *m, struct pid_namespace *ns,</span></span></span><br><span class="line"><span class="params"><span class="function">			struct pid *pid, struct task_struct *task, <span class="keyword">int</span> whole)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">//...</span></span><br><span class="line"></span><br><span class="line">	seq_put_decimal_ull(m, <span class="string">&quot;&quot;</span>, pid_nr_ns(pid, ns));</span><br><span class="line">	seq_puts(m, <span class="string">&quot; (&quot;</span>);</span><br><span class="line">	proc_task_name(m, task, <span class="literal">false</span>);</span><br><span class="line">	seq_puts(m, <span class="string">&quot;) &quot;</span>);</span><br><span class="line">	seq_putc(m, state);</span><br><span class="line">	seq_put_decimal_ll(m, <span class="string">&quot; &quot;</span>, ppid);</span><br><span class="line">    <span class="comment">//...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
 <p>关于 task 名称，都是调用的 <code>proc_task_name</code>函数：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">char</span> *__get_task_comm(<span class="keyword">char</span> *buf, <span class="keyword">size_t</span> buf_size, struct task_struct *tsk)</span><br><span class="line">&#123;</span><br><span class="line">	task_lock(tsk);</span><br><span class="line">	<span class="comment">/* Always NUL terminated and zero-padded */</span></span><br><span class="line">	strscpy_pad(buf, tsk-&gt;comm, buf_size);</span><br><span class="line">	task_unlock(tsk);</span><br><span class="line">	<span class="keyword">return</span> buf;</span><br><span class="line">&#125;</span><br><span class="line">EXPORT_SYMBOL_GPL(__get_task_comm);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">proc_task_name</span><span class="params">(struct seq_file *m, struct task_struct *p, <span class="keyword">bool</span> escape)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">char</span> tcomm[<span class="number">64</span>];</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Test before PF_KTHREAD because all workqueue worker threads are</span></span><br><span class="line"><span class="comment">	 * kernel threads.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">if</span> (p-&gt;flags &amp; PF_WQ_WORKER)</span><br><span class="line">		wq_worker_comm(tcomm, <span class="keyword">sizeof</span>(tcomm), p);</span><br><span class="line">	<span class="keyword">else</span> <span class="keyword">if</span> (p-&gt;flags &amp; PF_KTHREAD)</span><br><span class="line">		get_kthread_comm(tcomm, <span class="keyword">sizeof</span>(tcomm), p);</span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">		__get_task_comm(tcomm, <span class="keyword">sizeof</span>(tcomm), p);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (escape)</span><br><span class="line">		seq_escape_str(m, tcomm, ESCAPE_SPACE | ESCAPE_SPECIAL, <span class="string">&quot;\n\\&quot;</span>);</span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">		seq_printf(m, <span class="string">&quot;%.64s&quot;</span>, tcomm);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>由于用户态进程并不属于工作队列和内核线程，所以就会运行函数<code>__get_task_comm</code>，该函数就是将 task_struct 中的 comm 数组的内容拷贝过来，这样就能够一一对应了。</p>
-<h1 id="全名称显示"><a href="#全名称显示" class="headerlink" title="全名称显示"></a>全名称显示</h1><p>当使用 <code>ps -aux</code> 时，却可以显示完整的进程名：</p>
+<p>由于用户态进程并不属于工作队列和内核线程，所以就会运行函数<code>__get_task_comm</code>，该函数就是将
+task_struct 中的 comm 数组的内容拷贝过来，这样就能够一一对应了。</p>
+<h1 id="全名称显示">全名称显示</h1>
+<p>当使用 <code>ps -aux</code> 时，却可以显示完整的进程名：</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cec@box:~$ ps -aux | grep &quot;0123456&quot;</span><br><span class="line">cec         1317  0.0  0.0   5888  1512 pts/1    S+   22:45   0:00 ./0123456789abcdefABCDEF</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-
-
 <p>这是因为，<code>ps -aux</code>获取名称是通过<code>/proc/&lt;pid&gt;/cmdline</code>来获取的，也就是说它显示的是进程的输入命令行：</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cec@box:~$ cat /proc/1317/cmdline</span><br><span class="line">./0123456789abcdefABCDEF</span><br></pre></td></tr></table></figure>
-
 <p>该文件对应的内核代码是位于<code>/fs/proc/base.c</code>中：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">ssize_t</span> <span class="title">proc_pid_cmdline_read</span><span class="params">(struct file *file, <span class="keyword">char</span> __user *buf,</span></span></span><br><span class="line"><span class="params"><span class="function">				     <span class="keyword">size_t</span> count, <span class="keyword">loff_t</span> *pos)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> *<span class="title">tsk</span>;</span></span><br><span class="line">	<span class="keyword">ssize_t</span> ret;</span><br><span class="line"></span><br><span class="line">	BUG_ON(*pos &lt; <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">	tsk = get_proc_task(file_inode(file));</span><br><span class="line">	<span class="keyword">if</span> (!tsk)</span><br><span class="line">		<span class="keyword">return</span> -ESRCH;</span><br><span class="line">	ret = get_task_cmdline(tsk, buf, count, pos);</span><br><span class="line">	put_task_struct(tsk);</span><br><span class="line">	<span class="keyword">if</span> (ret &gt; <span class="number">0</span>)</span><br><span class="line">		*pos += ret;</span><br><span class="line">	<span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>该函数最终会从<code>mm_struct</code>中获取 arg list，而<code>mm_struct</code>又是<code>task_struct</code>的成员，所以说<code>task_struct</code>封装了进程的资源。</p>
+<p>该函数最终会从<code>mm_struct</code>中获取 arg
+list，而<code>mm_struct</code>又是<code>task_struct</code>的成员，所以说<code>task_struct</code>封装了进程的资源。</p>
 
     </div>
 
@@ -432,7 +429,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#task-struct"><span class="nav-number">1.</span> <span class="nav-text">task_struct</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#proc-lt-pid-gt-stat"><span class="nav-number">1.1.</span> <span class="nav-text">&#x2F;proc&#x2F;&lt;pid&gt;&#x2F;stat</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%B9%E5%BA%94%E5%86%85%E6%A0%B8%E7%9A%84%E4%BB%A3%E7%A0%81"><span class="nav-number">1.2.</span> <span class="nav-text">对应内核的代码</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%A8%E5%90%8D%E7%A7%B0%E6%98%BE%E7%A4%BA"><span class="nav-number">2.</span> <span class="nav-text">全名称显示</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#task_struct"><span class="nav-number">1.</span> <span class="nav-text">task_struct</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#procpidstat"><span class="nav-number">1.1.</span> <span class="nav-text">&#x2F;proc&#x2F;&lt;pid&gt;&#x2F;stat</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%B9%E5%BA%94%E5%86%85%E6%A0%B8%E7%9A%84%E4%BB%A3%E7%A0%81"><span class="nav-number">1.2.</span> <span class="nav-text">对应内核的代码</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%A8%E5%90%8D%E7%A7%B0%E6%98%BE%E7%A4%BA"><span class="nav-number">2.</span> <span class="nav-text">全名称显示</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -448,14 +445,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">70</span>
+          <span class="site-state-item-count">72</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-count">33</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
@@ -512,13 +509,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">111k</span>
+    <span title="站点总字数">115k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">1:41</span>
+    <span title="站点阅读时长">1:44</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>
@@ -672,6 +669,8 @@ document.querySelectorAll('.pdfobject-container').forEach(element => {
 
 
     <div id="pjax">
+  
+
   
 
   

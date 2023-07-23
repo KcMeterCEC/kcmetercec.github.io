@@ -289,20 +289,25 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>c++ 对于多线程的支持是在 c++11 出现的，这表示可以编写跨平台的多线程代码了。</p>
+        <p>c++ 对于多线程的支持是在 c++11
+出现的，这表示可以编写跨平台的多线程代码了。</p>
 <span id="more"></span>
-
-<h1 id="c-多线程的历史"><a href="#c-多线程的历史" class="headerlink" title="c++ 多线程的历史"></a>c++ 多线程的历史</h1><p>在 c++98 的年代，并不支持多线程。程序员只能调用系统 API 或 boost 这种第三方库完成多线程编程。</p>
-<p>但由于缺乏标准的支持，c++ 在内存模型上对于多线程的支持并不友好，容易遇到很多坑。</p>
-<p>c++11 在参考 boost 库的基础上将多线程支持纳入了标准，包括内存模型、多线程同步、原子操作等。</p>
+<h1 id="c-多线程的历史">c++ 多线程的历史</h1>
+<p>在 c++98 的年代，并不支持多线程。程序员只能调用系统 API 或 boost
+这种第三方库完成多线程编程。</p>
+<p>但由于缺乏标准的支持，c++
+在内存模型上对于多线程的支持并不友好，容易遇到很多坑。</p>
+<p>c++11 在参考 boost
+库的基础上将多线程支持纳入了标准，包括内存模型、多线程同步、原子操作等。</p>
 <p>c++14 进而又增加了互斥类型，c++17 增加了并行算法。</p>
-<p>当然，c++ 并没有完全支持对于多线程操作的所有封装，还是会有些时候需要使用系统 API。</p>
+<p>当然，c++
+并没有完全支持对于多线程操作的所有封装，还是会有些时候需要使用系统
+API。</p>
 <p>这种情况下为了尽量的保证可移植性，应该使用<code>native_handle</code>方法来获取底层数据结构。</p>
 <p>比如要修改 linux 下线程的调度策略：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;thread&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;mutex&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;chrono&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;cstring&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;pthread.h&gt;</span></span></span><br><span class="line"> </span><br><span class="line">std::mutex iomutex;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">f</span><span class="params">(<span class="keyword">int</span> num)</span> </span>&#123;</span><br><span class="line">    std::this_thread::<span class="built_in">sleep_for</span>(std::chrono::<span class="built_in">seconds</span>(<span class="number">1</span>));</span><br><span class="line"> </span><br><span class="line">    sched_param sch;</span><br><span class="line">    <span class="keyword">int</span> policy; </span><br><span class="line">    <span class="built_in">pthread_getschedparam</span>(<span class="built_in">pthread_self</span>(), &amp;policy, &amp;sch);</span><br><span class="line">    <span class="function">std::lock_guard&lt;std::mutex&gt; <span class="title">lk</span><span class="params">(iomutex)</span></span>;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;Thread &quot;</span> &lt;&lt; num &lt;&lt; <span class="string">&quot; is executing at priority &quot;</span></span><br><span class="line">              &lt;&lt; sch.sched_priority &lt;&lt; <span class="string">&#x27;\n&#x27;</span>;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    <span class="function">std::thread <span class="title">t1</span><span class="params">(f, <span class="number">1</span>)</span>, <span class="title">t2</span><span class="params">(f, <span class="number">2</span>)</span></span>;</span><br><span class="line"> </span><br><span class="line">    sched_param sch;</span><br><span class="line">    <span class="keyword">int</span> policy;</span><br><span class="line">    </span><br><span class="line">    <span class="built_in">pthread_getschedparam</span>(t1.<span class="built_in">native_handle</span>(), &amp;policy, &amp;sch);</span><br><span class="line">    sch.sched_priority = <span class="number">20</span>;</span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">pthread_setschedparam</span>(t1.<span class="built_in">native_handle</span>(), SCHED_FIFO, &amp;sch)) &#123;</span><br><span class="line">        std::cout &lt;&lt; <span class="string">&quot;Failed to setschedparam: &quot;</span> &lt;&lt; std::<span class="built_in">strerror</span>(errno) &lt;&lt; <span class="string">&#x27;\n&#x27;</span>;</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    t1.<span class="built_in">join</span>(); t2.<span class="built_in">join</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h1 id="一个简易的多线程示例"><a href="#一个简易的多线程示例" class="headerlink" title="一个简易的多线程示例"></a>一个简易的多线程示例</h1><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="comment">//多线程管理的头文件</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;thread&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">hello</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;Hello world!\n&quot;</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function">std::thread <span class="title">t1</span><span class="params">(hello)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//等待线程 t1 运行完毕</span></span><br><span class="line">    t1.<span class="built_in">join</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
+<h1 id="一个简易的多线程示例">一个简易的多线程示例</h1>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="comment">//多线程管理的头文件</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;thread&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">hello</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;Hello world!\n&quot;</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function">std::thread <span class="title">t1</span><span class="params">(hello)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//等待线程 t1 运行完毕</span></span><br><span class="line">    t1.<span class="built_in">join</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
     </div>
 
@@ -420,14 +425,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">70</span>
+          <span class="site-state-item-count">72</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-count">33</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
@@ -484,13 +489,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">111k</span>
+    <span title="站点总字数">115k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">1:41</span>
+    <span title="站点阅读时长">1:44</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>
@@ -644,6 +649,8 @@ document.querySelectorAll('.pdfobject-container').forEach(element => {
 
 
     <div id="pjax">
+  
+
   
 
   

@@ -270,7 +270,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>970</span>
+              <span>974</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -289,50 +289,58 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>这里的资源主要是：内存、文件描述符、互斥锁、数据库连接、socket 等，一旦不使用它们，都要归还给系统。</p>
+        <p>这里的资源主要是：内存、文件描述符、互斥锁、数据库连接、socket
+等，一旦不使用它们，都要归还给系统。</p>
 <span id="more"></span>
-
-<h1 id="以对象管理资源"><a href="#以对象管理资源" class="headerlink" title="以对象管理资源"></a>以对象管理资源</h1><p>首先在编写一个类的时候，就需要在它的析构函数中仔细整理它需要释放的资源。</p>
+<h1 id="以对象管理资源">以对象管理资源</h1>
+<p>首先在编写一个类的时候，就需要在它的析构函数中仔细整理它需要释放的资源。</p>
 <p>而在使用对象时，需要使用 RAII 类来管理这些资源，比如智能指针。</p>
-<p>编写 RAII 类时，除了管理原始资源外，还需要提供接口<code>get()</code>来获取原始资源。</p>
+<p>编写 RAII
+类时，除了管理原始资源外，还需要提供接口<code>get()</code>来获取原始资源。</p>
 <p>因为一些 C API 是需要操作原始资源的。</p>
-<h1 id="小心资源管理类中的拷贝行为"><a href="#小心资源管理类中的拷贝行为" class="headerlink" title="小心资源管理类中的拷贝行为"></a>小心资源管理类中的拷贝行为</h1><p>假设用一个类以 RAII 的方式来管理互斥量：</p>
+<h1 id="小心资源管理类中的拷贝行为">小心资源管理类中的拷贝行为</h1>
+<p>假设用一个类以 RAII 的方式来管理互斥量：</p>
 <ul>
 <li>在构造函数中获取锁</li>
 <li>在析构函数中释放锁</li>
 </ul>
 <p>那么就这样定义：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Lock</span> &#123;</span></span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">explicit</span> <span class="title">Lock</span><span class="params">(Mutex* pm)</span> : mutex_(pm) &#123;</span></span><br><span class="line">        <span class="built_in">lock</span>(mutex_);</span><br><span class="line">    &#125;</span><br><span class="line">    ~<span class="built_in">Lock</span>() &#123;</span><br><span class="line">        <span class="built_in">unlock</span>(mutex_);</span><br><span class="line">    &#125;</span><br><span class="line">  <span class="keyword">private</span>:</span><br><span class="line">    Mutex* mutex_ = <span class="literal">nullptr</span>;  </span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
 <p>然后这样使用：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Mutex m;</span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">//传入锁的地址同时创建 RAII 对象，即可获得锁</span></span><br><span class="line">    <span class="function">Lock <span class="title">m1</span><span class="params">(&amp;m)</span></span>;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 退出区块后，调用 m1 析构函数释放锁</span></span><br></pre></td></tr></table></figure>
-
 <p>但是如果对 RAII 对象进行了拷贝：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Mutex m;</span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">//传入锁的地址同时创建 RAII 对象，即可获得锁</span></span><br><span class="line">    <span class="function">Lock <span class="title">m1</span><span class="params">(&amp;m)</span></span>;</span><br><span class="line">    <span class="comment">// 调用拷贝构造函数，如果拷贝构造函数里面也获取锁，便会造成死锁</span></span><br><span class="line">    <span class="function">Lock <span class="title">m2</span><span class="params">(m1)</span></span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 如果拷贝构造里面没有获取锁，但是析构里面也会释放锁，就会出现重复释放</span></span><br></pre></td></tr></table></figure>
-
 <p>对此的应对方法有以下几种：</p>
-<h2 id="禁止拷贝"><a href="#禁止拷贝" class="headerlink" title="禁止拷贝"></a>禁止拷贝</h2><p>可以对拷贝构造和拷贝赋值函数使用<code>delete</code>关键字，以禁止拷贝操作的合理性。</p>
-<h2 id="使用引用计数"><a href="#使用引用计数" class="headerlink" title="使用引用计数"></a>使用引用计数</h2><p>将需要被保护的资源使用<code>shared_ptr</code>管理起来，便可以基于引用计数来完成合理申请和释放。</p>
+<h2 id="禁止拷贝">禁止拷贝</h2>
+<p>可以对拷贝构造和拷贝赋值函数使用<code>delete</code>关键字，以禁止拷贝操作的合理性。</p>
+<h2 id="使用引用计数">使用引用计数</h2>
+<p>将需要被保护的资源使用<code>shared_ptr</code>管理起来，便可以基于引用计数来完成合理申请和释放。</p>
 <blockquote>
-<p>需要注意的是：<code>shared_ptr</code>的默认行为在计数为 0 时是删除其指定资源，而对于像互斥量这样的资源。<strong>我们希望的是释放锁，而不是删除锁。</strong></p>
+<p>需要注意的是：<code>shared_ptr</code>的默认行为在计数为 0
+时是删除其指定资源，而对于像互斥量这样的资源。<strong>我们希望的是释放锁，而不是删除锁。</strong></p>
 <p>这种情况下，就需要为<code>shared_ptr</code>指定删除器。</p>
 </blockquote>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Lock</span> &#123;</span></span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    <span class="comment">// 指定 shared_ptr 的删除器是 unlock 操作</span></span><br><span class="line">    <span class="function"><span class="keyword">explicit</span> <span class="title">Lock</span><span class="params">(Mutex* pm)</span> : mutex_(pm, unlock) &#123;</span></span><br><span class="line">        <span class="built_in">lock</span>(mutex_.<span class="built_in">get</span>());</span><br><span class="line">    &#125;</span><br><span class="line">    ~<span class="built_in">Lock</span>() &#123;</span><br><span class="line">		<span class="comment">// 有了智能指针，析构函数就不需要主动释放了</span></span><br><span class="line">    &#125;</span><br><span class="line">  <span class="keyword">private</span>:</span><br><span class="line">    std::shared_ptr&lt;Mutex&gt; mutex_;  </span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<h2 id="复制底部资源"><a href="#复制底部资源" class="headerlink" title="复制底部资源"></a>复制底部资源</h2><p>对类管理的资源进行深拷贝，也可以避免这个问题。</p>
+<h2 id="复制底部资源">复制底部资源</h2>
+<p>对类管理的资源进行深拷贝，也可以避免这个问题。</p>
 <p>比如对互斥量资源进行深拷贝，相当于又新建了一个互斥量。</p>
-<h2 id="转移底部资源的拥有权"><a href="#转移底部资源的拥有权" class="headerlink" title="转移底部资源的拥有权"></a>转移底部资源的拥有权</h2><p>这就相当于使用了移动语义，以转移资源的所有权。</p>
-<h1 id="使用-new-和-delete-时要采取相同形式"><a href="#使用-new-和-delete-时要采取相同形式" class="headerlink" title="使用 new 和 delete 时要采取相同形式"></a>使用 <code>new</code> 和 <code>delete</code> 时要采取相同形式</h1><p><code>new</code>和<code>delete</code>要成对使用，<code>new[]</code>和<code>delete[]</code>也是要一一对应成对使用。</p>
+<h2 id="转移底部资源的拥有权">转移底部资源的拥有权</h2>
+<p>这就相当于使用了移动语义，以转移资源的所有权。</p>
+<h1 id="使用-new-和-delete-时要采取相同形式">使用 <code>new</code> 和
+<code>delete</code> 时要采取相同形式</h1>
+<p><code>new</code>和<code>delete</code>要成对使用，<code>new[]</code>和<code>delete[]</code>也是要一一对应成对使用。</p>
 <blockquote>
-<p>如果 new[] 对应 delete，那 delete 操作很可能因为不知道应该释放多少资源而导致内存泄漏。</p>
-<p>反之，如果 new 对应 delete[]，那 delete 操作可能误认为会多次释放而释放了其他不属于自己的资源。</p>
+<p>如果 new[] 对应 delete，那 delete
+操作很可能因为不知道应该释放多少资源而导致内存泄漏。</p>
+<p>反之，如果 new 对应 delete[]，那 delete
+操作可能误认为会多次释放而释放了其他不属于自己的资源。</p>
 </blockquote>
-<h1 id="以独立语句将-newed-对象置入智能指针"><a href="#以独立语句将-newed-对象置入智能指针" class="headerlink" title="以独立语句将 newed 对象置入智能指针"></a>以独立语句将 newed 对象置入智能指针</h1><p>假设有一个函数接口是这样设计的：</p>
+<h1 id="以独立语句将-newed-对象置入智能指针">以独立语句将 newed
+对象置入智能指针</h1>
+<p>假设有一个函数接口是这样设计的：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">ProcessWidget</span><span class="params">(std::shared_ptr&lt;Wdiget&gt; pw, Window win)</span></span>;</span><br></pre></td></tr></table></figure>
-
 <p>然后进行调用时是这样的：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">ProcessWidget</span>(std::shared_ptr&lt;Widget&gt;(<span class="keyword">new</span> Widget), win);</span><br></pre></td></tr></table></figure>
-
 <p>那么编译器在进行参数传递时，有可能会以以下顺序进行传递：</p>
 <ul>
 <li>申请内存，使用<code>new Widget</code></li>
@@ -340,12 +348,10 @@
 <li>将第一步的地址传递给智能指针</li>
 </ul>
 <p>那么假设，在创建临时对象<code>win</code>是发生了异常而导致中断操作，那么第一步所申请的内存就没有被智能指针所接管。造成了<strong>很难排查的内存泄漏</strong>！</p>
-<p>所以应该养成好的习惯：先创建智能指针，再进行调用：</p>
-<blockquote>
-<p>或者使用 <code>std::make_unique</code> 和 <code>std::make_shared 来替代</code> <code>new</code>。</p>
-</blockquote>
+<p>所以应该养成好的习惯：先创建智能指针，再进行调用： &gt; 或者使用
+<code>std::make_unique</code> 和 <code>std::make_shared 来替代</code>
+<code>new</code>。</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">std::shared_ptr&lt;Widget&gt; <span class="title">pw</span><span class="params">(<span class="keyword">new</span> Widget)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="built_in">ProcessWidget</span>(pw, win);</span><br></pre></td></tr></table></figure>
-
 
     </div>
 
@@ -447,7 +453,9 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%A5%E5%AF%B9%E8%B1%A1%E7%AE%A1%E7%90%86%E8%B5%84%E6%BA%90"><span class="nav-number">1.</span> <span class="nav-text">以对象管理资源</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E5%BF%83%E8%B5%84%E6%BA%90%E7%AE%A1%E7%90%86%E7%B1%BB%E4%B8%AD%E7%9A%84%E6%8B%B7%E8%B4%9D%E8%A1%8C%E4%B8%BA"><span class="nav-number">2.</span> <span class="nav-text">小心资源管理类中的拷贝行为</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A6%81%E6%AD%A2%E6%8B%B7%E8%B4%9D"><span class="nav-number">2.1.</span> <span class="nav-text">禁止拷贝</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E5%BC%95%E7%94%A8%E8%AE%A1%E6%95%B0"><span class="nav-number">2.2.</span> <span class="nav-text">使用引用计数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%8D%E5%88%B6%E5%BA%95%E9%83%A8%E8%B5%84%E6%BA%90"><span class="nav-number">2.3.</span> <span class="nav-text">复制底部资源</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BD%AC%E7%A7%BB%E5%BA%95%E9%83%A8%E8%B5%84%E6%BA%90%E7%9A%84%E6%8B%A5%E6%9C%89%E6%9D%83"><span class="nav-number">2.4.</span> <span class="nav-text">转移底部资源的拥有权</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-new-%E5%92%8C-delete-%E6%97%B6%E8%A6%81%E9%87%87%E5%8F%96%E7%9B%B8%E5%90%8C%E5%BD%A2%E5%BC%8F"><span class="nav-number">3.</span> <span class="nav-text">使用 new 和 delete 时要采取相同形式</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%A5%E7%8B%AC%E7%AB%8B%E8%AF%AD%E5%8F%A5%E5%B0%86-newed-%E5%AF%B9%E8%B1%A1%E7%BD%AE%E5%85%A5%E6%99%BA%E8%83%BD%E6%8C%87%E9%92%88"><span class="nav-number">4.</span> <span class="nav-text">以独立语句将 newed 对象置入智能指针</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%A5%E5%AF%B9%E8%B1%A1%E7%AE%A1%E7%90%86%E8%B5%84%E6%BA%90"><span class="nav-number">1.</span> <span class="nav-text">以对象管理资源</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E5%BF%83%E8%B5%84%E6%BA%90%E7%AE%A1%E7%90%86%E7%B1%BB%E4%B8%AD%E7%9A%84%E6%8B%B7%E8%B4%9D%E8%A1%8C%E4%B8%BA"><span class="nav-number">2.</span> <span class="nav-text">小心资源管理类中的拷贝行为</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A6%81%E6%AD%A2%E6%8B%B7%E8%B4%9D"><span class="nav-number">2.1.</span> <span class="nav-text">禁止拷贝</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E5%BC%95%E7%94%A8%E8%AE%A1%E6%95%B0"><span class="nav-number">2.2.</span> <span class="nav-text">使用引用计数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%8D%E5%88%B6%E5%BA%95%E9%83%A8%E8%B5%84%E6%BA%90"><span class="nav-number">2.3.</span> <span class="nav-text">复制底部资源</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BD%AC%E7%A7%BB%E5%BA%95%E9%83%A8%E8%B5%84%E6%BA%90%E7%9A%84%E6%8B%A5%E6%9C%89%E6%9D%83"><span class="nav-number">2.4.</span> <span class="nav-text">转移底部资源的拥有权</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-new-%E5%92%8C-delete-%E6%97%B6%E8%A6%81%E9%87%87%E5%8F%96%E7%9B%B8%E5%90%8C%E5%BD%A2%E5%BC%8F"><span class="nav-number">3.</span> <span class="nav-text">使用 new 和
+delete 时要采取相同形式</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%A5%E7%8B%AC%E7%AB%8B%E8%AF%AD%E5%8F%A5%E5%B0%86-newed-%E5%AF%B9%E8%B1%A1%E7%BD%AE%E5%85%A5%E6%99%BA%E8%83%BD%E6%8C%87%E9%92%88"><span class="nav-number">4.</span> <span class="nav-text">以独立语句将 newed
+对象置入智能指针</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -463,14 +471,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">70</span>
+          <span class="site-state-item-count">72</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-count">33</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
@@ -527,13 +535,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">111k</span>
+    <span title="站点总字数">115k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">1:41</span>
+    <span title="站点阅读时长">1:44</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>
@@ -687,6 +695,8 @@ document.querySelectorAll('.pdfobject-container').forEach(element => {
 
 
     <div id="pjax">
+  
+
   
 
   

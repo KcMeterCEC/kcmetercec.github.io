@@ -29,14 +29,11 @@
 <meta property="og:site_name" content="explorer">
 <meta property="og:description" content="使用 Wireshark 来抓取整个流程，以粗浅的理解 TCP&#x2F;IP。">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/chapter4/http_exercise.jpg?raw=true">
-<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/chapter4/http_proxy_catch.jpg?raw=true">
 <meta property="article:published_time" content="2022-06-06T16:00:00.000Z">
 <meta property="article:modified_time" content="2022-06-06T16:00:00.000Z">
 <meta property="article:author" content="kcmetercec">
 <meta property="article:tag" content="network">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/chapter4/http_exercise.jpg?raw=true">
 
 <link rel="canonical" href="http://kcmetercec.top/2022/06/07/net_base_http/">
 
@@ -294,28 +291,38 @@
       
         <p>使用 Wireshark 来抓取整个流程，以粗浅的理解 TCP/IP。</p>
 <span id="more"></span>
-
-<h1 id="总体思路"><a href="#总体思路" class="headerlink" title="总体思路"></a>总体思路</h1><p><img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/chapter4/http_exercise.jpg?raw=true"><br>如上图所示，访问端运行 <code>wget</code> 程序，通过代理上的 <code>squid</code> 程序中转，访问 <code>www.baidu.com</code> 的首页 <code>index.html</code> 文档。</p>
-<h1 id="部署"><a href="#部署" class="headerlink" title="部署"></a>部署</h1><h2 id="squid-代理服务器"><a href="#squid-代理服务器" class="headerlink" title="squid 代理服务器"></a>squid 代理服务器</h2><p>在使用 apt 安装好 squid 后，在 <code>/etc/squid/squid.conf</code> 中添加以下两行，以允许局域网访问该代理：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">acl localnet src 192.168.11.0/24</span><br><span class="line"><span class="meta">#</span><span class="bash"> 这一行在文件中就有，只是需要修改一下</span></span><br><span class="line">http_access allow all</span><br></pre></td></tr></table></figure>
-
-<p>然后再启动服务：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo service squid restart</span><br></pre></td></tr></table></figure>
-
+<h1 id="总体思路">总体思路</h1>
+<p><img
+src="https://github.com/KcMeterCEC/explore/blob/master/%5BgoodBook%5D/%5BWhat%5DgoodBook--Linux高性能服务器编程/chapter4/http_exercise.jpg?raw=true" />
+如上图所示，访问端运行 <code>wget</code> 程序，通过代理上的
+<code>squid</code> 程序中转，访问 <code>www.baidu.com</code> 的首页
+<code>index.html</code> 文档。</p>
+<h1 id="部署">部署</h1>
+<h2 id="squid-代理服务器">squid 代理服务器</h2>
+<p>在使用 apt 安装好 squid 后，在 <code>/etc/squid/squid.conf</code>
+中添加以下两行，以允许局域网访问该代理： <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">acl localnet src 192.168.11.0/24</span><br><span class="line"><span class="meta">#</span><span class="bash"> 这一行在文件中就有，只是需要修改一下</span></span><br><span class="line">http_access allow all</span><br></pre></td></tr></table></figure></p>
+<p>然后再启动服务： <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo service squid restart</span><br></pre></td></tr></table></figure></p>
 <p>删除 ARP 对网关的缓存，以观察到 ARP：</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo arp -d 192.168.11.1</span><br></pre></td></tr></table></figure>
-
-<h2 id="客户端到代理"><a href="#客户端到代理" class="headerlink" title="客户端到代理"></a>客户端到代理</h2><p>客户端需要先使用 WSL 设置代理服务器（squid 的端口是 3128）：</p>
+<h2 id="客户端到代理">客户端到代理</h2>
+<p>客户端需要先使用 WSL 设置代理服务器（squid 的端口是 3128）：</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">export http_proxy=192.168.11.67:3128</span><br></pre></td></tr></table></figure>
 <p>然后开始发送请求：</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">wget --header=&quot;Connection: close&quot; http://www.baidu.com/index.html</span><br></pre></td></tr></table></figure>
-
-<h1 id="抓取"><a href="#抓取" class="headerlink" title="抓取"></a>抓取</h1><p>使用 Wireshark 抓取整个通信过程：</p>
-<p><img src="https://github.com/KcMeterCEC/explore/blob/master/[goodBook]/[What]goodBook--Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/chapter4/http_proxy_catch.jpg?raw=true"><br>可以观察到其流程如下。</p>
-<ol>
-<li>握手：既然是 firefox 要经过服务器代理访问百度，那么首先就需要与代理服务器建立连接（TCP 3 次握手）。</li>
-<li>ARP：客户端发送 HTTP 请求后，由于访问的不是局域网地址，所以根据路由表设定，需要走网关出去。那么代理服务器就需要先使用 ARP 来获取网关的 MAC 地址。</li>
-<li>数据传输：代理服务器在获取到数据后，通过 3 个 TCP 报文将内容返回给客户端</li>
+<h1 id="抓取">抓取</h1>
+<p>使用 Wireshark 抓取整个通信过程：</p>
+<p><img
+src="https://github.com/KcMeterCEC/explore/blob/master/%5BgoodBook%5D/%5BWhat%5DgoodBook--Linux高性能服务器编程/chapter4/http_proxy_catch.jpg?raw=true" />
+可以观察到其流程如下。</p>
+<ol type="1">
+<li>握手：既然是 firefox
+要经过服务器代理访问百度，那么首先就需要与代理服务器建立连接（TCP 3
+次握手）。</li>
+<li>ARP：客户端发送 HTTP
+请求后，由于访问的不是局域网地址，所以根据路由表设定，需要走网关出去。那么代理服务器就需要先使用
+ARP 来获取网关的 MAC 地址。</li>
+<li>数据传输：代理服务器在获取到数据后，通过 3 个 TCP
+报文将内容返回给客户端</li>
 <li>断开：当代理服务器发送完数据后，服务器主动断开连接</li>
 </ol>
 <ul>
@@ -359,12 +366,12 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2022/06/07/net_base_api/" rel="prev" title="Linux 网络编程基础 API">
-      <i class="fa fa-chevron-left"></i> Linux 网络编程基础 API
+    <a href="/2022/06/05/net_base_tcp/" rel="prev" title="使用 Wireshark 观察 TCP 协议">
+      <i class="fa fa-chevron-left"></i> 使用 Wireshark 观察 TCP 协议
     </a></div>
       <div class="post-nav-item">
-    <a href="/2022/06/09/net_base_io/" rel="next" title="Linux 高级 I/O 函数">
-      Linux 高级 I/O 函数 <i class="fa fa-chevron-right"></i>
+    <a href="/2022/06/07/net_base_api/" rel="next" title="Linux 网络编程基础 API">
+      Linux 网络编程基础 API <i class="fa fa-chevron-right"></i>
     </a></div>
     </div>
       </footer>
@@ -441,14 +448,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">70</span>
+          <span class="site-state-item-count">72</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-count">33</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
@@ -505,13 +512,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">111k</span>
+    <span title="站点总字数">115k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">1:41</span>
+    <span title="站点阅读时长">1:44</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>
@@ -665,6 +672,8 @@ document.querySelectorAll('.pdfobject-container').forEach(element => {
 
 
     <div id="pjax">
+  
+
   
 
   
