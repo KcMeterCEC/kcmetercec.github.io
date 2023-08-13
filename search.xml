@@ -7411,4 +7411,361 @@ href="https://electronics.stackexchange.com/questions/492271/stm32f4-spi-communi
         <tag>stm32</tag>
       </tags>
   </entry>
+  <entry>
+    <title>Linux内核调试之 initcall_debug</title>
+    <url>/2023/08/04/kernel_initcall_debug/</url>
+    <content><![CDATA[<ul>
+<li>kernel version : v6.1.x (lts)</li>
+</ul>
+<p>初步认识 initcall_debug 的实现机制。</p>
+<span id="more"></span>
+<h1 id="u-boot-对-chosen-的修改">u-boot 对 chosen 的修改</h1>
+<p>当 u-boot 使能设备树功能，且环境变量中具有 <code>bootargs</code>
+时，u-boot
+就会主动将设备树中的<code>bootargs</code>参数修改为自己环境变量的值。</p>
+<p>一般现在都是使用设备树中的参数，所以需要将该环境变量从 u-boot
+中删除，避免造成误导。</p>
+<blockquote>
+<p>u-boot 中的默认环境变量配置位于路径
+<code>include/configs/</code>中</p>
+</blockquote>
+<p>关于 u-boot 修改的代码路径如下：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">-&gt;</span><span class="bash"> /cmd/bootz.c: do_bootz()</span></span><br><span class="line"><span class="meta">-&gt;</span><span class="bash"> /boot/bootm.c: do_bootm_states()</span></span><br><span class="line"><span class="meta">-&gt;</span><span class="bash"> /boot/bootm_os.c: bootm_os_get_boot_func()</span></span><br><span class="line"><span class="meta">-&gt;</span><span class="bash"> /arch/arm/lib/bootm.c: do_bootm_linux()</span></span><br><span class="line"><span class="meta">-&gt;</span><span class="bash"> /arch/arm/lib/bootm.c: boot_prep_linux()</span></span><br><span class="line"><span class="meta">-&gt;</span><span class="bash"> /boot/image-borad.c: image_setup_linux()</span></span><br><span class="line"><span class="meta">-&gt;</span><span class="bash"> /boot/image-fdt.c: image_setup_libfdt()</span></span><br><span class="line"><span class="meta">-&gt;</span><span class="bash"> /common/fdt_support.c: fdt_chosen()</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">fdt_chosen</span><span class="params">(<span class="keyword">void</span> *fdt)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">abuf</span> <span class="title">buf</span> =</span> &#123;&#125;;</span><br><span class="line">	<span class="keyword">int</span>   nodeoffset;</span><br><span class="line">	<span class="keyword">int</span>   err;</span><br><span class="line">	<span class="keyword">char</span>  *str;		<span class="comment">/* used to set string properties */</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// 对设备树进行检查</span></span><br><span class="line">	err = fdt_check_header(fdt);</span><br><span class="line">	<span class="keyword">if</span> (err &lt; <span class="number">0</span>) &#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;fdt_chosen: %s\n&quot;</span>, fdt_strerror(err));</span><br><span class="line">		<span class="keyword">return</span> err;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 查找或创建 chose 节点</span></span><br><span class="line">	nodeoffset = fdt_find_or_add_subnode(fdt, <span class="number">0</span>, <span class="string">&quot;chosen&quot;</span>);</span><br><span class="line">	<span class="keyword">if</span> (nodeoffset &lt; <span class="number">0</span>)</span><br><span class="line">		<span class="keyword">return</span> nodeoffset;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (IS_ENABLED(CONFIG_BOARD_RNG_SEED) &amp;&amp; !board_rng_seed(&amp;buf)) &#123;</span><br><span class="line">		err = fdt_setprop(fdt, nodeoffset, <span class="string">&quot;rng-seed&quot;</span>,</span><br><span class="line">				  abuf_data(&amp;buf), abuf_size(&amp;buf));</span><br><span class="line">		abuf_uninit(&amp;buf);</span><br><span class="line">		<span class="keyword">if</span> (err &lt; <span class="number">0</span>) &#123;</span><br><span class="line">			<span class="built_in">printf</span>(<span class="string">&quot;WARNING: could not set rng-seed %s.\n&quot;</span>,</span><br><span class="line">			       fdt_strerror(err));</span><br><span class="line">			<span class="keyword">return</span> err;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 获取 bootargs 环境变量</span></span><br><span class="line">	str = board_fdt_chosen_bootargs();</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 如果有该环境变量，则使用环境变量的 bootargs 替代 chosen 节点中的值</span></span><br><span class="line">	<span class="keyword">if</span> (str) &#123;</span><br><span class="line">		err = fdt_setprop(fdt, nodeoffset, <span class="string">&quot;bootargs&quot;</span>, str,</span><br><span class="line">				  <span class="built_in">strlen</span>(str) + <span class="number">1</span>);</span><br><span class="line">		<span class="keyword">if</span> (err &lt; <span class="number">0</span>) &#123;</span><br><span class="line">			<span class="built_in">printf</span>(<span class="string">&quot;WARNING: could not set bootargs %s.\n&quot;</span>,</span><br><span class="line">			       fdt_strerror(err));</span><br><span class="line">			<span class="keyword">return</span> err;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 增加 u-boot 的版本号</span></span><br><span class="line">	err = fdt_setprop(fdt, nodeoffset, <span class="string">&quot;u-boot,version&quot;</span>, PLAIN_VERSION,</span><br><span class="line">			  <span class="built_in">strlen</span>(PLAIN_VERSION) + <span class="number">1</span>);</span><br><span class="line">	<span class="keyword">if</span> (err &lt; <span class="number">0</span>) &#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;WARNING: could not set u-boot,version %s.\n&quot;</span>,</span><br><span class="line">		       fdt_strerror(err));</span><br><span class="line">		<span class="keyword">return</span> err;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> fdt_fixup_stdout(fdt, nodeoffset);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="kernel-获取参数的代码调用路径">kernel
+获取参数的代码调用路径</h1>
+<p>以 <code>arm32</code> 为例，其调用路径为：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">-&gt;</span><span class="bash"> /init/main.c: start_kernel()</span></span><br><span class="line"><span class="meta">-&gt;</span><span class="bash"> /arch/arm/kernel/setup.c: setup_arch()</span></span><br><span class="line"><span class="meta">-&gt;</span><span class="bash"> /arch/arm/kernel/devtree.c: setup_machine_fdt()</span></span><br><span class="line"><span class="meta">-&gt;</span><span class="bash"> /drivers/of/fdt.c: early_init_dt_scan_nodes()</span></span><br></pre></td></tr></table></figure>
+<h1 id="传入参数的存储位置">传入参数的存储位置</h1>
+<p>设备树的参数最终存储于数组 <code>boot_command_line</code>
+，而对应的命令参数则存在于设备树的 <code>/chosen</code> 中。</p>
+<blockquote>
+<p>如果 <code>/chosen</code> 不存在则会搜寻节点
+<code>/chosen@0</code></p>
+</blockquote>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="keyword">char</span> __initdata boot_command_line[COMMAND_LINE_SIZE];</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> __init <span class="title">early_init_dt_scan_chosen</span><span class="params">(<span class="keyword">char</span> *cmdline)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">int</span> l, node;</span><br><span class="line">	<span class="keyword">const</span> <span class="keyword">char</span> *p;</span><br><span class="line">	<span class="keyword">const</span> <span class="keyword">void</span> *rng_seed;</span><br><span class="line">	<span class="keyword">const</span> <span class="keyword">void</span> *fdt = initial_boot_params;</span><br><span class="line"></span><br><span class="line">	node = fdt_path_offset(fdt, <span class="string">&quot;/chosen&quot;</span>);</span><br><span class="line">	<span class="keyword">if</span> (node &lt; <span class="number">0</span>)</span><br><span class="line">		node = fdt_path_offset(fdt, <span class="string">&quot;/chosen@0&quot;</span>);</span><br><span class="line">	<span class="keyword">if</span> (node &lt; <span class="number">0</span>)</span><br><span class="line">		<span class="comment">/* Handle the cmdline config options even if no /chosen node */</span></span><br><span class="line">		<span class="keyword">goto</span> handle_cmdline;</span><br><span class="line"></span><br><span class="line">	chosen_node_offset = node;</span><br><span class="line"></span><br><span class="line">	early_init_dt_check_for_initrd(node);</span><br><span class="line">	early_init_dt_check_for_elfcorehdr(node);</span><br><span class="line"></span><br><span class="line">	rng_seed = of_get_flat_dt_prop(node, <span class="string">&quot;rng-seed&quot;</span>, &amp;l);</span><br><span class="line">	<span class="keyword">if</span> (rng_seed &amp;&amp; l &gt; <span class="number">0</span>) &#123;</span><br><span class="line">		add_bootloader_randomness(rng_seed, l);</span><br><span class="line"></span><br><span class="line">		<span class="comment">/* try to clear seed so it won&#x27;t be found. */</span></span><br><span class="line">		fdt_nop_property(initial_boot_params, node, <span class="string">&quot;rng-seed&quot;</span>);</span><br><span class="line"></span><br><span class="line">		<span class="comment">/* update CRC check value */</span></span><br><span class="line">		of_fdt_crc32 = crc32_be(~<span class="number">0</span>, initial_boot_params,</span><br><span class="line">				fdt_totalsize(initial_boot_params));</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Retrieve command line */</span></span><br><span class="line">	p = of_get_flat_dt_prop(node, <span class="string">&quot;bootargs&quot;</span>, &amp;l);</span><br><span class="line">	<span class="keyword">if</span> (p != <span class="literal">NULL</span> &amp;&amp; l &gt; <span class="number">0</span>)</span><br><span class="line">		strscpy(cmdline, p, min(l, COMMAND_LINE_SIZE));</span><br><span class="line"></span><br><span class="line">handle_cmdline:</span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * CONFIG_CMDLINE is meant to be a default in case nothing else</span></span><br><span class="line"><span class="comment">	 * managed to set the command line, unless CONFIG_CMDLINE_FORCE</span></span><br><span class="line"><span class="comment">	 * is set in which case we override whatever was found earlier.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_CMDLINE</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> defined(CONFIG_CMDLINE_EXTEND)</span></span><br><span class="line">	strlcat(cmdline, <span class="string">&quot; &quot;</span>, COMMAND_LINE_SIZE);</span><br><span class="line">	strlcat(cmdline, CONFIG_CMDLINE, COMMAND_LINE_SIZE);</span><br><span class="line"><span class="meta">#<span class="meta-keyword">elif</span> defined(CONFIG_CMDLINE_FORCE)</span></span><br><span class="line">	strscpy(cmdline, CONFIG_CMDLINE, COMMAND_LINE_SIZE);</span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line">	<span class="comment">/* No arguments from boot loader, use kernel&#x27;s  cmdl*/</span></span><br><span class="line">	<span class="keyword">if</span> (!((<span class="keyword">char</span> *)cmdline)[<span class="number">0</span>])</span><br><span class="line">		strscpy(cmdline, CONFIG_CMDLINE, COMMAND_LINE_SIZE);</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">/* CONFIG_CMDLINE */</span></span></span><br><span class="line"></span><br><span class="line">	pr_debug(<span class="string">&quot;Command line is: %s\n&quot;</span>, (<span class="keyword">char</span> *)cmdline);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> __init <span class="title">early_init_dt_scan_nodes</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">int</span> rc;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Initialize &#123;size,address&#125;-cells info */</span></span><br><span class="line">	early_init_dt_scan_root();</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Retrieve various information from the /chosen node */</span></span><br><span class="line">	rc = early_init_dt_scan_chosen(boot_command_line);</span><br><span class="line">	<span class="keyword">if</span> (rc)</span><br><span class="line">		pr_warn(<span class="string">&quot;No chosen node found, continuing without\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Setup memory, calling early_init_dt_add_memory_arch */</span></span><br><span class="line">	early_init_dt_scan_memory();</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Handle linux,usable-memory-range property */</span></span><br><span class="line">	early_init_dt_check_for_usable_mem_range();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="截取-initcall_debug-设置">截取 initcall_debug 设置</h1>
+<h2 id="作用">作用</h2>
+<p>在文档 <code>Documentation/admin-guide/kernel-parameters.txt</code>
+中说明了 <code>initcall_debug</code> 命令参数的作用:</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">initcall_debug	[KNL] Trace initcalls as they are executed.  Useful</span><br><span class="line">		for working out where the kernel is dying during</span><br><span class="line">		startup.</span><br></pre></td></tr></table></figure>
+<p>简单来说就是可以展示初始化函数的执行。</p>
+<h2 id="定义">定义</h2>
+<p>在 <code>init/main.c</code> 中定义了标志位，
+<code>initcall_debug</code> :</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="keyword">bool</span> initcall_debug;</span><br><span class="line">core_param(initcall_debug, initcall_debug, <span class="keyword">bool</span>, <span class="number">0644</span>);</span><br></pre></td></tr></table></figure>
+<p>将上面的宏 <code>core_param</code> 展开为如下代码:</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">kernel_param</span> &#123;</span></span><br><span class="line">	<span class="keyword">const</span> <span class="keyword">char</span> *name;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">module</span> *<span class="title">mod</span>;</span></span><br><span class="line">	<span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">kernel_param_ops</span> *<span class="title">ops</span>;</span></span><br><span class="line">	<span class="keyword">const</span> u16 perm;</span><br><span class="line">	s8 level;</span><br><span class="line">	u8 flags;</span><br><span class="line">	<span class="class"><span class="keyword">union</span> &#123;</span></span><br><span class="line">		<span class="keyword">void</span> *arg;</span><br><span class="line">		<span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">kparam_string</span> *<span class="title">str</span>;</span></span><br><span class="line">		<span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">kparam_array</span> *<span class="title">arr</span>;</span></span><br><span class="line">	&#125;;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 对 bool 类型的操作</span></span><br><span class="line"><span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">kernel_param_ops</span> <span class="title">param_ops_bool</span> =</span> &#123;</span><br><span class="line">	.flags = KERNEL_PARAM_OPS_FL_NOARG,</span><br><span class="line">	.<span class="built_in">set</span> = param_set_bool,</span><br><span class="line">	.get = param_get_bool,</span><br><span class="line">&#125;;</span><br><span class="line">EXPORT_SYMBOL(param_ops_bool);</span><br><span class="line"></span><br><span class="line"><span class="comment">//此处指定了命令行的字符串</span></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">const</span> <span class="keyword">char</span> __param_str_initcall_debug[] = <span class="string">&quot;initcall_debug&quot;</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">kernel_param</span> __<span class="title">moduleparam_const</span> __<span class="title">param_initcall_debug</span>	</span></span><br><span class="line"><span class="class">__<span class="title">used</span> __<span class="title">section</span>(&quot;__<span class="title">param</span>&quot;)					</span></span><br><span class="line"><span class="class">__<span class="title">aligned</span>(__<span class="title">alignof__</span>(<span class="keyword">struct</span> <span class="title">kernel_param</span>))			</span></span><br><span class="line"><span class="class">=</span> </span><br><span class="line">&#123; </span><br><span class="line">	__param_str_initcall_debug, 		<span class="comment">// 名称 </span></span><br><span class="line">	THIS_MODULE, 						<span class="comment">// 所属模块</span></span><br><span class="line">	&amp;param_ops_bool,					<span class="comment">// 操作方法</span></span><br><span class="line">	VERIFY_OCTAL_PERMISSIONS(<span class="number">0644</span>), 	<span class="comment">// 权限</span></span><br><span class="line">	<span class="number">-1</span>, </span><br><span class="line">	<span class="number">0</span>, </span><br><span class="line">	&#123; &amp;initcall_debug &#125; 				<span class="comment">// 对象的地址</span></span><br><span class="line">&#125;;	</span><br></pre></td></tr></table></figure>
+<p>根据以上代码可以推断出: - 可以查看
+<code>/sys/module/kernel/parameters/initcall_debug</code>
+值的方式以判定此参数是否已经被设置 - 代码中一定有某处通过操作
+<code>__param</code> 段来获取内核 <code>param</code> 的各项设置</p>
+<h2 id="获取值">获取值</h2>
+<p>注意到此变量以及其对应的链接脚本:</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="keyword">extern</span> <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">kernel_param</span> __<span class="title">start___param</span>[], __<span class="title">stop___param</span>[];</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* Built-in module parameters. */</span>				\</span><br><span class="line">__param : AT(ADDR(__param) - LOAD_OFFSET) &#123;			\</span><br><span class="line">	__start___param = .;					\</span><br><span class="line">	KEEP(*(__param))					\</span><br><span class="line">	__stop___param = .;					\</span><br><span class="line">&#125;		</span><br></pre></td></tr></table></figure>
+<p>就可以知道，一定有代码来从 <code>__start___param</code> 到
+<code>__stop___param</code> 中取出 <code>kernel_param</code>
+依次解析变量。</p>
+<p>这就又回到了 <code>start_kernel</code> 函数中的一段:
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line">pr_notice(<span class="string">&quot;Kernel command line: %s\n&quot;</span>, saved_command_line);</span><br><span class="line"><span class="comment">/* parameters may set static keys */</span></span><br><span class="line">jump_label_init();</span><br><span class="line">parse_early_param();</span><br><span class="line">after_dashes = parse_args(<span class="string">&quot;Booting kernel&quot;</span>,</span><br><span class="line">			  static_command_line, __start___param,</span><br><span class="line">			  __stop___param - __start___param,</span><br><span class="line">			  <span class="number">-1</span>, <span class="number">-1</span>, <span class="literal">NULL</span>, &amp;unknown_bootoption);</span><br><span class="line">print_unknown_bootoptions();</span><br></pre></td></tr></table></figure></p>
+<ul>
+<li>也可以看出，通过启动时的 "Kernel command line:"
+字符串也可以查看命令设置</li>
+</ul>
+<p>也一定会有代码，将这些变量加入到 sysfs 中：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * param_sysfs_builtin - add sysfs parameters for built-in modules</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Add module_parameters to sysfs for &quot;modules&quot; built into the kernel.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * The &quot;module&quot; name (KBUILD_MODNAME) is stored before a dot, the</span></span><br><span class="line"><span class="comment"> * &quot;parameter&quot; name is stored behind a dot in kernel_param-&gt;name. So,</span></span><br><span class="line"><span class="comment"> * extract the &quot;module&quot; name for all built-in kernel_param-eters,</span></span><br><span class="line"><span class="comment"> * and for all who have the same, call kernel_add_sysfs_param.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> __init <span class="title">param_sysfs_builtin</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">kernel_param</span> *<span class="title">kp</span>;</span></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">int</span> name_len;</span><br><span class="line">	<span class="keyword">char</span> modname[MODULE_NAME_LEN];</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> (kp = __start___param; kp &lt; __stop___param; kp++) &#123;</span><br><span class="line">		<span class="keyword">char</span> *dot;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (kp-&gt;perm == <span class="number">0</span>)</span><br><span class="line">			<span class="keyword">continue</span>;</span><br><span class="line"></span><br><span class="line">		dot = <span class="built_in">strchr</span>(kp-&gt;name, <span class="string">&#x27;.&#x27;</span>);</span><br><span class="line">		<span class="keyword">if</span> (!dot) &#123;</span><br><span class="line">			<span class="comment">/* This happens for core_param() */</span></span><br><span class="line">			<span class="built_in">strcpy</span>(modname, <span class="string">&quot;kernel&quot;</span>);</span><br><span class="line">			name_len = <span class="number">0</span>;</span><br><span class="line">		&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">			name_len = dot - kp-&gt;name + <span class="number">1</span>;</span><br><span class="line">			strlcpy(modname, kp-&gt;name, name_len);</span><br><span class="line">		&#125;</span><br><span class="line">		kernel_add_sysfs_param(modname, kp, name_len);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="使用-initcall_debug">使用 initcall_debug</h1>
+<p>在进行初始化执行之前会有对变量 <code>initcall_debug</code>
+的判断:</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> __init_or_module <span class="keyword">void</span></span></span><br><span class="line"><span class="function"><span class="title">trace_initcall_start_cb</span><span class="params">(<span class="keyword">void</span> *data, <span class="keyword">initcall_t</span> fn)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">ktime_t</span> *calltime = data;</span><br><span class="line"></span><br><span class="line">	printk(KERN_DEBUG <span class="string">&quot;calling  %pS @ %i\n&quot;</span>, fn, task_pid_nr(current));</span><br><span class="line">	*calltime = ktime_get();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> __init_or_module <span class="keyword">void</span></span></span><br><span class="line"><span class="function"><span class="title">trace_initcall_finish_cb</span><span class="params">(<span class="keyword">void</span> *data, <span class="keyword">initcall_t</span> fn, <span class="keyword">int</span> ret)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">ktime_t</span> rettime, *calltime = data;</span><br><span class="line"></span><br><span class="line">	rettime = ktime_get();</span><br><span class="line">	printk(KERN_DEBUG <span class="string">&quot;initcall %pS returned %d after %lld usecs\n&quot;</span>,</span><br><span class="line">		 fn, ret, (<span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">long</span>)ktime_us_delta(rettime, *calltime));</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">do_trace_initcall_start</span><span class="params">(<span class="keyword">initcall_t</span> fn)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">if</span> (!initcall_debug)</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	trace_initcall_start_cb(&amp;initcall_calltime, fn);</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">do_trace_initcall_finish</span><span class="params">(<span class="keyword">initcall_t</span> fn, <span class="keyword">int</span> ret)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">if</span> (!initcall_debug)</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	trace_initcall_finish_cb(&amp;initcall_calltime, fn, ret);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> __init_or_module <span class="title">do_one_initcall</span><span class="params">(<span class="keyword">initcall_t</span> fn)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">int</span> count = preempt_count();</span><br><span class="line">	<span class="keyword">char</span> msgbuf[<span class="number">64</span>];</span><br><span class="line">	<span class="keyword">int</span> ret;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (initcall_blacklisted(fn))</span><br><span class="line">		<span class="keyword">return</span> -EPERM;</span><br><span class="line"></span><br><span class="line">	do_trace_initcall_start(fn);</span><br><span class="line">	ret = fn();</span><br><span class="line">	do_trace_initcall_finish(fn, ret);</span><br><span class="line"></span><br><span class="line">	msgbuf[<span class="number">0</span>] = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (preempt_count() != count) &#123;</span><br><span class="line">		<span class="built_in">sprintf</span>(msgbuf, <span class="string">&quot;preemption imbalance &quot;</span>);</span><br><span class="line">		preempt_count_set(count);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (irqs_disabled()) &#123;</span><br><span class="line">		strlcat(msgbuf, <span class="string">&quot;disabled interrupts &quot;</span>, <span class="keyword">sizeof</span>(msgbuf));</span><br><span class="line">		local_irq_enable();</span><br><span class="line">	&#125;</span><br><span class="line">	WARN(msgbuf[<span class="number">0</span>], <span class="string">&quot;initcall %pS returned with %s\n&quot;</span>, fn, msgbuf);</span><br><span class="line"></span><br><span class="line">	add_latent_entropy();</span><br><span class="line">	<span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当 <code>initcall_debug</code> 为 <code>true</code>
+时则会打印函数名以及其执行的时间。</p>
+<p>需要注意的是: <strong>此处使用的printk 的等级是
+KERN_DEBUG,所以为了能够打印信息通常是 "loglevel=8 initcall_debug"
+结合使用!</strong></p>
+]]></content>
+      <categories>
+        <category>linux</category>
+        <category>kernel</category>
+        <category>debug</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>使用Grabserial来检测代码运行时间</title>
+    <url>/2023/08/10/linux_kernel_debug_grabserial_tutorial/</url>
+    <content><![CDATA[<p><a href="https://elinux.org/Grabserial">Grabserial</a>
+是一个串口监视工具，其最大的特色在于：可以监视每一行串口输出的时间和相对上一行串口输出的时间差。</p>
+<p>基础此功能，我们可以推导出使用此工具可以完成以下调试工作：</p>
+<ol type="1">
+<li>检查系统启动的完整时间（Linux，RT-thread...）</li>
+<li>检查特定一段代码的运行时间(比如调试应用程序的算法效率)</li>
+</ol>
+<blockquote>
+<p><code>minicom</code> 使用 <code>CTAL + a + n</code>
+也可以打开时间戳模式，但是最多只能精确到 1ms 并且没有时间差的显示</p>
+</blockquote>
+<span id="more"></span>
+<h1 id="安装">安装</h1>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 拷贝库</span></span><br><span class="line">git clone https://github.com/tbird20d/grabserial</span><br><span class="line">cd grabserial</span><br><span class="line"><span class="meta">#</span><span class="bash"> 安装</span></span><br><span class="line">sudo python setup.py install</span><br></pre></td></tr></table></figure>
+<h1 id="使用">使用</h1>
+<p>grabserial 的默认配置为：</p>
+<ul>
+<li>端口号： /dev/ttyS0</li>
+<li>波特率： 115200</li>
+<li>8位数据位且无停止位</li>
+</ul>
+<p>所以一般情况下在传输协议上的设置只需要设置端口号即可。</p>
+<p>其输出格式为： [绝对时间][相对上一行的时间] 串口内容</p>
+<p><strong>以下命令都比较长，建议常用的命令可以使用
+alias命令封装一次。</strong></p>
+<h2 id="持续捕捉输出">持续捕捉输出</h2>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> -v 显示详细信息</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> -d 设置端口</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> -t 显示每一行的时间</span></span><br><span class="line">sudo grabserial -v -d /dev/ttyUSB0 -t</span><br></pre></td></tr></table></figure>
+<p>使用上面的命令 grabserial 将会一直捕捉标准输出，使用
+<code>CTRL+C</code> 退出。</p>
+<h2 id="捕捉系统的启动时间">捕捉系统的启动时间</h2>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> -v 显示详细信息</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> -d 设置端口</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> -t 显示每一行的时间</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> -e 持续捕捉多少秒</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> -m 当匹配到指定字符串后，清零时间重新计时(字符串使用正则表达式)</span></span><br><span class="line">sudo grabserial -v -d /dev/ttyUSB0 -e 30 -t -m &quot;^Linux version.*&quot;</span><br></pre></td></tr></table></figure>
+<h2 id="捕捉两段特定输出之间的时间差">捕捉两段特定输出之间的时间差</h2>
+<p><strong>注意：</strong> 此命令需要字符串输出在同一行</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> -v 显示详细信息</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> -d 设置端口</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> -t 显示每一行的时间</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> -i 一行中的停止字符串(字符串使用正则表达式)</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 此行命令用户捕捉Linux内核的解压缩时间</span></span><br><span class="line">sudo grabserial -v -d /dev/ttyUSB0 -e 30 -t -m &quot;Uncompressing Linux&quot; -i &quot;done,&quot;</span><br></pre></td></tr></table></figure>
+<h1 id="关于网络数据的时间截取">关于网络数据的时间截取</h1>
+<p>有的时候需要截取通过网络发送过来信息的时间戳，对此有两个解决方案：</p>
+<ol type="1">
+<li>通过分析 grabserial 的代码，为其添加连接 socket 的代码</li>
+<li>通过 secure CRT 的日志时间戳功能粗略的计算</li>
+</ol>
+<ul>
+<li>此方法无法显示时间戳的相对值</li>
+</ul>
+<h2 id="通过secure-crt-来截取">通过secure CRT 来截取</h2>
+<p>在 <code>Session Optons -&gt; Log File</code> 中依次做如下设置：</p>
+<ul>
+<li>在 <code>Log file name</code> 来设置输出日志文件名</li>
+<li>选中 <code>Start log upon connect</code> 选项</li>
+<li>在 <code>On each line:</code> 条目中输入 "%h:%m:%s(%t):" (去掉引号)
+以显示时:分:秒:(毫秒)</li>
+<li>然后重新连接服务器即可</li>
+</ul>
+<p>关于时间戳可以用的格式如下(更多的信息需查看其help文件)：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">%</span><span class="bash">H - hostname</span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">%</span><span class="bash">S - session name</span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">%</span><span class="bash">Y - four-digit year</span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">%</span><span class="bash">y - two-digit year</span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">%</span><span class="bash">M - two-digit month</span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">%</span><span class="bash">D - two-digit day of the month</span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">%</span><span class="bash">P - port</span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">%</span><span class="bash">h - two-digit hour</span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">%</span><span class="bash">m - two-digit minute</span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">%</span><span class="bash">s - two-digit seconds</span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">%</span><span class="bash">t - three-digit milliseconds</span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">%</span><span class="bash">% - percent (%)</span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">%</span><span class="bash">envvar% - environment variable</span></span><br></pre></td></tr></table></figure>
+]]></content>
+      <categories>
+        <category>linux</category>
+        <category>kernel</category>
+        <category>debug</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Linux内核调试之Oops</title>
+    <url>/2023/08/08/linux_kernel_debug_oops/</url>
+    <content><![CDATA[<ul>
+<li>kernel version : v6.1.x (lts)</li>
+</ul>
+<p>总结在Linux内核下使用 Oops 输出调试内核。</p>
+<span id="more"></span>
+<h1 id="输出分析">输出分析</h1>
+<p>当内核出现异常时，内核会抛出 Oops
+信息，这些信息会被输出到控制台。</p>
+<p>在Oops 的输出信息中, 需要注意的一些信息是:</p>
+<ul>
+<li>Oops 最开始的输出信息中已经大致说明了异常的原因</li>
+<li><code>PC is at [function_name] + [address]</code>
+：此行指出了出错的函数，以及执行语句在函数中的偏移地址。
+然后可以通过命令得出反汇编代码, 找出C代码位置</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">arm-linux-gnueabihf-objdump -d -S file.o</span><br></pre></td></tr></table></figure>
+<ul>
+<li>寄存器列表：当出错的函数有参数时,
+可以通过寄存器列表来查看输入的参数是否正确(如果参数过多,
+还要查看栈信息)</li>
+<li>函数调用顺序：通过查看栈信息,
+可以知道此函数是如何被以层层调用进来的</li>
+</ul>
+<h1 id="oops-与-panic">Oops 与 Panic</h1>
+<p>Panic 属于 Oops
+的一种，内核发现异常会抛出Oops，但错误不严重的情况下内核还会继续运行。如果严重则会抛出
+Panic，此时内核便会停止运行。</p>
+<p>但为了便于调试，一般需要做如下操作：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">echo 1 &gt; /proc/sys/kernel/panic_on_oops</span><br></pre></td></tr></table></figure>
+<p>这是为了内核无论是出现 Oops 还是 Panic
+都要停止内核运行，以便正确并及时的捕捉错误的位置。</p>
+<h1 id="显示使用-bug_on-和-warn_on">显示使用 BUG_ON() 和 WARN_ON()</h1>
+<p>BUG_ON() 和 WARN_ON() 是内核提供的警告宏。</p>
+<p>首先使能 <code>CONFIG_BUG</code> 宏:</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">General setup -&gt; Configure standard kernel features(expert users) -&gt; BUG() support</span><br></pre></td></tr></table></figure>
+<p>其中BUG_ON()成立时主动抛出 Oops 的宏，WARN_ON()
+成立时抛出栈调用。我们在必要的位置可以加上者两个宏,以达到：</p>
+<ul>
+<li>判断出了错误</li>
+<li>查看错误时的参数调用</li>
+<li>查看函数调用栈</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">// path of file: /include/asm-generic/bug.h</span></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Don&#x27;t use BUG() or BUG_ON() unless there&#x27;s really no way out; one</span></span><br><span class="line"><span class="comment"> * example might be detecting data structure corruption in the middle</span></span><br><span class="line"><span class="comment"> * of an operation that can&#x27;t be backed out of.  If the (sub)system</span></span><br><span class="line"><span class="comment"> * can somehow continue operating, perhaps with reduced functionality,</span></span><br><span class="line"><span class="comment"> * it&#x27;s probably not BUG-worthy.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * If you&#x27;re tempted to BUG(), think again:  is completely giving up</span></span><br><span class="line"><span class="comment"> * really the *only* solution?  There are usually better options, where</span></span><br><span class="line"><span class="comment"> * users don&#x27;t need to reboot ASAP and can mostly shut down cleanly.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> HAVE_ARCH_BUG</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> BUG() do &#123; \</span></span><br><span class="line"><span class="meta">	printk(<span class="meta-string">&quot;BUG: failure at %s:%d/%s()!\n&quot;</span>, __FILE__, __LINE__, __func__); \</span></span><br><span class="line"><span class="meta">	barrier_before_unreachable(); \</span></span><br><span class="line"><span class="meta">	panic(<span class="meta-string">&quot;BUG!&quot;</span>); \</span></span><br><span class="line"><span class="meta">&#125; while (0)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> HAVE_ARCH_BUG_ON</span></span><br><span class="line"><span class="comment">// 当 condition 为真时，才会触发 BUG()</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> BUG_ON(condition) do &#123; <span class="meta-keyword">if</span> (unlikely(condition)) BUG(); &#125; while (0)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> WARN_ON</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> WARN_ON(condition) (&#123;						\</span></span><br><span class="line"><span class="meta">	int __ret_warn_on = !!(condition);				\</span></span><br><span class="line"><span class="meta">	<span class="meta-keyword">if</span> (unlikely(__ret_warn_on))					\</span></span><br><span class="line"><span class="meta">		__WARN();						\</span></span><br><span class="line"><span class="meta">	unlikely(__ret_warn_on);					\</span></span><br><span class="line"><span class="meta">&#125;)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br></pre></td></tr></table></figure>
+]]></content>
+      <categories>
+        <category>linux</category>
+        <category>kernel</category>
+        <category>debug</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>使用 printk 调试内核</title>
+    <url>/2023/07/31/linux_kernel_debug_printk/</url>
+    <content><![CDATA[<ul>
+<li>kernel version : v6.1.x (lts)</li>
+</ul>
+<p>总结在 Linux 内核下使用串口打印调试信息。</p>
+<span id="more"></span>
+<h1 id="printk-基本使用">printk 基本使用</h1>
+<p><code>printk()</code>
+函数用于打印内核的调试信息，同时会将这些信息输出到一个缓冲区中。</p>
+<p>可以通过 <code>dmesg</code> 命令查看内核打印缓冲区, 当使用
+<code>dmesg -c</code> 则不仅会显示 <code>__log_buf</code>
+还会清除该缓冲区的内容。</p>
+<p>也可以通过 <code>cat /proc/kmsg</code> 命令来一直显示内核信息。</p>
+<h2 id="信息缓冲区大小设置">信息缓冲区大小设置</h2>
+<p>信息缓冲区的填写是一个环形队列的形式，所以如果消息太多以前的消息就会被覆盖掉，有的时候需要设置更大的缓冲区显示更多的信息。</p>
+<p>信息缓冲区代码位于 <code>kernel/printk/printk.c</code> 中：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __LOG_BUF_LEN (1 &lt;&lt; CONFIG_LOG_BUF_SHIFT)</span></span><br><span class="line"><span class="comment">// 限制最大的日志大小是 2G</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LOG_BUF_LEN_MAX (u32)(1 &lt;&lt; 31)</span></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">char</span> __log_buf[__LOG_BUF_LEN] __aligned(LOG_ALIGN);</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">char</span> *log_buf = __log_buf;</span><br><span class="line"><span class="keyword">static</span> u32 log_buf_len = __LOG_BUF_LEN;</span><br></pre></td></tr></table></figure>
+<p>可以看出缓存的大小是 <code>2 ^ CONFIG_LOG_BUF_SHIFT</code> 个字节，
+<code>CONFIG_LOG_BUF_SHIFT</code> 的设置是由 <code>init/Kconfig</code>
+来完成的，在Menuconfig中的路径为：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">General setup -&gt; Kernel log buffer size(16 =&gt; 64KB, 17 =&gt; 128kB)</span><br></pre></td></tr></table></figure>
+<p>但如果在启动参数中使用<code>log_buf_len</code>，则以启动参数中的值为准。</p>
+<p>如果存在多核对称处理器（SMP），那么还会根据<code>CONFIG_LOG_CPU_MAX_BUF_SHIFT</code>
+来配置日志缓存的大小（参考 <code>log_buf_add_cpu()</code> 函数）。</p>
+<blockquote>
+<p>由于上面的缓存是 static 形式的，所以如果 SMP
+新增日志缓存生效，则意味着这段内存就不会被使用（浪费了）。</p>
+</blockquote>
+<h2 id="消息级别">消息级别</h2>
+<p>printk()定义了8个消息级别(0~7)，<strong>数值越低，级别越高</strong>
+。</p>
+<p>在实际使用中，会有默认的消息级别打印，
+<strong>只有低于消息级别的消息才会打印</strong> 。</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 位于 /include/linux/kern_levels.h</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_SOH   <span class="meta-string">&quot;\001&quot;</span>  <span class="comment">/*ASCII Start of header*/</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_SOH_ASCII <span class="meta-string">&#x27;\001&#x27;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_EMERG   KERN_SOH <span class="meta-string">&quot;0&quot;</span> <span class="comment">//紧急事件,一般是系统崩溃之前提示的消息</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_ALERT   KERN_SOH <span class="meta-string">&quot;1&quot;</span> <span class="comment">//必须立即采取行动</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_CRIT    KERN_SOH <span class="meta-string">&quot;2&quot;</span> <span class="comment">//临界状态,通常涉及严重的硬件或软件操作失败</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_ERR     KERN_SOH <span class="meta-string">&quot;3&quot;</span> <span class="comment">//用于报告错误状态,设备驱动代码经常使用它报告硬件问题</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_WARNING KERN_SOH <span class="meta-string">&quot;4&quot;</span> <span class="comment">//对可能出现问题的情况进行警告,不会对系统造成严重的问题</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_NOTICE  KERN_SOH <span class="meta-string">&quot;5&quot;</span> <span class="comment">//有必要进行提示的正常情形,许多与安全攸关的情况用这个级别</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_INFO    KERN_SOH <span class="meta-string">&quot;6&quot;</span> <span class="comment">//提示性的信息,驱动程序使用它打印出一般信息</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_DEBUG   KERN_SOH <span class="meta-string">&quot;7&quot;</span> <span class="comment">//调试信息</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KERN_DEFAULT  <span class="meta-string">&quot;&quot;</span> <span class="comment">//默认级别</span></span></span><br></pre></td></tr></table></figure>
+<h2 id="修改消息级别的方法">修改消息级别的方法</h2>
+<h3 id="在menuconfig中修改">在menuconfig中修改</h3>
+<p>对应的路径为：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">Kernel hacking -&gt; printk and dmesg options -&gt; Default message log level(1-7)</span><br></pre></td></tr></table></figure>
+<h3 id="在系统中修改-prink-文件">在系统中修改 prink 文件:</h3>
+<p>通过 <code>/proc/sys/kernel/printk</code> 文件可以调节 printk()
+的输出等级,该文件的4个数值表示为：</p>
+<ol type="1">
+<li>控制台的日志级别：当前的打印级别，优先级高于该值（值越小，优先级越高）的消息将被打印至控制台</li>
+<li>默认的消息日志级别：将用该优先级来打印没有优先级前缀的消息,也就是直接写
+<code>printk("xxx")</code> 而不带打印级别的情况下，会使用该打印级别</li>
+<li>最低的控制台日志级别：控制台日志级别可被设置的最小值（一般是1）</li>
+<li>默认的控制台日志级别：控制台日志级别的默认值</li>
+</ol>
+<p>使用如下命令打印所有信息:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">shell</span><br><span class="line">#echo 8 &gt; /proc/sys/kernel/printk</span><br></pre></td></tr></table></figure>
+<p><strong>注意</strong>:</p>
+<p>此文件并不控制内核消息进入 <code>__log_buf</code>
+的门槛，因此无论消息级别是多少,都会进入 <code>__log_buf</code>
+中，但是最终只有高于当前打印级别的内核消息才会从控制台打印。</p>
+<h3 id="修改启动参数">修改启动参数</h3>
+<p>通过在 <code>bootargs</code> 中设置 <code>ignore_loglevel</code>
+来忽略打印级别。 在系统启动后，也可以通过写
+<code>/sys/module/printk/parameters/ignore_loglevel</code>
+文件来动态设置是否忽略打印级别。</p>
+<h2 id="带时间戳的输出">带时间戳的输出</h2>
+<p>在 <code>menuconfig</code> 中使能 <code>printk</code>
+带时间戳输出，有助于判断代码执行时间。</p>
+<p>路径:</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">Kernel hacking -&gt; printk and dmesg options -&gt; Show timing information on printks</span><br></pre></td></tr></table></figure>
+<h1 id="调试信息的输出">调试信息的输出</h1>
+<h2 id="pr_xxx-位于-includelinuxprintk.h">pr_xxx(): 位于
+<code>/include/linux/printk.h</code></h2>
+<p>通常使用封装了 <code>printk()</code> 的宏，来显示调试信息。比如
+<code>pr_debug()</code>，<code>pr_info()</code>。 使用
+<code>pr_xxx()</code> API的好处是可以在文件最开头通过
+<code>pr_fmt()</code> 定义一个打印格式。</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">//打印消息头带有 &quot;[driver] watchdog:&quot;前缀</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> pr_fmt(fmt) <span class="meta-string">&quot;[driver] watchdog:&quot;</span> fmt</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 对于模块的话，可以使用模块名称的宏</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> pr_fmt(fmt) KBUILD_MODNAME <span class="meta-string">&quot;: &quot;</span> fmt</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 如果要打印函数名的话，还可以这样：</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> pr_fmt(fmt) <span class="meta-string">&quot;%s:%s: &quot;</span> fmt, KBUILD_MODNAME, __func__</span></span><br></pre></td></tr></table></figure>
+<p>定义打印格式后，其实就是在 <code>printk</code> 前加入该宏：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * pr_info - Print an info-level message</span></span><br><span class="line"><span class="comment"> * @fmt: format string</span></span><br><span class="line"><span class="comment"> * @...: arguments for the format string</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * This macro expands to a printk with KERN_INFO loglevel. It uses pr_fmt() to</span></span><br><span class="line"><span class="comment"> * generate the format string.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> pr_info(fmt, ...) \</span></span><br><span class="line"><span class="meta">	printk(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)</span></span><br></pre></td></tr></table></figure>
+<h2 id="dev_xxx-位于-includelinuxdev_printk.h">dev_xxx(): 位于
+<code>/include/linux/dev_printk.h</code></h2>
+<p>使用<code>dev_xxx()</code>
+打印的时候，设备名称会被自动打印到打印消息的前面。</p>
+<h2 id="使用规则">使用规则</h2>
+<ul>
+<li>能使用 <code>dev_xxx()</code>
+的时候就尽量使用它，因为它可以打印出设备的名称。
+<ul>
+<li>这在一个驱动对应多个设备，而某个设备出问题的情况下比较好排查。</li>
+</ul></li>
+<li>在不能使用 <code>dev_xxx()</code> 的场合才使用 <code>pr_xxx()</code>
+<ul>
+<li>为了明确信息是由 <code>pr_xxx()</code>
+输出的信息，建议在信息头中加上标识符。
+<ul>
+<li>驱动中调试加上 <code>[driver]</code></li>
+<li>内存中调试加上 <code>[mem]</code></li>
+</ul></li>
+</ul></li>
+</ul>
+<h2 id="默认调试信息输出">默认调试信息输出</h2>
+<p>内核默认有很多使用 <code>pr_debug()</code>/<code>dev_dbg()</code>
+的输出,但需要满足如下条件:</p>
+<ol type="1">
+<li>开启了 DEBUG 宏</li>
+<li>kernel printk 的默认日志级别大于7</li>
+</ol>
+<h3 id="开启debug">开启DEBUG</h3>
+<ul>
+<li>方法1：在要输出信息的文件的<strong>最开头</strong>加上宏定义
+<code>#define DEBUG</code></li>
+<li>方法2：在编译内核的时候传入参数 <code>KCFLAGS=-DDEBUG</code>
+打开全局输出（不推荐，相关的输出实在是太多了）</li>
+</ul>
+<h1 id="早期信息的打印">早期信息的打印</h1>
+<h2 id="使能">使能</h2>
+<p>为了能够在控制台驱动初始化之前就打印信息,需要在<code>menuconfig</code>中设置:</p>
+<ul>
+<li>选择 <code>Kernel low-level debug</code></li>
+</ul>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line">Kernel hacking &gt; arm Debugging -&gt; Kernel low-<span class="function">level debugging <span class="title">functions</span><span class="params">(read help!)</span></span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>选择 Early printk</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line">Kernel hacking -&gt; Early printk</span><br></pre></td></tr></table></figure>
+<ul>
+<li>在 <code>bootargs</code> 中添加 <code>earlyprintk</code> 字符串</li>
+</ul>
+<h2 id="使用">使用</h2>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;asm/early_printk.h&gt;</span></span></span><br><span class="line"></span><br><span class="line">early_printk(<span class="string">&quot;Hello world\n&quot;</span>);</span><br></pre></td></tr></table></figure>
+<h1 id="与用户空间顺序输出">与用户空间顺序输出</h1>
+<p>在精简的嵌入式系统中，当用户空间在使用 <code>printf</code>
+的同时内核在使用 <code>printk</code>
+时会造成两个输出相互干扰，与造成竞态的效果一样。</p>
+<p>内核为用户空间提供了设备文件 <code>/dev/ttyprintk</code>
+以让用户空间的log可以在内核中打印，打印的Log前会加上 <code>[U]</code>
+标识， 这样便不会造成二者干扰了。</p>
+<p>在嵌入式内核中，可能没有 <code>/dev/ttyprintk</code> 设备，可以使用
+<code>/dev/kmsg</code> 来达到目的。</p>
+<p>通过 <code>/dev/kmsg</code>
+没有前缀输出，但是我们可以自己加入前缀以达到同样的效果。</p>
+<p>如下用户空间代码:</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdarg.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/stat.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">int</span> fd = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">KernelWrite</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *fmt, ...)</span> </span>&#123;</span><br><span class="line">	va_list ap;</span><br><span class="line">	<span class="keyword">char</span> buf[<span class="number">256</span>];</span><br><span class="line">	<span class="keyword">int</span> n;</span><br><span class="line"></span><br><span class="line">	va_start(ap, fmt);</span><br><span class="line">	n = vsnprintf(buf, <span class="number">256</span>, fmt, ap);</span><br><span class="line">	va_end(ap);</span><br><span class="line">	write(fd, buf, n);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[])</span> </span>&#123;</span><br><span class="line">    fd = open(<span class="string">&quot;/dev/ttyprintk&quot;</span>, O_WRONLY);</span><br><span class="line">	<span class="keyword">if</span> (fd &lt; <span class="number">0</span>) &#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;open file failed!\n&quot;</span>);</span><br><span class="line">		<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	KernelWrite(<span class="string">&quot;The ttyprintk index is %d\n&quot;</span>, fd);</span><br><span class="line"></span><br><span class="line">	close(fd);</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>通过 <code>dmesg</code> 查看，输出为：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">[U] The ttyprintk index is 3</span><br></pre></td></tr></table></figure>
+]]></content>
+      <categories>
+        <category>linux</category>
+        <category>kernel</category>
+        <category>debug</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+      </tags>
+  </entry>
 </search>
