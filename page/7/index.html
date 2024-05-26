@@ -215,7 +215,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2022/04/15/effective_cpp_condestruct_virtual/">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2022/05/09/effective_cpp_overload_reference/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
@@ -229,7 +229,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2022/04/15/effective_cpp_condestruct_virtual/" class="post-title-link" itemprop="url">Effective  C++ ：构造，析构和继承</a>
+            <a href="/2022/05/09/effective_cpp_overload_reference/" class="post-title-link" itemprop="url">Effective C++ ：不要创建通用引用的重载函数</a>
         </h2>
 
         <div class="post-meta">
@@ -239,7 +239,7 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2022-04-15 00:00:00" itemprop="dateCreated datePublished" datetime="2022-04-15T00:00:00+08:00">2022-04-15</time>
+              <time title="创建时间：2022-05-09 00:00:00" itemprop="dateCreated datePublished" datetime="2022-05-09T00:00:00+08:00">2022-05-09</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -261,7 +261,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>458</span>
+              <span>601</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -280,13 +280,10 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <ol type="1">
-<li>构造和析构函数中调用虚函数，由于其派生类还未被构造和已被析构，所以得到的结果不会是预期的。</li>
-<li>重载父类虚函数，需要加上<code>override</code>关键字</li>
-</ol>
+          <p>创建通用引用的重载函数，但很多时候还是会调用到通用引用函数，这会让人很迷惑。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2022/04/15/effective_cpp_condestruct_virtual/#more" rel="contents">
+              <a class="btn" href="/2022/05/09/effective_cpp_overload_reference/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -310,7 +307,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2022/04/15/effective_cpp_operator=/">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2022/05/06/effective_cpp_reference/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
@@ -324,7 +321,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2022/04/15/effective_cpp_operator=/" class="post-title-link" itemprop="url">Effective  C++ ：赋值重载的注意点</a>
+            <a href="/2022/05/06/effective_cpp_reference/" class="post-title-link" itemprop="url">Effective C++ ：区分通用引用和右值引用</a>
         </h2>
 
         <div class="post-meta">
@@ -334,7 +331,7 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2022-04-15 00:00:00" itemprop="dateCreated datePublished" datetime="2022-04-15T00:00:00+08:00">2022-04-15</time>
+              <time title="创建时间：2022-05-06 00:00:00" itemprop="dateCreated datePublished" datetime="2022-05-06T00:00:00+08:00">2022-05-06</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -356,7 +353,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>497</span>
+              <span>438</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -375,10 +372,11 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>复制重载涉及到拷贝赋值和移动赋值两种情况，有些点需要注意一下。</p>
+          <p>声明一个右值引用，使用<code>T&amp;&amp;</code>这种格式，但是这玩意并不是表面上看到的那么简单。
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">f</span><span class="params">(Widget&amp;&amp; param)</span></span>;             <span class="comment">// 右值引用</span></span><br><span class="line">Widget&amp;&amp; var1 = <span class="built_in">Widget</span>();           <span class="comment">// 右值引用</span></span><br><span class="line"><span class="keyword">auto</span>&amp;&amp; var2 = var1;                 <span class="comment">// 通用引用</span></span><br><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">f</span><span class="params">(std::vector&lt;T&gt;&amp;&amp; param)</span></span>;     <span class="comment">// 右值引用</span></span><br><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">f</span><span class="params">(T&amp;&amp; param)</span></span>;                  <span class="comment">// 通用引用</span></span><br></pre></td></tr></table></figure>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2022/04/15/effective_cpp_operator=/#more" rel="contents">
+              <a class="btn" href="/2022/05/06/effective_cpp_reference/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -402,7 +400,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2022/04/14/effective_cpp_delete_func/">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2022/05/06/effective_cpp_use_move_forward/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
@@ -416,7 +414,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2022/04/14/effective_cpp_delete_func/" class="post-title-link" itemprop="url">Effective C++ ：delete 优于私有未定义行为</a>
+            <a href="/2022/05/06/effective_cpp_use_move_forward/" class="post-title-link" itemprop="url">Effective C++ ：对右值引用使用 std::move，对通用引用使用 std::forward</a>
         </h2>
 
         <div class="post-meta">
@@ -426,7 +424,7 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2022-04-14 00:00:00" itemprop="dateCreated datePublished" datetime="2022-04-14T00:00:00+08:00">2022-04-14</time>
+              <time title="创建时间：2022-05-06 00:00:00" itemprop="dateCreated datePublished" datetime="2022-05-06T00:00:00+08:00">2022-05-06</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -448,7 +446,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>603</span>
+              <span>921</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -467,13 +465,13 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>如果不想让用户使用某个函数，那么有以下 3 种做法： 1.
-使用<code>delete</code>限定 2. 将该函数设定为私有 3.
-直接不定义该函数</p>
-<p>最为合适的做法，就是使用<code>delete</code>限定。
+          <p>当形参被声明为右值引用时，意味着传入的实参需要是右值引用，并且该参数是可移动的。既然目的如此明确，那么使用<code>std::move</code>是正确的选择：
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Widget</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">  <span class="built_in">Widget</span>(Widget&amp;&amp; rhs)               <span class="comment">// rhs is rvalue reference</span></span><br><span class="line">  : <span class="built_in">name</span>(std::<span class="built_in">move</span>(rhs.name)),</span><br><span class="line">    <span class="built_in">p</span>(std::<span class="built_in">move</span>(rhs.p))</span><br><span class="line">    &#123; … &#125;</span><br><span class="line">  …</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">  std::string name;</span><br><span class="line">  std::shared_ptr&lt;SomeDataStructure&gt; p;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+但如果形参被声明为通用引用时，则意味着实参有可能是右值引用，该参数有可能可被移动。那么对应的使用<code>std::forward</code>是正确的选择：
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Widget</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">  <span class="function"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span></span><br><span class="line"><span class="function">  <span class="keyword">void</span> <span class="title">setName</span><span class="params">(T&amp;&amp; newName)</span>               <span class="comment">// newName is</span></span></span><br><span class="line"><span class="function">  </span>&#123; name = std::forward&lt;T&gt;(newName); &#125;    <span class="comment">// universal reference</span></span><br><span class="line">  …</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2022/04/14/effective_cpp_delete_func/#more" rel="contents">
+              <a class="btn" href="/2022/05/06/effective_cpp_use_move_forward/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -497,7 +495,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2022/04/14/effective_cpp_excption/">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2022/05/05/effective_cpp_move_forward/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
@@ -511,7 +509,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2022/04/14/effective_cpp_excption/" class="post-title-link" itemprop="url">Effective  C++ ：异常的注意点</a>
+            <a href="/2022/05/05/effective_cpp_move_forward/" class="post-title-link" itemprop="url">Effective C++ ：理解 std::move 和 std::forward</a>
         </h2>
 
         <div class="post-meta">
@@ -521,7 +519,7 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2022-04-14 00:00:00" itemprop="dateCreated datePublished" datetime="2022-04-14T00:00:00+08:00">2022-04-14</time>
+              <time title="创建时间：2022-05-05 00:00:00" itemprop="dateCreated datePublished" datetime="2022-05-05T00:00:00+08:00">2022-05-05</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -543,7 +541,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>462</span>
+              <span>1.1k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -562,13 +560,12 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>个人认为，异常会增加程序员的负担，还是像 C
-那样使用返回错误、断言这些方式来捕捉错误比较简洁。 &gt; google
-编码规范<a
-target="_blank" rel="noopener" href="https://zh-google-styleguide.readthedocs.io/en/latest/google-cpp-styleguide/others/#exceptions">不建议使用异常</a>。</p>
+          <p>需要时刻牢记的是：函数的形参都是左值，即使它的类型是右值引用，它也是左值，因为它可以被取地址。</p>
+<p>主要是区分什么是右值，满足以下二者之一即可： 1. 临时对象 2.
+无法位于赋值符号右边的对象</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2022/04/14/effective_cpp_excption/#more" rel="contents">
+              <a class="btn" href="/2022/05/05/effective_cpp_move_forward/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -592,7 +589,7 @@ target="_blank" rel="noopener" href="https://zh-google-styleguide.readthedocs.io
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2022/04/14/effective_cpp_virtual/">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2022/05/04/effective_cpp_constexpr/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
@@ -606,7 +603,7 @@ target="_blank" rel="noopener" href="https://zh-google-styleguide.readthedocs.io
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2022/04/14/effective_cpp_virtual/" class="post-title-link" itemprop="url">Effective C++ ：为多态基类声明 virtual 析构函数</a>
+            <a href="/2022/05/04/effective_cpp_constexpr/" class="post-title-link" itemprop="url">Effective C++ ：尽可能的使用 constexpr</a>
         </h2>
 
         <div class="post-meta">
@@ -616,7 +613,7 @@ target="_blank" rel="noopener" href="https://zh-google-styleguide.readthedocs.io
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2022-04-14 00:00:00" itemprop="dateCreated datePublished" datetime="2022-04-14T00:00:00+08:00">2022-04-14</time>
+              <time title="创建时间：2022-05-04 00:00:00" itemprop="dateCreated datePublished" datetime="2022-05-04T00:00:00+08:00">2022-05-04</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -638,7 +635,7 @@ target="_blank" rel="noopener" href="https://zh-google-styleguide.readthedocs.io
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>205</span>
+              <span>396</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -657,11 +654,10 @@ target="_blank" rel="noopener" href="https://zh-google-styleguide.readthedocs.io
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>为保证多态析构的正确性，需要为<strong>基类</strong>的虚构函数加上<code>virtual</code>：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">BasicClass</span> &#123;</span></span><br><span class="line">    <span class="keyword">public</span>:</span><br><span class="line">        <span class="keyword">virtual</span> ~<span class="built_in">BasicClass</span>() &#123;</span><br><span class="line">            std::cout &lt;&lt; <span class="string">&quot;BasicClass destructor!\n&quot;</span>;</span><br><span class="line">        &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">DerivedClass</span>:</span> <span class="keyword">public</span> BasicClass &#123;</span><br><span class="line">    <span class="keyword">public</span>:</span><br><span class="line">        ~<span class="built_in">DerivedClass</span>() &#123;</span><br><span class="line">            std::cout &lt;&lt; <span class="string">&quot;DerivedClass destructor!\n&quot;</span>;</span><br><span class="line">        &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">BasicClass</span>* <span class="title">p_class</span> =</span> <span class="keyword">new</span> <span class="built_in">DerivedClass</span>();</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 如果  BasicClass 的析构函数没有 virtual 关键字</span></span><br><span class="line">	<span class="comment">// 那么执行 delete 后只会执行 BasicClass 的析构函数</span></span><br><span class="line">	<span class="comment">// 也就是说，只释放了基类内存，而派生类的内存没有被释放掉</span></span><br><span class="line">    <span class="keyword">delete</span> p_class;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          <p>使用<code>constexpr</code>以让编译器来检查该值是否是常量表达式，降低程序员负担。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2022/04/14/effective_cpp_virtual/#more" rel="contents">
+              <a class="btn" href="/2022/05/04/effective_cpp_constexpr/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -685,7 +681,7 @@ target="_blank" rel="noopener" href="https://zh-google-styleguide.readthedocs.io
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2022/04/13/effective_cpp_default_func/">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2022/05/04/effective_cpp_iterator/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
@@ -699,7 +695,7 @@ target="_blank" rel="noopener" href="https://zh-google-styleguide.readthedocs.io
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2022/04/13/effective_cpp_default_func/" class="post-title-link" itemprop="url">Effective  C++ ：认识编译器的默认生成函数</a>
+            <a href="/2022/05/04/effective_cpp_iterator/" class="post-title-link" itemprop="url">Effective C++ ：const iterators 优于 iterators</a>
         </h2>
 
         <div class="post-meta">
@@ -709,15 +705,8 @@ target="_blank" rel="noopener" href="https://zh-google-styleguide.readthedocs.io
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2022-04-13 00:00:00" itemprop="dateCreated datePublished" datetime="2022-04-13T00:00:00+08:00">2022-04-13</time>
+              <time title="创建时间：2022-05-04 00:00:00" itemprop="dateCreated datePublished" datetime="2022-05-04T00:00:00+08:00">2022-05-04</time>
             </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-04-14 00:00:00" itemprop="dateModified" datetime="2022-04-14T00:00:00+08:00">2022-04-14</time>
-              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -738,7 +727,7 @@ target="_blank" rel="noopener" href="https://zh-google-styleguide.readthedocs.io
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>1.4k</span>
+              <span>166</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -757,31 +746,10 @@ target="_blank" rel="noopener" href="https://zh-google-styleguide.readthedocs.io
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>编译器默认会为一个类提供（如果它们需要被使用的话）：</p>
-<ul>
-<li>默认构造函数：如果类编写了构造函数，则编译器就不会自动提供默认构造函数了
-<ul>
-<li>使用 <code>default</code>
-显示声明也可以在有其他构造函数的情况下，让编译器产生默认构造函数</li>
-</ul></li>
-<li>拷贝构造函数：<strong>没有移动函数显示定义时，拷贝函数才会被隐式的创建</strong>。其单纯地将每一个数据成员进行拷贝
-<ul>
-<li>如果数据成员中的对象具有它自己的拷贝构造函数，则也会调用它</li>
-</ul></li>
-<li>拷贝赋值函数：单纯地将每一个数据成员进行拷贝
-<ul>
-<li>如果数据成员中的对象具有它自己的拷贝赋值函数，则也会调用它</li>
-</ul></li>
-<li>析构函数：隐式的<code>noexcept</code></li>
-<li>移动构造函数：当没有显示定义移动、拷贝、析构函数时，默认移动函数才会被隐式的创建</li>
-<li>移动赋值函数</li>
-</ul>
-<p>生成的特殊函数是隐含的<code>public</code>和<code>inline</code>的，但大部分情况下都是非虚函数。
-&gt;
-只有当一个类继承自基类，基类的析构函数是虚函数时，生成派生类的析构函数才也是虚函数</p>
+          <p>除非是需要修改容器元素的内容，否则在使用迭代器的时候，应该使用其<code>const</code>版本，也就是指向<code>const</code>类型元素的指针，以避免误操作。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2022/04/13/effective_cpp_default_func/#more" rel="contents">
+              <a class="btn" href="/2022/05/04/effective_cpp_iterator/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -805,7 +773,7 @@ target="_blank" rel="noopener" href="https://zh-google-styleguide.readthedocs.io
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2022/04/12/effective_cpp_obj_initialize/">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2022/05/03/effective_cpp_scope_enum/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
@@ -819,7 +787,7 @@ target="_blank" rel="noopener" href="https://zh-google-styleguide.readthedocs.io
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2022/04/12/effective_cpp_obj_initialize/" class="post-title-link" itemprop="url">Effective  C++ ：对象的初始化</a>
+            <a href="/2022/05/03/effective_cpp_scope_enum/" class="post-title-link" itemprop="url">Effective C++ ：作用域枚举优于非作用域枚举</a>
         </h2>
 
         <div class="post-meta">
@@ -829,198 +797,7 @@ target="_blank" rel="noopener" href="https://zh-google-styleguide.readthedocs.io
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2022-04-12 00:00:00" itemprop="dateCreated datePublished" datetime="2022-04-12T00:00:00+08:00">2022-04-12</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/cpp/" itemprop="url" rel="index"><span itemprop="name">cpp</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/cpp/effective/" itemprop="url" rel="index"><span itemprop="name">effective</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1.7k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>要养成好的习惯：永远在使用对象之前先将它初始化。 -
-对于内置类型，在定义时就初始化 -
-对于类类型，在构造函数初始值列表中按照<strong>声明顺序</strong>初始化 +
-类类型中的私有变量是内置类型时，也可以在声明时初始化，这样可以避免初始值列表过长。
-+
-如果期望类类型中的对象以默认构造函数初始化时，那也可以不用放在初始值列表中</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2022/04/12/effective_cpp_obj_initialize/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2022/04/10/effective_cpp_prefer_const_to_define/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
-      <meta itemprop="name" content="kcmetercec">
-      <meta itemprop="description" content="Qt, C++, linux, CS">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="explorer">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/04/10/effective_cpp_prefer_const_to_define/" class="post-title-link" itemprop="url">Effective  C++ ：const,enum,inline 优于 define</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-04-10 00:00:00" itemprop="dateCreated datePublished" datetime="2022-04-10T00:00:00+08:00">2022-04-10</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/cpp/" itemprop="url" rel="index"><span itemprop="name">cpp</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/cpp/effective/" itemprop="url" rel="index"><span itemprop="name">effective</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>728</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>宏在 c++ 中要尽可能少的使用，在<a
-target="_blank" rel="noopener" href="https://zh-google-styleguide.readthedocs.io/en/latest/google-cpp-styleguide/others/#preprocessor-macros">google
-c++ 编码规范中</a>也是建议使用宏要谨慎。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2022/04/10/effective_cpp_prefer_const_to_define/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2022/04/10/effective_cpp_use_const/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
-      <meta itemprop="name" content="kcmetercec">
-      <meta itemprop="description" content="Qt, C++, linux, CS">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="explorer">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/04/10/effective_cpp_use_const/" class="post-title-link" itemprop="url">Effective  C++ ：尽可能使用 const</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-04-10 00:00:00" itemprop="dateCreated datePublished" datetime="2022-04-10T00:00:00+08:00">2022-04-10</time>
+              <time title="创建时间：2022-05-03 00:00:00" itemprop="dateCreated datePublished" datetime="2022-05-03T00:00:00+08:00">2022-05-03</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
@@ -1049,7 +826,7 @@ c++ 编码规范中</a>也是建议使用宏要谨慎。</p>
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>792</span>
+              <span>622</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -1068,12 +845,10 @@ c++ 编码规范中</a>也是建议使用宏要谨慎。</p>
     <div class="post-body" itemprop="articleBody">
 
       
-          <p><a
-target="_blank" rel="noopener" href="https://zh-google-styleguide.readthedocs.io/en/latest/google-cpp-styleguide/others/#const">谷歌
-c++ 编码规范</a>也比较推崇尽量使用<code>const</code>。</p>
+          <p>简单来讲就是对于枚举类型，也需要将其存放于命名空间中，以避免枚举中元素对外部标识符的污染。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2022/04/10/effective_cpp_use_const/#more" rel="contents">
+              <a class="btn" href="/2022/05/03/effective_cpp_scope_enum/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -1097,7 +872,7 @@ c++ 编码规范</a>也比较推崇尽量使用<code>const</code>。</p>
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2022/03/31/stm32spi_as_slave/">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2022/05/03/effective_cpp_using/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
@@ -1111,7 +886,7 @@ c++ 编码规范</a>也比较推崇尽量使用<code>const</code>。</p>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2022/03/31/stm32spi_as_slave/" class="post-title-link" itemprop="url">STM32 SPI 作为从机的注意事项</a>
+            <a href="/2022/05/03/effective_cpp_using/" class="post-title-link" itemprop="url">Effective C++ ：using 优于 typedef</a>
         </h2>
 
         <div class="post-meta">
@@ -1121,7 +896,7 @@ c++ 编码规范</a>也比较推崇尽量使用<code>const</code>。</p>
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2022-03-31 00:00:00" itemprop="dateCreated datePublished" datetime="2022-03-31T00:00:00+08:00">2022-03-31</time>
+              <time title="创建时间：2022-05-03 00:00:00" itemprop="dateCreated datePublished" datetime="2022-05-03T00:00:00+08:00">2022-05-03</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1129,11 +904,11 @@ c++ 编码规范</a>也比较推崇尽量使用<code>const</code>。</p>
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/processor/" itemprop="url" rel="index"><span itemprop="name">processor</span></a>
+                  <a href="/categories/cpp/" itemprop="url" rel="index"><span itemprop="name">cpp</span></a>
                 </span>
                   ，
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/processor/stm32/" itemprop="url" rel="index"><span itemprop="name">stm32</span></a>
+                  <a href="/categories/cpp/effective/" itemprop="url" rel="index"><span itemprop="name">effective</span></a>
                 </span>
             </span>
 
@@ -1143,7 +918,7 @@ c++ 编码规范</a>也比较推崇尽量使用<code>const</code>。</p>
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>698</span>
+              <span>308</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -1162,11 +937,197 @@ c++ 编码规范</a>也比较推崇尽量使用<code>const</code>。</p>
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>两个 stm32 通过 SPI 进行通信，一主一从，但从机不能使用 CubeMX
-的默认配置，不然会被带进坑……</p>
+          <p>在 c 中，<code>typedef</code>是我经常使用的别名语法。但在 cpp
+中，<code>using</code>才是更好的选择。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2022/03/31/stm32spi_as_slave/#more" rel="contents">
+              <a class="btn" href="/2022/05/03/effective_cpp_using/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2022/05/02/effective_cpp_auto/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="Qt, C++, linux, CS">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/05/02/effective_cpp_auto/" class="post-title-link" itemprop="url">Effective C++ ：理解 auto</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-05-02 00:00:00" itemprop="dateCreated datePublished" datetime="2022-05-02T00:00:00+08:00">2022-05-02</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/cpp/" itemprop="url" rel="index"><span itemprop="name">cpp</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/cpp/effective/" itemprop="url" rel="index"><span itemprop="name">effective</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>2.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>理解了 <code>auto</code>的推导原则后，就需要认识到使用
+<code>auto</code>所带来的便利性和缺陷，才能正确的使用它。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2022/05/02/effective_cpp_auto/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2022/05/02/effective_cpp_nullptr/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="Qt, C++, linux, CS">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/05/02/effective_cpp_nullptr/" class="post-title-link" itemprop="url">Effective C++ ：nullptr 优于 0 和 NULL</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-05-02 00:00:00" itemprop="dateCreated datePublished" datetime="2022-05-02T00:00:00+08:00">2022-05-02</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/cpp/" itemprop="url" rel="index"><span itemprop="name">cpp</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/cpp/effective/" itemprop="url" rel="index"><span itemprop="name">effective</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>722</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>在 c 中，通常使用<code>NULL</code>表示一个空指针，但是在 cpp
+中有更优的<code>nullptr</code>可供选择。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2022/05/02/effective_cpp_nullptr/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -1189,7 +1150,7 @@ c++ 编码规范</a>也比较推崇尽量使用<code>const</code>。</p>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/6/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><span class="page-number current">7</span><a class="page-number" href="/page/8/">8</a><a class="extend next" rel="next" href="/page/8/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/6/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><span class="page-number current">7</span><a class="page-number" href="/page/8/">8</a><a class="page-number" href="/page/9/">9</a><a class="extend next" rel="next" href="/page/8/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -1257,20 +1218,20 @@ c++ 编码规范</a>也比较推崇尽量使用<code>const</code>。</p>
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">77</span>
+          <span class="site-state-item-count">90</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">35</span>
+        <span class="site-state-item-count">45</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-count">11</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -1311,7 +1272,7 @@ c++ 编码规范</a>也比较推崇尽量使用<code>const</code>。</p>
 <div class="copyright">
   
   &copy; 2021 – 
-  <span itemprop="copyrightYear">2023</span>
+  <span itemprop="copyrightYear">2024</span>
   <span class="with-love">
     <i class="fa fa-heart"></i>
   </span>
@@ -1321,13 +1282,13 @@ c++ 编码规范</a>也比较推崇尽量使用<code>const</code>。</p>
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">122k</span>
+    <span title="站点总字数">151k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">1:51</span>
+    <span title="站点阅读时长">2:17</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>
