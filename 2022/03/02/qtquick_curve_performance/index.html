@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="QtQuick 提供的 QtChart 可以满足在 Qml 中高效绘制动态曲线，但由于它是 GPL 协议，故应用场景有限。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="如何高效的绘制动态曲线？">
+<meta property="og:url" content="http://kcmetercec.top/2022/03/02/qtquick_curve_performance/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="QtQuick 提供的 QtChart 可以满足在 Qml 中高效绘制动态曲线，但由于它是 GPL 协议，故应用场景有限。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BQt%5D/%5BQuick%5D/usage/pic/qml_curve.jpg?raw=true">
+<meta property="article:published_time" content="2022-03-01T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-03-01T16:00:00.000Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="Qt">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BQt%5D/%5BQuick%5D/usage/pic/qml_curve.jpg?raw=true">
+
+<link rel="canonical" href="http://kcmetercec.top/2022/03/02/qtquick_curve_performance/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>如何高效的绘制动态曲线？ | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112423075-1# <app_id>"></script>
+    <script data-pjax>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-112423075-1# <app_id>');
+      }
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+        <li class="menu-item menu-item-commonweal">
+
+    <a href="/404/" rel="section"><i class="fa fa-heartbeat fa-fw"></i>公益 404</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2022/03/02/qtquick_curve_performance/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="Qt, C++, linux, CS">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          如何高效的绘制动态曲线？
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-03-02 00:00:00" itemprop="dateCreated datePublished" datetime="2022-03-02T00:00:00+08:00">2022-03-02</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Qt/" itemprop="url" rel="index"><span itemprop="name">Qt</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Qt/QtQuick/" itemprop="url" rel="index"><span itemprop="name">QtQuick</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>638</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>QtQuick 提供的 <a target="_blank" rel="noopener" href="https://doc.qt.io/qt-5/qtcharts-index.html">QtChart</a> 可以满足在 Qml 中高效绘制动态曲线，但由于它是 GPL 协议，故应用场景有限。</p>
+<span id="more"></span>
+
+<h1 id="Canvas-绘图"><a href="#Canvas-绘图" class="headerlink" title="Canvas 绘图"></a>Canvas 绘图</h1><p>Qml 中提供了 Canvas 组件，可以直接使用 js 进行绘制，比如下面几行代码，便可以绘制多条动态曲线：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line">Canvas &#123;</span><br><span class="line">    <span class="attr">id</span>: curve_dis</span><br><span class="line">    anchors.fill: parent</span><br><span class="line">    property <span class="keyword">var</span> curve_data : []</span><br><span class="line"></span><br><span class="line">    <span class="attr">onPaint</span>: &#123;</span><br><span class="line">        <span class="keyword">var</span> ctx = getContext(<span class="string">&quot;2d&quot;</span>);</span><br><span class="line">        ctx.clearRect(<span class="number">0</span>, <span class="number">0</span>, width, height);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">var</span> config = &#123;</span><br><span class="line">            <span class="attr">vertical</span>:height,</span><br><span class="line">            <span class="attr">points</span>: curve_data,</span><br><span class="line">            <span class="attr">color</span>: <span class="string">&quot;Gold&quot;</span>,</span><br><span class="line">            <span class="attr">ref</span>: <span class="number">0</span>,</span><br><span class="line">            <span class="attr">div</span>: <span class="number">10</span>,</span><br><span class="line">            <span class="attr">pixel</span>: <span class="number">60</span></span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line">        MeasCurve.drawCurve(ctx, config);</span><br><span class="line"></span><br><span class="line">        config.ref = <span class="number">20</span>;</span><br><span class="line">        MeasCurve.drawCurve(ctx, config);</span><br><span class="line"></span><br><span class="line">        config.ref = -<span class="number">20</span>;</span><br><span class="line">        MeasCurve.drawCurve(ctx, config);</span><br><span class="line"></span><br><span class="line">        config.ref = <span class="number">30</span>;</span><br><span class="line">        MeasCurve.drawCurve(ctx, config);</span><br><span class="line"></span><br><span class="line">        config.ref = -<span class="number">30</span>;</span><br><span class="line">        MeasCurve.drawCurve(ctx, config);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">drawCurve</span>(<span class="params">ctx, config</span>) </span>&#123;</span><br><span class="line">    ctx.strokeStyle = config.color;</span><br><span class="line">    ctx.lineWidth = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">var</span> verical_size = config.vertical;</span><br><span class="line">    <span class="keyword">var</span> points_array = config.points;</span><br><span class="line">    <span class="keyword">var</span> ref_lev = config.ref;</span><br><span class="line">    <span class="keyword">var</span> div_val = config.div;</span><br><span class="line">    <span class="keyword">var</span> pixel_size = config.pixel;</span><br><span class="line">    <span class="keyword">var</span> points_len = config.points.length;</span><br><span class="line"></span><br><span class="line">    ctx.beginPath();</span><br><span class="line">    ctx.moveTo(<span class="number">0</span>,</span><br><span class="line">    getPointY(verical_size, points_array[<span class="number">0</span>],</span><br><span class="line">              ref_lev, div_val, pixel_size));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">let</span> i = <span class="number">1</span>; i &lt; points_len; ++i) &#123;</span><br><span class="line">        ctx.lineTo(i,</span><br><span class="line">        getPointY(verical_size, points_array[i],</span><br><span class="line">        ref_lev, div_val, pixel_size));</span><br><span class="line">    &#125;</span><br><span class="line">    ctx.stroke();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其显示效果如下：<br><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BQt%5D/%5BQuick%5D/usage/pic/qml_curve.jpg?raw=true"><br>但由于其在实际运行过程中，是由 CPU 来解析脚本再来执行，<strong>其运行效率极为低下</strong> 。</p>
+<h1 id="其它的选择"><a href="#其它的选择" class="headerlink" title="其它的选择"></a>其它的选择</h1><p>为了能够高效的显示动态曲线，目前有以下几种选择方式：</p>
+<ul>
+<li>QQuickPaintedItem ：通过继承 QQuickPaintedItem 来重载其 <code>paint</code> 函数，使用 QPainter 完成图形绘制。</li>
+<li>QOpenGLWindow : 通过继承自 QOpenGLWindow 来直接调用 OpenGL API 完成图形绘制</li>
+<li>QQuickFrameBufferObject ：实现 <code>QQuickFramebufferObject::Renderer</code> 类来完成图形绘制</li>
+</ul>
+<blockquote>
+<p>Qml Shape 也是个高效组件，但是它无法用来显示动态曲线</p>
+</blockquote>
+<p>QPainter 其使用 CPU 来渲染无法很好的利用 GPU，虽然比起 Canvas 好得多，但也不够高效。</p>
+<p>OpenGL 相关 API 不是太好懂，编写起来比较吃力……</p>
+<h1 id="QNanoPainter"><a href="#QNanoPainter" class="headerlink" title="QNanoPainter"></a>QNanoPainter</h1><p><a target="_blank" rel="noopener" href="https://github.com/QUItCoding/qnanopainter">QNanoPainter</a> 则很好的解决上面的问题：</p>
+<ol>
+<li>基于 <a target="_blank" rel="noopener" href="https://github.com/memononen/nanovg">NanoVG</a> 实现了自己的 QNanoPainter，以尽量以 GPU 直接渲染</li>
+<li>提供 Canvas API，可以很好的将 Qml API 重构</li>
+</ol>
+<p>对于上面显示的曲线，对应的代码如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">NanoCurvePainter::DrawLines</span><span class="params">(<span class="keyword">float</span> ref, QNanoPainter* painter)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (curve_data_.<span class="built_in">size</span>() &lt;= <span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    painter-&gt;<span class="built_in">setStrokeStyle</span>(<span class="built_in">QNanoColor</span>(<span class="number">255</span>, <span class="number">255</span>, <span class="number">0</span>));</span><br><span class="line">    painter-&gt;<span class="built_in">setLineWidth</span>(<span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">    painter-&gt;<span class="built_in">beginPath</span>();</span><br><span class="line">    painter-&gt;<span class="built_in">moveTo</span>(<span class="number">0</span>,</span><br><span class="line">                   <span class="built_in">GetPointY</span>(ref, curve_data_.<span class="built_in">at</span>(<span class="number">0</span>)));</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt; curve_data_.<span class="built_in">size</span>(); ++i) &#123;</span><br><span class="line">        painter-&gt;<span class="built_in">lineTo</span>(i,</span><br><span class="line">                   <span class="built_in">GetPointY</span>(ref, curve_data_.<span class="built_in">at</span>(i)));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    painter-&gt;<span class="built_in">stroke</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">NanoCurvePainter::paint</span><span class="params">(QNanoPainter* painter)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">DrawLines</span>(<span class="number">0</span>, painter);</span><br><span class="line">    <span class="built_in">DrawLines</span>(<span class="number">20</span>, painter);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">DrawLines</span>(<span class="number">-20</span>, painter);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">DrawLines</span>(<span class="number">30</span>, painter);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">DrawLines</span>(<span class="number">-30</span>, painter);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>经过测试，相比 Canvas 绘图，QNanoPainter 消耗 CPU 为前者的 ⅓ 。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>kcmetercec
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://kcmetercec.top/2022/03/02/qtquick_curve_performance/" title="如何高效的绘制动态曲线？">http://kcmetercec.top/2022/03/02/qtquick_curve_performance/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Qt/" rel="tag"> <i class="fa fa-tag"></i> Qt</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/02/14/qtquick_impl_tabwidget/" rel="prev" title="如何使用 Qml 实现 TabWidget？">
+      <i class="fa fa-chevron-left"></i> 如何使用 Qml 实现 TabWidget？
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/03/31/stm32spi_as_slave/" rel="next" title="STM32 SPI 作为从机的注意事项">
+      STM32 SPI 作为从机的注意事项 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Canvas-%E7%BB%98%E5%9B%BE"><span class="nav-number">1.</span> <span class="nav-text">Canvas 绘图</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%B6%E5%AE%83%E7%9A%84%E9%80%89%E6%8B%A9"><span class="nav-number">2.</span> <span class="nav-text">其它的选择</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#QNanoPainter"><span class="nav-number">3.</span> <span class="nav-text">QNanoPainter</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">Qt, C++, linux, CS</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">107</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">55</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:kcmeter.cec@gmail.com" title="E-Mail → mailto:kcmeter.cec@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2021 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">206k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">3:08</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+document.querySelectorAll('.pdfobject-container').forEach(element => {
+  let url = element.dataset.target;
+  let pdfOpenParams = {
+    navpanes : 0,
+    toolbar  : 0,
+    statusbar: 0,
+    pagemode : 'thumbs',
+    view     : 'FitH'
+  };
+  let pdfOpenFragment = '#' + Object.entries(pdfOpenParams).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
+  let fullURL = `/lib/pdf/web/viewer.html?file=${encodeURIComponent(url)}${pdfOpenFragment}`;
+
+  if (NexT.utils.supportsPDFs()) {
+    element.innerHTML = `<embed class="pdfobject" src="${url + pdfOpenFragment}" type="application/pdf" style="height: ${element.dataset.height};">`;
+  } else {
+    element.innerHTML = `<iframe src="${fullURL}" style="height: ${element.dataset.height};" frameborder="0"></iframe>`;
+  }
+});
+</script>
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'f938893867df78f94802',
+      clientSecret: 'b6d8470939c53d26c98c4e3b9d4c9ceb55d6e78e',
+      repo        : 'kcmetercec.github.io',
+      owner       : 'KcMeterCEC',
+      admin       : ['KcMeterCEC'],
+      id          : 'bb8f1fbd44bdb3f9b2f55935cec7d9b5',
+        language: 'zh-CN',
+      distractionFreeMode: false
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+    </div>
+</body>
+</html>

@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="重新来梳理一下根文件系统编译。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="构建根文件系统">
+<meta property="og:url" content="http://kcmetercec.top/2024/02/27/linux_make_yocto_fs/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="重新来梳理一下根文件系统编译。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-02-26T16:00:00.000Z">
+<meta property="article:modified_time" content="2024-02-26T16:00:00.000Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="yocto">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://kcmetercec.top/2024/02/27/linux_make_yocto_fs/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>构建根文件系统 | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112423075-1# <app_id>"></script>
+    <script data-pjax>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-112423075-1# <app_id>');
+      }
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+        <li class="menu-item menu-item-commonweal">
+
+    <a href="/404/" rel="section"><i class="fa fa-heartbeat fa-fw"></i>公益 404</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2024/02/27/linux_make_yocto_fs/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="Qt, C++, linux, CS">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          构建根文件系统
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-02-27 00:00:00" itemprop="dateCreated datePublished" datetime="2024-02-27T00:00:00+08:00">2024-02-27</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/make/" itemprop="url" rel="index"><span itemprop="name">make</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/make/yocto/" itemprop="url" rel="index"><span itemprop="name">yocto</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4.4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>重新来梳理一下根文件系统编译。</p>
+<span id="more"></span>
+
+<h1 id="根文件系统里面有什么？"><a href="#根文件系统里面有什么？" class="headerlink" title="根文件系统里面有什么？"></a>根文件系统里面有什么？</h1><p>内核挂载根文件系统，可以以<code>initramfs</code>的方式，或者通过<code>root=</code>参数指定的设备来挂载，然后执行其<code>init</code>程序来进行接下来的初始化。</p>
+<p>最小的根文件系统包含下面这些基本组件：</p>
+<ul>
+<li><code>init</code>：用于初始化系统基本环境的程序，通常会调用一系列的脚本</li>
+<li><code>shell</code>：提供一个用于交互的命令行环境，以执行其他的程序</li>
+<li><code>Daemons</code>：守护进程为其他程序提供基础服务</li>
+<li><code>Shared libraries</code>：很多程序都会使用到共享库，所以这个是必须的</li>
+<li><code>Configuration files</code>：对守护进程对应的配置文件，通常位于<code>/etc</code>目录下</li>
+<li><code>Device nodes</code>：设备节点提供应用程序的访问设备驱动的通道</li>
+<li><code>proc and sys</code>：提供对内核参数的检测和控制文件夹</li>
+<li><code>Kernel modules</code>：内核模块会被安装于<code>/lib/modules/&lt;kernel versoin&gt;/</code>中</li>
+</ul>
+<h2 id="目录的分布"><a href="#目录的分布" class="headerlink" title="目录的分布"></a>目录的分布</h2><p>为满足 FHS（Filesystem Hierarchy Standard）标准，一般目录分布如下：</p>
+<ul>
+<li><code>/bin</code>：对所有用户都适用的基础命令</li>
+<li><code>/dev/</code>：存放设备节点和其他特殊文件</li>
+<li><code>/etc/</code>：系统配置文件</li>
+<li><code>/lib</code>：系统基本的共享库</li>
+<li><code>/proc</code>：对进程等内核参数进行交互的虚拟文件</li>
+<li><code>/sbin</code>：对系统管理员所适用的基础命令</li>
+<li><code>/sys</code>：描述设备何其驱动对应关系的虚拟文件</li>
+<li><code>/tmp</code>：用于存放临时文件的 RAM fs</li>
+<li><code>/usr</code>：更多的命令、库、管理员工具等</li>
+<li><code>/var</code>：存放在运行时会被改变的文件</li>
+</ul>
+<p>对于 <code>proc</code>和<code>sysfs</code>是需要挂载的：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> mount [-t vfstype] [-o options] device directory</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 挂载存储设备时，大部分情况下不用主动指明文件系统</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 而对于 proc,sysfs 这种伪文件系统，则需要指明</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> mount -t proc proc /proc</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> mount -t sysfs sysfs /sys</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="创建staging文件夹"><a href="#创建staging文件夹" class="headerlink" title="创建staging文件夹"></a>创建<code>staging</code>文件夹</h2><p>所谓的<code>staging</code>文件夹，就是一个根文件系统的基础框架，在最开始可以创建它：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> mkdir ~/rootfs</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> <span class="built_in">cd</span> ~/rootfs</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> mkdir bin dev etc home lib proc sbin sys tmp usr var</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> mkdir usr/bin usr/lib usr/sbin</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> mkdir -p var/<span class="built_in">log</span></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 对于 ARM64 lib 引用的是 lib64，其实只需要为 lib 创建软链接即可</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> ln -s lib lib64</span></span><br></pre></td></tr></table></figure>
+
+<p>接下来就是要考虑一些文件的权限问题了，对于一些重要文件应该限制为<code>root </code>用户才能操作。而其他程序应该运行在普通用户模式。</p>
+<h2 id="目录中具有的程序"><a href="#目录中具有的程序" class="headerlink" title="目录中具有的程序"></a>目录中具有的程序</h2><h3 id="init程序"><a href="#init程序" class="headerlink" title="init程序"></a><code>init</code>程序</h3><p><code>init</code>程序是进入根文件系统后运行的第一个程序。</p>
+<blockquote>
+<p>对于 busybox 而言，就是<code>/sbin/init</code>，最终还是指向 busybox 这个独立可执行程序。</p>
+</blockquote>
+<p><code>init</code>程序首先会读取<code>/etc/inittab</code>中的配置，然后依次启动对应的程序。</p>
+<h3 id="Shell"><a href="#Shell" class="headerlink" title="Shell"></a>Shell</h3><p><code>Shell</code>用户运行脚本，和用户交互等。在嵌入式系统中，有这么几个常用的<code>Shell</code>：</p>
+<ul>
+<li><code>bash</code>：功能强大，但是体积占用也大，一般运行于桌面系统中。</li>
+<li><code>ash</code>：和<code>bash</code>兼容性很好，且体积占用小，适合于嵌入式系统。</li>
+<li><code>hush</code>：用于 bootloader，占用很小的 shell。</li>
+</ul>
+<p>其实只要空间不紧张，嵌入式也使用<code>bash</code>就好，因为和桌面系统完全一致，避免在桌面可以正常运行的脚本在嵌入式端运行就不正常了。</p>
+<h3 id="工具程序"><a href="#工具程序" class="headerlink" title="工具程序"></a>工具程序</h3><p>工具程序用于支撑其他程序的正常运行。</p>
+<h2 id="BusyBox"><a href="#BusyBox" class="headerlink" title="BusyBox"></a>BusyBox</h2><h3 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h3><p>这些程序要是手动编译一个个放入文件系统会累死，而<code>BusyBox</code>就将这些工具精简编译到一个可执行程序中，这个程序就包含了常用的命令。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">busybox.nosuid</span><br><span class="line">cat -&gt; /bin/busybox.nosuid</span><br><span class="line">chgrp -&gt; /bin/busybox.nosuid</span><br><span class="line">chmod -&gt; /bin/busybox.nosuid</span><br><span class="line">chown -&gt; /bin/busybox.nosuid</span><br><span class="line">cp -&gt; /bin/busybox.nosuid</span><br><span class="line">cpio -&gt; /bin/busybox.nosuid</span><br><span class="line">date -&gt; /bin/busybox.nosuid</span><br><span class="line">dd -&gt; /bin/busybox.nosuid</span><br><span class="line">df -&gt; /bin/busybox.nosuid</span><br><span class="line">dmesg -&gt; /bin/busybox.nosuid</span><br></pre></td></tr></table></figure>
+
+<p>当用户输入<code>cat</code>时，实际上是调用了<code>busybox</code>这个可执行文件，该文件按照如下流程处理：</p>
+<ul>
+<li>获取<code>argv[0]</code>得到字符串<code>cat</code></li>
+<li>然后根据该字符串获取到对应入口函数<code>cat_main</code></li>
+<li>执行<code>cat_main</code></li>
+</ul>
+<h3 id="构建-BusyBox"><a href="#构建-BusyBox" class="headerlink" title="构建 BusyBox"></a>构建 BusyBox</h3><p>首选获取源码：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> git <span class="built_in">clone</span> https://git.busybox.net/busybox</span></span><br></pre></td></tr></table></figure>
+
+<p>然后切换到最新稳定版：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> git checkout 1_34_stable</span></span><br></pre></td></tr></table></figure>
+
+<p>按照惯例，当然是先clean 一下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> make distclean</span></span><br></pre></td></tr></table></figure>
+
+<p>使用其默认配置即可：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> make defconfig</span></span><br></pre></td></tr></table></figure>
+
+<p>然后使用<code>make menuconfig</code> 进入<code>Settings -&gt; Cross compiler prefix</code>来设置安装路径到前面的 staging 目录。</p>
+<p>接下来便是编译及安装：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> <span class="built_in">export</span> CROSS_COMPILE=arm-cortex_a8-linux-gnueabihf-</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> <span class="built_in">export</span> ARCH=arm</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> make</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> make install</span></span><br></pre></td></tr></table></figure>
+
+<p>可以看到 staging 目录中已经安装好了，且那些文件都以软连接的形式指向了<code>busybox</code>这个可执行文件。</p>
+<h2 id="根文件系统中的库"><a href="#根文件系统中的库" class="headerlink" title="根文件系统中的库"></a>根文件系统中的库</h2><p>应用程序要运行，就要依赖部分编译工具链中的库，简单粗暴的解决方式就是把这些库都拷贝到 staging 目录中。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 以 SYSROOT 存储路径，比较方便</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> <span class="built_in">export</span> SYSROOT=$(arm-cortex_a8-linux-gnueabihf-gcc -print-sysroot)</span></span><br></pre></td></tr></table></figure>
+
+<p>其中<code>lib</code>文件夹存储得是共享链接库，将它们复制进去即可：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 使用 -a ，不破坏其软连接</span></span><br><span class="line">cec@box:~/lab/rootfs$ cp -aR $&#123;SYSROOT&#125;/lib/** ./lib/</span><br></pre></td></tr></table></figure>
+
+<h2 id="设备节点"><a href="#设备节点" class="headerlink" title="设备节点"></a>设备节点</h2><p>创建设备节点使用命令<code>mknod</code>：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 依次是设备节点名称，类型，主设备号，次设备号</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> mknod &lt;name&gt; &lt;<span class="built_in">type</span>&gt; &lt;major&gt; &lt;minor&gt;</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>主设备号和次设备号可以在 <code>Documentation/devices.txt</code>文件中找到</p>
+</blockquote>
+<p>对于 BusyBox 而言，所需要的两个节点是<code>console</code>和<code>null</code>：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> null 节点所有用户都可以读写，所以权限是 666</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> sudo mknod -m 666 dev/null c 1 3</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> console 节点只允许 root 操作，所以权限是 600</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> sudo mknod -m 600 dev/console c 5 1</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="内核模块"><a href="#内核模块" class="headerlink" title="内核模块"></a>内核模块</h2><p>内核模块也需要被安装在根文件系统中，需要被内核设置<code>INSTALL_MOD_PATH</code>：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 由于前面已经设置了 ARCH 和 CROSS_COMPILE 所以这里就不用设置了</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> make INSTALL_MOD_PATH=/home/cec/lab/rootfs modules_install</span></span><br></pre></td></tr></table></figure>
+
+<p>可以看到模块都被安装到了根文件系统的<code>lib/modules/&lt;kernel_version&gt;</code>目录下了。</p>
+<blockquote>
+<p>但是会发现还安装了<code>source</code>和<code>build</code>文件夹，这个是嵌入式中不需要的，可以把它们删除。</p>
+</blockquote>
+<h1 id="创建-initramfs"><a href="#创建-initramfs" class="headerlink" title="创建 initramfs"></a>创建 initramfs</h1><p>在使用<code>initramfs</code>之前需要确保<code>CONFIG_BLK_DEV_INITRD=y</code>，以表示内核支持<code>initramfs</code>。</p>
+<p>创建<code>initramfs</code>有以下 3 种方法：</p>
+<ol>
+<li>独立打包为<code>cpio</code>格式的文件包：这种方式最为灵活</li>
+<li>将<code>initramfs</code>嵌入到内核镜像文件中</li>
+<li>由内核构建系统将其编译进去</li>
+</ol>
+<h2 id="创建一个独立包"><a href="#创建一个独立包" class="headerlink" title="创建一个独立包"></a>创建一个独立包</h2><p>先打包到上级目录：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 指定了 GID 和 UID 都是 root</span></span><br><span class="line">cec@box:~/lab/rootfs$ find . | cpio -H newc -ov --owner root:root &gt;  ../initramfs.cpio</span><br></pre></td></tr></table></figure>
+
+<p>然后再进行一次压缩：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cec@box:~/lab/rootfs$ gzip initramfs.cpio</span><br></pre></td></tr></table></figure>
+
+<p>最后使用工具<code>mkimage</code>来为文件加入头：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">cec@box:~/lab$ mkimage -A arm -O linux -T ramdisk -d initramfs.cpio.gz uRamdisk</span><br><span class="line">Image Name:   </span><br><span class="line">Created:      Fri Mar  1 09:18:49 2024</span><br><span class="line">Image Type:   ARM Linux RAMDisk Image (gzip compressed)</span><br><span class="line">Data Size:    27835346 Bytes = 27182.96 KiB = 26.55 MiB</span><br><span class="line">Load Address: 00000000</span><br><span class="line">Entry Point:  00000000</span><br></pre></td></tr></table></figure>
+
+<p>需要注意的是：<strong>initramfs 包体积不能太大，因为压缩包和解压后的文件都会全部存在于内存中！</strong> </p>
+<blockquote>
+<p><a target="_blank" rel="noopener" href="https://www.lightofdawn.org/blog/?viewDetailed=00128">这篇文章</a>有讲到，<code>initramfs</code>包最好小于内存的 25%</p>
+</blockquote>
+<h2 id="启动独立包"><a href="#启动独立包" class="headerlink" title="启动独立包"></a>启动独立包</h2><h3 id="拷贝进-SD-卡"><a href="#拷贝进-SD-卡" class="headerlink" title="拷贝进 SD 卡"></a>拷贝进 SD 卡</h3><p>作为测试目的，我们可以将<code>uRamdisk</code>也拷贝到 SD 卡的第一分区，然后在 U-boot 中载入。</p>
+<h3 id="载入到-DDR"><a href="#载入到-DDR" class="headerlink" title="载入到 DDR"></a>载入到 DDR</h3><p>然后需要将<code>initramfs</code>载入到 DDR 中，前面我们将：</p>
+<ul>
+<li>Image 载入到 <code>0x80200000</code></li>
+<li>FDT 载入到 <code>0x80f00000</code></li>
+</ul>
+<p>而 FDT 目前大小只有 58KB，那么可以将<code>uRamdisk</code>载入到<code>0x81000000</code></p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> fatload mmc 0:1 0x80200000 zImage</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> fatload mmc 0:1 0x80f00000 am335x-boneblack.dtb</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> fatload mmc 0:1 0x81000000 uRamdisk</span></span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li>指定启动的<code>init</code>程序</li>
+</ol>
+<p>需要在<code>bootargs</code>中加入启动程序是 shell：<code>rdinit=/bin/sh</code></p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> setenv bootargs console=ttyO0,115200 rdinit=/bin/sh</span></span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li>使用 bootz 启动</li>
+</ol>
+<p>也就是说在原来的基础上，加上<code>initramfs</code>的地址即可：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> $ bootz <span class="variable">$&#123;loadaddr&#125;</span> <span class="variable">$&#123;initrd_addr&#125;</span> <span class="variable">$&#123;fdt_addr&#125;</span></span></span><br><span class="line"><span class="meta">$</span><span class="bash"> bootz 0x80200000 0x81000000 0x80f00000</span></span><br></pre></td></tr></table></figure>
+
+<p>这个时候会发现没有工作控制流而给出警告：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/bin/sh: can&#x27;t access tty; job control turned off</span><br></pre></td></tr></table></figure>
+
+<h2 id="将-initramfs-嵌入内核"><a href="#将-initramfs-嵌入内核" class="headerlink" title="将 initramfs 嵌入内核"></a>将 initramfs 嵌入内核</h2><p>将<code>initramfs</code>嵌入内核非常简单：在<code>General setup -&gt; Initramfs source file(s)</code>中指定<strong>未压缩的 cpio 文件</strong>，然后再次运行 make 即可。</p>
+<p>这样设置以后，便可以在 bootloader 中指定内核和设备树地址就行了。</p>
+<blockquote>
+<p>这里需要注意内核 + initramfs 所占用的空间，设备树需要预留足够多的空间以避免相互覆盖。</p>
+<p>比如当前内核 + initramfs 就有 50MB，那么设备树的载入位置需要再往后放一点。</p>
+<p>当前开发板具有 512MB 内存，那 DDR 寻址范围是 0x80000000 ~ 0xA0000000。</p>
+<p>所以设备树的位置预留足够位置即可，比如放置在 0x8CA00000 处，就预留了 200MB 的空间。</p>
+</blockquote>
+<p>编译进内核以后，启动命令就简单了一点：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">fatload mmc 0:1 0x80200000 zImage</span><br><span class="line">fatload mmc 0:1 0x8CA00000 am335x-boneblack.dtb</span><br><span class="line">setenv bootargs console=ttyO0,115200 rdinit=/bin/sh</span><br><span class="line">bootz 0x80200000 - 0x8CA00000</span><br></pre></td></tr></table></figure>
+
+<h2 id="以设备列表的形式构建-initramfs"><a href="#以设备列表的形式构建-initramfs" class="headerlink" title="以设备列表的形式构建 initramfs"></a>以设备列表的形式构建 initramfs</h2><p>设备列表就是一个配置文件，用以列出文件、文件夹、设备节点、链接等等。</p>
+<p>在构建内核的时候，也就会生成按照设备列表配置的 cpio 文件。</p>
+<p>和上面的方式一样，在内核的<code>Initramfs source file(s)</code>处指向该配置文件。</p>
+<p><code>cpio</code>文件就会在编译时创建。</p>
+<p>下面是一个简单的示例：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> dir &lt;name&gt; &lt;mode&gt; &lt;uid&gt; &lt;gid&gt;</span></span><br><span class="line">dir /bin 775 0 0</span><br><span class="line">dir /sys 775 0 0</span><br><span class="line">dir /tmp 775 0 0</span><br><span class="line">dir /dev 775 0 0</span><br><span class="line"><span class="meta">#</span><span class="bash"> nod &lt;name&gt; &lt;mode&gt; &lt;uid&gt; &lt;gid&gt; &lt;dev_type&gt; &lt;maj&gt; &lt;min&gt;</span></span><br><span class="line">nod /dev/null 666 0 0 c 1 3</span><br><span class="line">nod /dev/console 600 0 0 c 5 1</span><br><span class="line">dir /home 775 0 0</span><br><span class="line">dir /proc 775 0 0</span><br><span class="line">dir /lib 775 0 0</span><br><span class="line"><span class="meta">#</span><span class="bash"> slink &lt;name&gt; &lt;target&gt; &lt;mode&gt; &lt;uid&gt; &lt;gid&gt;</span></span><br><span class="line">slink /lib/libm.so.6 libm-2.22.so 777 0 0</span><br><span class="line">slink /lib/libc.so.6 libc-2.22.so 777 0 0</span><br><span class="line">slink /lib/ld-linux-armhf.so.3 ld-2.22.so 777 0 0</span><br><span class="line"><span class="meta">#</span><span class="bash"> file &lt;name&gt; &lt;location&gt; &lt;mode&gt; &lt;uid&gt; &lt;gid&gt;</span></span><br><span class="line">file /lib/libm-2.22.so /home/chris/rootfs/lib/libm-2.22.so 755 </span><br><span class="line">0 0</span><br><span class="line">file /lib/libc-2.22.so /home/chris/rootfs/lib/libc-2.22.so 755 </span><br><span class="line">0 0</span><br><span class="line">file /lib/ld-2.22.so /home/chris/rootfs/lib/ld-2.22.so 755 0 0</span><br></pre></td></tr></table></figure>
+
+<p>可以使用内核文件<code>/usr/gen_initramfs_list.sh</code>来根据前面的 rootfs 生成一个配置文文件：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> ./usr/gen_initramfs_list.sh -u 1000 -g 1000 ~/lab/rootfs &gt; initramfs-device-table</span></span><br></pre></td></tr></table></figure>
+
+<h1 id="完整启动-initramfs"><a href="#完整启动-initramfs" class="headerlink" title="完整启动 initramfs"></a>完整启动 initramfs</h1><p>前面的启动过程，会由于 initramfs 缺少文件而退出 shell，而正确的启动流程是：</p>
+<ol>
+<li>内核启动<code>/sbin/init</code>程序</li>
+<li><code>/sbin/init</code>读取<code>/etc/inittab</code>确定启动级别及运行 shell</li>
+<li>根据<code>/etc/inittab</code>中的内容找到<code>/etc/init.d/rcS</code>然后依次运行对应脚本进行环境初始化</li>
+</ol>
+<p>而<code>busybox</code>在其源码<code>examples/bootfloppy/etc/</code>中就提供了通用的示例，将其拷贝到我们创建的<code>rootfs</code>中是比较简单的方法：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cec@box:~/lab/rootfs$ cp -aR ../busybox/examples/bootfloppy/etc/** etc/</span><br></pre></td></tr></table></figure>
+
+<h2 id="inittab-修改"><a href="#inittab-修改" class="headerlink" title="inittab 修改"></a>inittab 修改</h2><p>作为测试目的，对其进行简单修改：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 启动初始化脚本为 /etc/init.d/rcS</span></span><br><span class="line">::sysinit:/etc/init.d/rcS</span><br><span class="line"><span class="meta">#</span><span class="bash"> 虚拟终端作为 shell</span></span><br><span class="line">::askfirst:-/bin/sh</span><br></pre></td></tr></table></figure>
+
+<h2 id="rcS-修改"><a href="#rcS-修改" class="headerlink" title="rcS 修改"></a>rcS 修改</h2><p>在 <code>rcS</code>脚本中，需要至少挂载<code>proc,sys</code>两个虚拟文件系统：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">!/bin/sh</span></span><br><span class="line">mount -t proc proc /proc </span><br><span class="line">mount -t sysfs sysfs /sys</span><br></pre></td></tr></table></figure>
+
+<p>修改以后再次打包为 cpio 文件，对应的 bootargs 就可以修改：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">fatload mmc 0:1 0x80200000 zImage</span><br><span class="line">fatload mmc 0:1 0x8CA00000 am335x-boneblack.dtb</span><br><span class="line">setenv bootargs console=ttyO0,115200 rdinit=/sbin/init</span><br><span class="line">bootz 0x80200000 - 0x8CA00000</span><br></pre></td></tr></table></figure>
+
+<h2 id="增加用户配置"><a href="#增加用户配置" class="headerlink" title="增加用户配置"></a>增加用户配置</h2><p><code>busybox</code>默认会支持 shadow 特性，这需要添加用户配置文件。</p>
+<p>用户名及相关信息被配置于<code>/etc/passwd</code>文件中，每个用户一行，中间以冒号分开，依次是：</p>
+<ul>
+<li><p>用户名</p>
+</li>
+<li><p><code>x</code>代表密码存储于<code>/etc/shadow</code></p>
+<blockquote>
+<p><code>/etc/passwd</code>是所有人可读的，而<code>/etc/shadow</code>则只能是 root 用户和组可以读，以此来保证安全性。</p>
+</blockquote>
+</li>
+<li><p>用户 ID</p>
+</li>
+<li><p>组 ID</p>
+</li>
+<li><p>注释</p>
+</li>
+<li><p>用户的<code>home</code>目录</p>
+</li>
+<li><p>用户所使用的 shell</p>
+</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">root:x:0:0:root:/root:/bin/sh</span><br><span class="line">daemon:x:1:1:daemon:/usr/sbin:/bin/false</span><br></pre></td></tr></table></figure>
+
+<p>组名称则存储于<code>/etc/group</code>中，也是每个组一行，中间以冒号分开：</p>
+<ul>
+<li>组名</li>
+<li>组密码，<code>x</code>代表该组没有密码</li>
+<li>组 ID</li>
+<li>那些用于属于该组</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">root:x:0:</span><br><span class="line">daemon:x:1:</span><br></pre></td></tr></table></figure>
+
+<p><code>/etc/shadow</code> 中的示例内容如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">root::10933:0:99999:7:::</span><br><span class="line">daemon:*:10933:0:99999:7:::</span><br></pre></td></tr></table></figure>
+
+<p>在 rootfs 中加入这几个文件，其中 <strong>/etc/shadow</strong> 需要修改权限为 600，以便只有 root 可以打开此文件。</p>
+<p>然后再编辑 <code>etc/inittab</code> 让初始启动程序为 getty 获取用户名及密码验证：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">::sysinit:/etc/init.d/rcS</span><br><span class="line"><span class="meta">#</span><span class="bash"> respawn 代表当一个用户退出后，又重新启动 getty</span></span><br><span class="line">::respawn:/sbin/getty 115200 console</span><br></pre></td></tr></table></figure>
+
+<h1 id="创建设备节点更好的方法"><a href="#创建设备节点更好的方法" class="headerlink" title="创建设备节点更好的方法"></a>创建设备节点更好的方法</h1><p><code>mknod</code>创建设备节点比较繁琐，还有其他更好的办法：</p>
+<ul>
+<li><code>devtmpfs</code>：这是在启动时被挂载到<code>/dev</code>的伪文件系统。内核通过它来动态的增加和删除设备节点。</li>
+<li><code>mdev</code>：由 busybox 提供的工具，通过读取<code>/etc/mdev.conf</code>来达到自动挂载节点的目的</li>
+<li><code>udev</code>：功能和<code>mdev</code>类似，现在属于<code>systemd</code>的一部分</li>
+</ul>
+<p>在实际使用中，一般是通过<code>devtmpfs</code>来自动创建节点，而<code>mdev/udev</code>来设置节点的属性。</p>
+<h2 id="devtmpfs"><a href="#devtmpfs" class="headerlink" title="devtmpfs"></a><code>devtmpfs</code></h2><p>在使用<code>devtmpfs</code>之前，需要确保内核已经使能了<code>CONFIG_DEVTMPFS</code>。</p>
+<blockquote>
+<p>如果使能了 CONFIG_DEVTMPFS_MOUNT 内核会自动挂载该文件系统，只是不适用于 initramfs</p>
+</blockquote>
+<p>对于<code>initramfs</code>在启动脚本中挂载<code>devtmpfs</code>：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mount -t devtmpfs devtmpfs /dev</span><br></pre></td></tr></table></figure>
+
+<h2 id="mdev"><a href="#mdev" class="headerlink" title="mdev"></a><code>mdev</code></h2><p>在使用<code>mdev</code>之前，需要在启动脚本中将其设置为接收内核发送的<code>hotplug</code>事件，然后再启动<code>mdev</code>：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">echo /sbin/mdev &gt; /proc/sys/kernel/hotplug</span><br><span class="line">mdev -s</span><br></pre></td></tr></table></figure>
+
+<p><code>mdev</code>会根据<code>/etc/mdev.conf</code>文件来配置节点的属性：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> file /etc/mdev.conf</span></span><br><span class="line">null root:root 666</span><br><span class="line">random root:root 444</span><br><span class="line">urandom root:root 444</span><br></pre></td></tr></table></figure>
+
+<p>关于 <code>mdev</code>更多说明，参考 busybox 源码中的 <code>docs/mdev.txt</code>文件。</p>
+<h1 id="网络配置"><a href="#网络配置" class="headerlink" title="网络配置"></a>网络配置</h1><h2 id="基本配置"><a href="#基本配置" class="headerlink" title="基本配置"></a>基本配置</h2><p>与网络配置相关的文件有：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">etc/network</span><br><span class="line">etc/network/if-pre-up.d</span><br><span class="line">etc/network/if-up.d</span><br><span class="line">etc/network/interfaces</span><br><span class="line">var/run</span><br></pre></td></tr></table></figure>
+
+<p>其中<code>interfaces</code>中是对网络的配置：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">auto lo</span><br><span class="line">iface lo inet loopback</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 配置 eth0 为静态 IP</span></span><br><span class="line">auto eth0</span><br><span class="line">iface eth0 inet static</span><br><span class="line">    address 192.168.1.101</span><br><span class="line">    netmask 255.255.255.0</span><br><span class="line">    network 192.168.1.0</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 也可以这样配置，使用动态 IP</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> auto eth0</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> iface eth0 inet dhcp</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> iface eth1 inet dhcp</span>    </span><br></pre></td></tr></table></figure>
+
+<p>对于动态 IP，busybox 使用 <code>udchpcd</code>运行<code>/usr/share/udhcpc/default.script</code>来完成配置，可以拷贝<code>examples/udhcp/simple.script</code>来完成。</p>
+<h2 id="字符串映射"><a href="#字符串映射" class="headerlink" title="字符串映射"></a>字符串映射</h2><p>glibc 使用 <code>name service switch（NSS）</code>来实现从名称到特定数值的转换。</p>
+<p>比如从用户名转换到 UID，从服务器名称转换到端口号，从主机名称转换到 IP 地址等。</p>
+<p>这些配置被存储于<code>/etc/nssswitch.conf</code>文件中：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">passwd:    files # 查询 UID ，就在 /etc/passwd</span><br><span class="line">group:     files</span><br><span class="line">shadow:    files</span><br><span class="line">hosts:     files dns # 查询主机就在 /etc/hosts，如果查询不到就从 DNS 查询</span><br><span class="line">networks:  files</span><br><span class="line">protocols: files</span><br><span class="line">services:  files # 查询端口号，就在 /etc/services</span><br></pre></td></tr></table></figure>
+
+<p>这些文件完全可以在当前主机中拷贝，这些文件都是有统一格式的。</p>
+<p>最后还需要安装库以便于正确执行名称查找：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> <span class="built_in">cd</span> ~/rootfs</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> cp -a <span class="variable">$SYSROOT</span>/lib/libnss* lib</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> cp -a <span class="variable">$SYSROOT</span>/lib/libresolv* lib</span></span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>kcmetercec
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://kcmetercec.top/2024/02/27/linux_make_yocto_fs/" title="构建根文件系统">http://kcmetercec.top/2024/02/27/linux_make_yocto_fs/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/yocto/" rel="tag"> <i class="fa fa-tag"></i> yocto</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/02/19/linux_make_yocto_kernel/" rel="prev" title="编译内核">
+      <i class="fa fa-chevron-left"></i> 编译内核
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/03/09/linux_make_yocto_build_system/" rel="next" title="linux 构建系统">
+      linux 构建系统 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A0%B9%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E9%87%8C%E9%9D%A2%E6%9C%89%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">根文件系统里面有什么？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%AE%E5%BD%95%E7%9A%84%E5%88%86%E5%B8%83"><span class="nav-number">1.1.</span> <span class="nav-text">目录的分布</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9B%E5%BB%BAstaging%E6%96%87%E4%BB%B6%E5%A4%B9"><span class="nav-number">1.2.</span> <span class="nav-text">创建staging文件夹</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%AE%E5%BD%95%E4%B8%AD%E5%85%B7%E6%9C%89%E7%9A%84%E7%A8%8B%E5%BA%8F"><span class="nav-number">1.3.</span> <span class="nav-text">目录中具有的程序</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#init%E7%A8%8B%E5%BA%8F"><span class="nav-number">1.3.1.</span> <span class="nav-text">init程序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Shell"><span class="nav-number">1.3.2.</span> <span class="nav-text">Shell</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B7%A5%E5%85%B7%E7%A8%8B%E5%BA%8F"><span class="nav-number">1.3.3.</span> <span class="nav-text">工具程序</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#BusyBox"><span class="nav-number">1.4.</span> <span class="nav-text">BusyBox</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8E%9F%E7%90%86"><span class="nav-number">1.4.1.</span> <span class="nav-text">原理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9E%84%E5%BB%BA-BusyBox"><span class="nav-number">1.4.2.</span> <span class="nav-text">构建 BusyBox</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B9%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E4%B8%AD%E7%9A%84%E5%BA%93"><span class="nav-number">1.5.</span> <span class="nav-text">根文件系统中的库</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BE%E5%A4%87%E8%8A%82%E7%82%B9"><span class="nav-number">1.6.</span> <span class="nav-text">设备节点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E6%A8%A1%E5%9D%97"><span class="nav-number">1.7.</span> <span class="nav-text">内核模块</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA-initramfs"><span class="nav-number">2.</span> <span class="nav-text">创建 initramfs</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E4%B8%80%E4%B8%AA%E7%8B%AC%E7%AB%8B%E5%8C%85"><span class="nav-number">2.1.</span> <span class="nav-text">创建一个独立包</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8%E7%8B%AC%E7%AB%8B%E5%8C%85"><span class="nav-number">2.2.</span> <span class="nav-text">启动独立包</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8B%B7%E8%B4%9D%E8%BF%9B-SD-%E5%8D%A1"><span class="nav-number">2.2.1.</span> <span class="nav-text">拷贝进 SD 卡</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BD%BD%E5%85%A5%E5%88%B0-DDR"><span class="nav-number">2.2.2.</span> <span class="nav-text">载入到 DDR</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%86-initramfs-%E5%B5%8C%E5%85%A5%E5%86%85%E6%A0%B8"><span class="nav-number">2.3.</span> <span class="nav-text">将 initramfs 嵌入内核</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A5%E8%AE%BE%E5%A4%87%E5%88%97%E8%A1%A8%E7%9A%84%E5%BD%A2%E5%BC%8F%E6%9E%84%E5%BB%BA-initramfs"><span class="nav-number">2.4.</span> <span class="nav-text">以设备列表的形式构建 initramfs</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%8C%E6%95%B4%E5%90%AF%E5%8A%A8-initramfs"><span class="nav-number">3.</span> <span class="nav-text">完整启动 initramfs</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#inittab-%E4%BF%AE%E6%94%B9"><span class="nav-number">3.1.</span> <span class="nav-text">inittab 修改</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#rcS-%E4%BF%AE%E6%94%B9"><span class="nav-number">3.2.</span> <span class="nav-text">rcS 修改</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A2%9E%E5%8A%A0%E7%94%A8%E6%88%B7%E9%85%8D%E7%BD%AE"><span class="nav-number">3.3.</span> <span class="nav-text">增加用户配置</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E8%AE%BE%E5%A4%87%E8%8A%82%E7%82%B9%E6%9B%B4%E5%A5%BD%E7%9A%84%E6%96%B9%E6%B3%95"><span class="nav-number">4.</span> <span class="nav-text">创建设备节点更好的方法</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#devtmpfs"><span class="nav-number">4.1.</span> <span class="nav-text">devtmpfs</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mdev"><span class="nav-number">4.2.</span> <span class="nav-text">mdev</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BD%91%E7%BB%9C%E9%85%8D%E7%BD%AE"><span class="nav-number">5.</span> <span class="nav-text">网络配置</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E9%85%8D%E7%BD%AE"><span class="nav-number">5.1.</span> <span class="nav-text">基本配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AD%97%E7%AC%A6%E4%B8%B2%E6%98%A0%E5%B0%84"><span class="nav-number">5.2.</span> <span class="nav-text">字符串映射</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">Qt, C++, linux, CS</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">107</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">55</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:kcmeter.cec@gmail.com" title="E-Mail → mailto:kcmeter.cec@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2021 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">206k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">3:08</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+document.querySelectorAll('.pdfobject-container').forEach(element => {
+  let url = element.dataset.target;
+  let pdfOpenParams = {
+    navpanes : 0,
+    toolbar  : 0,
+    statusbar: 0,
+    pagemode : 'thumbs',
+    view     : 'FitH'
+  };
+  let pdfOpenFragment = '#' + Object.entries(pdfOpenParams).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
+  let fullURL = `/lib/pdf/web/viewer.html?file=${encodeURIComponent(url)}${pdfOpenFragment}`;
+
+  if (NexT.utils.supportsPDFs()) {
+    element.innerHTML = `<embed class="pdfobject" src="${url + pdfOpenFragment}" type="application/pdf" style="height: ${element.dataset.height};">`;
+  } else {
+    element.innerHTML = `<iframe src="${fullURL}" style="height: ${element.dataset.height};" frameborder="0"></iframe>`;
+  }
+});
+</script>
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'f938893867df78f94802',
+      clientSecret: 'b6d8470939c53d26c98c4e3b9d4c9ceb55d6e78e',
+      repo        : 'kcmetercec.github.io',
+      owner       : 'KcMeterCEC',
+      admin       : ['KcMeterCEC'],
+      id          : '0bc79ffccc8b04b0fa1e844478ec19e8',
+        language: 'zh-CN',
+      distractionFreeMode: false
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+    </div>
+</body>
+</html>

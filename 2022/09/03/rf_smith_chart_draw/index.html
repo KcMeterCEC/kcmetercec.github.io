@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="Smith chart 对于射频领域的重要性不言而喻，但我们应该如何通过 CPU 将其绘制出来呢？">
+<meta property="og:type" content="article">
+<meta property="og:title" content="如何绘制 smith chart？">
+<meta property="og:url" content="http://kcmetercec.top/2022/09/03/rf_smith_chart_draw/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="Smith chart 对于射频领域的重要性不言而喻，但我们应该如何通过 CPU 将其绘制出来呢？">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5Bimplement%5D/%5Bsmith_chart%5D/pic/simple_expression.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5Bimplement%5D/%5Bsmith_chart%5D/pic/complex_expression.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5Bimplement%5D/%5Bsmith_chart%5D/pic/circle_expression.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5Bimplement%5D/%5Bsmith_chart%5D/pic/resistance.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5Bimplement%5D/%5Bsmith_chart%5D/pic/reactance.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5Bimplement%5D/%5Bsmith_chart%5D/pic/get_phase.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5Bimplement%5D/%5Bsmith_chart%5D/pic/chart.jpg?raw=true">
+<meta property="article:published_time" content="2022-09-02T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-09-02T16:00:00.000Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="RF">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5Bimplement%5D/%5Bsmith_chart%5D/pic/simple_expression.jpg?raw=true">
+
+<link rel="canonical" href="http://kcmetercec.top/2022/09/03/rf_smith_chart_draw/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>如何绘制 smith chart？ | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112423075-1# <app_id>"></script>
+    <script data-pjax>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-112423075-1# <app_id>');
+      }
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+        <li class="menu-item menu-item-commonweal">
+
+    <a href="/404/" rel="section"><i class="fa fa-heartbeat fa-fw"></i>公益 404</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2022/09/03/rf_smith_chart_draw/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="Qt, C++, linux, CS">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          如何绘制 smith chart？
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-03 00:00:00" itemprop="dateCreated datePublished" datetime="2022-09-03T00:00:00+08:00">2022-09-03</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/RF/" itemprop="url" rel="index"><span itemprop="name">RF</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/RF/Smith-chart/" itemprop="url" rel="index"><span itemprop="name">Smith chart</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>500</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>Smith chart 对于射频领域的重要性不言而喻，但我们应该如何通过 CPU 将其绘制出来呢？</p>
+<span id="more"></span>
+
+<h1 id="绘制的理论"><a href="#绘制的理论" class="headerlink" title="绘制的理论"></a>绘制的理论</h1><p>在 <a target="_blank" rel="noopener" href="https://www.maximintegrated.com/en/design/technical-documents/tutorials/7/742.html">这篇文章</a> 中已经说明了，对于史密斯圆图，其核心公式是：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5Bimplement%5D/%5Bsmith_chart%5D/pic/simple_expression.jpg?raw=true"><br>由于其是复数，所以展开是：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5Bimplement%5D/%5Bsmith_chart%5D/pic/complex_expression.jpg?raw=true"><br>最终经过展开后，便可以得到标准的圆方程：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5Bimplement%5D/%5Bsmith_chart%5D/pic/circle_expression.jpg?raw=true"></p>
+<p>也就是说：</p>
+<ul>
+<li>对于电阻圆，圆心是<code>[r/(r+1), 0]</code>，半径是<code>1/(1+r)</code></li>
+<li>对于电抗圆，圆心是<code>[1,1/x]</code>，半径是<code>1/|x|</code></li>
+</ul>
+<p>比如当电阻 r 为<strong>归一化</strong>的 0 时，得到的圆心就是（0，0），半径就是 1，也就是最大的理论极限圆：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5Bimplement%5D/%5Bsmith_chart%5D/pic/resistance.jpg?raw=true"><br>当电抗 x 为归一化的<code>1</code>时，圆心就是（1，1），半径就是 1：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5Bimplement%5D/%5Bsmith_chart%5D/pic/reactance.jpg?raw=true"><br>有了上面的理论，圆就好画了。</p>
+<h1 id="绘制弧线"><a href="#绘制弧线" class="headerlink" title="绘制弧线"></a>绘制弧线</h1><p>由于电抗圆是弧线，所以有两种办法来绘制电抗部分：</p>
+<ol>
+<li>仍然以圆的方式进行绘制，绘制完成后再来擦除多余的部分</li>
+<li>计算要绘制圆的起始和终止角度，仅绘制需要的弧度部分</li>
+</ol>
+<p>第一种办法虽然画圆很简单，但是擦除的时候由于需要计算擦除的部分，也是需要避开最外面的极限圆。</p>
+<p>所以用第二种办法显然是更为合理的方式。</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5Bimplement%5D/%5Bsmith_chart%5D/pic/get_phase.jpg?raw=true"><br>如上图所示：</p>
+<ul>
+<li>由于已知电抗圆、电阻圆的圆心和半径，所以可以根据<strong>勾股定理</strong>求得斜边 b</li>
+<li>由于已知三角形的三个边，那么根据<strong>余弦定理</strong>就可以求得弧线的角度了</li>
+</ul>
+<h1 id="示例代码"><a href="#示例代码" class="headerlink" title="示例代码"></a>示例代码</h1><p>以下便是使用 Qt 绘制示例的主要代码：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&quot;widget.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;cmath&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> M_PI</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> M_PI    (3.141592653)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LOGIC_WIDTH     (435)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LOGIC_HEIGHT    (435)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DEVIDER_CNT     (50)</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Widget::paintEvent</span><span class="params">(QPaintEvent* event)</span> </span>&#123;</span><br><span class="line">    <span class="function">QPainter <span class="title">painter</span><span class="params">(<span class="keyword">this</span>)</span></span>;</span><br><span class="line"></span><br><span class="line">    painter.<span class="built_in">setPen</span>(<span class="built_in">QColor</span>(Qt::red));</span><br><span class="line">    qint16 side = <span class="built_in">qMin</span>(<span class="built_in">width</span>(), <span class="built_in">height</span>());</span><br><span class="line"></span><br><span class="line">    painter.<span class="built_in">setViewport</span>((<span class="built_in">width</span>() - side) / <span class="number">2</span>,</span><br><span class="line">                        (<span class="built_in">height</span>() - side) / <span class="number">2</span>,</span><br><span class="line">                        side,</span><br><span class="line">                        side);</span><br><span class="line">    painter.<span class="built_in">setWindow</span>(<span class="number">0</span>, <span class="number">0</span>, LOGIC_WIDTH, LOGIC_HEIGHT);</span><br><span class="line"></span><br><span class="line">    painter.<span class="built_in">setPen</span>(<span class="built_in">QColor</span>(<span class="number">253</span>, <span class="number">189</span>, <span class="number">19</span>));</span><br><span class="line">    painter.<span class="built_in">drawLine</span>(LOGIC_WIDTH / <span class="number">2</span>, <span class="number">0</span>, LOGIC_WIDTH / <span class="number">2</span>, LOGIC_HEIGHT - <span class="number">1</span>);</span><br><span class="line">    painter.<span class="built_in">drawLine</span>(<span class="number">0</span>, LOGIC_WIDTH / <span class="number">2</span>, LOGIC_WIDTH - <span class="number">1</span>, LOGIC_WIDTH / <span class="number">2</span>);</span><br><span class="line"></span><br><span class="line">    painter.<span class="built_in">setPen</span>(<span class="built_in">QColor</span>(<span class="number">165</span>, <span class="number">206</span>, <span class="number">57</span>));</span><br><span class="line"></span><br><span class="line">    <span class="built_in">DrawResistance</span>(painter, <span class="number">0</span>);</span><br><span class="line">    <span class="built_in">DrawResistance</span>(painter, <span class="number">0.25</span>);</span><br><span class="line">    <span class="built_in">DrawResistance</span>(painter, <span class="number">0.5</span>);</span><br><span class="line">    <span class="built_in">DrawResistance</span>(painter, <span class="number">1</span>);</span><br><span class="line">    <span class="built_in">DrawResistance</span>(painter, <span class="number">2</span>);</span><br><span class="line">    <span class="built_in">DrawResistance</span>(painter, <span class="number">4</span>);</span><br><span class="line">    <span class="built_in">DrawResistance</span>(painter, <span class="number">10</span>);</span><br><span class="line"></span><br><span class="line">    painter.<span class="built_in">setPen</span>(<span class="built_in">QColor</span>(<span class="number">165</span>, <span class="number">35</span>, <span class="number">142</span>));</span><br><span class="line">    <span class="built_in">DrawReactance</span>(painter, <span class="number">0.25</span>);</span><br><span class="line">    <span class="built_in">DrawReactance</span>(painter, <span class="number">0.5</span>);</span><br><span class="line">    <span class="built_in">DrawReactance</span>(painter, <span class="number">1</span>);</span><br><span class="line">    <span class="built_in">DrawReactance</span>(painter, <span class="number">2</span>);</span><br><span class="line">    <span class="built_in">DrawReactance</span>(painter, <span class="number">4</span>);</span><br><span class="line">    <span class="built_in">DrawReactance</span>(painter, <span class="number">-0.25</span>);</span><br><span class="line">    <span class="built_in">DrawReactance</span>(painter, <span class="number">-0.5</span>);</span><br><span class="line">    <span class="built_in">DrawReactance</span>(painter, <span class="number">-1</span>);</span><br><span class="line">    <span class="built_in">DrawReactance</span>(painter, <span class="number">-2</span>);</span><br><span class="line">    <span class="built_in">DrawReactance</span>(painter, <span class="number">-4</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Widget::DrawResistance</span><span class="params">(QPainter&amp; painter, <span class="keyword">float</span> val)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> x = val / (val + <span class="number">1</span>) * LOGIC_WIDTH / <span class="number">2</span> + LOGIC_WIDTH / <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">int</span> y = LOGIC_HEIGHT / <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">int</span> r = <span class="number">1</span> / (<span class="number">1</span> + val) * LOGIC_HEIGHT / <span class="number">2</span>;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">DrawCircle</span>(painter, x, y, r);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Widget::DrawReactance</span><span class="params">(QPainter&amp; painter, <span class="keyword">float</span> val)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> x = LOGIC_WIDTH - <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">int</span> y = LOGIC_HEIGHT / <span class="number">2</span> - <span class="number">1</span> / val * LOGIC_HEIGHT / <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">int</span> r = <span class="number">1</span> / <span class="built_in">abs</span>(val) * LOGIC_HEIGHT / <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">float</span> r2 = LOGIC_HEIGHT / <span class="number">2</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">float</span> d = <span class="built_in">sqrt</span>(r * r + r2 * r2);</span><br><span class="line">    <span class="keyword">float</span> phase = <span class="built_in">acos</span>((r2 * r2 - d * d - r * r) /</span><br><span class="line">                       (<span class="number">-2</span> * d * r)) * <span class="number">2</span>;</span><br><span class="line">    phase = phase * <span class="number">180</span> / M_PI;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">float</span> start = (<span class="number">-90</span> - phase) * <span class="number">16</span>;</span><br><span class="line">    <span class="keyword">if</span> (val &lt; <span class="number">0</span>) &#123;</span><br><span class="line">          start = <span class="number">90</span> * <span class="number">16</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    painter.<span class="built_in">drawArc</span>(x - r, y - r, <span class="number">2</span> * r, <span class="number">2</span> * r,</span><br><span class="line">                    start, phase * <span class="number">16</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Widget::DrawCircle</span><span class="params">(QPainter&amp; painter, <span class="keyword">int</span> x, <span class="keyword">int</span> y, <span class="keyword">int</span> r)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">float</span> step = <span class="number">2</span> * M_PI / DEVIDER_CNT;</span><br><span class="line">    <span class="keyword">float</span> phase = step;</span><br><span class="line">    <span class="keyword">int</span> prev_x = x + <span class="built_in">cos</span>(<span class="number">0</span>) * r;</span><br><span class="line">    <span class="keyword">int</span> prev_y = y + <span class="built_in">sin</span>(<span class="number">0</span>) * r;</span><br><span class="line">    <span class="keyword">int</span> cur_x, cur_y;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= DEVIDER_CNT; ++i) &#123;</span><br><span class="line">        <span class="keyword">int</span> diff_x = <span class="built_in">cos</span>(phase) * r;</span><br><span class="line">        <span class="keyword">int</span> diff_y = <span class="built_in">sin</span>(phase) * r;</span><br><span class="line">        cur_x = x + diff_x;</span><br><span class="line">        cur_y = y + diff_y;</span><br><span class="line"></span><br><span class="line">        painter.<span class="built_in">drawLine</span>(prev_x, prev_y, cur_x, cur_y);</span><br><span class="line"></span><br><span class="line">        phase += step;</span><br><span class="line">        prev_x = cur_x;</span><br><span class="line">        prev_y = cur_y;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>效果如下图：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5Bimplement%5D/%5Bsmith_chart%5D/pic/chart.jpg?raw=true"></p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>kcmetercec
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://kcmetercec.top/2022/09/03/rf_smith_chart_draw/" title="如何绘制 smith chart？">http://kcmetercec.top/2022/09/03/rf_smith_chart_draw/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/RF/" rel="tag"> <i class="fa fa-tag"></i> RF</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/08/11/qtmake_win_compile/" rel="prev" title="在 win10 中编译 KDE Qt5.15">
+      <i class="fa fa-chevron-left"></i> 在 win10 中编译 KDE Qt5.15
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/09/09/analysis_of_algorithms/" rel="next" title="如何分析一个算法？">
+      如何分析一个算法？ <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BB%98%E5%88%B6%E7%9A%84%E7%90%86%E8%AE%BA"><span class="nav-number">1.</span> <span class="nav-text">绘制的理论</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BB%98%E5%88%B6%E5%BC%A7%E7%BA%BF"><span class="nav-number">2.</span> <span class="nav-text">绘制弧线</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B%E4%BB%A3%E7%A0%81"><span class="nav-number">3.</span> <span class="nav-text">示例代码</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">Qt, C++, linux, CS</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">107</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">55</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:kcmeter.cec@gmail.com" title="E-Mail → mailto:kcmeter.cec@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2021 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">206k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">3:08</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+document.querySelectorAll('.pdfobject-container').forEach(element => {
+  let url = element.dataset.target;
+  let pdfOpenParams = {
+    navpanes : 0,
+    toolbar  : 0,
+    statusbar: 0,
+    pagemode : 'thumbs',
+    view     : 'FitH'
+  };
+  let pdfOpenFragment = '#' + Object.entries(pdfOpenParams).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
+  let fullURL = `/lib/pdf/web/viewer.html?file=${encodeURIComponent(url)}${pdfOpenFragment}`;
+
+  if (NexT.utils.supportsPDFs()) {
+    element.innerHTML = `<embed class="pdfobject" src="${url + pdfOpenFragment}" type="application/pdf" style="height: ${element.dataset.height};">`;
+  } else {
+    element.innerHTML = `<iframe src="${fullURL}" style="height: ${element.dataset.height};" frameborder="0"></iframe>`;
+  }
+});
+</script>
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'f938893867df78f94802',
+      clientSecret: 'b6d8470939c53d26c98c4e3b9d4c9ceb55d6e78e',
+      repo        : 'kcmetercec.github.io',
+      owner       : 'KcMeterCEC',
+      admin       : ['KcMeterCEC'],
+      id          : 'eab371277ff33409647510a5464cf2fd',
+        language: 'zh-CN',
+      distractionFreeMode: false
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+    </div>
+</body>
+</html>

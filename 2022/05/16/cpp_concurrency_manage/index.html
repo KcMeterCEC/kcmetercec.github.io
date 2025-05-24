@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="理解 c++ 对线程的管理。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="C++ concurrency：线程管理">
+<meta property="og:url" content="http://kcmetercec.top/2022/05/16/cpp_concurrency_manage/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="理解 c++ 对线程的管理。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-05-15T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-05-15T16:00:00.000Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="cpp">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://kcmetercec.top/2022/05/16/cpp_concurrency_manage/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>C++ concurrency：线程管理 | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112423075-1# <app_id>"></script>
+    <script data-pjax>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-112423075-1# <app_id>');
+      }
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+        <li class="menu-item menu-item-commonweal">
+
+    <a href="/404/" rel="section"><i class="fa fa-heartbeat fa-fw"></i>公益 404</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2022/05/16/cpp_concurrency_manage/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="Qt, C++, linux, CS">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          C++ concurrency：线程管理
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-05-16 00:00:00" itemprop="dateCreated datePublished" datetime="2022-05-16T00:00:00+08:00">2022-05-16</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/cpp/" itemprop="url" rel="index"><span itemprop="name">cpp</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/cpp/concurrency/" itemprop="url" rel="index"><span itemprop="name">concurrency</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.1k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>理解 c++ 对线程的管理。</p>
+<span id="more"></span>
+
+<h1 id="基本的线程管理"><a href="#基本的线程管理" class="headerlink" title="基本的线程管理"></a>基本的线程管理</h1><h2 id="启动线程"><a href="#启动线程" class="headerlink" title="启动线程"></a>启动线程</h2><p>在 c++ 中，线程也是一个对象，该对象与对应的执行函数、对象相关联而执行对应的操作。</p>
+<p>当创建该对象后，与其相关联的可执行对象就会被并发执行。</p>
+<blockquote>
+<p>这就和使用 pthread_create 一样，创建一个 pthread 与之关联的函数便会并发执行。</p>
+</blockquote>
+<h3 id="与普通函数关联"><a href="#与普通函数关联" class="headerlink" title="与普通函数关联"></a>与普通函数关联</h3><p>最简单的创建线程的方式便是将一个普通函数与线程对象关联，线程启动后便会执行该函数。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="comment">//多线程管理的头文件</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;thread&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">hello</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;Hello world!\n&quot;</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function">std::thread <span class="title">t1</span><span class="params">(hello)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//等待线程 t1 运行完毕</span></span><br><span class="line">    t1.<span class="built_in">join</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="与可调用类关联"><a href="#与可调用类关联" class="headerlink" title="与可调用类关联"></a>与可调用类关联</h3><p>类中使用运算符重载 () 时，该类的实例也可以被调用：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="comment">//多线程管理的头文件</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;thread&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">BackGroundTask</span> &#123;</span></span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">operator</span><span class="params">()</span><span class="params">()</span> <span class="keyword">const</span> </span>&#123;</span><br><span class="line">        std::cout &lt;&lt; <span class="string">&quot;Hello world!\n&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">      @brief : 方法1，创建实例，将实例传给对象</span></span><br><span class="line"><span class="comment">      */</span></span><br><span class="line"><span class="comment">//    BackGroundTask bk;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//    std::thread t1(bk);</span></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">      @brief : 方法2，创建匿名实例，将实例传给对象</span></span><br><span class="line"><span class="comment">      @note: 注意这里需要用括号包含 BackGroundTask() 包含，以表示要创建对象</span></span><br><span class="line"><span class="comment">      */</span></span><br><span class="line"><span class="comment">//    std::thread t1((BackGroundTask()));</span></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">      @brief : 方法3，使用列表初始化创建匿名实例，将实例传给对象</span></span><br><span class="line"><span class="comment">      */</span></span><br><span class="line">    std::thread t1&#123;<span class="built_in">BackGroundTask</span>()&#125;;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//等待线程 t1 运行完毕</span></span><br><span class="line">    t1.<span class="built_in">join</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>特别要注意括号初始化，如果是以<code>std::thread t1(BackGroundTask());</code>形式，则是代表声明了一个函数。其参数是函数指针，返回类型是<code>std::thread</code>。关于初始化的坑，在<a href="http://kcmetercec.top/2022/04/12/effective_cpp_obj_initialize/">这篇文章</a>有详细说明。</p>
+<h3 id="与-Lambda-表达式关联"><a href="#与-Lambda-表达式关联" class="headerlink" title="与 Lambda 表达式关联"></a>与 Lambda 表达式关联</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="comment">//多线程管理的头文件</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;thread&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">auto</span> task = []() &#123;</span><br><span class="line">        std::cout &lt;&lt; <span class="string">&quot;Hello world!\n&quot;</span>;</span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    <span class="function">std::thread <span class="title">t1</span><span class="params">(task)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//等待线程 t1 运行完毕</span></span><br><span class="line">    t1.<span class="built_in">join</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="与类内的静态函数关联"><a href="#与类内的静态函数关联" class="headerlink" title="与类内的静态函数关联"></a>与类内的静态函数关联</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="comment">//多线程管理的头文件</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;thread&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">TaskObj</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">TaskObj</span>(<span class="keyword">int</span> i):<span class="built_in">i_</span>(i) &#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">Task</span><span class="params">(TaskObj *obj)</span></span>;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">int</span> i_ = <span class="number">0</span>;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">TaskObj::Task</span><span class="params">(TaskObj *obj)</span> </span>&#123;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;The value of obj is &quot;</span> &lt;&lt; obj-&gt;i_ &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function">TaskObj <span class="title">obj</span><span class="params">(<span class="number">10</span>)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="function">std::thread <span class="title">t1</span><span class="params">(TaskObj::Task, &amp;obj)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//等待线程 t1 运行完毕</span></span><br><span class="line">    t1.<span class="built_in">join</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="与类普通成员函数关联"><a href="#与类普通成员函数关联" class="headerlink" title="与类普通成员函数关联"></a>与类普通成员函数关联</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;thread&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;functional&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Obj</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">Obj</span>(<span class="keyword">int</span> val):<span class="built_in">val_</span>(val) &#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">Exec</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">        std::cout &lt;&lt; <span class="string">&quot;Value is &quot;</span> &lt;&lt; val_ &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">int</span> val_&#123;<span class="number">0</span>&#125;;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function">Obj <span class="title">obj</span><span class="params">(<span class="number">89</span>)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="function">std::thread <span class="title">t1</span><span class="params">(&amp;Obj::Exec, &amp;obj)</span></span>;</span><br><span class="line"></span><br><span class="line">    t1.<span class="built_in">join</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这样实际上是将对象<code>obj</code>与其成员函数进行了绑定，实际上是以线程的形式调用了<code>obj.Exec()</code>。</p>
+<h2 id="等待线程的完成"><a href="#等待线程的完成" class="headerlink" title="等待线程的完成"></a>等待线程的完成</h2><p>必须要为线程指定是使用<code>join()</code>（等待线程完成）还是<code>detach()</code>（分离方式运行，当前线程继续执行后面的任务）方式，否则线程对象退出后会调用<code>std::terminate()</code>，而使得整个进程退出。</p>
+<blockquote>
+<p>使用<code>detach()</code>以后，即使<code>std::thread</code>被析构，其关联的线程仍然会处于执行状态。<br>当该线程退出后，会自动释放其线程资源。</p>
+</blockquote>
+<blockquote>
+<p><code>std::terminate()</code>是一个好的约束方式，以保证线程资源能够被完整的释放掉，若代码没有使用<code>join()</code>或<code>detach()</code>，则会抛出该异常来提醒。</p>
+</blockquote>
+<p>有的时候，并不能明确一个线程是否可以被<code>join()</code>，这个时候可以使用<code>joinable()</code>方法先确定一下。</p>
+<h2 id="在异常的环境下等待"><a href="#在异常的环境下等待" class="headerlink" title="在异常的环境下等待"></a>在异常的环境下等待</h2><p>当以分离方式运行线程时，在创建线程后便可以调用<code>detach()</code>，这不会有什么问题。</p>
+<p>但如果要等待线程完成时，需要注意在调用<code>join()</code>之前，抛出了异常的情况。</p>
+<p>也就是说，不能因为抛出了异常，而忽略了使用<code>join()</code>。</p>
+<h3 id="使用try-catch"><a href="#使用try-catch" class="headerlink" title="使用try...catch()"></a>使用<code>try...catch()</code></h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">func</span>;</span>         </span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">f</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> some_local_state = <span class="number">0</span>;</span><br><span class="line">    <span class="function">func <span class="title">my_func</span><span class="params">(some_local_state)</span></span>;</span><br><span class="line">    <span class="function">std::thread <span class="title">t</span><span class="params">(my_func)</span></span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="built_in">do_something_in_current_thread</span>();</span><br><span class="line">    &#125; <span class="built_in"><span class="keyword">catch</span></span>(...) &#123;</span><br><span class="line">        t.<span class="built_in">join</span>();</span><br><span class="line">        <span class="keyword">throw</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    t.<span class="built_in">join</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如上所示，使用<code>try...catch()</code>以保证是否发生异常，都可以<code>join</code>到线程。</p>
+<p>但是这个方式太繁琐，一不小心就会出错。</p>
+<h3 id="使用-RAII-编码方式"><a href="#使用-RAII-编码方式" class="headerlink" title="使用 RAII 编码方式"></a>使用 RAII 编码方式</h3><p>使用 RAII 编码方式，可以说时借助了编译器来保证能正常的调用<code>join()</code>。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="comment">//多线程管理的头文件</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;thread&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">TaskGuard</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">TaskGuard</span>(std::thread &amp;t):<span class="built_in">t_</span>(t) &#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">    ~<span class="built_in">TaskGuard</span>() &#123;</span><br><span class="line">        <span class="comment">//保证一个线程是可以 join 的，并且目前没有其它代码使用该 join</span></span><br><span class="line">        <span class="keyword">if</span>(t_.<span class="built_in">joinable</span>()) &#123;</span><br><span class="line">            t_.<span class="built_in">join</span>();</span><br><span class="line">            std::cout &lt;&lt; <span class="string">&quot;Waiting for thread completely\n&quot;</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//对象只能与一个线程对象绑定，不能被拷贝构造和拷贝赋值</span></span><br><span class="line">    <span class="built_in">TaskGuard</span>(<span class="keyword">const</span> TaskGuard&amp; obj) = <span class="keyword">delete</span>;</span><br><span class="line">    TaskGuard&amp; <span class="keyword">operator</span>=(<span class="keyword">const</span> TaskGuard &amp;obj) = <span class="keyword">delete</span>;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    std::thread &amp;t_;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Task</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;Hello world!\n&quot;</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function">std::thread <span class="title">t1</span><span class="params">(Task)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="function">TaskGuard <span class="title">guard</span><span class="params">(t1)</span></span>;</span><br><span class="line"><span class="comment">// 即使下面这个函数抛出了异常，也不用担心 join 不到 t1</span></span><br><span class="line"><span class="comment">//    dosomethingelse();</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="在后台运行线程"><a href="#在后台运行线程" class="headerlink" title="在后台运行线程"></a>在后台运行线程</h2><p>当对线程对象使用<code>detach()</code>后，这个线程就无法被<code>join()</code>了，它以后台的方式运行，其资源也由 c++ 运行时库进行释放。</p>
+<p>在调用<code>detach()</code>之前，如果不确定是否已经被 detach，或被其它代码 join。那么先使用<code>joinable()</code>是个好习惯，当<code>joinable()</code>返回<code>true</code>则代表当前线程对象并没有被 detach，并且也没有其它代码使用 join，那么就可以安全的调用<code>detach()</code>了。</p>
+<h1 id="给线程传递参数"><a href="#给线程传递参数" class="headerlink" title="给线程传递参数"></a>给线程传递参数</h1><p>参数的传递是直接在线程对象的构造函数中依次传入参数即可，比如<code>std::thread t1(TaskObj::Task, &amp;obj);</code>。</p>
+<p>但是需要特别注意的是：**<code>std::thread</code>会根据传入的参数进行一次拷贝，然后在线程函数执行时，默认会将此参数转换为右值引用类型传递给函数**。</p>
+<blockquote>
+<p>比如传入的是一段字符串 “Hello”，那么<code>std::thread</code>就会以<code>const char*</code>形式在内部保存其地址，然后在对应的线程运行时，根据线程所需求的参数类型进行转换。</p>
+</blockquote>
+<blockquote>
+<p>传递右值引用是为了：</p>
+<ol>
+<li>充分利用移动语义以提高参数传递的效率。</li>
+<li>有些对象仅支持移动操作而不支持拷贝操作（比如<code>std::unique_ptr</code>）</li>
+</ol>
+</blockquote>
+<p>比如下面这段代码：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;thread&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;chrono&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Hello</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">Hello</span>() &#123;</span><br><span class="line">        std::cout &lt;&lt; <span class="string">&quot;default constructor!\n&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">Hello</span>(<span class="keyword">const</span> Hello&amp; rhs) &#123;</span><br><span class="line">        std::cout &lt;&lt; <span class="string">&quot;copy constructor!\n&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">Hello</span>(Hello&amp;&amp; rhs) &#123;</span><br><span class="line">        std::cout &lt;&lt; <span class="string">&quot;move constructor!\n&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">Put</span><span class="params">(<span class="keyword">void</span>)</span> <span class="keyword">const</span></span>&#123;</span><br><span class="line">        std::cout &lt;&lt; <span class="string">&quot;Hello world!\n&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">PrintStr</span><span class="params">(<span class="keyword">const</span> Hello &amp;obj)</span> </span>&#123;</span><br><span class="line">    obj.<span class="built_in">Put</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    Hello obj;</span><br><span class="line">    <span class="function">std::thread <span class="title">t1</span><span class="params">(PrintStr, obj)</span></span>;</span><br><span class="line">    t1.<span class="built_in">detach</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">using</span> <span class="keyword">namespace</span> std::chrono_literals;</span><br><span class="line">    std::this_thread::<span class="built_in">sleep_for</span>(<span class="number">2000</span>ms);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其输出为：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">default constructor!</span><br><span class="line">copy constructor!</span><br><span class="line">move constructor!</span><br><span class="line">Hello world!</span><br></pre></td></tr></table></figure>
+<ol>
+<li>实例化对象，会调用默认构造函数</li>
+<li>将 obj 传递给 <code>std::thread</code>，<code>std::thread</code>会将对象拷贝到内部私有成员中，所以会调用拷贝构造函数</li>
+<li>当线程运气起来时，<code>std::thread</code>会将私有成员以右值的方式传递给线程，而该类具有移动构造函数，所以就可以调用其移动构造函数来提高效率。</li>
+</ol>
+<h2 id="注意栈上的参数"><a href="#注意栈上的参数" class="headerlink" title="注意栈上的参数"></a>注意栈上的参数</h2><p>比如下面这个例子：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;thread&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;chrono&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">PrintStr</span><span class="params">(<span class="keyword">const</span> std::string &amp;str)</span> </span>&#123;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;The str is : &quot;</span> &lt;&lt; str &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Oops</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span> str[<span class="number">100</span>] = <span class="string">&quot;Hello world!&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function">std::thread <span class="title">t1</span><span class="params">(PrintStr, str)</span></span>;</span><br><span class="line"></span><br><span class="line">    t1.<span class="built_in">detach</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">Oops</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">using</span> <span class="keyword">namespace</span> std::chrono_literals;</span><br><span class="line">    std::this_thread::<span class="built_in">sleep_for</span>(<span class="number">2000</span>ms);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>运行时的输出内容是无法预知的，因为给线程对象<code>t1</code>传入的参数实际上是<code>char *</code>类型，<strong>而此时仅仅是拷贝了这个地址而已</strong>。</p>
+<p>在线程函数启动时，<code>str</code>的栈内存已经被释放掉了，此时线程函数获取的内存内容便是无法预知的。</p>
+<blockquote>
+<p>虽然说这个时候也会给其转递<code>std::string</code>临时对象，但对象的内容就是非预期的。</p>
+</blockquote>
+<p>解决方法是：将<code>std::sting</code>为参数传递给<code>t1</code>，这样<code>t1</code>就拷贝了<code>std::string</code>，在运行时将<code>std::string</code>传递给<code>PrintStr</code>函数：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;thread&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;chrono&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">PrintStr</span><span class="params">(<span class="keyword">const</span> std::string &amp;str)</span> </span>&#123;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;The str is : &quot;</span> &lt;&lt; str &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Oops</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span> str[<span class="number">100</span>] = <span class="string">&quot;Hello world!&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 创建一个 std::string 类型的临时对象，str 作为构造参数参数 </span></span><br><span class="line">    <span class="function">std::thread <span class="title">t1</span><span class="params">(PrintStr, std::string(str))</span></span>;</span><br><span class="line"></span><br><span class="line">    t1.<span class="built_in">detach</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">Oops</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">using</span> <span class="keyword">namespace</span> std::chrono_literals;</span><br><span class="line">    std::this_thread::<span class="built_in">sleep_for</span>(<span class="number">2000</span>ms);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="注意类型传递"><a href="#注意类型传递" class="headerlink" title="注意类型传递"></a>注意类型传递</h2><p>前面讲过，<code>std::thread</code>传递给线程函数的是右值引用，这需要注意：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;thread&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;functional&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">PrintStr</span><span class="params">(<span class="keyword">int</span>&amp; i)</span> </span>&#123;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;The value is : &quot;</span> &lt;&lt; i &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> val = <span class="number">10</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function">std::thread <span class="title">t1</span><span class="params">(PrintStr, val)</span></span>;</span><br><span class="line"></span><br><span class="line">    t1.<span class="built_in">join</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>PrintStr</code>接受的参数是<code>non const int&amp;</code>，而无法接受右值引用，此时便会编译出错。</p>
+<blockquote>
+<p><code>std::thread</code>会先拷贝 val 到内部，然后再传递右值引用到线程</p>
+</blockquote>
+<p>解决方法是：显示的使用<code>std::ref</code>以让<code>std::thread</code>传递引用：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;thread&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;functional&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">PrintStr</span><span class="params">(<span class="keyword">int</span>&amp; i)</span> </span>&#123;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;The value is : &quot;</span> &lt;&lt; i &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> val = <span class="number">10</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function">std::thread <span class="title">t1</span><span class="params">(PrintStr, std::ref(val))</span></span>;</span><br><span class="line"></span><br><span class="line">    t1.<span class="built_in">join</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这相当于显示告诉了<code>std::thread</code>需要获取的是引用，而不是对象的拷贝。</p>
+<h2 id="当形参是只移动对象时"><a href="#当形参是只移动对象时" class="headerlink" title="当形参是只移动对象时"></a>当形参是只移动对象时</h2><p>当线程可执行函数的形参是只能移动不能拷贝时（比如<code>std::unique_ptr</code>），那就需要显示的使用移动语义：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;thread&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;functional&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;memory&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">Thread</span><span class="params">(std::unique_ptr&lt;<span class="keyword">int</span>&gt; par)</span> </span>&#123;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;The value of par is &quot;</span> &lt;&lt; *par &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    std::unique_ptr&lt;<span class="keyword">int</span>&gt; val = std::make_unique&lt;<span class="keyword">int</span>&gt;(<span class="number">10</span>);</span><br><span class="line"></span><br><span class="line">    <span class="function">std::thread <span class="title">t1</span><span class="params">(Thread, std::move(val))</span></span>;</span><br><span class="line"></span><br><span class="line">    t1.<span class="built_in">join</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>由于<code>std::unique_ptr</code>限制了同时只能有一个能关联资源，所以它是不可被复制的。</p>
+<p>这个时候就需要显示的使用移动语义，也就是说将当前实参<code>std::unique_ptr</code>移动到内部私有的一个<code>std::unique_ptr</code>。</p>
+<p>在线程函数执行时，私有的<code>std::unique_ptr</code>又移动给函数的形参。</p>
+<blockquote>
+<p>当对象是临时对象时，移动的操作不需要显示的指明（比如函数返回一个<code>std::unique_ptr</code>，则不需要显示使用<code>std::move</code>）。</p>
+</blockquote>
+<h1 id="传递线程的所有者"><a href="#传递线程的所有者" class="headerlink" title="传递线程的所有者"></a>传递线程的所有者</h1><h2 id="移动语义"><a href="#移动语义" class="headerlink" title="移动语义"></a>移动语义</h2><p><code>std::thread</code>也是只能移动而不能拷贝的，也就意味着一个线程函数只能关联一个线程对象，这在逻辑上也是说得通的。不然多个线程对象关联同一个线程函数，那么就会在控制线程上乱套。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;thread&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;functional&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;memory&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">Thread</span><span class="params">(<span class="keyword">int</span> par)</span> </span>&#123;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;The value of par is &quot;</span> &lt;&lt; par &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    <span class="function">std::thread <span class="title">t1</span><span class="params">(Thread, <span class="number">1</span>)</span></span>;</span><br><span class="line">    <span class="comment">//由于 t1 不是一个匿名的临时对象，所以需要显示的使用 std::move</span></span><br><span class="line">    <span class="comment">//t1 目前没有关联任何线程函数</span></span><br><span class="line">    std::thread t2 = std::<span class="built_in">move</span>(t1);</span><br><span class="line">    <span class="comment">//这里使用了 std::thread 创建了匿名临时对象，可以不用显示使用 std::move 就可以传递给 t3</span></span><br><span class="line">    std::thread t3 = std::<span class="built_in">thread</span>(Thread, <span class="number">3</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//由于 t2 也关联了线程函数，t3 转移给 t2 时，t2 关联的线程函数就会调用 std::terminal()</span></span><br><span class="line">    <span class="comment">//所以在这之前必须等待 t2 关联的函数执行完毕(join)，或将其分离(detach)</span></span><br><span class="line">    t2.<span class="built_in">join</span>();</span><br><span class="line">    t2 = std::<span class="built_in">move</span>(t3);</span><br><span class="line"></span><br><span class="line">    t2.<span class="built_in">join</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>当然也可以在函数返回或形参中使用<code>std::thread</code>，并且由于返回的是匿名临时对象，可以不用显示使用<code>std::move</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">std::thread <span class="title">f</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">some_function</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="keyword">return</span> std::<span class="built_in">thread</span>(some_function);</span><br><span class="line">&#125;</span><br><span class="line"><span class="function">std::thread <span class="title">g</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">some_other_function</span><span class="params">(<span class="keyword">int</span>)</span></span>;</span><br><span class="line">    <span class="function">std::thread <span class="title">t</span><span class="params">(some_other_function,<span class="number">42</span>)</span></span>;</span><br><span class="line">    <span class="comment">// 返回值优化，编译器会使用移动版本</span></span><br><span class="line">    <span class="keyword">return</span> t;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">f</span><span class="params">(std::thread t)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">g</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">some_function</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="built_in">f</span>(std::<span class="built_in">thread</span>(some_function));</span><br><span class="line">    <span class="function">std::thread <span class="title">t</span><span class="params">(some_function)</span></span>;</span><br><span class="line">    <span class="built_in">f</span>(std::<span class="built_in">move</span>(t));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="改进TaskGuard"><a href="#改进TaskGuard" class="headerlink" title="改进TaskGuard"></a>改进<code>TaskGuard</code></h2><p>前面使用<code>TaskGuard</code>以保证函数无论以何种方式退出，线程资源可以被正常释放。但是由于<code>TaskGuard</code>中使用的是引用，那么就无法避免被移动的<code>std::thread</code>实例也会控制线程，这引入了不安全因素。</p>
+<p>由于<code>std::thread</code>只能被移动，所以我们可以直接使用移动的方式获取实例，以保证只有一个实例可以操作线程。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="comment">//多线程管理的头文件</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;thread&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdexcept&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">TaskGuard</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">TaskGuard</span>(std::thread t):<span class="built_in">t_</span>(std::<span class="built_in">move</span>(t)) &#123;</span><br><span class="line">        <span class="comment">//由于可以保证当前只有 t_ 与线程关联，所以可以来判定是否有线程</span></span><br><span class="line">        <span class="keyword">if</span>(!t_.<span class="built_in">joinable</span>())</span><br><span class="line">            <span class="keyword">throw</span> std::<span class="built_in">logic_error</span>(<span class="string">&quot;No thread&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    ~<span class="built_in">TaskGuard</span>() &#123;</span><br><span class="line">        t_.<span class="built_in">join</span>();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//对象只能与一个线程对象绑定，不能被拷贝构造和拷贝赋值</span></span><br><span class="line">    <span class="built_in">TaskGuard</span>(<span class="keyword">const</span> TaskGuard&amp; obj) = <span class="keyword">delete</span>;</span><br><span class="line">    TaskGuard&amp; <span class="keyword">operator</span>=(<span class="keyword">const</span> TaskGuard &amp;obj) = <span class="keyword">delete</span>;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    std::thread t_;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Task</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;Hello world!\n&quot;</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function">std::thread <span class="title">t1</span><span class="params">(Task)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="function">TaskGuard <span class="title">guard</span><span class="params">(std::move(t1))</span></span>;</span><br><span class="line"><span class="comment">// 即使下面这个函数抛出了异常，也不用担心 join 不到 t1</span></span><br><span class="line"><span class="comment">//    dosomethingelse();</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="线程对象与容器"><a href="#线程对象与容器" class="headerlink" title="线程对象与容器"></a>线程对象与容器</h2><p>既然线程对象是只可移动的，那么就可以批量创建线程，而后进行批量操作。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;thread&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;functional&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;memory&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;vector&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">Thread</span><span class="params">(<span class="keyword">int</span> par)</span> </span>&#123;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;The value of par is &quot;</span> &lt;&lt; par &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    std::vector&lt;std::thread&gt; vt;</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">20</span>; ++i) &#123;</span><br><span class="line">        vt.<span class="built_in">emplace_back</span>(Thread, i);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">auto</span>&amp; v : vt) &#123;</span><br><span class="line">        v.<span class="built_in">join</span>();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>当需要短暂的对一个复杂的数据结构进行并发操作时，可以使用这种简易的方式。</p>
+<p>当所有线程都完成后，意味着这个并发操作就完成了。</p>
+<h1 id="选择运行时线程的个数"><a href="#选择运行时线程的个数" class="headerlink" title="选择运行时线程的个数"></a>选择运行时线程的个数</h1><p>c++ 提供了函数<code>std::thread::hardware_concurrency()</code>来返回硬件所支持的并行线程个数，这有助于我们作为参考来创建线程的个数。</p>
+<p>比如下面的并行求和：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 编写一个类以封装 std::accumulate</span></span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> Iterator,<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">accumulate_block</span> &#123;</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">operator</span><span class="params">()</span><span class="params">(Iterator first,Iterator last,T&amp; result)</span> </span>&#123;</span><br><span class="line">        result=std::<span class="built_in">accumulate</span>(first,last,result);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> Iterator,<span class="keyword">typename</span> T&gt;</span></span><br><span class="line"><span class="function">T <span class="title">parallel_accumulate</span><span class="params">(Iterator first,Iterator last,T init)</span> </span>&#123;</span><br><span class="line">	<span class="comment">// 计算需要处理多少个元素</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">const</span> length = std::<span class="built_in">distance</span>(first, last);</span><br><span class="line">    <span class="comment">// 如果没有元素要处理，那就直接返回初值</span></span><br><span class="line">    <span class="keyword">if</span>(!length)                                            </span><br><span class="line">        <span class="keyword">return</span> init;</span><br><span class="line">    <span class="comment">// 每个线程至少处理 25 个元素</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">const</span> min_per_thread = <span class="number">25</span>;</span><br><span class="line">    <span class="comment">// 计算需要的最大线程数，确保其最小值为 1</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">const</span> max_threads=</span><br><span class="line">        (length + min_per_thread<span class="number">-1</span>) / min_per_thread;</span><br><span class="line">    <span class="comment">// 获取当前 CPU 可以硬件并发核心    </span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">const</span> hardware_threads=</span><br><span class="line">        std::thread::<span class="built_in">hardware_concurrency</span>();</span><br><span class="line">    <span class="comment">// 取最小线程数，最为最终要运行的线程数</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">const</span> num_threads=            </span><br><span class="line">        std::<span class="built_in">min</span>(hardware_threads !=<span class="number">0</span> ? hardware_threads : <span class="number">2</span> , max_threads);</span><br><span class="line">    <span class="comment">// 再来计算每个线程需要处理的元素个数</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">const</span> block_size= length / num_threads;  </span><br><span class="line">    <span class="comment">// 创建临时缓存存放每个线程的处理结果    </span></span><br><span class="line">    <span class="function">std::vector&lt;T&gt; <span class="title">results</span><span class="params">(num_threads)</span></span>;</span><br><span class="line">    <span class="function">std::vector&lt;std::thread&gt;  <span class="title">threads</span><span class="params">(num_threads<span class="number">-1</span>)</span></span>;       </span><br><span class="line">    Iterator block_start = first;</span><br><span class="line">    <span class="comment">// 除了本线程以外，还要创建 num_threads - 1 个线程来处理数据</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">unsigned</span> <span class="keyword">long</span> i = <span class="number">0</span>;i &lt; (num_threads - <span class="number">1</span>); ++i) &#123;</span><br><span class="line">        Iterator block_end = block_start;</span><br><span class="line">        std::<span class="built_in">advance</span>(block_end , block_size);                 </span><br><span class="line">        threads[i] = std::<span class="built_in">thread</span>(                             </span><br><span class="line">            accumulate_block&lt;Iterator, T&gt;(),</span><br><span class="line">            <span class="comment">// 这里以引用的形式传入 results[i]，这样才能保存结果</span></span><br><span class="line">            block_start, block_end, std::<span class="built_in">ref</span>(results[i]));</span><br><span class="line">        block_start = block_end;                              </span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 本线程处理最后剩下的数据</span></span><br><span class="line">    accumulate_block&lt;Iterator, T&gt;()(</span><br><span class="line">        block_start, last, results[num_threads - <span class="number">1</span>]);    </span><br><span class="line">    <span class="comment">// 等待其他的线程完成计算</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">auto</span>&amp; entry: threads)</span><br><span class="line">           entry.<span class="built_in">join</span>();</span><br><span class="line">    <span class="comment">// 将临时结果再进行一次求和，就可以得到最终的结果了                             </span></span><br><span class="line">    <span class="keyword">return</span> std::<span class="built_in">accumulate</span>(results.<span class="built_in">begin</span>(), results.<span class="built_in">end</span>(), init);   </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="识别线程"><a href="#识别线程" class="headerlink" title="识别线程"></a>识别线程</h1><h2 id="获取线程-id"><a href="#获取线程-id" class="headerlink" title="获取线程 id"></a>获取线程 id</h2><p>获取线程 id 有两种方法：</p>
+<ol>
+<li>线程对象使用<code>get_id()</code>成员函数，返回关联线程的 id 或是<code>0</code>以代表没有关联线程。</li>
+<li>在线程函数中使用<code>std::this_thread::get_id()</code>来获取当前线程的 id</li>
+</ol>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;thread&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;functional&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;memory&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;vector&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">Thread</span><span class="params">(<span class="keyword">int</span> par)</span> </span>&#123;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;The value of par is &quot;</span> &lt;&lt; par &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;The id of mine is &quot;</span> &lt;&lt; std::this_thread::<span class="built_in">get_id</span>() &lt;&lt; <span class="string">&quot;\n\n&quot;</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">auto</span> number = std::thread::<span class="built_in">hardware_concurrency</span>();</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;hardware concurrency &quot;</span> &lt;&lt; number &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line"></span><br><span class="line">    std::vector&lt;std::thread&gt; vt;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; number - <span class="number">1</span>; ++i) &#123;</span><br><span class="line">        vt.<span class="built_in">emplace_back</span>(Thread, i);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span>&amp; v : vt) &#123;</span><br><span class="line">        std::cout &lt;&lt; <span class="string">&quot;join thread: &quot;</span> &lt;&lt; v.<span class="built_in">get_id</span>() &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line">        v.<span class="built_in">join</span>();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="使用线程-id"><a href="#使用线程-id" class="headerlink" title="使用线程 id"></a>使用线程 id</h2><h3 id="线程之间的比较"><a href="#线程之间的比较" class="headerlink" title="线程之间的比较"></a>线程之间的比较</h3><p>有的时候需要判定两个函数是否在同一个线程中执行，可以判断 id 是否相等来实现。</p>
+<p>当二者相等时，则代表二者处于同一个线程（或都是无效线程），否则不是同一个线程。</p>
+<h3 id="线程-id-与查表"><a href="#线程-id-与查表" class="headerlink" title="线程 id 与查表"></a>线程 id 与查表</h3><p>线程 id 可以与哈希表这种数据结构绑定，将其作为一个 Key，以实现对应数据与线程的一一对应关系。</p>
+<h3 id="线程-id-与功能对应"><a href="#线程-id-与功能对应" class="headerlink" title="线程 id 与功能对应"></a>线程 id 与功能对应</h3><p>通过与线程 id 进行比较，以执行对应不同的功能：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">std::thread::id master_thread;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">some_core_part_of_algorithm</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (std::this_thread::<span class="built_in">get_id</span>() == master_thread) &#123;</span><br><span class="line">        <span class="built_in">do_master_thread_work</span>();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">do_common_work</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>kcmetercec
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://kcmetercec.top/2022/05/16/cpp_concurrency_manage/" title="C++ concurrency：线程管理">http://kcmetercec.top/2022/05/16/cpp_concurrency_manage/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/cpp/" rel="tag"> <i class="fa fa-tag"></i> cpp</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/05/15/cpp_concurrency_hello/" rel="prev" title="C++ concurrency：初识并发">
+      <i class="fa fa-chevron-left"></i> C++ concurrency：初识并发
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/05/17/cpp_concurrency_share_data/" rel="next" title="C++ concurrency：线程间共享数据">
+      C++ concurrency：线程间共享数据 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E7%9A%84%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86"><span class="nav-number">1.</span> <span class="nav-text">基本的线程管理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8%E7%BA%BF%E7%A8%8B"><span class="nav-number">1.1.</span> <span class="nav-text">启动线程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8E%E6%99%AE%E9%80%9A%E5%87%BD%E6%95%B0%E5%85%B3%E8%81%94"><span class="nav-number">1.1.1.</span> <span class="nav-text">与普通函数关联</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8E%E5%8F%AF%E8%B0%83%E7%94%A8%E7%B1%BB%E5%85%B3%E8%81%94"><span class="nav-number">1.1.2.</span> <span class="nav-text">与可调用类关联</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8E-Lambda-%E8%A1%A8%E8%BE%BE%E5%BC%8F%E5%85%B3%E8%81%94"><span class="nav-number">1.1.3.</span> <span class="nav-text">与 Lambda 表达式关联</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8E%E7%B1%BB%E5%86%85%E7%9A%84%E9%9D%99%E6%80%81%E5%87%BD%E6%95%B0%E5%85%B3%E8%81%94"><span class="nav-number">1.1.4.</span> <span class="nav-text">与类内的静态函数关联</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8E%E7%B1%BB%E6%99%AE%E9%80%9A%E6%88%90%E5%91%98%E5%87%BD%E6%95%B0%E5%85%B3%E8%81%94"><span class="nav-number">1.1.5.</span> <span class="nav-text">与类普通成员函数关联</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AD%89%E5%BE%85%E7%BA%BF%E7%A8%8B%E7%9A%84%E5%AE%8C%E6%88%90"><span class="nav-number">1.2.</span> <span class="nav-text">等待线程的完成</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9C%A8%E5%BC%82%E5%B8%B8%E7%9A%84%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%AD%89%E5%BE%85"><span class="nav-number">1.3.</span> <span class="nav-text">在异常的环境下等待</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8try-catch"><span class="nav-number">1.3.1.</span> <span class="nav-text">使用try...catch()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-RAII-%E7%BC%96%E7%A0%81%E6%96%B9%E5%BC%8F"><span class="nav-number">1.3.2.</span> <span class="nav-text">使用 RAII 编码方式</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9C%A8%E5%90%8E%E5%8F%B0%E8%BF%90%E8%A1%8C%E7%BA%BF%E7%A8%8B"><span class="nav-number">1.4.</span> <span class="nav-text">在后台运行线程</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BB%99%E7%BA%BF%E7%A8%8B%E4%BC%A0%E9%80%92%E5%8F%82%E6%95%B0"><span class="nav-number">2.</span> <span class="nav-text">给线程传递参数</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B3%A8%E6%84%8F%E6%A0%88%E4%B8%8A%E7%9A%84%E5%8F%82%E6%95%B0"><span class="nav-number">2.1.</span> <span class="nav-text">注意栈上的参数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B3%A8%E6%84%8F%E7%B1%BB%E5%9E%8B%E4%BC%A0%E9%80%92"><span class="nav-number">2.2.</span> <span class="nav-text">注意类型传递</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BD%93%E5%BD%A2%E5%8F%82%E6%98%AF%E5%8F%AA%E7%A7%BB%E5%8A%A8%E5%AF%B9%E8%B1%A1%E6%97%B6"><span class="nav-number">2.3.</span> <span class="nav-text">当形参是只移动对象时</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BC%A0%E9%80%92%E7%BA%BF%E7%A8%8B%E7%9A%84%E6%89%80%E6%9C%89%E8%80%85"><span class="nav-number">3.</span> <span class="nav-text">传递线程的所有者</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A7%BB%E5%8A%A8%E8%AF%AD%E4%B9%89"><span class="nav-number">3.1.</span> <span class="nav-text">移动语义</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%94%B9%E8%BF%9BTaskGuard"><span class="nav-number">3.2.</span> <span class="nav-text">改进TaskGuard</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E5%AF%B9%E8%B1%A1%E4%B8%8E%E5%AE%B9%E5%99%A8"><span class="nav-number">3.3.</span> <span class="nav-text">线程对象与容器</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%80%89%E6%8B%A9%E8%BF%90%E8%A1%8C%E6%97%B6%E7%BA%BF%E7%A8%8B%E7%9A%84%E4%B8%AA%E6%95%B0"><span class="nav-number">4.</span> <span class="nav-text">选择运行时线程的个数</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AF%86%E5%88%AB%E7%BA%BF%E7%A8%8B"><span class="nav-number">5.</span> <span class="nav-text">识别线程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%8E%B7%E5%8F%96%E7%BA%BF%E7%A8%8B-id"><span class="nav-number">5.1.</span> <span class="nav-text">获取线程 id</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E7%BA%BF%E7%A8%8B-id"><span class="nav-number">5.2.</span> <span class="nav-text">使用线程 id</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E4%B9%8B%E9%97%B4%E7%9A%84%E6%AF%94%E8%BE%83"><span class="nav-number">5.2.1.</span> <span class="nav-text">线程之间的比较</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B-id-%E4%B8%8E%E6%9F%A5%E8%A1%A8"><span class="nav-number">5.2.2.</span> <span class="nav-text">线程 id 与查表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B-id-%E4%B8%8E%E5%8A%9F%E8%83%BD%E5%AF%B9%E5%BA%94"><span class="nav-number">5.2.3.</span> <span class="nav-text">线程 id 与功能对应</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">Qt, C++, linux, CS</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">107</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">55</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:kcmeter.cec@gmail.com" title="E-Mail → mailto:kcmeter.cec@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2021 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">206k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">3:08</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+document.querySelectorAll('.pdfobject-container').forEach(element => {
+  let url = element.dataset.target;
+  let pdfOpenParams = {
+    navpanes : 0,
+    toolbar  : 0,
+    statusbar: 0,
+    pagemode : 'thumbs',
+    view     : 'FitH'
+  };
+  let pdfOpenFragment = '#' + Object.entries(pdfOpenParams).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
+  let fullURL = `/lib/pdf/web/viewer.html?file=${encodeURIComponent(url)}${pdfOpenFragment}`;
+
+  if (NexT.utils.supportsPDFs()) {
+    element.innerHTML = `<embed class="pdfobject" src="${url + pdfOpenFragment}" type="application/pdf" style="height: ${element.dataset.height};">`;
+  } else {
+    element.innerHTML = `<iframe src="${fullURL}" style="height: ${element.dataset.height};" frameborder="0"></iframe>`;
+  }
+});
+</script>
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'f938893867df78f94802',
+      clientSecret: 'b6d8470939c53d26c98c4e3b9d4c9ceb55d6e78e',
+      repo        : 'kcmetercec.github.io',
+      owner       : 'KcMeterCEC',
+      admin       : ['KcMeterCEC'],
+      id          : '570b8f72cd39d02a3f2e52c1bc0526ec',
+        language: 'zh-CN',
+      distractionFreeMode: false
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+    </div>
+</body>
+</html>

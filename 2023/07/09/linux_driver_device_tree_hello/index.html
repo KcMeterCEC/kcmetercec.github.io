@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="设备树平时用得很多，但总感觉对它缺乏一个系统性的认识。 偶然间刷到了 bootlin 的 视频 那就再来过一次。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="认识设备树">
+<meta property="og:url" content="http://kcmetercec.top/2023/07/09/linux_driver_device_tree_hello/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="设备树平时用得很多，但总感觉对它缺乏一个系统性的认识。 偶然间刷到了 bootlin 的 视频 那就再来过一次。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bdriver%5D/%5BWhat%5DLinux--%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%9E%84%E6%9E%B6/device_tree/pic/type_hw.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bdriver%5D/%5BWhat%5DLinux--%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%9E%84%E6%9E%B6/device_tree/pic/base_syntax.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bdriver%5D/%5BWhat%5DLinux--%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%9E%84%E6%9E%B6/device_tree/pic/simplified_example.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bdriver%5D/%5BWhat%5DLinux--%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%9E%84%E6%9E%B6/device_tree/pic/simplified_example_cpus.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bdriver%5D/%5BWhat%5DLinux--%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%9E%84%E6%9E%B6/device_tree/pic/simplified_example_memory.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bdriver%5D/%5BWhat%5DLinux--%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%9E%84%E6%9E%B6/device_tree/pic/simplified_example_soc_interrupt.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bdriver%5D/%5BWhat%5DLinux--%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%9E%84%E6%9E%B6/device_tree/pic/simplified_example_soc_i2c.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bdriver%5D/%5BWhat%5DLinux--%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%9E%84%E6%9E%B6/device_tree/pic/simplified_example_soc_usb.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bdriver%5D/%5BWhat%5DLinux--%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%9E%84%E6%9E%B6/device_tree/pic/inheritance_example.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bdriver%5D/%5BWhat%5DLinux--%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%9E%84%E6%9E%B6/device_tree/pic/inheritance_labels_example.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bdriver%5D/%5BWhat%5DLinux--%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%9E%84%E6%9E%B6/device_tree/pic/device_old_style.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bdriver%5D/%5BWhat%5DLinux--%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%9E%84%E6%9E%B6/device_tree/pic/device_yaml_style.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bdriver%5D/%5BWhat%5DLinux--%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%9E%84%E6%9E%B6/device_tree/pic/matching_driver.jpg?raw=true">
+<meta property="article:published_time" content="2023-07-08T16:00:00.000Z">
+<meta property="article:modified_time" content="2023-07-08T16:00:00.000Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="linux">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bdriver%5D/%5BWhat%5DLinux--%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%9E%84%E6%9E%B6/device_tree/pic/type_hw.jpg?raw=true">
+
+<link rel="canonical" href="http://kcmetercec.top/2023/07/09/linux_driver_device_tree_hello/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>认识设备树 | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112423075-1# <app_id>"></script>
+    <script data-pjax>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-112423075-1# <app_id>');
+      }
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+        <li class="menu-item menu-item-commonweal">
+
+    <a href="/404/" rel="section"><i class="fa fa-heartbeat fa-fw"></i>公益 404</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2023/07/09/linux_driver_device_tree_hello/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="Qt, C++, linux, CS">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          认识设备树
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-07-09 00:00:00" itemprop="dateCreated datePublished" datetime="2023-07-09T00:00:00+08:00">2023-07-09</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/driver/" itemprop="url" rel="index"><span itemprop="name">driver</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/driver/devicetree/" itemprop="url" rel="index"><span itemprop="name">devicetree</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>2.7k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>设备树平时用得很多，但总感觉对它缺乏一个系统性的认识。</p>
+<p>偶然间刷到了 bootlin 的 <a target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=Nz6aBffv-Ek">视频</a> 那就再来过一次。</p>
+<span id="more"></span>
+
+<h1 id="Overview"><a href="#Overview" class="headerlink" title="Overview"></a>Overview</h1><p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bdriver%5D/%5BWhat%5DLinux--%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%9E%84%E6%9E%B6/device_tree/pic/type_hw.jpg?raw=true"><br>以上是一个典型的嵌入式系统所具备的控制器及外设，如何简易的告诉给 Linux？设备树便是一个很好的配置文件格式。</p>
+<p>需要明白的是，并不是所有的硬件信息都需要写入设备树中。因为有些硬件具备了设备发现机制，比如 USB、PCIE 这种当设备插入后会启动枚举机制来获取设备信息，然后与对应的驱动联系起来。</p>
+<p>有些不具备发现机制的（比如 I2C、SPI）则需要在设备树中注明与之相连接的外设。</p>
+<p>所以在设备树中一般需要包含的信息从内到外有：</p>
+<ul>
+<li>当前 SOC 有多少核心</li>
+<li>在内存总线上可以访问的控制器，该控制器对应的物理地址、中断号</li>
+<li>当前 SOC 所具备的外围与那个控制器连接，它具备的地址等</li>
+</ul>
+<p>使用设备树的流程为：</p>
+<ol>
+<li>由开发人员编写设备树源码<code>.dts</code>文件</li>
+<li>由设备树编译器<code>dtc</code>将 <code>.dts</code> 文件编译为 <code>.dtb</code> 文件</li>
+<li>对于 U-Boot、Barebox 而言，可以将 <code>.dtb</code>文件链接到可执行文件中。对于 Linux 而言通常由 boot loader 告知。</li>
+</ol>
+<blockquote>
+<p>比如对于 U-Boot 而言：bootz <kernel-addr> - <dtb-addr></p>
+</blockquote>
+<h1 id="基本语法"><a href="#基本语法" class="headerlink" title="基本语法"></a>基本语法</h1><p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bdriver%5D/%5BWhat%5DLinux--%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%9E%84%E6%9E%B6/device_tree/pic/base_syntax.jpg?raw=true"><br>以上便是一个基本的设备树语法，理解起来还是比较直观。</p>
+<blockquote>
+<p>dtc 只进行语法检查，不会进行语义检查！</p>
+</blockquote>
+<h2 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h2><p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bdriver%5D/%5BWhat%5DLinux--%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%9E%84%E6%9E%B6/device_tree/pic/simplified_example.jpg?raw=true"><br>如上图的右侧所示，硬件描述为：</p>
+<ul>
+<li>该 SOC 具有两个 Cortex A9 内核</li>
+<li>与该内核通信总线上具备有 USB 控制器、中断控制器、I2C 控制器、DDR 控制器</li>
+<li>I2C 总线上被挂载了 EEPROM 设备，DDR 控制器外接了 DDR 内存芯片</li>
+</ul>
+<p>上图左侧的根设备树也很清楚的描述了以上硬件：</p>
+<ul>
+<li>cpus 节点描述内核</li>
+<li>memory 节点描述内存</li>
+<li>chosen 节点描述要发送给系统的配置命令</li>
+<li>soc 节点描述通信总线上的控制器</li>
+</ul>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bdriver%5D/%5BWhat%5DLinux--%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%9E%84%E6%9E%B6/device_tree/pic/simplified_example_cpus.jpg?raw=true"><br>上图便是描述 cpus 节点的详细信息，此处便描述了内核类型，以及内核数量。</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bdriver%5D/%5BWhat%5DLinux--%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%9E%84%E6%9E%B6/device_tree/pic/simplified_example_memory.jpg?raw=true"><br>上图分别描述了：</p>
+<ul>
+<li>memory 节点描述内存从物理地址 0x00 开始，具备大小为 512MB 。</li>
+<li>chosen 节点描述启动参数为空，标准输出为 serial0，波特率 115200，8 位且无停止位</li>
+</ul>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bdriver%5D/%5BWhat%5DLinux--%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%9E%84%E6%9E%B6/device_tree/pic/simplified_example_soc_interrupt.jpg?raw=true"><br>上图描述了中断控制器的两段物理地址及其可被访问的范围。</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bdriver%5D/%5BWhat%5DLinux--%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%9E%84%E6%9E%B6/device_tree/pic/simplified_example_soc_i2c.jpg?raw=true"><br>上图描述了 I2C 控制器的：</p>
+<ul>
+<li>物理地址、其可以被访问的范围、中断号以及时钟源和时钟频率</li>
+<li>该总线上还挂载了 24c02 这种 EEPROM，该 EEPROM 的地址为 0x52</li>
+</ul>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bdriver%5D/%5BWhat%5DLinux--%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%9E%84%E6%9E%B6/device_tree/pic/simplified_example_soc_usb.jpg?raw=true"><br>上图描述了 USB 控制器的：</p>
+<ul>
+<li>物理地址、其可被访问的范围、中断号以及时钟源</li>
+<li>与该 USB 控制器连接的 PHY 的 phandle</li>
+</ul>
+<h2 id="设备树的组织方式"><a href="#设备树的组织方式" class="headerlink" title="设备树的组织方式"></a>设备树的组织方式</h2><p>设备树可以被分为多个文件：</p>
+<ul>
+<li><code>.dtsi</code> 文件一般是当前该 SOC 的通用设备树配置，描述了该 SOC 的内核以及控制器。所以它一般会被其他的 <code>.dts</code> 文件所包含。</li>
+<li><code>.dts</code> 文件通常是会以 phandle 的方式来扩展对 <code>.dtsi</code> 文件的描述，以完整的描述控制器的参数和外接设备</li>
+</ul>
+<p><code>.dts</code> 可以包含 <code>.dtsi</code> 和 <code>.h</code> 文件，通过 <code>#include</code> 语法来实现（就和 c 语言一样的）：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 表示 DTS 的版本</span></span><br><span class="line">/dts-v1/;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&quot;zynqmp.dtsi&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&quot;zynqmp-clk-ccf.dtsi&quot;</span></span></span><br><span class="line"><span class="comment">// 包含源码头文件，以便于引用宏</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;dt-bindings/input/input.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;dt-bindings/gpio/gpio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;dt-bindings/pinctrl/pinctrl-zynqmp.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;dt-bindings/phy/phy.h&gt;</span></span></span><br></pre></td></tr></table></figure>
+
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bdriver%5D/%5BWhat%5DLinux--%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%9E%84%E6%9E%B6/device_tree/pic/inheritance_example.jpg?raw=true"><br>以上表示了<code>.dts</code> 文件对 <code>.dtsi</code>文件的增加和改写，最终在 <code>.dtb</code>文件中会合并为最终的信息。</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bdriver%5D/%5BWhat%5DLinux--%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%9E%84%E6%9E%B6/device_tree/pic/inheritance_labels_example.jpg?raw=true"><br>如上图所示，<code>.dts</code> 文件增加或改写 <code>.dtsi</code> 文件有两种方式：</p>
+<ol>
+<li>直接描述层级以及节点的名称和地址，在里面加上需要增加或改动的属性及值</li>
+<li>通过 phandle 的方式来引用节点</li>
+</ol>
+<blockquote>
+<p>方法 2 明显优于方法 1</p>
+</blockquote>
+<h1 id="构建设备树"><a href="#构建设备树" class="headerlink" title="构建设备树"></a>构建设备树</h1><p>对于 ARM/ARM64 而言，<code>.dts</code> 的存在路径为：<code>arch/&lt;ARCH&gt;/boot/dts/</code> 或者 <code>arch/&lt;ARCH&gt;/boot/dts/&lt;vendor&gt;/</code> 目录下。</p>
+<p>该目录下的 Makefile 就描述了对应要编译的 <code>.dts</code> 文件：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">dtb-$(CONFIG_ARCH_ZYNQMP) += avnet-ultra96-rev1.dtb</span><br><span class="line">dtb-$(CONFIG_ARCH_ZYNQMP) += zynqmp-zc1232-revA.dtb</span><br><span class="line">dtb-$(CONFIG_ARCH_ZYNQMP) += zynqmp-zc1254-revA.dtb</span><br><span class="line">dtb-$(CONFIG_ARCH_ZYNQMP) += zynqmp-zc1275-revA.dtb</span><br></pre></td></tr></table></figure>
+<p>在编译内核或 U-Boot 的时候，如果执行 <code>make</code> 命令就会顺带的编译对应的设备树。</p>
+<p>当然也可以单独编译设备树：</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">make dtbs</span><br></pre></td></tr></table></figure>
+
+<p>除了构建设备树外，还可以使用以下方式对设备树进行语义检查：</p>
+<ul>
+<li><code>make dt_bindings_check</code> ：检查 YAML 绑定是否合理</li>
+<li><code>make dtbs_check</code> ：对 YAML 绑定进行验证</li>
+</ul>
+<h1 id="调试设备树"><a href="#调试设备树" class="headerlink" title="调试设备树"></a>调试设备树</h1><p>当 linux 启动后，可以在路径 <code>/sys/firmware/devicetree/base</code> 中浏览设备树的层级以及内容。</p>
+<p>这种方式就可以检查设备树的配置是否与设定的一致。</p>
+<blockquote>
+<p>如果在目标板上还有 <code>dtc</code> 工具，那可以通过 <code>dtc -I fs /sys/firmware/devicetree/base</code> 来以 txt 的方式解析设备树。</p>
+</blockquote>
+<p>除此之外，在内核启动之前，U-Boot 可以通过 <code>fdt</code> 命令 <code>fdt set</code>,<code>fdt mknode</code>,<code>fdt rm</code> 来完成对设备树的编辑。</p>
+<p>一般要新增一个设备时，首先需要在 <code>Document/devicetree/bindings</code> 目录下查看对应的说明，这样可以少走很多弯路。</p>
+<p>该文档中的描述有两种风格，传统风格和 YAML 风格：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bdriver%5D/%5BWhat%5DLinux--%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%9E%84%E6%9E%B6/device_tree/pic/device_old_style.jpg?raw=true"><br><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bdriver%5D/%5BWhat%5DLinux--%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%9E%84%E6%9E%B6/device_tree/pic/device_yaml_style.jpg?raw=true"></p>
+<h1 id="设备树-overlays"><a href="#设备树-overlays" class="headerlink" title="设备树 overlays"></a>设备树 overlays</h1><p>当硬件的外设灵活变化时，还可以通过对设备树打补丁的方式来完成设备树的更新，以提高灵活性。</p>
+<p>也就是将各种不同的组合以相加的方式替代了相乘的方式，以减小设备树文件的数量。</p>
+<p>比如下面这样：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">/dts-v1/;</span><br><span class="line">/plugin/;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* Pi3 uses a GPIO expander to drive the LEDs which can only be accessed</span></span><br><span class="line"><span class="comment">   from the VPU. There is a special driver for this with a separate DT node,</span></span><br><span class="line"><span class="comment">   which has the unfortunate consequence of breaking the act_led_gpio and</span></span><br><span class="line"><span class="comment">   act_led_activelow dtparams.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment">   This overlay changes the GPIO controller back to the standard one and</span></span><br><span class="line"><span class="comment">   restores the dtparams.</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"></span><br><span class="line">/&#123;</span><br><span class="line">	compatible = <span class="string">&quot;brcm,bcm2835&quot;</span>;</span><br><span class="line"></span><br><span class="line">	fragment@<span class="number">0</span> &#123;</span><br><span class="line">		target = &lt;&amp;act_led&gt;;</span><br><span class="line">		frag0: __overlay__ &#123;</span><br><span class="line">			gpios = &lt;&amp;gpio <span class="number">0</span> <span class="number">0</span>&gt;;</span><br><span class="line">		&#125;;</span><br><span class="line">	&#125;;</span><br><span class="line"></span><br><span class="line">	__overrides__ &#123;</span><br><span class="line">		gpio = &lt;&amp;frag0&gt;,<span class="string">&quot;gpios:4&quot;</span>;</span><br><span class="line">		activelow = &lt;&amp;frag0&gt;,<span class="string">&quot;gpios:8&quot;</span>;</span><br><span class="line">	&#125;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<h1 id="设备树的设计理念"><a href="#设备树的设计理念" class="headerlink" title="设备树的设计理念"></a>设备树的设计理念</h1><ol>
+<li>完整的描述硬件，而不是具体该如何使用硬件</li>
+<li>设备树应该与系统无关，无论是裸机还是操作系统都可以使用同一份设备树（操作系统的升级也不应该需要修改设备树）</li>
+<li>描述硬件的组成，而不是描述硬件的内部结构</li>
+</ol>
+<h1 id="设备树中的属性"><a href="#设备树中的属性" class="headerlink" title="设备树中的属性"></a>设备树中的属性</h1><h2 id="compatible"><a href="#compatible" class="headerlink" title="compatible"></a>compatible</h2><p><code>compatible</code> 用于将设备和驱动进行匹配，其通常是以 <code>vendor, model</code> 的方式来表示：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">compatible = <span class="string">&quot;arm,armv8-timer&quot;</span>;</span><br><span class="line">compatible = <span class="string">&quot;actions,s900-uart&quot;</span>, <span class="string">&quot;actions,owl-uart&quot;</span>;</span><br><span class="line">compatible = <span class="string">&quot;regulator-fixed&quot;</span>;</span><br><span class="line">compatible = <span class="string">&quot;gpio-keys&quot;</span>;</span><br></pre></td></tr></table></figure>
+
+<p>该值就与驱动中的 <code>of_device_id</code> 相匹配：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bdriver%5D/%5BWhat%5DLinux--%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%9E%84%E6%9E%B6/device_tree/pic/matching_driver.jpg?raw=true"></p>
+<h2 id="通用属性"><a href="#通用属性" class="headerlink" title="通用属性"></a>通用属性</h2><ul>
+<li><p>reg</p>
+<ul>
+<li>对于内存映射的设备，用于描述其基地址以及该设备可被访问的范围</li>
+<li>对于 I2C 类设备，用于表示该设备的地址</li>
+<li>对于 SPI 类设备，用于表示该设备的片选地址</li>
+</ul>
+</li>
+<li><p>interrupts,interrupt-parent,interrupts-extended : 描述中断号，以及与其关联的中断控制器</p>
+</li>
+<li><p>clocks : 描述该设备所使用的对应的时钟控制器</p>
+</li>
+<li><p>dmas : 描述该设备使用的 DMA 控制器以及其 DMA 通道号</p>
+</li>
+<li><p>status: <code>status: okay</code> 描述该设备被使能，如果是其他值则该设备被 disable</p>
+</li>
+<li><p>pinctrl-x: 描述该设备需要的 GPIO</p>
+</li>
+</ul>
+<h2 id="值与范围"><a href="#值与范围" class="headerlink" title="值与范围"></a>值与范围</h2><p>属性的值可以使用 10 进制、16 进制来表示：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">soc &#123;</span><br><span class="line">    <span class="comment">/* This property has 1 cell */</span></span><br><span class="line">    foo = &lt;<span class="number">0xdeadbeef</span>&gt;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>以上描述的是 32 位的值，对于 64 位的值使用两个 32 位的值来表示：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">soc &#123;</span><br><span class="line">    <span class="comment">/* This property has 2 cells */</span></span><br><span class="line">    foo = &lt;<span class="number">0xdeadbeef</span> <span class="number">0xbadcafe</span>&gt;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>规定值与范围的，是通过 <code>#address-cells</code> 和 <code>#size-cells</code> 来设定的：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">soc &#123;</span><br><span class="line">    compatible = <span class="string">&quot;simple-bus&quot;</span>;</span><br><span class="line">    <span class="comment">// 以下属性使用一个 cell 表示地址，一个 cell 表示范围</span></span><br><span class="line">    <span class="meta">#address-cells = <span class="meta-string">&lt;1&gt;</span>;</span></span><br><span class="line">    <span class="meta">#size-cells = <span class="meta-string">&lt;1&gt;</span>;</span></span><br><span class="line">    i2c@f1001000 &#123;</span><br><span class="line">        reg = &lt;<span class="number">0xf1001000</span> <span class="number">0x1000</span>&gt;;</span><br><span class="line">        <span class="comment">// 以下的属性使用一个 cell 表示地址且没有范围</span></span><br><span class="line">        <span class="meta">#address-cells = <span class="meta-string">&lt;1&gt;</span>;</span></span><br><span class="line">        <span class="meta">#size-cells = <span class="meta-string">&lt;0&gt;</span>;</span></span><br><span class="line">        eeprom@<span class="number">52</span> &#123;</span><br><span class="line">            reg = &lt;<span class="number">0x52</span>&gt;;</span><br><span class="line">        &#125;;</span><br><span class="line">    &#125;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>同理，<code>#interrupts-cells</code> 表示用多少 cell 表示设备使用的中断号：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">soc &#123;</span><br><span class="line">    intc: interrupt-controller@f1002000 &#123;</span><br><span class="line">        compatible = <span class="string">&quot;foo,bar-intc&quot;</span>;</span><br><span class="line">        reg = &lt;<span class="number">0xf1002000</span> <span class="number">0x1000</span>&gt;;</span><br><span class="line">        interrupt-controller;</span><br><span class="line">        <span class="comment">// 该中断控制器需要两个 cell 来描述设备与它的连接关系</span></span><br><span class="line">        <span class="meta">#interrupt-cells = <span class="meta-string">&lt;2&gt;</span>;</span></span><br><span class="line">    &#125;;</span><br><span class="line">    i2c@f1001000 &#123;</span><br><span class="line">        interrupt-parent = &lt;&amp;intc&gt;;</span><br><span class="line">        <span class="comment">/* Must have two cells */</span></span><br><span class="line">        interrupts = &lt;<span class="number">12</span> <span class="number">24</span>&gt;;</span><br><span class="line">    &#125;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>有了上面的理解，那么<code>#clock-cells</code>，<code>#gpio-cells</code>，<code>#phy-cells</code>都可以以此类推：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">soc &#123;</span><br><span class="line">    clkc: clock@f1003000 &#123;</span><br><span class="line">    compatible = <span class="string">&quot;foo,bar-clock&quot;</span>;</span><br><span class="line">    reg = &lt;<span class="number">0xf1003000</span> <span class="number">0x1000</span>&gt;;</span><br><span class="line">    <span class="meta">#clock-cells = <span class="meta-string">&lt;3&gt;</span>;</span></span><br><span class="line">    &#125;;</span><br><span class="line">    i2c@f1001000 &#123;</span><br><span class="line">    <span class="comment">/* Must have three cells */</span></span><br><span class="line">    clocks = &lt;&amp;clkc <span class="number">12</span> <span class="number">24</span> <span class="number">32</span>&gt;;</span><br><span class="line">    &#125;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h2 id="names"><a href="#names" class="headerlink" title="-names"></a>-names</h2><p>可以通过 <code>&lt;prop&gt;-names</code>将当前属性与名字匹配，更易于理解：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">interrupts = &lt;<span class="number">0</span> <span class="number">59</span> <span class="number">0</span>&gt;, &lt;<span class="number">0</span> <span class="number">70</span> <span class="number">0</span>&gt;;</span><br><span class="line">interrupt-names = <span class="string">&quot;macirq&quot;</span>, <span class="string">&quot;macpmt&quot;</span>;</span><br><span class="line">clocks = &lt;&amp;car <span class="number">39</span>&gt;, &lt;&amp;car <span class="number">45</span>&gt;, &lt;&amp;car <span class="number">86</span>&gt;, &lt;&amp;car <span class="number">87</span>&gt;;</span><br><span class="line">clock-names = <span class="string">&quot;gnssm_rgmii&quot;</span>, <span class="string">&quot;gnssm_gmac&quot;</span>, <span class="string">&quot;rgmii&quot;</span>, <span class="string">&quot;gmac&quot;</span>;</span><br></pre></td></tr></table></figure>
+
+<p>那么在驱动中就可以这么使用：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">platform_get_irq_byname</span>(pdev, <span class="string">&quot;macirq&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+
+
+
+
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>kcmetercec
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://kcmetercec.top/2023/07/09/linux_driver_device_tree_hello/" title="认识设备树">http://kcmetercec.top/2023/07/09/linux_driver_device_tree_hello/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux/" rel="tag"> <i class="fa fa-tag"></i> linux</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2023/07/06/rf_dsp_modulation_am_hello/" rel="prev" title="初步认识 AM 调制">
+      <i class="fa fa-chevron-left"></i> 初步认识 AM 调制
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2023/07/20/rf_dsp_modulation_fm_hello/" rel="next" title="初步认识 FM/PM 调制">
+      初步认识 FM/PM 调制 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Overview"><span class="nav-number">1.</span> <span class="nav-text">Overview</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E8%AF%AD%E6%B3%95"><span class="nav-number">2.</span> <span class="nav-text">基本语法</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B"><span class="nav-number">2.1.</span> <span class="nav-text">示例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BE%E5%A4%87%E6%A0%91%E7%9A%84%E7%BB%84%E7%BB%87%E6%96%B9%E5%BC%8F"><span class="nav-number">2.2.</span> <span class="nav-text">设备树的组织方式</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9E%84%E5%BB%BA%E8%AE%BE%E5%A4%87%E6%A0%91"><span class="nav-number">3.</span> <span class="nav-text">构建设备树</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%B0%83%E8%AF%95%E8%AE%BE%E5%A4%87%E6%A0%91"><span class="nav-number">4.</span> <span class="nav-text">调试设备树</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AE%BE%E5%A4%87%E6%A0%91-overlays"><span class="nav-number">5.</span> <span class="nav-text">设备树 overlays</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AE%BE%E5%A4%87%E6%A0%91%E7%9A%84%E8%AE%BE%E8%AE%A1%E7%90%86%E5%BF%B5"><span class="nav-number">6.</span> <span class="nav-text">设备树的设计理念</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AE%BE%E5%A4%87%E6%A0%91%E4%B8%AD%E7%9A%84%E5%B1%9E%E6%80%A7"><span class="nav-number">7.</span> <span class="nav-text">设备树中的属性</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#compatible"><span class="nav-number">7.1.</span> <span class="nav-text">compatible</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%9A%E7%94%A8%E5%B1%9E%E6%80%A7"><span class="nav-number">7.2.</span> <span class="nav-text">通用属性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%80%BC%E4%B8%8E%E8%8C%83%E5%9B%B4"><span class="nav-number">7.3.</span> <span class="nav-text">值与范围</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#names"><span class="nav-number">7.4.</span> <span class="nav-text">-names</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">Qt, C++, linux, CS</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">107</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">55</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:kcmeter.cec@gmail.com" title="E-Mail → mailto:kcmeter.cec@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2021 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">206k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">3:08</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+document.querySelectorAll('.pdfobject-container').forEach(element => {
+  let url = element.dataset.target;
+  let pdfOpenParams = {
+    navpanes : 0,
+    toolbar  : 0,
+    statusbar: 0,
+    pagemode : 'thumbs',
+    view     : 'FitH'
+  };
+  let pdfOpenFragment = '#' + Object.entries(pdfOpenParams).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
+  let fullURL = `/lib/pdf/web/viewer.html?file=${encodeURIComponent(url)}${pdfOpenFragment}`;
+
+  if (NexT.utils.supportsPDFs()) {
+    element.innerHTML = `<embed class="pdfobject" src="${url + pdfOpenFragment}" type="application/pdf" style="height: ${element.dataset.height};">`;
+  } else {
+    element.innerHTML = `<iframe src="${fullURL}" style="height: ${element.dataset.height};" frameborder="0"></iframe>`;
+  }
+});
+</script>
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'f938893867df78f94802',
+      clientSecret: 'b6d8470939c53d26c98c4e3b9d4c9ceb55d6e78e',
+      repo        : 'kcmetercec.github.io',
+      owner       : 'KcMeterCEC',
+      admin       : ['KcMeterCEC'],
+      id          : '9c0ec9ec0ed631e07571ba91a7061ccc',
+        language: 'zh-CN',
+      distractionFreeMode: false
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+    </div>
+</body>
+</html>

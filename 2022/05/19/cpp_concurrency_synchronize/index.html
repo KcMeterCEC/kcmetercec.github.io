@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="熟悉用 c++ 来编写可以跨平台的数据同步操作。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="C++ concurrency：线程间同步">
+<meta property="og:url" content="http://kcmetercec.top/2022/05/19/cpp_concurrency_synchronize/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="熟悉用 c++ 来编写可以跨平台的数据同步操作。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5Blanguage%5D/%5BWhat%5Dc_cpp--base/concurrency_in_action/pic/c4_shared_future.jpg?raw=true">
+<meta property="article:published_time" content="2022-05-18T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-05-21T16:00:00.000Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="cpp">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5Blanguage%5D/%5BWhat%5Dc_cpp--base/concurrency_in_action/pic/c4_shared_future.jpg?raw=true">
+
+<link rel="canonical" href="http://kcmetercec.top/2022/05/19/cpp_concurrency_synchronize/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>C++ concurrency：线程间同步 | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112423075-1# <app_id>"></script>
+    <script data-pjax>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-112423075-1# <app_id>');
+      }
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+        <li class="menu-item menu-item-commonweal">
+
+    <a href="/404/" rel="section"><i class="fa fa-heartbeat fa-fw"></i>公益 404</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2022/05/19/cpp_concurrency_synchronize/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="Qt, C++, linux, CS">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          C++ concurrency：线程间同步
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-05-19 00:00:00" itemprop="dateCreated datePublished" datetime="2022-05-19T00:00:00+08:00">2022-05-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-05-22 00:00:00" itemprop="dateModified" datetime="2022-05-22T00:00:00+08:00">2022-05-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/cpp/" itemprop="url" rel="index"><span itemprop="name">cpp</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/cpp/concurrency/" itemprop="url" rel="index"><span itemprop="name">concurrency</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>5.8k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>5 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>熟悉用 c++ 来编写可以跨平台的数据同步操作。</p>
+<span id="more"></span>
+
+<h1 id="等待事件或条件"><a href="#等待事件或条件" class="headerlink" title="等待事件或条件"></a>等待事件或条件</h1><h2 id="使用条件变量"><a href="#使用条件变量" class="headerlink" title="使用条件变量"></a>使用条件变量</h2><p>之前在看 <a target="_blank" rel="noopener" href="https://pages.cs.wisc.edu/~remzi/OSTEP/">ostep</a> 的时候熟悉过条件变量，但只是 Linux 平台下的。现在看看 c++ 标准库是如何使用的。</p>
+<p>c++ 标准库在<code> &lt;condition_variable&gt;</code>头文件中提供了<code> std::condition_variable</code>和<code>std::condition_variable_any</code>两种条件变量。</p>
+<p>其中<code> std::condition_variable</code>只能与<code>std::mutex</code>结合使用，而<code>std::condition_variable_any</code>可以与任何具有互斥作用的对象结合使用。但是后者的效率比不上前者，所以大部分时候还是使用的<code> std::condition_variable</code>。</p>
+<p>最基本的使用如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">std::mutex mut;</span><br><span class="line">std::condition_variable data_cond;</span><br><span class="line"><span class="comment">//用于存放数据的队列</span></span><br><span class="line">std::queue&lt;data_chunk&gt; data_queue;      </span><br><span class="line"></span><br><span class="line"><span class="comment">//生产者</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">data_preparation_thread</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">while</span> (<span class="built_in">more_data_to_prepare</span>()) &#123;</span><br><span class="line">        <span class="keyword">const</span> data_chunk data = <span class="built_in">prepare_data</span>();</span><br><span class="line">        &#123;</span><br><span class="line">			<span class="comment">//将数据写入队列</span></span><br><span class="line">            <span class="function">std::lock_guard&lt;std::mutex&gt; <span class="title">lk</span><span class="params">(mut)</span></span>;</span><br><span class="line">            data_queue.<span class="built_in">push</span>(data);</span><br><span class="line">            <span class="comment">//在退出这个局部区以后，互斥量就释放掉了              </span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//唤醒一个消费者</span></span><br><span class="line">        <span class="comment">//在互斥量释放之后再来唤醒消费者</span></span><br><span class="line">        <span class="comment">//如果在互斥量释放前唤醒消费者，那么此时很可能互斥量还没有释放完毕，那么消费者又需要进入一次等待，执行效率没有那么高</span></span><br><span class="line">        data_cond.<span class="built_in">notify_one</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 消费者</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">data_processing_thread</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">while</span> (<span class="literal">true</span>) &#123;</span><br><span class="line">        <span class="function">std::unique_lock&lt;std::mutex&gt; <span class="title">lk</span><span class="params">(mut)</span></span>;</span><br><span class="line">        <span class="comment">//等待数据，当 lambda 中的返回为真时，则会继续处理后面的数据，否则会释放互斥量然后继续睡眠    </span></span><br><span class="line">        data_cond.<span class="built_in">wait</span>(</span><br><span class="line">            lk,[]&#123;<span class="keyword">return</span> !data_queue.<span class="built_in">empty</span>();&#125;);</span><br><span class="line">        <span class="comment">//拷贝一个数据的副本，这样可以让临界区的执行时间尽量的短     </span></span><br><span class="line">        data_chunk data = data_queue.<span class="built_in">front</span>();</span><br><span class="line">        data_queue.<span class="built_in">pop</span>();</span><br><span class="line">        <span class="comment">//操作完数据需要释放互斥量</span></span><br><span class="line">        lk.<span class="built_in">unlock</span>();</span><br><span class="line">        <span class="comment">//到这里才是处理刚刚收到的数据          </span></span><br><span class="line">        <span class="built_in">process</span>(data);</span><br><span class="line">        <span class="keyword">if</span> (<span class="built_in">is_last_chunk</span>(data))</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在消费者线程中，使用的是<code>std::unique_lock</code>。这是因为当条件变量不满足的时候，需要主动释放互斥量然后进入睡眠。而<code>std::lock_guard</code>并没有提供这些灵活操作的接口（并且在获取数据的副本后，也会主动释放互斥量以提高系统的并发度）。<code>wait</code>方法的执行逻辑就如同下面这段代码一样：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> Predicate&gt;</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">minimal_wait</span><span class="params">(std::unique_lock&lt;std::mutex&gt;&amp; lk,Predicate pred)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">while</span> (!<span class="built_in">pred</span>()) &#123;</span><br><span class="line">        lk.<span class="built_in">unlock</span>();</span><br><span class="line">        </span><br><span class="line">        <span class="comment">// 等待唤醒</span></span><br><span class="line">        </span><br><span class="line">        lk.<span class="built_in">lock</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="创建一个多线程安全的队列"><a href="#创建一个多线程安全的队列" class="headerlink" title="创建一个多线程安全的队列"></a>创建一个多线程安全的队列</h2><p>我们可以基于前面的代码，将<code>std::queue</code>封装为一个多线程安全的队列：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;queue&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;memory&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;mutex&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;condition_variable&gt;</span></span></span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">threadsafe_queue</span> &#123;</span></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">	<span class="comment">//在多线程环境下，互斥量会在 const 成员函数中被使用，需要加上 mutable 修饰</span></span><br><span class="line">    <span class="keyword">mutable</span> std::mutex mut;    </span><br><span class="line">    std::queue&lt;T&gt; data_queue;</span><br><span class="line">    std::condition_variable data_cond;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">threadsafe_queue</span>() &#123;</span><br><span class="line">        </span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">threadsafe_queue</span>(threadsafe_queue <span class="keyword">const</span>&amp; other) &#123;</span><br><span class="line">		<span class="comment">//使用拷贝构造函数也需要做到互斥</span></span><br><span class="line">        <span class="function">std::lock_guard&lt;std::mutex&gt; <span class="title">lk</span><span class="params">(other.mut)</span></span>;</span><br><span class="line">        data_queue = other.data_queue;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">push</span><span class="params">(T new_value)</span> </span>&#123;</span><br><span class="line">        <span class="function">std::lock_guard&lt;std::mutex&gt; <span class="title">lk</span><span class="params">(mut)</span></span>;</span><br><span class="line">        data_queue.<span class="built_in">push</span>(new_value);</span><br><span class="line">        data_cond.<span class="built_in">notify_one</span>();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">wait_and_pop</span><span class="params">(T&amp; value)</span> </span>&#123;</span><br><span class="line">        <span class="function">std::unique_lock&lt;std::mutex&gt; <span class="title">lk</span><span class="params">(mut)</span></span>;</span><br><span class="line">        data_cond.<span class="built_in">wait</span>(lk,[<span class="keyword">this</span>]&#123;<span class="keyword">return</span> !data_queue.<span class="built_in">empty</span>();&#125;);</span><br><span class="line">        value = data_queue.<span class="built_in">front</span>();</span><br><span class="line">        data_queue.<span class="built_in">pop</span>();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function">std::shared_ptr&lt;T&gt; <span class="title">wait_and_pop</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="function">std::unique_lock&lt;std::mutex&gt; <span class="title">lk</span><span class="params">(mut)</span></span>;</span><br><span class="line">        data_cond.<span class="built_in">wait</span>(lk,[<span class="keyword">this</span>]&#123;<span class="keyword">return</span> !data_queue.<span class="built_in">empty</span>();&#125;);</span><br><span class="line">        <span class="function">std::shared_ptr&lt;T&gt; <span class="title">res</span><span class="params">(std::make_shared&lt;T&gt;(data_queue.front()))</span></span>;</span><br><span class="line">        data_queue.<span class="built_in">pop</span>();</span><br><span class="line">        <span class="keyword">return</span> res;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">bool</span> <span class="title">try_pop</span><span class="params">(T&amp; value)</span> </span>&#123;</span><br><span class="line">		<span class="comment">//既然是试探性的获取数据，就不需要用到条件变量了</span></span><br><span class="line">        <span class="function">std::lock_guard&lt;std::mutex&gt; <span class="title">lk</span><span class="params">(mut)</span></span>;</span><br><span class="line">        <span class="keyword">if</span> (data_queue.<span class="built_in">empty</span>())</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        value = data_queue.<span class="built_in">front</span>();</span><br><span class="line">        data_queue.<span class="built_in">pop</span>();</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function">std::shared_ptr&lt;T&gt; <span class="title">try_pop</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="function">std::lock_guard&lt;std::mutex&gt; <span class="title">lk</span><span class="params">(mut)</span></span>;</span><br><span class="line">        <span class="keyword">if</span>(data_queue.<span class="built_in">empty</span>())</span><br><span class="line">            <span class="keyword">return</span> std::shared_ptr&lt;T&gt;();</span><br><span class="line">        <span class="function">std::shared_ptr&lt;T&gt; <span class="title">res</span><span class="params">(std::make_shared&lt;T&gt;(data_queue.front()))</span></span>;</span><br><span class="line">        data_queue.<span class="built_in">pop</span>();</span><br><span class="line">        <span class="keyword">return</span> res;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">bool</span> <span class="title">empty</span><span class="params">()</span> <span class="keyword">const</span> </span>&#123;</span><br><span class="line">        <span class="function">std::lock_guard&lt;std::mutex&gt; <span class="title">lk</span><span class="params">(mut)</span></span>;</span><br><span class="line">        <span class="keyword">return</span> data_queue.<span class="built_in">empty</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>在使用的时候就更加简洁了：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">threadsafe_queue&lt;data_chunk&gt; data_queue;    </span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">data_preparation_thread</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">while</span>(<span class="built_in">more_data_to_prepare</span>()) &#123;</span><br><span class="line">        <span class="keyword">const</span> data_chunk data = <span class="built_in">prepare_data</span>();</span><br><span class="line">        data_queue.<span class="built_in">push</span>(data);        </span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">data_processing_thread</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">while</span>(<span class="literal">true</span>) &#123;</span><br><span class="line">        data_chunk data;</span><br><span class="line">        data_queue.<span class="built_in">wait_and_pop</span>(data);    </span><br><span class="line">        <span class="built_in">process</span>(data);</span><br><span class="line">        <span class="keyword">if</span> (<span class="built_in">is_last_chunk</span>(data))</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果想要同时唤醒多个线程，那就应该使用<code>notify_all()</code>方法。</p>
+<p>信号量是 <a target="_blank" rel="noopener" href="https://en.cppreference.com/w/cpp/thread/counting_semaphore">c++ 20</a> 才提供的，如果在之前的版本要使用信号量，那就使用条件变量和互斥锁来实现信号量。被互斥的变量其实就是计数值：</p>
+<ul>
+<li>释放信号量时计数值加 1</li>
+<li>获取信号量时计数值减一</li>
+</ul>
+<h1 id="使用future等待一次性事件"><a href="#使用future等待一次性事件" class="headerlink" title="使用future等待一次性事件"></a>使用<code>future</code>等待一次性事件</h1><p>future 用于标识等待一个一次性事件的发生，一旦该事件发生了，其<code>ready</code>标记为真且无法被清除。</p>
+<p>在<code> &lt;future&gt;</code>头文件中提供了<code>std::future&lt;&gt;</code>和<code>std::shared_future&lt;&gt;</code>分别对应于独立和共享，就如同<code>std::unique_ptr</code>和<code>std::shared_ptr</code>一样。一个事件，只能有一个<code>std::future&lt;&gt;</code>与之关联。而多个<code>std::shared_future&lt;&gt;</code>可以关联同一个事件。</p>
+<p>多个线程如果要并发的访问<code>std::future&lt;&gt;</code>则需要使用互斥量这些来保证互斥，而<code>std::shared_future&lt;&gt;</code>则没有这个限制。</p>
+<h2 id="获取线程的返回参数"><a href="#获取线程的返回参数" class="headerlink" title="获取线程的返回参数"></a>获取线程的返回参数</h2><p>假设需要一个线程来进行一个比较耗时的计算，如果使用<code>std::thread</code>来关联一个函数，那么获取其计算的结果还比较麻烦。这种情况下使用<code>std::async</code>与执行函数相关联，它会返回一个<code>std::future</code>以让使用者比较优雅的就可以获取到执行的返回值。</p>
+<p>一个简单而优雅的示例如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;future&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">find_the_answer_to_ltuae</span><span class="params">()</span> </span>&#123;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">1</span> + <span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">	std::future&lt;<span class="keyword">int</span>&gt; the_answer = std::<span class="built_in">async</span>(find_the_answer_to_ltuae);</span><br><span class="line"></span><br><span class="line">	<span class="comment">//如果在使用 get() 时线程还没有运行完成，那么在此处则会阻塞等待线程运行完毕</span></span><br><span class="line">	std::cout &lt;&lt; <span class="string">&quot;The answer is &quot;</span> &lt;&lt; the_answer.<span class="built_in">get</span>() &lt;&lt; std::endl;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>std::async</code>的也可以给执行函数传递参数，和<code>std::thread</code>的使用方式是一样的：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;future&gt;</span></span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">X</span> &#123;</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">foo</span><span class="params">(<span class="keyword">int</span>,std::string <span class="keyword">const</span>&amp;)</span></span>;</span><br><span class="line">    <span class="function">std::string <span class="title">bar</span><span class="params">(std::string <span class="keyword">const</span>&amp;)</span></span>;</span><br><span class="line">&#125;;</span><br><span class="line">X x;</span><br><span class="line"><span class="comment">//这里拷贝的是对象 x 的地址，所以其调用方式是： (&amp;x)-&gt;foo(42, &quot;hello&quot;)</span></span><br><span class="line"><span class="keyword">auto</span> f1 = std::<span class="built_in">async</span>(&amp;X::foo,&amp;x,<span class="number">42</span>,<span class="string">&quot;hello&quot;</span>);</span><br><span class="line"><span class="comment">//这里拷贝的是对象 x，所以其调用方式是：x.bar(&quot;goodbye&quot;)      </span></span><br><span class="line"><span class="keyword">auto</span> f2 = std::<span class="built_in">async</span>(&amp;X::bar,x,<span class="string">&quot;goodbye&quot;</span>);    </span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Y</span> &#123;</span></span><br><span class="line">    <span class="function"><span class="keyword">double</span> <span class="title">operator</span><span class="params">()</span><span class="params">(<span class="keyword">double</span>)</span></span>;</span><br><span class="line">&#125;;</span><br><span class="line">Y y;</span><br><span class="line"><span class="comment">//这里通过类 Y 创建了一个临时对象，然后在内部以右值引用的方式传递给其 operator()</span></span><br><span class="line"><span class="keyword">auto</span> f3 = std::<span class="built_in">async</span>(<span class="built_in">Y</span>(),<span class="number">3.141</span>);</span><br><span class="line"><span class="comment">//这里拷贝的是引用，所以其调用方式是y(2.718)       </span></span><br><span class="line"><span class="keyword">auto</span> f4 = std::<span class="built_in">async</span>(std::<span class="built_in">ref</span>(y),<span class="number">2.718</span>);     </span><br><span class="line"><span class="function">X <span class="title">baz</span><span class="params">(X&amp;)</span></span>;</span><br><span class="line"><span class="comment">//由于 baz 这个函数需求的是左值引用，所以传递参数必须要使用 std::ref </span></span><br><span class="line">std::<span class="built_in">async</span>(baz,std::<span class="built_in">ref</span>(x));     </span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">move_only</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">move_only</span>();</span><br><span class="line">    <span class="built_in">move_only</span>(move_only&amp;&amp;)</span><br><span class="line">    <span class="built_in">move_only</span>(move_only <span class="keyword">const</span>&amp;) = <span class="keyword">delete</span>;</span><br><span class="line">    move_only&amp; <span class="keyword">operator</span>=(move_only&amp;&amp;);</span><br><span class="line">    move_only&amp; <span class="keyword">operator</span>=(move_only <span class="keyword">const</span>&amp;) = <span class="keyword">delete</span>;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">operator</span><span class="params">()</span><span class="params">()</span></span>;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="comment">//创建临时对象，内部以右值引用的方式移动给 operator()</span></span><br><span class="line"><span class="keyword">auto</span> f5 = std::<span class="built_in">async</span>(<span class="built_in">move_only</span>());</span><br></pre></td></tr></table></figure>
+
+<p>可以对<code>std::async</code>配置策略，以显示的指定其执行策略是同步还是异步：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//以异步的方式执行，也就是会在另外一个线程中执行</span></span><br><span class="line"><span class="keyword">auto</span> f6 = std::<span class="built_in">async</span>(std::launch::async,<span class="built_in">Y</span>(),<span class="number">1.2</span>);</span><br><span class="line"><span class="comment">//推迟执行，在使用 wait() 或 get() 时才执行，相当于同步执行     </span></span><br><span class="line"><span class="keyword">auto</span> f7 = std::<span class="built_in">async</span>(std::launch::deferred,baz,std::<span class="built_in">ref</span>(x));</span><br><span class="line"><span class="comment">//下面这两种方式会根据代码的具体实现方式来选择是同步还是异步执行    </span></span><br><span class="line"><span class="keyword">auto</span> f8 = std::<span class="built_in">async</span>(                           </span><br><span class="line">   std::launch::deferred | std::launch::async,</span><br><span class="line">   baz,std::<span class="built_in">ref</span>(x));                          </span><br><span class="line"><span class="keyword">auto</span> f9 = std::<span class="built_in">async</span>(baz,std::<span class="built_in">ref</span>(x));</span><br><span class="line"></span><br><span class="line"><span class="comment">//比如 f7 使用 wait() 的时候， baz(x) 才执行          </span></span><br><span class="line">f7.<span class="built_in">wait</span>();</span><br></pre></td></tr></table></figure>
+
+<h2 id="将-future-与一个任务关联"><a href="#将-future-与一个任务关联" class="headerlink" title="将 future 与一个任务关联"></a>将 future 与一个任务关联</h2><p><code>std::packaged_task</code>提供了更为灵活的方式，它可以将一个可执行函数、可执行对象等与一个<code>std::future</code>绑定在一起，形成一个可执行对象。</p>
+<p>然后这个可执行对象可以被同步或异步的被执行。执行的时候其返回值便会自动存储，而后可以通过关联的<code>std::future</code>来获取。</p>
+<p>比如  <code>std::packaged_task&lt;std::string(std::vector&lt;char&gt;*,int)&gt;</code>打包后实例化的类就如同下面这样：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;&gt;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">packaged_task</span>&lt;</span>std::<span class="built_in">string</span>(std::vector&lt;<span class="keyword">char</span>&gt;*,<span class="keyword">int</span>)&gt; &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> Callable&gt;</span></span><br><span class="line"><span class="function">    <span class="keyword">explicit</span> <span class="title">packaged_task</span><span class="params">(Callable&amp;&amp; f)</span></span>;</span><br><span class="line">    <span class="comment">// std::future 类型和模板里面传入的返回值一致</span></span><br><span class="line">    <span class="function">std::future&lt;std::string&gt; <span class="title">get_future</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="comment">// 函数参数和模板里面传入的参数一致</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">operator</span><span class="params">()</span><span class="params">(std::vector&lt;<span class="keyword">char</span>&gt;*,<span class="keyword">int</span>)</span></span>;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>对于处理批量任务，使用这个打包的方式，可以将这种多个对象都放入容器中便于管理:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;cmath&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;thread&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;future&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;functional&gt;</span></span></span><br><span class="line"> </span><br><span class="line"><span class="comment">// unique function to avoid disambiguating the std::pow overload set</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">f</span><span class="params">(<span class="keyword">int</span> x, <span class="keyword">int</span> y)</span> </span>&#123; </span><br><span class="line">    <span class="keyword">return</span> std::<span class="built_in">pow</span>(x,y); </span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">task_lambda</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="function">std::packaged_task&lt;<span class="title">int</span><span class="params">(<span class="keyword">int</span>,<span class="keyword">int</span>)</span>&gt; <span class="title">task</span><span class="params">([](<span class="keyword">int</span> a, <span class="keyword">int</span> b) &#123;</span></span></span><br><span class="line"><span class="params"><span class="function">        <span class="keyword">return</span> std::pow(a, b); </span></span></span><br><span class="line"><span class="params"><span class="function">    &#125;)</span></span>;</span><br><span class="line">    std::future&lt;<span class="keyword">int</span>&gt; result = task.<span class="built_in">get_future</span>();</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// 这个是同步执行，调用该函数的时候才执行，返回值会保存在 future 中</span></span><br><span class="line">    <span class="built_in">task</span>(<span class="number">2</span>, <span class="number">9</span>);</span><br><span class="line"> </span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;task_lambda:\t&quot;</span> &lt;&lt; result.<span class="built_in">get</span>() &lt;&lt; <span class="string">&#x27;\n&#x27;</span>;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">task_bind</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="function">std::packaged_task&lt;<span class="title">int</span><span class="params">()</span>&gt; <span class="title">task</span><span class="params">(std::bind(f, <span class="number">2</span>, <span class="number">11</span>))</span></span>;</span><br><span class="line">    std::future&lt;<span class="keyword">int</span>&gt; result = task.<span class="built_in">get_future</span>();</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// 这个是同步执行，调用该函数的时候才执行，返回值会保存在 future 中</span></span><br><span class="line">    <span class="built_in">task</span>();</span><br><span class="line"> </span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;task_bind:\t&quot;</span> &lt;&lt; result.<span class="built_in">get</span>() &lt;&lt; <span class="string">&#x27;\n&#x27;</span>;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">task_thread</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="function">std::packaged_task&lt;<span class="title">int</span><span class="params">(<span class="keyword">int</span>,<span class="keyword">int</span>)</span>&gt; <span class="title">task</span><span class="params">(f)</span></span>;</span><br><span class="line">    std::future&lt;<span class="keyword">int</span>&gt; result = task.<span class="built_in">get_future</span>();</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// 这个是异步执行，调用该函数的时候才执行，返回值会保存在 future 中</span></span><br><span class="line">    <span class="function">std::thread <span class="title">task_td</span><span class="params">(std::move(task), <span class="number">2</span>, <span class="number">10</span>)</span></span>;</span><br><span class="line">    task_td.<span class="built_in">join</span>();</span><br><span class="line"> </span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;task_thread:\t&quot;</span> &lt;&lt; result.<span class="built_in">get</span>() &lt;&lt; <span class="string">&#x27;\n&#x27;</span>;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="built_in">task_lambda</span>();</span><br><span class="line">    <span class="built_in">task_bind</span>();</span><br><span class="line">    <span class="built_in">task_thread</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>比如，GUI 有个独立的线程执行刷新任务，其它的任务要刷新线程必须要给这个 GUI 任务发送消息，这些线程或许还需要得到 GUI 线程执行该消息后的返回值。那么使用<code>std::package_task</code>就是合理的：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;deque&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;mutex&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;future&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;thread&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;utility&gt;</span></span></span><br><span class="line">std::mutex m;</span><br><span class="line"><span class="comment">//存放消息的队列，每个元素都是一个 std::packaged_task</span></span><br><span class="line">std::deque&lt;std::packaged_task&lt;<span class="keyword">void</span>()&gt; &gt; tasks;</span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">gui_shutdown_message_received</span><span class="params">()</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">get_and_process_gui_message</span><span class="params">()</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">gui_thread</span><span class="params">()</span> </span>&#123;</span><br><span class="line">	<span class="comment">//事件循环，获取消息</span></span><br><span class="line">    <span class="keyword">while</span> (!<span class="built_in">gui_shutdown_message_received</span>()) &#123;</span><br><span class="line">        <span class="built_in">get_and_process_gui_message</span>();    </span><br><span class="line">        std::packaged_task&lt;<span class="built_in"><span class="keyword">void</span></span>()&gt; task;</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="function">std::lock_guard&lt;std::mutex&gt; <span class="title">lk</span><span class="params">(m)</span></span>;</span><br><span class="line">            <span class="keyword">if</span> (tasks.<span class="built_in">empty</span>())                 </span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            <span class="comment">//从消息队列中取出一个消息</span></span><br><span class="line">            task = std::<span class="built_in">move</span>(tasks.<span class="built_in">front</span>());   </span><br><span class="line">            tasks.<span class="built_in">pop_front</span>();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//执行该消息，同时与之关联的 std::future 也 reday 了</span></span><br><span class="line">        <span class="built_in">task</span>();    </span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function">std::thread <span class="title">gui_bg_thread</span><span class="params">(gui_thread)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> Func&gt;</span></span><br><span class="line"><span class="function">std::future&lt;<span class="keyword">void</span>&gt; <span class="title">post_task_for_gui_thread</span><span class="params">(Func f)</span> </span>&#123;</span><br><span class="line">	<span class="comment">//将一个消息任务与 future 绑定</span></span><br><span class="line">    <span class="function">std::packaged_task&lt;<span class="title">void</span><span class="params">()</span>&gt; <span class="title">task</span><span class="params">(f)</span></span>;       </span><br><span class="line">    std::future&lt;<span class="keyword">void</span>&gt; res = task.<span class="built_in">get_future</span>();</span><br><span class="line">    <span class="comment">//消息存入消息队列     </span></span><br><span class="line">    <span class="function">std::lock_guard&lt;std::mutex&gt; <span class="title">lk</span><span class="params">(m)</span></span>;</span><br><span class="line">    tasks.<span class="built_in">push_back</span>(std::<span class="built_in">move</span>(task));</span><br><span class="line">    <span class="comment">// 返回与该消息绑定的 future，用户可以在需要的时候获取这个消息的执行返回结果</span></span><br><span class="line">    <span class="comment">// 如果对结果不感兴趣，也可以丢弃这个返回</span></span><br><span class="line">    <span class="keyword">return</span> res;                      </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="使用-std-promises"><a href="#使用-std-promises" class="headerlink" title="使用 std::promises"></a>使用 std::promises</h2><p><code>std::promises</code>和<code>std::packaged_task</code>很类似，也是可以通过其<code> get_future()</code>方法获取一个<code>std::future</code>，然后它就可以组合使用。</p>
+<p><code>std::packaged_task</code>是用于执行一个函数，其返回值与<code>std::future</code>绑定。而<code>std::promises</code>是当其使用<code>set_value()</code>方法后，与其绑定的<code>std::future</code>便会是 ready 状态，如果<code>std::future</code>在其 ready 之前使用了 <code>get()</code>方法，那么将会阻塞的等待。</p>
+<p>所以既可以使用<code>std::promises</code>实现线程间同步，也可以实现线程间的同步通信。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;vector&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;thread&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;future&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;numeric&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;chrono&gt;</span></span></span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">accumulate</span><span class="params">(std::vector&lt;<span class="keyword">int</span>&gt;::iterator first,</span></span></span><br><span class="line"><span class="params"><span class="function">                std::vector&lt;<span class="keyword">int</span>&gt;::iterator last,</span></span></span><br><span class="line"><span class="params"><span class="function">                std::promise&lt;<span class="keyword">int</span>&gt; accumulate_promise)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> sum = std::<span class="built_in">accumulate</span>(first, last, <span class="number">0</span>);</span><br><span class="line">    <span class="comment">// 执行这一步操作后，与 promise 绑定的 future 状态就会是 reday 状态</span></span><br><span class="line">    accumulate_promise.<span class="built_in">set_value</span>(sum);  <span class="comment">// Notify future</span></span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">do_work</span><span class="params">(std::promise&lt;<span class="keyword">void</span>&gt; barrier)</span> </span>&#123;</span><br><span class="line">    std::this_thread::<span class="built_in">sleep_for</span>(std::chrono::<span class="built_in">seconds</span>(<span class="number">3</span>));</span><br><span class="line">    <span class="comment">// 等待 3 秒后，等待它的 future 就会被唤醒</span></span><br><span class="line">    barrier.<span class="built_in">set_value</span>();</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">// Demonstrate using promise&lt;int&gt; to transmit a result between threads.</span></span><br><span class="line">    std::vector&lt;<span class="keyword">int</span>&gt; numbers = &#123; <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span> &#125;;</span><br><span class="line">    std::promise&lt;<span class="keyword">int</span>&gt; accumulate_promise;</span><br><span class="line">    std::future&lt;<span class="keyword">int</span>&gt; accumulate_future = accumulate_promise.<span class="built_in">get_future</span>();</span><br><span class="line">    <span class="function">std::thread <span class="title">work_thread</span><span class="params">(accumulate, numbers.begin(), numbers.end(),</span></span></span><br><span class="line"><span class="params"><span class="function">                            std::move(accumulate_promise))</span></span>;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// future::get() will wait until the future has a valid result and retrieves it.</span></span><br><span class="line">    <span class="comment">// Calling wait() before get() is not needed</span></span><br><span class="line">    <span class="comment">//accumulate_future.wait();  // wait for result</span></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;result=&quot;</span> &lt;&lt; accumulate_future.<span class="built_in">get</span>() &lt;&lt; <span class="string">&#x27;\n&#x27;</span>;</span><br><span class="line">    work_thread.<span class="built_in">join</span>();  <span class="comment">// wait for thread completion</span></span><br><span class="line"> </span><br><span class="line">    <span class="comment">// Demonstrate using promise&lt;void&gt; to signal state between threads.</span></span><br><span class="line">    std::promise&lt;<span class="keyword">void</span>&gt; barrier;</span><br><span class="line">    std::future&lt;<span class="keyword">void</span>&gt; barrier_future = barrier.<span class="built_in">get_future</span>();</span><br><span class="line">    <span class="function">std::thread <span class="title">new_work_thread</span><span class="params">(do_work, std::move(barrier))</span></span>;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;wait result\n&quot;</span>;</span><br><span class="line">    barrier_future.<span class="built_in">wait</span>();</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;wait result done\n&quot;</span>;</span><br><span class="line">    new_work_thread.<span class="built_in">join</span>();</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="将异常存入-future"><a href="#将异常存入-future" class="headerlink" title="将异常存入 future"></a>将异常存入 future</h2><p>正常情况下，当一个函数抛出异常时，会层层向上传递，如果没有用户代码 catch 它，那么将会由标准库处理并退出用户进程。但是当使用了<code>std::future</code>，<code>std::promises</code>，<code>std::packaged_task</code>时，如果其关联函数抛出了异常，这个异常的值会被存储在 future 中。</p>
+<p>使用<code>std::promises</code>来存储异常，然后在获取线程中获取异常才是一个优雅的做法：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdexcept&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;future&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;thread&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;chrono&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> std::promise&lt;<span class="keyword">int</span>&gt; result;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">func_div</span><span class="params">(<span class="keyword">int</span> a, <span class="keyword">int</span> b)</span> </span>&#123;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;a = &quot;</span> &lt;&lt; a &lt;&lt; <span class="string">&quot; b &quot;</span> &lt;&lt; b &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line">    <span class="keyword">if</span>(b == <span class="number">0</span>)&#123;</span><br><span class="line">        result.<span class="built_in">set_exception</span>(</span><br><span class="line">                    std::<span class="built_in">make_exception_ptr</span>(std::<span class="built_in">out_of_range</span>(<span class="string">&quot;input out of range!\n&quot;</span>))</span><br><span class="line">                    );</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        result.<span class="built_in">set_value</span>(a / b);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function">std::thread <span class="title">t</span><span class="params">(func_div, <span class="number">10</span>, <span class="number">0</span>)</span></span>;</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;sleep 3 seconds\n&quot;</span>;</span><br><span class="line">    std::this_thread::<span class="built_in">sleep_for</span>(std::chrono::<span class="built_in">seconds</span>(<span class="number">3</span>));</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;get result\n&quot;</span>;</span><br><span class="line">    <span class="comment">//在获取结果的时候，才抛出异常</span></span><br><span class="line">    <span class="keyword">int</span> ret = result.<span class="built_in">get_future</span>().<span class="built_in">get</span>();</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;get result: &quot;</span> &lt;&lt; ret &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line"></span><br><span class="line">    t.<span class="built_in">join</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="多个线程等待同一个事件"><a href="#多个线程等待同一个事件" class="headerlink" title="多个线程等待同一个事件"></a>多个线程等待同一个事件</h2><p>当有多个线程在使用同一个<code>std::future</code>时，便会造成竞态。这种情况下应该使用<code>std::shared_future</code>。</p>
+<p>这并不是说多个线程使用同一个<code>std::shared_future</code>，而是说每个线程都有一份对<code>std::shared_future</code>的拷贝，它们都访问自己的<code>std::shared_future</code>：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5Blanguage%5D/%5BWhat%5Dc_cpp--base/concurrency_in_action/pic/c4_shared_future.jpg?raw=true"></p>
+<p><code>std::shared_future</code>是通过<code>std::future</code>来获取，又由于<code>std::future</code>是不能被拷贝的，只能被移动，所以需要使用<code>std::move</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">std::promise&lt;<span class="keyword">int</span>&gt; p;</span><br><span class="line"><span class="function">std::future&lt;<span class="keyword">int</span>&gt; <span class="title">f</span><span class="params">(p.get_future())</span></span>;                      </span><br><span class="line"><span class="function">std::shared_future&lt;<span class="keyword">int</span>&gt; <span class="title">sf</span><span class="params">(std::move(f))</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p>当然，对于创建的临时对象，也可以更加简单粗暴：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">std::promise&lt;std::string&gt; p;</span><br><span class="line"><span class="function">std::shared_future&lt;std::string&gt; <span class="title">sf</span><span class="params">(p.get_future())</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p>除此之外，<code>std::future</code>也具有一个<code>share()</code>方法来创建<code>std::shared_future</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">std::promise&lt; std::map&lt; SomeIndexType, SomeDataType, SomeComparator,</span><br><span class="line">    SomeAllocator&gt;::iterator&gt; p;</span><br><span class="line"><span class="comment">//sf 推导为  std::shared_future&lt; std::map&lt; SomeIndexType, SomeDataType, SomeComparator, //SomeAllocator&gt;::iterator&gt;</span></span><br><span class="line"><span class="keyword">auto</span> sf = p.<span class="built_in">get_future</span>().<span class="built_in">share</span>();</span><br></pre></td></tr></table></figure>
+
+<h1 id="超时等待"><a href="#超时等待" class="headerlink" title="超时等待"></a>超时等待</h1><p>对于时间的设定，可以设置相对时间（比如等待 100 毫秒）和绝对时间（比如等待至 2023年……）。</p>
+<p>c++ 标准库提供了这两种时间的设定，对于相对时间，其操作方法以<code>_for</code>作为后缀，对于绝对时间，其操作方法以<code>_until</code>作为后缀。</p>
+<blockquote>
+<p>比如对于 condition_variable 的 wait() 方法就有 wait_for() 和 wait_until() 两种超时等待。</p>
+</blockquote>
+<h2 id="c-的时钟"><a href="#c-的时钟" class="headerlink" title="c++ 的时钟"></a>c++ 的时钟</h2><p>c++ 标准库提供了头文件<code> &lt;chrono&gt;</code>以支持时钟相关的操作：</p>
+<ul>
+<li><code>std::chrono::steady_clock</code>提供了具有固定不可被修改的时钟</li>
+<li><code>std::chrono::system_clock</code>提供了通用时钟操作，可以被设定修改</li>
+<li><code>std::chrono::high_resolution_clock</code>提供了高精度时钟操作</li>
+</ul>
+<p>以上 3 个时钟都具有静态函数<code>now()</code>以获取一个绝对的时间点<code>time_point</code>。</p>
+<h2 id="时间段"><a href="#时间段" class="headerlink" title="时间段"></a>时间段</h2><h3 id="ratio"><a href="#ratio" class="headerlink" title="ratio"></a>ratio</h3><p><code>ratio</code>头文件提供了模板类<code>std::ratio&lt;num, den&gt;</code>，其值代表分数，<code>num</code>就是分子（Numerator）的简写，<code>den</code>就是分母（denominator）的简写。</p>
+<p>而在时间的角度来看的话，可以理解为<code>num</code>秒内有<code>den</code>次发生，也就是频率的表示。</p>
+<blockquote>
+<p>比如 1毫秒，就是 1 秒内有 1000 次，那么就表示为：<code>std::ratio&lt;1,1000&gt;</code>。</p>
+</blockquote>
+<p>该头文件还提供了很多实现定义的类型，便于用户直接使用：（详见<a target="_blank" rel="noopener" href="https://en.cppreference.com/w/cpp/numeric/ratio/ratio">cppreference</a>）</p>
+<table>
+<thead>
+<tr>
+<th align="center">定义</th>
+<th align="center">等同于</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">nano</td>
+<td align="center">std::ratio&lt;1, 1000000000&gt;</td>
+</tr>
+<tr>
+<td align="center">micro</td>
+<td align="center">std::ratio&lt;1, 1000000&gt;</td>
+</tr>
+<tr>
+<td align="center">……</td>
+<td align="center">……</td>
+</tr>
+</tbody></table>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ratio&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    std::cout &lt;&lt; std::ratio&lt;<span class="number">1</span>, <span class="number">1000</span>&gt;::num &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line">    std::cout &lt;&lt; std::ratio&lt;<span class="number">1</span>, <span class="number">1000</span>&gt;::den &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line">    std::cout &lt;&lt; std::micro::num &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line">    std::cout &lt;&lt; std::micro::den &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line">	</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>输出为：</p>
+<blockquote>
+<p>1<br>1000<br>1<br>1000000</p>
+</blockquote>
+<h3 id="duration"><a href="#duration" class="headerlink" title="duration"></a>duration</h3><p>头文件<code>&lt;chrono&gt;</code>提供了<code>std::chrono::duration&lt;Rep,Period&gt;</code>模板。</p>
+<p>它与<code>std::ratio</code>联合使用，以表示在时间段内有多少个计数值。</p>
+<p>第一个参数指定存储时间段的类型值，第二个参数指定<code>std::ratio</code>。</p>
+<p>比如：</p>
+<ul>
+<li>使用<code>short</code>存储一分钟的计数值：<code>std::chrono::duration&lt;short,std::ratio&lt;60,1&gt;&gt;</code></li>
+<li>使用<code>double</code>存储毫秒： <code>std::chrono::duration&lt;double,std::ratio&lt;1,1000&gt;&gt;</code></li>
+</ul>
+<p>为了方便，标准库还提供了<code>std::nanoseconds,  std::microseconds,  std::milliseconds,  std::seconds, std::minutes, std::hours</code>等这些定义好的时间段值。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ratio&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;chrono&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    <span class="comment">//得到一个代表两秒的值</span></span><br><span class="line">    <span class="keyword">auto</span> t = std::chrono::<span class="built_in">seconds</span>(<span class="number">2</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//当前频率是 1 秒钟有 50 次跳动</span></span><br><span class="line">    std::chrono::duration&lt;<span class="keyword">int</span>, std::ratio&lt;<span class="number">1</span>, <span class="number">50</span>&gt;&gt; <span class="built_in">val</span>(t);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//那么两秒对应的就是 100 次跳动</span></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;count of val &quot;</span> &lt;&lt; val.<span class="built_in">count</span>() &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line"></span><br><span class="line">	</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在 c++14 及以后，还提供了<code>std::chrono_literals</code>以使用字面值来表示时间段：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std::chrono_literals;</span><br><span class="line"><span class="keyword">auto</span> one_day = <span class="number">24</span>h;</span><br><span class="line"><span class="keyword">auto</span> half_an_hour= <span class="number">30</span>min;</span><br><span class="line"><span class="keyword">auto</span> max_time_between_messages= <span class="number">30</span>ms;</span><br></pre></td></tr></table></figure>
+
+<p> 这样<code>15ns</code> 就等同于 <code>std::chrono::nanoseconds(15)</code>:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ratio&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;chrono&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">using</span> <span class="keyword">namespace</span> std::chrono_literals;</span><br><span class="line">    <span class="comment">//得到一个代表两秒的值</span></span><br><span class="line">    <span class="keyword">auto</span> t = <span class="number">2</span>s;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//当前频率是 60 秒钟有 1 次跳动，也就是一分钟</span></span><br><span class="line">    std::chrono::duration&lt;<span class="keyword">double</span>, std::ratio&lt;<span class="number">60</span>, <span class="number">1</span>&gt;&gt; <span class="built_in">val</span>(t);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//那么两秒对应的就是 0.0333 次跳动，也就是 0.0333 分钟</span></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;count of val &quot;</span> &lt;&lt; val.<span class="built_in">count</span>() &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line"></span><br><span class="line">	</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>std::chrono::duration_cast&lt;&gt;</code>用于时间之间的转换，这里可能会有精度的损失（比如毫秒转换到秒）：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ratio&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;chrono&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    std::<span class="function">chrono::milliseconds <span class="title">ms</span><span class="params">(<span class="number">54802</span>)</span></span>;</span><br><span class="line">    <span class="comment">//最终转换为 54 秒</span></span><br><span class="line">    std::chrono::seconds s = std::chrono::duration_cast&lt;std::chrono::seconds&gt;(ms);</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;conver &quot;</span> &lt;&lt; ms.<span class="built_in">count</span>() &lt;&lt; <span class="string">&quot; ms to &quot;</span> &lt;&lt; s.<span class="built_in">count</span>() &lt;&lt; <span class="string">&quot; s\n&quot;</span>;</span><br><span class="line"></span><br><span class="line">	</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>周期之间也可以进行简单的运算，比如 5 秒可以使用：<code>5*seconds(1)</code>或<code>minutes(1) – seconds(55)</code>，它们都等同于<code> seconds(5)</code>。</p>
+<h2 id="时间点"><a href="#时间点" class="headerlink" title="时间点"></a>时间点</h2><p><code>std::chrono::time_point&lt;&gt;</code>用于表示一个绝对的时间点，它有两个参数。第一个参数用于表示这个时间点的参考时钟，第二个参数用于表示时间段：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ctime&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;chrono&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ratio&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iomanip&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">using</span> <span class="keyword">namespace</span> std::literals; <span class="comment">// enables the usage of 24h, 1ms, 1s instead of</span></span><br><span class="line">                                   <span class="comment">// e.g. std::chrono::hours(24), accordingly</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">//以系统时钟作为参考，周期是 100 纳秒</span></span><br><span class="line">    <span class="keyword">const</span> std::chrono::time_point&lt;std::chrono::system_clock,</span><br><span class="line">            std::chrono::duration&lt;<span class="keyword">long</span> <span class="keyword">long</span>, std::ratio&lt;<span class="number">1</span>, <span class="number">10000000</span>&gt;&gt;&gt; now =</span><br><span class="line">        std::chrono::system_clock::<span class="built_in">now</span>();</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;time since epoch with seconds &quot;</span> &lt;&lt;</span><br><span class="line">                std::chrono::duration_cast&lt;std::chrono::seconds&gt;(now.<span class="built_in">time_since_epoch</span>()).<span class="built_in">count</span>()</span><br><span class="line">              &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">const</span> std::<span class="keyword">time_t</span> t_c = std::chrono::system_clock::<span class="built_in">to_time_t</span>(now - <span class="number">24</span>h);</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;24 hours ago, the time was &quot;</span></span><br><span class="line">              &lt;&lt; std::<span class="built_in">put_time</span>(std::<span class="built_in">localtime</span>(&amp;t_c), <span class="string">&quot;%F %T.\n&quot;</span>) &lt;&lt; std::flush;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>对于使用相同参考时钟的时间点，也可以进行加减运算。比如下面经过时间点求差得出一段代码的运行时间：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ctime&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;chrono&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ratio&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iomanip&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">auto</span> start = std::chrono::high_resolution_clock::<span class="built_in">now</span>();</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">0xffffff</span>; ++i)&#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">auto</span> stop = std::chrono::high_resolution_clock::<span class="built_in">now</span>();</span><br><span class="line">    std::cout&lt;&lt;<span class="string">&quot;for loop took &quot;</span></span><br><span class="line">             &lt;&lt; std::chrono::duration_cast&lt;std::chrono::microseconds&gt; (stop-start).<span class="built_in">count</span>()</span><br><span class="line">             &lt;&lt; <span class="string">&quot; microseconds&quot;</span> &lt;&lt; std::endl;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="超时等待相关的函数"><a href="#超时等待相关的函数" class="headerlink" title="超时等待相关的函数"></a>超时等待相关的函数</h2><p>以延迟为例可以通过<code>std::this_thread::sleep_for</code>使用相对的延迟，和通过<code>std::this_thread::sleep_until</code>使用绝对延迟：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;chrono&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ratio&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;thread&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">auto</span> start = std::chrono::high_resolution_clock::<span class="built_in">now</span>();</span><br><span class="line">    <span class="comment">//使用相对延迟，延迟两秒</span></span><br><span class="line">    std::this_thread::<span class="built_in">sleep_for</span>(std::chrono::<span class="built_in">seconds</span>(<span class="number">2</span>));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">auto</span> stop = std::chrono::high_resolution_clock::<span class="built_in">now</span>();</span><br><span class="line">    std::cout&lt;&lt;<span class="string">&quot;relative delay took &quot;</span></span><br><span class="line">             &lt;&lt; std::chrono::duration_cast&lt;std::chrono::microseconds&gt; (stop-start).<span class="built_in">count</span>()</span><br><span class="line">             &lt;&lt; <span class="string">&quot; microseconds&quot;</span> &lt;&lt;std::endl;</span><br><span class="line"></span><br><span class="line">    start = std::chrono::high_resolution_clock::<span class="built_in">now</span>();</span><br><span class="line">    <span class="comment">//使用绝对延迟，延迟 800 毫秒</span></span><br><span class="line">    std::this_thread::<span class="built_in">sleep_until</span>(std::chrono::system_clock::<span class="built_in">now</span>() + std::chrono::<span class="built_in">milliseconds</span>(<span class="number">800</span>));</span><br><span class="line"></span><br><span class="line">    stop = std::chrono::high_resolution_clock::<span class="built_in">now</span>();</span><br><span class="line">    std::cout&lt;&lt;<span class="string">&quot;absolute delay took &quot;</span></span><br><span class="line">             &lt;&lt; std::chrono::duration_cast&lt;std::chrono::microseconds&gt; (stop-start).<span class="built_in">count</span>()</span><br><span class="line">             &lt;&lt; <span class="string">&quot; microseconds&quot;</span> &lt;&lt;std::endl;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>除了延迟以外，其它的便是超时等待相关的函数。同样的，使用<code>xxx_for</code>便是相对时间，而使用<code>xxx_until</code>则是绝对时间。常用的功能函数总结如下：</p>
+<ul>
+<li><code>std::this_thread::sleep_for</code> / <code>std::this_thread::sleep_until</code></li>
+<li><code>std::condition_variable::wait_for</code> / <code>std::condition_variable::wait_until</code></li>
+<li><code>std::condition_variable_any::wait_for</code> / <code>std::condition_variable_any::wait_until</code></li>
+<li><code>std::timed_mutex::try_lock_for</code> / <code>std::timed_mutex::try_lock_until</code></li>
+<li><code>std::recursive_timed_mutex::try_lock_for</code> / <code>std::recursive_timed_mutex::try_lock_until</code></li>
+<li><code>std::shared_timed_mutex::try_lock_for</code> / <code>std::shared_timed_mutex::try_lock_until</code></li>
+<li><code>std::shared_timed_mutex::try_lock_shared_for</code> / <code>std::shared_timed_mutex::try_lock_shared_until</code></li>
+<li><code>std::unique_lock&lt;Mutex&gt;::try_lock_for</code> / <code>std::unique_lock&lt;Mutex&gt;::try_lock_until</code></li>
+<li><code>std::shared_lock&lt;Mutex&gt;::try_lock_for</code> / <code>std::shared_lock&lt;Mutex&gt;::try_lock_for</code></li>
+<li><code>std::future&lt;T&gt;::wait_for</code> / <code>std::future&lt;T&gt;::wait_until</code></li>
+<li><code>std::shared_future&lt;T&gt;::wait_for</code> / <code>std::shared_future&lt;T&gt;::wait_until</code></li>
+</ul>
+<h1 id="线程间同步的应用"><a href="#线程间同步的应用" class="headerlink" title="线程间同步的应用"></a>线程间同步的应用</h1><p>比起简单的将数据暴露出来给多个线程共享，使用函数式编程是可以简化代码的一个好方法。</p>
+<h2 id="函数式编程与std-future"><a href="#函数式编程与std-future" class="headerlink" title="函数式编程与std::future"></a>函数式编程与<code>std::future</code></h2><p>下面以快速排序为例，来展示函数式编程是如何做到多线程安全的。</p>
+<h3 id="c-代码实现快速排序"><a href="#c-代码实现快速排序" class="headerlink" title="c 代码实现快速排序"></a>c 代码实现快速排序</h3><p>快速排序思路如下：</p>
+<ol>
+<li>选择数据的一个点作为 pivot 与其他数做比较</li>
+<li>小于 pivot 的数放一边，大于或等于 pivot 的数放另外一半</li>
+<li>递归的进行步骤 2，递归的终止条件便是当前需要判断的数组值只有 1 个时，排序便完成了</li>
+</ol>
+<p>下面是一个简易的 c 代码示例：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdint.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">swap</span><span class="params">(<span class="keyword">int</span> *a, <span class="keyword">int</span> *b)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> tmp = *a;</span><br><span class="line">    *a = *b;</span><br><span class="line">    *b = tmp;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">partition</span><span class="params">(<span class="keyword">int</span> *buf, <span class="keyword">int</span> p, <span class="keyword">int</span> r)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i = p;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 这里选取 r 作为 pivot</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> j = p; j &lt;= r - <span class="number">1</span>; j++) &#123;</span><br><span class="line">        <span class="keyword">if</span> (buf[j] &lt; buf[r]) &#123;</span><br><span class="line">            <span class="keyword">if</span> (i != j) &#123;</span><br><span class="line">                swap(&amp;buf[j], &amp;buf[i]);</span><br><span class="line">            &#125;</span><br><span class="line">            i++;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    swap(&amp;buf[i], &amp;buf[r]);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> i;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">quick_sort_frame</span><span class="params">(<span class="keyword">int</span> *buf, <span class="keyword">int</span> p, <span class="keyword">int</span> r)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (p &gt;= r) &#123;</span><br><span class="line">            <span class="keyword">return</span> ;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">int</span> q = partition(buf, p, r);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;quick_sort p = %d, r = %d, q = %d\n&quot;</span>, p, r, q);</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = p; i &lt;= r; i++) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;%d,&quot;</span>, buf[i]);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;\n&quot;</span>);</span><br><span class="line">    quick_sort_frame(buf, p, q - <span class="number">1</span>);</span><br><span class="line">    quick_sort_frame(buf, q + <span class="number">1</span>, r);</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">quick_sort</span><span class="params">(<span class="keyword">int</span> *buf, <span class="keyword">int</span> size)</span> </span>&#123;</span><br><span class="line">    quick_sort_frame(buf, <span class="number">0</span>, size - <span class="number">1</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> BUF_SIZE 10</span></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">int</span> buf[BUF_SIZE];</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[])</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;before sort, buffer contents are:\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int8_t</span> i = <span class="number">0</span>; i &lt; BUF_SIZE; i++) &#123;</span><br><span class="line">            buf[i] = BUF_SIZE - i;</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;%d,&quot;</span>, buf[i]);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">    quick_sort(buf, BUF_SIZE);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;after sort, buffer contents are:\n&quot;</span>);</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int8_t</span> i = <span class="number">0</span>; i &lt; BUF_SIZE; i++) &#123;</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;%d,&quot;</span>, buf[i]);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;\n&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其输出为：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">before sort, buffer contents are:</span><br><span class="line">10,9,8,7,6,5,4,3,2,1,</span><br><span class="line">quick_sort p = 0, r = 9, q = 0</span><br><span class="line">1,9,8,7,6,5,4,3,2,10,</span><br><span class="line">quick_sort p = 1, r = 9, q = 9</span><br><span class="line">9,8,7,6,5,4,3,2,10,</span><br><span class="line">quick_sort p = 1, r = 8, q = 1</span><br><span class="line">2,8,7,6,5,4,3,9,</span><br><span class="line">quick_sort p = 2, r = 8, q = 8</span><br><span class="line">8,7,6,5,4,3,9,</span><br><span class="line">quick_sort p = 2, r = 7, q = 2</span><br><span class="line">3,7,6,5,4,8,</span><br><span class="line">quick_sort p = 3, r = 7, q = 7</span><br><span class="line">7,6,5,4,8,</span><br><span class="line">quick_sort p = 3, r = 6, q = 3</span><br><span class="line">4,6,5,7,</span><br><span class="line">quick_sort p = 4, r = 6, q = 6</span><br><span class="line">6,5,7,</span><br><span class="line">quick_sort p = 4, r = 5, q = 4</span><br><span class="line">5,6,</span><br><span class="line">after sort, buffer contents are:</span><br><span class="line">1,2,3,4,5,6,7,8,9,10,</span><br></pre></td></tr></table></figure>
+
+<h3 id="c-代码实现快速排序-1"><a href="#c-代码实现快速排序-1" class="headerlink" title="c++ 代码实现快速排序"></a>c++ 代码实现快速排序</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;list&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;algorithm&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span></span><br><span class="line"><span class="function">std::list&lt;T&gt; <span class="title">sequential_quick_sort</span><span class="params">(std::list&lt;T&gt; input)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (input.<span class="built_in">empty</span>()) &#123;</span><br><span class="line">        <span class="keyword">return</span> input;</span><br><span class="line">    &#125;</span><br><span class="line">    std::list&lt;T&gt; result;</span><br><span class="line">    <span class="comment">// 取 list 头的元素作为 pivot</span></span><br><span class="line">    result.<span class="built_in">splice</span>(result.<span class="built_in">begin</span>(), input, input.<span class="built_in">begin</span>());</span><br><span class="line">    T <span class="keyword">const</span>&amp; pivot = *result.<span class="built_in">begin</span>();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 将 list 中剩余的元素和 pivot 做比较</span></span><br><span class="line">    <span class="keyword">auto</span> divide_point = std::<span class="built_in">partition</span>(input.<span class="built_in">begin</span>(), input.<span class="built_in">end</span>(),</span><br><span class="line">            [&amp;](T <span class="keyword">const</span>&amp; t)&#123;<span class="keyword">return</span> t &lt; pivot;&#125;);</span><br><span class="line">    <span class="comment">// 将分类好的小于 pivot 的元素放入 lower_part</span></span><br><span class="line">    <span class="comment">// 那么 input 中的剩余元素便是大于或等于 pivot 的元素</span></span><br><span class="line">    std::list&lt;T&gt; lower_part;</span><br><span class="line">    lower_part.<span class="built_in">splice</span>(lower_part.<span class="built_in">end</span>(), input, input.<span class="built_in">begin</span>(),</span><br><span class="line">        divide_point);</span><br><span class="line">    <span class="comment">// 将两个区间的元素递归</span></span><br><span class="line">    <span class="function"><span class="keyword">auto</span> <span class="title">new_lower</span><span class="params">(</span></span></span><br><span class="line"><span class="params"><span class="function">        sequential_quick_sort(std::move(lower_part)))</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">auto</span> <span class="title">new_higher</span><span class="params">(</span></span></span><br><span class="line"><span class="params"><span class="function">        sequential_quick_sort(std::move(input)))</span></span>;</span><br><span class="line">    <span class="comment">// 大于或等于 pivot 的元素依次放在 pivot 的右边</span></span><br><span class="line">    result.<span class="built_in">splice</span>(result.<span class="built_in">end</span>(), new_higher);</span><br><span class="line">    <span class="comment">// 小于 pivot 的元素依次放在 pivot 的左边</span></span><br><span class="line">    result.<span class="built_in">splice</span>(result.<span class="built_in">begin</span>(), new_lower);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    std::list&lt;<span class="keyword">int</span>&gt; vals = &#123;<span class="number">10</span>, <span class="number">9</span>, <span class="number">8</span>, <span class="number">7</span>, <span class="number">6</span>, <span class="number">5</span>, <span class="number">4</span>, <span class="number">3</span>, <span class="number">2</span>, <span class="number">1</span>&#125;;</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;contents of vals before sort:\n&quot;</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span> v : vals) &#123;</span><br><span class="line">        std::cout &lt;&lt; v &lt;&lt; <span class="string">&quot;,&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line"></span><br><span class="line">    vals = <span class="built_in">sequential_quick_sort</span>(vals);</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;contents of vals after sort:\n&quot;</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span> v : vals) &#123;</span><br><span class="line">        std::cout &lt;&lt; v &lt;&lt; <span class="string">&quot;,&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到，与上面 c 版本的实现思路是完全一样的，只是有标准库的加持，使得代码看起来更为简洁。</p>
+<h3 id="并行实现快速排序"><a href="#并行实现快速排序" class="headerlink" title="并行实现快速排序"></a>并行实现快速排序</h3><p>以上的 c++ 代码是由一个线程来完成了，如果可以由多个线程来完成并行排序便可以更加快速的得出结果。</p>
+<p>这里就需要考虑到 data race 的问题了，使用<code>std::future</code>是一个比较优雅的解决方案。</p>
+<p>由于每次分为两个部分后，又需要对这两个部分递归，所以将其中一个部分分离为一个单独的线程是可以提供并发度的：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;list&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;algorithm&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;future&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span></span><br><span class="line"><span class="function">std::list&lt;T&gt; <span class="title">sequential_quick_sort</span><span class="params">(std::list&lt;T&gt; input)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (input.<span class="built_in">empty</span>()) &#123;</span><br><span class="line">        <span class="keyword">return</span> input;</span><br><span class="line">    &#125;</span><br><span class="line">    std::list&lt;T&gt; result;</span><br><span class="line">    <span class="comment">// 取 list 头的元素作为 pivot</span></span><br><span class="line">    result.<span class="built_in">splice</span>(result.<span class="built_in">begin</span>(), input, input.<span class="built_in">begin</span>());</span><br><span class="line">    T <span class="keyword">const</span>&amp; pivot = *result.<span class="built_in">begin</span>();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 将 list 中剩余的元素和 pivot 做比较</span></span><br><span class="line">    <span class="keyword">auto</span> divide_point = std::<span class="built_in">partition</span>(input.<span class="built_in">begin</span>(), input.<span class="built_in">end</span>(),</span><br><span class="line">            [&amp;](T <span class="keyword">const</span>&amp; t)&#123;<span class="keyword">return</span> t &lt; pivot;&#125;);</span><br><span class="line">    <span class="comment">// 将分类好的小于 pivot 的元素放入 lower_part</span></span><br><span class="line">    <span class="comment">// 那么 input 中的剩余元素便是大于或等于 pivot 的元素</span></span><br><span class="line">    std::list&lt;T&gt; lower_part;</span><br><span class="line">    lower_part.<span class="built_in">splice</span>(lower_part.<span class="built_in">end</span>(), input, input.<span class="built_in">begin</span>(),</span><br><span class="line">        divide_point);</span><br><span class="line">    <span class="comment">// 将小于区间的元素放在另一个线程访问</span></span><br><span class="line">    std::future&lt;std::list&lt;T&gt;&gt; <span class="built_in">new_lower</span>(</span><br><span class="line">        	<span class="comment">// 最后会使用 new_lower.get() 来获取结果，所以这里可以使用移动语义</span></span><br><span class="line">            <span class="comment">// 因为栈上的变量可以确保有效性</span></span><br><span class="line">            std::<span class="built_in">async</span>(&amp;sequential_quick_sort&lt;T&gt;, std::<span class="built_in">move</span>(lower_part))</span><br><span class="line">            );</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">auto</span> <span class="title">new_higher</span><span class="params">(</span></span></span><br><span class="line"><span class="params"><span class="function">        sequential_quick_sort(std::move(input)))</span></span>;</span><br><span class="line">    <span class="comment">// 大于或等于 pivot 的元素依次放在 pivot 的右边</span></span><br><span class="line">    result.<span class="built_in">splice</span>(result.<span class="built_in">end</span>(),new_higher);</span><br><span class="line">    <span class="comment">// 小于 pivot 的元素依次放在 pivot 的左边</span></span><br><span class="line">    result.<span class="built_in">splice</span>(result.<span class="built_in">begin</span>(),new_lower.<span class="built_in">get</span>());</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    std::list&lt;<span class="keyword">int</span>&gt; vals = &#123;<span class="number">10</span>, <span class="number">9</span>, <span class="number">8</span>, <span class="number">7</span>, <span class="number">6</span>, <span class="number">5</span>, <span class="number">4</span>, <span class="number">3</span>, <span class="number">2</span>, <span class="number">1</span>&#125;;</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;contents of vals before sort:\n&quot;</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span> v : vals) &#123;</span><br><span class="line">        std::cout &lt;&lt; v &lt;&lt; <span class="string">&quot;,&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line"></span><br><span class="line">    vals = <span class="built_in">sequential_quick_sort</span>(vals);</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;contents of vals after sort:\n&quot;</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span> v : vals) &#123;</span><br><span class="line">        std::cout &lt;&lt; v &lt;&lt; <span class="string">&quot;,&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>由于两个线程分别是处理两边的数据，也不会有 data race 的情况出现。</p>
+<p>这里需要注意的是线程的并发数量，是递归的 2^n 次方。</p>
+<blockquote>
+<p>比如递归 10 次，线程的数量就是 1024 个。</p>
+</blockquote>
+<p>所以，要根据当前硬件所支持的并发数来决定是使用<code>std::launch::deferrred</code>还是<code>std::launch::async</code>。</p>
+<blockquote>
+<p>默认情况下不填这项，那就依赖编译器的实现来完成不同的策略。</p>
+</blockquote>
+<p>如果要使用纯 c 来实现这个并行方式，则需要更多的代码且不易维护。</p>
+<h2 id="通过消息传递来完成同步"><a href="#通过消息传递来完成同步" class="headerlink" title="通过消息传递来完成同步"></a>通过消息传递来完成同步</h2><p>CSP（Communicating Sequential Process）编程方式就是指：以消息传递的方式在各个线程间共享数据。</p>
+<p>每个线程当前的状态根据接收到的消息而定，在处理消息时各个线程都是完全独立的而不会有 data race 的情况出现。</p>
+<p>这种方式使得并发编程变得简单而易于维护。</p>
+<blockquote>
+<p>这个过程中的临界资源便是消息队列，可以使用类将其封装起来而易于使用。</p>
+</blockquote>
+<p>一个比较简单的示例如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">card_inserted</span> &#123;</span></span><br><span class="line">    std::string account;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">atm</span> &#123;</span></span><br><span class="line">    messaging::receiver incoming;</span><br><span class="line">    messaging::sender bank;</span><br><span class="line">    messaging::sender interface_hardware;</span><br><span class="line">    <span class="comment">// 这个函数指针指向当前正在执行的状态</span></span><br><span class="line">    <span class="built_in"><span class="keyword">void</span></span> (atm::*state)();</span><br><span class="line">    std::string account;</span><br><span class="line">    std::string pin;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">waiting_for_card</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        interface_hardware.<span class="built_in">send</span>(<span class="built_in">display_enter_card</span>());   </span><br><span class="line">        incoming.<span class="built_in">wait</span>()                             </span><br><span class="line">            .handle&lt;card_inserted&gt;(</span><br><span class="line">                [&amp;](card_inserted <span class="keyword">const</span>&amp; msg) &#123;</span><br><span class="line">                    account = msg.account;</span><br><span class="line">                    pin = <span class="string">&quot;&quot;</span>;</span><br><span class="line">                    interface_hardware.<span class="built_in">send</span>(<span class="built_in">display_enter_pin</span>());</span><br><span class="line">                    <span class="comment">// 当满足条件后，便切换状态</span></span><br><span class="line">                    state = &amp;atm::getting_pin;</span><br><span class="line">                &#125;</span><br><span class="line">                );</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">getting_pin</span><span class="params">()</span></span>;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="comment">// 默认的初始状态</span></span><br><span class="line">        state = &amp;atm::waiting_for_card;     </span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">for</span>(;;) &#123;</span><br><span class="line">				<span class="comment">// 执行当前状态</span></span><br><span class="line">                (<span class="keyword">this</span>-&gt;*state)();    </span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="built_in"><span class="keyword">catch</span></span>(messaging::close_queue <span class="keyword">const</span>&amp;) &#123;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到：</p>
+<ol>
+<li>一个线程只执行当前的状态，状态的切换并不会引起临界区的问题</li>
+<li>多个线程都维护自己的状态，这使得并发逻辑变得非常简单</li>
+<li>唯一需要注意的便是消息队列的互斥问题</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>kcmetercec
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://kcmetercec.top/2022/05/19/cpp_concurrency_synchronize/" title="C++ concurrency：线程间同步">http://kcmetercec.top/2022/05/19/cpp_concurrency_synchronize/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/cpp/" rel="tag"> <i class="fa fa-tag"></i> cpp</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/05/17/cpp_concurrency_share_data/" rel="prev" title="C++ concurrency：线程间共享数据">
+      <i class="fa fa-chevron-left"></i> C++ concurrency：线程间共享数据
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/05/22/cpp_concurrency_lock_based_data_structures/" rel="next" title="C++ concurrency：设计基于锁的可以并发操作的数据结构">
+      C++ concurrency：设计基于锁的可以并发操作的数据结构 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AD%89%E5%BE%85%E4%BA%8B%E4%BB%B6%E6%88%96%E6%9D%A1%E4%BB%B6"><span class="nav-number">1.</span> <span class="nav-text">等待事件或条件</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E6%9D%A1%E4%BB%B6%E5%8F%98%E9%87%8F"><span class="nav-number">1.1.</span> <span class="nav-text">使用条件变量</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E4%B8%80%E4%B8%AA%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E9%98%9F%E5%88%97"><span class="nav-number">1.2.</span> <span class="nav-text">创建一个多线程安全的队列</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8future%E7%AD%89%E5%BE%85%E4%B8%80%E6%AC%A1%E6%80%A7%E4%BA%8B%E4%BB%B6"><span class="nav-number">2.</span> <span class="nav-text">使用future等待一次性事件</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%8E%B7%E5%8F%96%E7%BA%BF%E7%A8%8B%E7%9A%84%E8%BF%94%E5%9B%9E%E5%8F%82%E6%95%B0"><span class="nav-number">2.1.</span> <span class="nav-text">获取线程的返回参数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%86-future-%E4%B8%8E%E4%B8%80%E4%B8%AA%E4%BB%BB%E5%8A%A1%E5%85%B3%E8%81%94"><span class="nav-number">2.2.</span> <span class="nav-text">将 future 与一个任务关联</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-std-promises"><span class="nav-number">2.3.</span> <span class="nav-text">使用 std::promises</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%86%E5%BC%82%E5%B8%B8%E5%AD%98%E5%85%A5-future"><span class="nav-number">2.4.</span> <span class="nav-text">将异常存入 future</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E4%B8%AA%E7%BA%BF%E7%A8%8B%E7%AD%89%E5%BE%85%E5%90%8C%E4%B8%80%E4%B8%AA%E4%BA%8B%E4%BB%B6"><span class="nav-number">2.5.</span> <span class="nav-text">多个线程等待同一个事件</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%B6%85%E6%97%B6%E7%AD%89%E5%BE%85"><span class="nav-number">3.</span> <span class="nav-text">超时等待</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#c-%E7%9A%84%E6%97%B6%E9%92%9F"><span class="nav-number">3.1.</span> <span class="nav-text">c++ 的时钟</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%B6%E9%97%B4%E6%AE%B5"><span class="nav-number">3.2.</span> <span class="nav-text">时间段</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ratio"><span class="nav-number">3.2.1.</span> <span class="nav-text">ratio</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#duration"><span class="nav-number">3.2.2.</span> <span class="nav-text">duration</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%B6%E9%97%B4%E7%82%B9"><span class="nav-number">3.3.</span> <span class="nav-text">时间点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B6%85%E6%97%B6%E7%AD%89%E5%BE%85%E7%9B%B8%E5%85%B3%E7%9A%84%E5%87%BD%E6%95%B0"><span class="nav-number">3.4.</span> <span class="nav-text">超时等待相关的函数</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E9%97%B4%E5%90%8C%E6%AD%A5%E7%9A%84%E5%BA%94%E7%94%A8"><span class="nav-number">4.</span> <span class="nav-text">线程间同步的应用</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E4%B8%8Estd-future"><span class="nav-number">4.1.</span> <span class="nav-text">函数式编程与std::future</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#c-%E4%BB%A3%E7%A0%81%E5%AE%9E%E7%8E%B0%E5%BF%AB%E9%80%9F%E6%8E%92%E5%BA%8F"><span class="nav-number">4.1.1.</span> <span class="nav-text">c 代码实现快速排序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#c-%E4%BB%A3%E7%A0%81%E5%AE%9E%E7%8E%B0%E5%BF%AB%E9%80%9F%E6%8E%92%E5%BA%8F-1"><span class="nav-number">4.1.2.</span> <span class="nav-text">c++ 代码实现快速排序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B9%B6%E8%A1%8C%E5%AE%9E%E7%8E%B0%E5%BF%AB%E9%80%9F%E6%8E%92%E5%BA%8F"><span class="nav-number">4.1.3.</span> <span class="nav-text">并行实现快速排序</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%9A%E8%BF%87%E6%B6%88%E6%81%AF%E4%BC%A0%E9%80%92%E6%9D%A5%E5%AE%8C%E6%88%90%E5%90%8C%E6%AD%A5"><span class="nav-number">4.2.</span> <span class="nav-text">通过消息传递来完成同步</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">Qt, C++, linux, CS</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">107</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">55</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:kcmeter.cec@gmail.com" title="E-Mail → mailto:kcmeter.cec@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2021 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">206k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">3:08</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+document.querySelectorAll('.pdfobject-container').forEach(element => {
+  let url = element.dataset.target;
+  let pdfOpenParams = {
+    navpanes : 0,
+    toolbar  : 0,
+    statusbar: 0,
+    pagemode : 'thumbs',
+    view     : 'FitH'
+  };
+  let pdfOpenFragment = '#' + Object.entries(pdfOpenParams).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
+  let fullURL = `/lib/pdf/web/viewer.html?file=${encodeURIComponent(url)}${pdfOpenFragment}`;
+
+  if (NexT.utils.supportsPDFs()) {
+    element.innerHTML = `<embed class="pdfobject" src="${url + pdfOpenFragment}" type="application/pdf" style="height: ${element.dataset.height};">`;
+  } else {
+    element.innerHTML = `<iframe src="${fullURL}" style="height: ${element.dataset.height};" frameborder="0"></iframe>`;
+  }
+});
+</script>
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'f938893867df78f94802',
+      clientSecret: 'b6d8470939c53d26c98c4e3b9d4c9ceb55d6e78e',
+      repo        : 'kcmetercec.github.io',
+      owner       : 'KcMeterCEC',
+      admin       : ['KcMeterCEC'],
+      id          : '654d9986c72de7b26b535fc4069e3764',
+        language: 'zh-CN',
+      distractionFreeMode: false
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+    </div>
+</body>
+</html>

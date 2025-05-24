@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="kernel version arch    v5.4.0 arm32">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux文件系统基本操作">
+<meta property="og:url" content="http://kcmetercec.top/2024/09/10/linux_fs_hello/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="kernel version arch    v5.4.0 arm32">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-09-09T16:00:00.000Z">
+<meta property="article:modified_time" content="2024-09-09T16:00:00.000Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="linux">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://kcmetercec.top/2024/09/10/linux_fs_hello/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Linux文件系统基本操作 | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112423075-1# <app_id>"></script>
+    <script data-pjax>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-112423075-1# <app_id>');
+      }
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+        <li class="menu-item menu-item-commonweal">
+
+    <a href="/404/" rel="section"><i class="fa fa-heartbeat fa-fw"></i>公益 404</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2024/09/10/linux_fs_hello/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="Qt, C++, linux, CS">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux文件系统基本操作
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-09-10 00:00:00" itemprop="dateCreated datePublished" datetime="2024-09-10T00:00:00+08:00">2024-09-10</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/userspace/" itemprop="url" rel="index"><span itemprop="name">userspace</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/userspace/fs/" itemprop="url" rel="index"><span itemprop="name">fs</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <table>
+<thead>
+<tr>
+<th>kernel version</th>
+<th>arch</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>v5.4.0</td>
+<td>arm32</td>
+</tr>
+</tbody></table>
+<span id="more"></span>
+
+<h1 id="编程接口"><a href="#编程接口" class="headerlink" title="编程接口"></a>编程接口</h1><p>此节只列出 Linux 和 c 库操作接口，具体的详细信息还是要找 <code>man</code> 。</p>
+<ul>
+<li>其实在实际应用中，还是尽量使用标准的 c/c++ 库便于以后移植。</li>
+</ul>
+<p>需要注意的是：标准的ISOC库的I/O操作默认是带有缓存的，也就是填充一定的缓存后才会去调用系统接口。<br>而如果直接使用POSIX标准的系统接口，相当于上层没有做缓存，但实际上 <strong>内核为了尽量批量化的操作I/O，其内部也会做缓存。</strong></p>
+<h2 id="常用接口"><a href="#常用接口" class="headerlink" title="常用接口"></a>常用接口</h2><h3 id="文件的创建"><a href="#文件的创建" class="headerlink" title="文件的创建"></a>文件的创建</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">  * @brief 设置文件在创建时需要去掉的权限</span></span><br><span class="line"><span class="comment">  * @note : 此设置仅影响此进程的umask，不会影响 shell 默认的 umask</span></span><br><span class="line"><span class="comment">  * 使用shell命令 umask </span></span><br><span class="line"><span class="comment">  * 可以查看 shell 设置输出依次为: &lt;special bits&gt;&lt;user&gt;&lt;group&gt;&lt;other&gt; </span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">umask</span><span class="params">(<span class="keyword">int</span> newmask)</span></span>;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">  * @brief 创建文件并设置权限</span></span><br><span class="line"><span class="comment">  * @note 权限与 umask 相与决定最终的权限</span></span><br><span class="line"><span class="comment">  * </span></span><br><span class="line"><span class="comment">  * 此函数使用较少，一般使用 open(path, O_RDWR | O_CREAT | O_TRUNC, mode);</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">creat</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *pathname, <span class="keyword">mode_t</span> mode)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>mode value</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>S_IRUSR</td>
+<td>用户可读</td>
+</tr>
+<tr>
+<td>S_IWUSR</td>
+<td>用户可写</td>
+</tr>
+<tr>
+<td>S_IXUSR</td>
+<td>用户可执行</td>
+</tr>
+<tr>
+<td>S_IRWXU</td>
+<td>用户可读、写、执行</td>
+</tr>
+<tr>
+<td>S_IRGRP</td>
+<td>组可读</td>
+</tr>
+<tr>
+<td>S_IWGRP</td>
+<td>组可写</td>
+</tr>
+<tr>
+<td>S_IXGRP</td>
+<td>组可执行</td>
+</tr>
+<tr>
+<td>S_IRWXG</td>
+<td>组可读、写、执行</td>
+</tr>
+<tr>
+<td>S_IROTH</td>
+<td>其他人可读</td>
+</tr>
+<tr>
+<td>S_IWOTH</td>
+<td>其他人可写</td>
+</tr>
+<tr>
+<td>S_IXOTH</td>
+<td>其他人可执行</td>
+</tr>
+<tr>
+<td>S_IRWXO</td>
+<td>其他人可读、写、执行</td>
+</tr>
+<tr>
+<td>S_ISUID</td>
+<td>设置用户执行ID</td>
+</tr>
+<tr>
+<td>S_ISGID</td>
+<td>设置组执行ID</td>
+</tr>
+</tbody></table>
+<h3 id="创建及打开"><a href="#创建及打开" class="headerlink" title="创建及打开"></a>创建及打开</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FILE *<span class="title">fopen</span><span class="params">( <span class="keyword">const</span> <span class="keyword">char</span> *filename, <span class="keyword">const</span> <span class="keyword">char</span> *mode )</span></span>;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 以flags指定的方式打开 pathname 指定的文件</span></span><br><span class="line"><span class="comment"> * @note</span></span><br><span class="line"><span class="comment"> * 1. 当 flags 为 O_CREAT 时，需要指定其 mode</span></span><br><span class="line"><span class="comment"> * 2. 当pathname为相对路径时，可以使用 openat 为其指定一个 dirfd，以此dir为相对路径</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">open</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *pathname, <span class="keyword">int</span> flags, ...<span class="comment">/*mode_t mode*/</span>)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">openat</span><span class="params">(<span class="keyword">int</span> dirfd, <span class="keyword">const</span> <span class="keyword">char</span> *pathname, <span class="keyword">int</span> flags, ...<span class="comment">/*mode_t mode*/</span>)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>flags value</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>O_RDONLY</td>
+<td>只读方式打开</td>
+</tr>
+<tr>
+<td>O_WRONLY</td>
+<td>只写方式打开</td>
+</tr>
+<tr>
+<td>O_RDWR</td>
+<td>读写方式打开</td>
+</tr>
+<tr>
+<td>O_APPEND</td>
+<td>追加方式打开</td>
+</tr>
+<tr>
+<td>O_CREAT</td>
+<td>创建</td>
+</tr>
+<tr>
+<td>O_EXCL</td>
+<td>如果使用了O_CREATE且文件存在，就会发生错误</td>
+</tr>
+<tr>
+<td>O_NOBLOCK</td>
+<td>以非阻塞的方式打开</td>
+</tr>
+<tr>
+<td>O_TRUNC</td>
+<td>如果文件存在则删除其内容</td>
+</tr>
+<tr>
+<td>…</td>
+<td>…</td>
+</tr>
+</tbody></table>
+<ul>
+<li>在POSIX标准中的标准输入、输出、错误对应的宏依次为 <code>STDIN_FILENO,STDOUT_FILENO,STDERR_FILENO</code> 位于头文件 <code>&lt;unistd.h&gt;</code> 中</li>
+</ul>
+<h3 id="文件读写"><a href="#文件读写" class="headerlink" title="文件读写"></a>文件读写</h3><p>进行 read 和 write 大量数据读写时，需要考虑单次读写的字节数，取文件系统的block大小(比如4096字节)，能在尽量减小系统调用的同时保证较高的写入效率。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">ssize_t</span> <span class="title">read</span><span class="params">(<span class="keyword">int</span> fd, <span class="keyword">void</span> *buf, <span class="keyword">size_t</span> count)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">ssize_t</span> <span class="title">write</span><span class="params">(<span class="keyword">int</span> fd, <span class="keyword">const</span> <span class="keyword">void</span> *buf, <span class="keyword">size_t</span> count)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">size_t</span> <span class="title">fread</span><span class="params">( <span class="keyword">void</span>          *buffer, <span class="keyword">size_t</span> size, <span class="keyword">size_t</span> count,</span></span></span><br><span class="line"><span class="params"><span class="function">              FILE          *stream )</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">size_t</span> <span class="title">fwrite</span><span class="params">( <span class="keyword">const</span> <span class="keyword">void</span> *buffer, <span class="keyword">size_t</span> size, <span class="keyword">size_t</span> count,</span></span></span><br><span class="line"><span class="params"><span class="function">               FILE *stream )</span></span>;</span><br></pre></td></tr></table></figure>
+
+<h3 id="文件定位"><a href="#文件定位" class="headerlink" title="文件定位"></a>文件定位</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 以 whence 为起始移动 offset 字节</span></span><br><span class="line"><span class="comment"> * @note</span></span><br><span class="line"><span class="comment"> * 1. 获取当前文件位置使用 currpos = lseek(fd, 0, SEEK_CUR);</span></span><br><span class="line"><span class="comment"> * 当返回负数代表此文件对象不能做移动操作，比如FIFO，SOCKET</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">off_t</span> <span class="title">lseek</span><span class="params">(<span class="keyword">int</span> fd, <span class="keyword">off_t</span> offset, <span class="keyword">int</span> whence)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>whence value</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SEEK_SET</td>
+<td>文件开头</td>
+</tr>
+<tr>
+<td>SEEK_CUR</td>
+<td>当前位置</td>
+</tr>
+<tr>
+<td>SEEK_END</td>
+<td>文件尾</td>
+</tr>
+</tbody></table>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">fseek</span><span class="params">( FILE *stream, <span class="keyword">long</span> offset, <span class="keyword">int</span> origin )</span></span>;</span><br></pre></td></tr></table></figure>
+
+<h3 id="截断文件"><a href="#截断文件" class="headerlink" title="截断文件"></a>截断文件</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief : 从文件末尾到文件头的顺序截断length字节</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">truncate</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *path, <span class="keyword">off_t</span> length)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">ftruncate</span><span class="params">(<span class="keyword">int</span> fd, <span class="keyword">off_t</span> length)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<h3 id="文件关闭"><a href="#文件关闭" class="headerlink" title="文件关闭"></a>文件关闭</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">close</span><span class="params">(<span class="keyword">int</span> fd)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">fclose</span><span class="params">( FILE *stream )</span></span>;</span><br></pre></td></tr></table></figure>
+
+<h3 id="文件夹操作"><a href="#文件夹操作" class="headerlink" title="文件夹操作"></a>文件夹操作</h3><ul>
+<li>新建</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">mkdir</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *pathname, <span class="keyword">mode_t</span> mode)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">mkdirat</span><span class="params">(<span class="keyword">int</span> dirfd, <span class="keyword">const</span> <span class="keyword">char</span> *pathname, <span class="keyword">mode_t</span> mode)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>移除</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">rmdir</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *pathname)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<h3 id="实例"><a href="#实例" class="headerlink" title="实例"></a>实例</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*!</span></span><br><span class="line"><span class="comment"> * ### 文件操作</span></span><br><span class="line"><span class="comment"> * 1. 创建</span></span><br><span class="line"><span class="comment"> * &gt; int create(const char *filename, mode_t mode);</span></span><br><span class="line"><span class="comment"> * &gt; mode 与 umask (mode &amp; umask)共同决定文件的最终权限</span></span><br><span class="line"><span class="comment"> * &gt; int umask(int newmask);</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * &gt; FILE *fopen(const char *path, const char *mode);</span></span><br><span class="line"><span class="comment"> * &gt; mode --&gt; &quot;r&quot;/&quot;rb&quot;/&quot;w&quot;/&quot;wb&quot;/&quot;a&quot;/&quot;ab&quot;/&quot;r+&quot;/&quot;r+b&quot;/&quot;rb+&quot;/&quot;w+&quot;/&quot;w+b&quot;/&quot;wb+&quot;/&quot;a+&quot;/&quot;a+b&quot;/&quot;ab+&quot;</span></span><br><span class="line"><span class="comment"> * 2. 打开</span></span><br><span class="line"><span class="comment"> * &gt; int open(const char *pathname, int flags);</span></span><br><span class="line"><span class="comment"> * &gt; int open(const char *pathname, int flags, mode_t mode);</span></span><br><span class="line"><span class="comment"> * &gt; flag --&gt; O_RDONLY / O_WRONLY / O_RDWR / O_APPEND / O_CREAT / O_EXEC / O_NOBLOCK / O_TRUNC;</span></span><br><span class="line"><span class="comment"> * &gt; mode --&gt; S_IRUSR / S_IWUSR/ S_IXUSR / S_IRWXU / S_IRGRP / S_IWGRP / S_IXGRP / S_IRWXGRP / S_IROTH / S_IWOTH / S_IXOTH / S_IRWXO / S_ISUID / S_ISGID;</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * 3. 读写</span></span><br><span class="line"><span class="comment"> * &gt; int read(int fd, const void *buf, size_t length);</span></span><br><span class="line"><span class="comment"> * &gt; int write(int fd, const void *buf, size_t length);</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * &gt; int fgetc(FILE *stream);</span></span><br><span class="line"><span class="comment"> * &gt; int fputc(int c, FILE *stream);</span></span><br><span class="line"><span class="comment"> * &gt; char *fgets(char *s, int n, FILE *stream);</span></span><br><span class="line"><span class="comment"> * &gt; int fputs(const char *s, FILE *stream);</span></span><br><span class="line"><span class="comment"> * &gt; int fprintf(FILE *stream, const char *format, ...);</span></span><br><span class="line"><span class="comment"> * &gt; int fscanf(FILE *stream, const char *format, ...);</span></span><br><span class="line"><span class="comment"> * &gt; size_t fread(void *ptr, size_t size, size_t n, FILE *stream);</span></span><br><span class="line"><span class="comment"> * &gt; size_t fwrite(const void *ptr, size_t size, size_t n, FILE *stream);</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * 4. 定位</span></span><br><span class="line"><span class="comment"> * &gt; int lseek(int fd, offset_t offset, int whence);</span></span><br><span class="line"><span class="comment"> * &gt; whence --&gt; SEEK_SET / SEEK_CUR / SEEK_END;</span></span><br><span class="line"><span class="comment"> * &gt; 得到文件长度 lseek(fd, 0, SEEK_END);</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * &gt; int fgetpos(FILE *stream, fpos_t *pos);</span></span><br><span class="line"><span class="comment"> * &gt; int fsetpos(FILE *stream, const fpos_t *pos);</span></span><br><span class="line"><span class="comment"> * &gt; int fseek(FILE *stream, long offset, int whence);</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * 5. 关闭</span></span><br><span class="line"><span class="comment"> * &gt; int close(int fd);</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * &gt; int fclose(FILE *stream);</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/stat.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LENGTH      (100)</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[])</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">      <span class="keyword">int</span> fd, len;</span><br><span class="line">      <span class="keyword">char</span> str[LENGTH];</span><br><span class="line">      FILE *p_fd;</span><br><span class="line"></span><br><span class="line">      fd = open(<span class="string">&quot;hello.txt&quot;</span>, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);</span><br><span class="line">      <span class="keyword">if</span>(fd)</span><br><span class="line">      &#123;</span><br><span class="line">            write(fd, <span class="string">&quot;Hello world&quot;</span>, <span class="built_in">strlen</span>(<span class="string">&quot;Hello world&quot;</span>));</span><br><span class="line">            close(fd);</span><br><span class="line">      &#125;</span><br><span class="line">      p_fd = fopen(<span class="string">&quot;hello_lib.txt&quot;</span>, <span class="string">&quot;w+&quot;</span>);</span><br><span class="line">      <span class="keyword">if</span>(p_fd)</span><br><span class="line">      &#123;</span><br><span class="line">            <span class="built_in">fputs</span>(<span class="string">&quot;Hello world! ^_^ \n&quot;</span>, p_fd);</span><br><span class="line">            fclose(p_fd);</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      fd = open(<span class="string">&quot;hello.txt&quot;</span>, O_RDWR);</span><br><span class="line">      len = read(fd, str, LENGTH);</span><br><span class="line">      str[len] = <span class="string">&#x27;\0&#x27;</span>;</span><br><span class="line">      <span class="built_in">printf</span>(<span class="string">&quot;%s\n&quot;</span>, str);</span><br><span class="line">      close(fd);</span><br><span class="line"></span><br><span class="line">      p_fd = fopen(<span class="string">&quot;hello_lib.txt&quot;</span>, <span class="string">&quot;r&quot;</span>);</span><br><span class="line">      fgets(str, LENGTH, p_fd);</span><br><span class="line">      <span class="built_in">printf</span>(<span class="string">&quot;%s\n&quot;</span>, str);</span><br><span class="line">      fclose(p_fd);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="多个进程打开同一个文件"><a href="#多个进程打开同一个文件" class="headerlink" title="多个进程打开同一个文件"></a>多个进程打开同一个文件</h2><p>多个进程打开同一个文件时，每个进程的 <code>task_struct</code> 都会包含此文件的资源描述，但是最终它们都是指向同一个 <code>inode</code> 。</p>
+<ul>
+<li>每个文件资源描述都包含对该文件的操作状态，位置偏移等信息</li>
+<li>当进行 <code>lseek</code> 这种操作时，如果没有造成文件的扩大，其实是直接操作的资源描述结构体，而没有去操作inode。</li>
+</ul>
+<h3 id="互斥操作"><a href="#互斥操作" class="headerlink" title="互斥操作"></a>互斥操作</h3><p>如果有多个进程在操作同一个文件，则很有可能会造成竞态，有以下方式来避免此问题的发生：</p>
+<ul>
+<li>pread , pwrite</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief : 在文件为起始的 offset 字节处开始读或者写</span></span><br><span class="line"><span class="comment"> * @note :</span></span><br><span class="line"><span class="comment"> * 1. 这两个函数的操作是原子性的</span></span><br><span class="line"><span class="comment"> * 2. 此函数并不会改变对应进程本身所保存的 offset</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">ssize_t</span> <span class="title">pread</span><span class="params">(<span class="keyword">int</span> fd, <span class="keyword">void</span> *buf, <span class="keyword">size_t</span> count, <span class="keyword">off_t</span> offset)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">ssize_t</span> <span class="title">pwrite</span><span class="params">(<span class="keyword">int</span> fd, <span class="keyword">const</span> <span class="keyword">void</span> *buf, <span class="keyword">size_t</span> count, <span class="keyword">off_t</span> offset)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<h2 id="文件索引的复制"><a href="#文件索引的复制" class="headerlink" title="文件索引的复制"></a>文件索引的复制</h2><p>使用以下函数可以完成文件索引的复制(也就是两个不同的索引指向同一个文件描述资源，它们具有联动的偏移位置)</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">dup</span><span class="params">(<span class="keyword">int</span> oldfd)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">dup2</span><span class="params">(<span class="keyword">int</span> oldfd, <span class="keyword">int</span> newfd)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<h2 id="主动写回数据到硬盘"><a href="#主动写回数据到硬盘" class="headerlink" title="主动写回数据到硬盘"></a>主动写回数据到硬盘</h2><p>一般的文件读写数据都会被存在 page cache 中，待内核在合适的时间写入硬盘，为了强制同步，可以使用下面函数:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 以阻塞的方式等待某个文件同步</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">fsync</span><span class="params">(<span class="keyword">int</span> fd)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 以阻塞的方式同步文件数据，文件的元数据不一定会同步</span></span><br><span class="line"><span class="comment"> * @note : 只有一些重要的修改才会同步元数据，比如文件大小改变了</span></span><br><span class="line"><span class="comment"> * 但文件的方式文件改变了，是不会同步元数据的</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">fdatasync</span><span class="params">(<span class="keyword">int</span> fd)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 给内核发送同步消息，并不会等待内核操作完成</span></span><br><span class="line"><span class="comment"> * @note shell 中的 sync 命令 也是调用的此函数</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">sync</span><span class="params">(<span class="keyword">void</span>)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<h2 id="文件运行时控制"><a href="#文件运行时控制" class="headerlink" title="文件运行时控制"></a>文件运行时控制</h2><p>当一个文件已经打开，要修改它的一些属性时，可以使用函数 <code>fcntl</code> 。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">fcntl</span><span class="params">(<span class="keyword">int</span> fd, <span class="keyword">int</span> cmd, ... <span class="comment">/* arg */</span> )</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p>此函数具有以下用途：</p>
+<ol>
+<li>生成一个文件描述符的副本</li>
+<li>获取或设置文件描述符标记</li>
+<li>获取或设置文件状态</li>
+<li>获取或设置文件拥有者关系</li>
+<li>获取或设置文件锁</li>
+</ol>
+<p><strong>需要注意的是：</strong> 当要修改某个文件状态时，应该像操作寄存器位那样通过 <code>读-修改-写</code> 的方式操作（也就是先读取当前设置值，然后写入新设置的那一位，再回写回去）。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> status = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> fd = open(<span class="string">&quot;./test&quot;</span>, O_CREAT | O_WRONLY);</span><br><span class="line">    <span class="keyword">if</span>(fd == <span class="number">-1</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        perror(<span class="string">&quot;open file failed:&quot;</span>);</span><br><span class="line">        <span class="keyword">goto</span> quick_out;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span>((status = fcntl(fd, F_GETFL, <span class="number">0</span>)) == <span class="number">-1</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        perror(<span class="string">&quot;can not get file status:&quot;</span>);</span><br><span class="line">        <span class="keyword">goto</span> close_out;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">switch</span>(status &amp; O_ACCMODE)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">case</span> O_RDONLY:</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="built_in">printf</span>(<span class="string">&quot;read only\n&quot;</span>);</span><br><span class="line">            &#125;<span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> O_WRONLY:</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="built_in">printf</span>(<span class="string">&quot;write only\n&quot;</span>);</span><br><span class="line">            &#125;<span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> O_RDWR:</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="built_in">printf</span>(<span class="string">&quot;read write\n&quot;</span>);</span><br><span class="line">            &#125;<span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;can not get file mode!\n&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span>(status &amp; O_APPEND)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;append\n&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span>(status &amp; O_NONBLOCK)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;nonblocking\n&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span>(status &amp; O_SYNC)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;synchronous writes\n&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">close_out:</span><br><span class="line">    close(fd);</span><br><span class="line">    remove(<span class="string">&quot;./test&quot;</span>);</span><br><span class="line">quick_out:</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>另外的一个控制函数便是 <code>ioctl</code> ，这个在驱动的操作中经常使用：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">ioctl</span><span class="params">(<span class="keyword">int</span> fd, <span class="keyword">unsigned</span> <span class="keyword">long</span> request, ...)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<h2 id="文件的权限与属性"><a href="#文件的权限与属性" class="headerlink" title="文件的权限与属性"></a>文件的权限与属性</h2><h3 id="获取文件属性"><a href="#获取文件属性" class="headerlink" title="获取文件属性"></a>获取文件属性</h3><p>平时使用最多的 shell 命令 <code>ls -al</code> 就是提取的文件属性来显示。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">stat</span> &#123;</span></span><br><span class="line">    <span class="keyword">dev_t</span>     st_dev;         <span class="comment">/* ID of device containing file */</span></span><br><span class="line">    <span class="keyword">ino_t</span>     st_ino;         <span class="comment">/* inode number */</span></span><br><span class="line">    <span class="keyword">mode_t</span>    st_mode;        <span class="comment">/* file type */</span></span><br><span class="line">    <span class="keyword">nlink_t</span>   st_nlink;       <span class="comment">/* number of hard links */</span></span><br><span class="line">    <span class="keyword">uid_t</span>     st_uid;         <span class="comment">/* user ID of owner */</span></span><br><span class="line">    <span class="keyword">gid_t</span>     st_gid;         <span class="comment">/* group ID of owner */</span></span><br><span class="line">    <span class="keyword">dev_t</span>     st_rdev;        <span class="comment">/* device ID (if special file) */</span></span><br><span class="line">    <span class="keyword">off_t</span>     st_size;        <span class="comment">/* total size, in bytes */</span></span><br><span class="line">    <span class="keyword">blksize_t</span> st_blksize;     <span class="comment">/* blocksize for filesystem I/O */</span></span><br><span class="line">    <span class="keyword">blkcnt_t</span>  st_blocks;      <span class="comment">/* number of 512B blocks allocated */</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Since Linux 2.6, the kernel supports nanosecond</span></span><br><span class="line"><span class="comment">      precision for the following timestamp fields.</span></span><br><span class="line"><span class="comment">      For the details before Linux 2.6, see NOTES. */</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timespec</span> <span class="title">st_atim</span>;</span>  <span class="comment">/* time of last access */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timespec</span> <span class="title">st_mtim</span>;</span>  <span class="comment">/* time of last modification */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timespec</span> <span class="title">st_ctim</span>;</span>  <span class="comment">/* time of last status change */</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> st_atime st_atim.tv_sec      <span class="comment">/* Backward compatibility */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> st_mtime st_mtim.tv_sec</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> st_ctime st_ctim.tv_sec</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 获取文件的属性并存储于结构 stat 中</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="comment">//如果文件是符号链接，那么获取被链接文件的属性</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">stat</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *pathname, struct stat *buf)</span></span>;</span><br><span class="line"><span class="comment">//获取已打开文件的属性</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">fstat</span><span class="params">(<span class="keyword">int</span> fd, struct stat *buf)</span></span>;</span><br><span class="line"><span class="comment">//如果文件是符号链接，那么获取该符号链接的属性</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">lstat</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *pathname, struct stat *buf)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//根据用户指定的 dirfd 和提供的路径 pathname 来获取文件属性，</span></span><br><span class="line"><span class="comment">//flags 用于控制是否读取符号链接本身</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">fstatat</span><span class="params">(<span class="keyword">int</span> dirfd, <span class="keyword">const</span> <span class="keyword">char</span> *pathname, struct stat *buf,</span></span></span><br><span class="line"><span class="params"><span class="function">            <span class="keyword">int</span> flags)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 也可以使用下面的函数修改时间戳</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">futimes</span><span class="params">(<span class="keyword">int</span> fd, <span class="keyword">const</span> struct timeval tv[<span class="number">2</span>])</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">lutimes</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *filename, <span class="keyword">const</span> struct timeval tv[<span class="number">2</span>])</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">utimensat</span><span class="params">(<span class="keyword">int</span> dirfd, <span class="keyword">const</span> <span class="keyword">char</span> *pathname,</span></span></span><br><span class="line"><span class="params"><span class="function">              <span class="keyword">const</span> struct timespec times[<span class="number">2</span>], <span class="keyword">int</span> flags)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">futimens</span><span class="params">(<span class="keyword">int</span> fd, <span class="keyword">const</span> struct timespec times[<span class="number">2</span>])</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p>如下代码所示，使用 lstat 来判断文件类型:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/stat.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[])</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">stat</span> <span class="title">file_stat</span> =</span> &#123;<span class="number">0</span>&#125;;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(argc != <span class="number">2</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;usage: ./a.out &lt;file_path&gt;\n&quot;</span>);</span><br><span class="line">        <span class="keyword">goto</span> quick_out;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span>(lstat(argv[<span class="number">1</span>], &amp;file_stat) == <span class="number">-1</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        perror(<span class="string">&quot;can not get file status:&quot;</span>);</span><br><span class="line">        <span class="keyword">goto</span> quick_out;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;The file type is : &quot;</span>);</span><br><span class="line">    <span class="keyword">if</span>(S_ISREG(file_stat.st_mode))</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;regular file&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span>(S_ISDIR(file_stat.st_mode))</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;directory&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span>(S_ISSOCK(file_stat.st_mode))</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;socket&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span>(S_ISCHR(file_stat.st_mode))</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;character device&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span>(S_ISBLK(file_stat.st_mode))</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;block device&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span>(S_ISFIFO(file_stat.st_mode))</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;FIFO&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span>(S_ISLNK(file_stat.st_mode))</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;symbolic link&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;unknown!&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">quick_out:</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="操作文件的权限"><a href="#操作文件的权限" class="headerlink" title="操作文件的权限"></a>操作文件的权限</h3><p>与操作文件相关的 ID 具有下面几类：</p>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>真实用户ID和真实组ID</td>
+<td>表示当前是哪个用户位于哪个组正在访问此文件</td>
+</tr>
+<tr>
+<td>有效用户ID，有效组ID和补充组ID</td>
+<td>表示该文件允许的用户和组(在没有suid,sgid的情况下，此值与真实用户和真实组ID是一个值)</td>
+</tr>
+<tr>
+<td>suid</td>
+<td>当文件user的可执行权限打开并设置了suid后，其他用户可以以该文件所有者的权限来运行此文件</td>
+</tr>
+<tr>
+<td>sgid</td>
+<td>当文件group的可执行权限打开并设置了sgid后，其他用户可以以该文件组成员的权限来运行此文件</td>
+</tr>
+</tbody></table>
+<ul>
+<li>对于权限方面还有一个(sticky bit):当文件other的可执行权限打开并设置了sticky后，用户都可以在此文件夹下新建文件和文件夹(类似于共享文件夹)<ul>
+<li>但用户不能删除其他用户所新建的文件或文件夹</li>
+</ul>
+</li>
+<li>对于普通权限 <code>rwx</code> 不得不提的是：<ul>
+<li>要进入基本的目录，至少要具有 <code>x</code> 权限，要读取目录内容列表信息，至少要具有 <code>rx</code> 权限。</li>
+<li>对一个文件是否具有新建或删除的权限，要看用户对此目录是否具有 <code>rw</code> 权限。<ul>
+<li>这与文件自身的权限无关， <strong>自身权限只关联其内容的操作权限</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>可以使用下面的函数来判断当前进程是否有权限访问某个文件:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">access</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *pathname, <span class="keyword">int</span> mode)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">faccessat</span><span class="params">(<span class="keyword">int</span> dirfd, <span class="keyword">const</span> <span class="keyword">char</span> *pathname, <span class="keyword">int</span> mode, <span class="keyword">int</span> flags)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<h3 id="修改权限"><a href="#修改权限" class="headerlink" title="修改权限"></a>修改权限</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//修改文件权限</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">chmod</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *pathname, <span class="keyword">mode_t</span> mode)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">fchmod</span><span class="params">(<span class="keyword">int</span> fd, <span class="keyword">mode_t</span> mode)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">fchmodat</span><span class="params">(<span class="keyword">int</span> dirfd, <span class="keyword">const</span> <span class="keyword">char</span> *pathname, <span class="keyword">mode_t</span> mode, <span class="keyword">int</span> flags)</span></span>;</span><br><span class="line"><span class="comment">//改变用户id和组id</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">chown</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *pathname, <span class="keyword">uid_t</span> owner, <span class="keyword">gid_t</span> group)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">fchown</span><span class="params">(<span class="keyword">int</span> fd, <span class="keyword">uid_t</span> owner, <span class="keyword">gid_t</span> group)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">lchown</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *pathname, <span class="keyword">uid_t</span> owner, <span class="keyword">gid_t</span> group)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">fchownat</span><span class="params">(<span class="keyword">int</span> dirfd, <span class="keyword">const</span> <span class="keyword">char</span> *pathname,</span></span></span><br><span class="line"><span class="params"><span class="function">             <span class="keyword">uid_t</span> owner, <span class="keyword">gid_t</span> group, <span class="keyword">int</span> flags)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<h2 id="硬链接"><a href="#硬链接" class="headerlink" title="硬链接"></a>硬链接</h2><p>  每增加一个硬链接，文件的链接数量加1，以表示有多少个文件引用到同一个inode.</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">link</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *oldpath, <span class="keyword">const</span> <span class="keyword">char</span> *newpath)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">linkat</span><span class="params">(<span class="keyword">int</span> olddirfd, <span class="keyword">const</span> <span class="keyword">char</span> *oldpath,</span></span></span><br><span class="line"><span class="params"><span class="function">           <span class="keyword">int</span> newdirfd, <span class="keyword">const</span> <span class="keyword">char</span> *newpath, <span class="keyword">int</span> flags)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p>  每取消一个硬链接，文件的链接数量减1，当一个文件的链接数量减至0 <strong>并且没有进程打开此文件时</strong> ，文件既被删除。</p>
+<ul>
+<li>当有进程打开了文件，那么当进程退出或关闭文件时，内核检查引用计数为0，才删除文件。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">unlink</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *pathname)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">unlinkat</span><span class="params">(<span class="keyword">int</span> dirfd, <span class="keyword">const</span> <span class="keyword">char</span> *pathname, <span class="keyword">int</span> flags)</span></span>;</span><br><span class="line"><span class="comment">//移除文件时，与 unlink 一致，移除文件夹时，与 rmdir 一致</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">remove</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *pathname)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<h2 id="符号链接"><a href="#符号链接" class="headerlink" title="符号链接"></a>符号链接</h2><ul>
+<li>创建</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">symlink</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *target, <span class="keyword">const</span> <span class="keyword">char</span> *linkpath)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">symlinkat</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *target, <span class="keyword">int</span> newdirfd, <span class="keyword">const</span> <span class="keyword">char</span> *linkpath)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>读取符号链接本身内容(可以看到其block内容为其引用文件路径)</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">ssize_t</span> <span class="title">readlink</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *pathname, <span class="keyword">char</span> *buf, <span class="keyword">size_t</span> bufsiz)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">ssize_t</span> <span class="title">readlinkat</span><span class="params">(<span class="keyword">int</span> dirfd, <span class="keyword">const</span> <span class="keyword">char</span> *pathname,</span></span></span><br><span class="line"><span class="params"><span class="function">                   <span class="keyword">char</span> *buf, <span class="keyword">size_t</span> bufsiz)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<h2 id="名称"><a href="#名称" class="headerlink" title="名称"></a>名称</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">rename</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *oldpath, <span class="keyword">const</span> <span class="keyword">char</span> *newpath)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">renameat</span><span class="params">(<span class="keyword">int</span> olddirfd, <span class="keyword">const</span> <span class="keyword">char</span> *oldpath,</span></span></span><br><span class="line"><span class="params"><span class="function">             <span class="keyword">int</span> newdirfd, <span class="keyword">const</span> <span class="keyword">char</span> *newpath)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">renameat2</span><span class="params">(<span class="keyword">int</span> olddirfd, <span class="keyword">const</span> <span class="keyword">char</span> *oldpath,</span></span></span><br><span class="line"><span class="params"><span class="function">              <span class="keyword">int</span> newdirfd, <span class="keyword">const</span> <span class="keyword">char</span> *newpath, <span class="keyword">unsigned</span> <span class="keyword">int</span> flags)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<h1 id="文件系统与设备驱动-include-linux-fs-h"><a href="#文件系统与设备驱动-include-linux-fs-h" class="headerlink" title="文件系统与设备驱动(include/linux/fs.h)"></a>文件系统与设备驱动(include/linux/fs.h)</h1><p>在设备驱动中，会关心 file 和 inode 这两个结构体。</p>
+<ul>
+<li>每打开一个文件，在内核空间中就有与之关联的 file 结构体<ul>
+<li>设备驱动通过此结构体判断用户操作模式(比如是阻塞还是非阻塞等)<ul>
+<li>判断阻塞还是非阻塞使用 <code>f_flags</code> </li>
+</ul>
+</li>
+<li><code>private_data</code> 保存该设备驱动申请的数据地址</li>
+</ul>
+</li>
+<li>inode 则包含了一个文件的详细信息，比如权限、生成时间、访问时间、最后修改时间等</li>
+</ul>
+<h2 id="file"><a href="#file" class="headerlink" title="file"></a>file</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">file</span> &#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">union</span> &#123;</span></span><br><span class="line">        <span class="class"><span class="keyword">struct</span> <span class="title">llist_node</span>    <span class="title">f_llist</span>;</span></span><br><span class="line">        <span class="class"><span class="keyword">struct</span> <span class="title">rcu_head</span>     <span class="title">f_rcuhead</span>;</span></span><br><span class="line">        <span class="keyword">unsigned</span> <span class="keyword">int</span>         f_iocb_flags;</span><br><span class="line">    &#125;;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">path</span>        <span class="title">f_path</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">inode</span>        *<span class="title">f_inode</span>;</span>    <span class="comment">/* cached value */</span></span><br><span class="line">    <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">file_operations</span>    *<span class="title">f_op</span>;</span> <span class="comment">// 和文件关联的操作</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * Protects f_ep, f_flags.</span></span><br><span class="line"><span class="comment">     * Must not be taken from IRQ context.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">spinlock_t</span>        f_lock;</span><br><span class="line">    <span class="keyword">atomic_long_t</span>        f_count;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span>         f_flags; <span class="comment">// 文件标志，如 O_RDONLY、O_NONBLOCK </span></span><br><span class="line">    <span class="keyword">fmode_t</span>            f_mode;<span class="comment">// 文件读/写模式，FMODE_READ 和 FMODE_WRITE</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">mutex</span>        <span class="title">f_pos_lock</span>;</span></span><br><span class="line">    <span class="keyword">loff_t</span>            f_pos; <span class="comment">// 当前读写的位置</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">fown_struct</span>    <span class="title">f_owner</span>;</span></span><br><span class="line">    <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">cred</span>    *<span class="title">f_cred</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">file_ra_state</span>    <span class="title">f_ra</span>;</span></span><br><span class="line"></span><br><span class="line">    u64            f_version;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_SECURITY</span></span><br><span class="line">    <span class="keyword">void</span>            *f_security;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    <span class="comment">/* needed for tty driver, and maybe others */</span></span><br><span class="line">    <span class="keyword">void</span>            *private_data; <span class="comment">// 文件私有数据</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_EPOLL</span></span><br><span class="line">    <span class="comment">/* Used by fs/eventpoll.c to link all the hooks to this file */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">hlist_head</span>    *<span class="title">f_ep</span>;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">/* #ifdef CONFIG_EPOLL */</span></span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">address_space</span>    *<span class="title">f_mapping</span>;</span></span><br><span class="line">    <span class="keyword">errseq_t</span>        f_wb_err;</span><br><span class="line">    <span class="keyword">errseq_t</span>        f_sb_err; <span class="comment">/* for syncfs */</span></span><br><span class="line">&#125; __randomize_layout</span><br><span class="line">  __attribute__((aligned(<span class="number">4</span>)));    <span class="comment">/* lest something weird decides that 2 is OK */</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="inode"><a href="#inode" class="headerlink" title="inode"></a>inode</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Keep mostly read-only and often accessed (especially for</span></span><br><span class="line"><span class="comment"> * the RCU path lookup and &#x27;stat&#x27; data) fields at the beginning</span></span><br><span class="line"><span class="comment"> * of the &#x27;struct inode&#x27;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">inode</span> &#123;</span></span><br><span class="line">    <span class="keyword">umode_t</span>            i_mode; <span class="comment">// inode 权限</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">short</span>        i_opflags;</span><br><span class="line">    <span class="keyword">kuid_t</span>            i_uid; <span class="comment">// inode 拥有者 id</span></span><br><span class="line">    <span class="keyword">kgid_t</span>            i_gid; <span class="comment">// inode 所属群组 id</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span>        i_flags;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_FS_POSIX_ACL</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">posix_acl</span>    *<span class="title">i_acl</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">posix_acl</span>    *<span class="title">i_default_acl</span>;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">inode_operations</span>    *<span class="title">i_op</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">super_block</span>    *<span class="title">i_sb</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">address_space</span>    *<span class="title">i_mapping</span>;</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_SECURITY</span></span><br><span class="line">    <span class="keyword">void</span>            *i_security;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Stat data, not accessed from path walking */</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span>        i_ino;</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * Filesystems may only read i_nlink directly.  They shall use the</span></span><br><span class="line"><span class="comment">     * following functions for modification:</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     *    (set|clear|inc|drop)_nlink</span></span><br><span class="line"><span class="comment">     *    inode_(inc|dec)_link_count</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="class"><span class="keyword">union</span> &#123;</span></span><br><span class="line">        <span class="keyword">const</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> i_nlink;</span><br><span class="line">        <span class="keyword">unsigned</span> <span class="keyword">int</span> __i_nlink;</span><br><span class="line">    &#125;;</span><br><span class="line">    <span class="keyword">dev_t</span>            i_rdev; <span class="comment">// 若是设备文件，此字段记录设备的设备号</span></span><br><span class="line">    <span class="keyword">loff_t</span>            i_size; <span class="comment">// inode 所代表的文件大小</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timespec64</span>    <span class="title">i_atime</span>;</span> <span class="comment">// 最近一次的存取时间</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timespec64</span>    <span class="title">i_mtime</span>;</span> <span class="comment">// 最近一次的修改时间</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timespec64</span>    <span class="title">i_ctime</span>;</span> <span class="comment">// inode 的产生时间</span></span><br><span class="line">    <span class="keyword">spinlock_t</span>        i_lock;    <span class="comment">/* i_blocks, i_bytes, maybe i_size */</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">short</span>          i_bytes;</span><br><span class="line">    u8            i_blkbits;</span><br><span class="line">    u8            i_write_hint;</span><br><span class="line">    <span class="keyword">blkcnt_t</span>        i_blocks; <span class="comment">// inode 所使用的 block 数</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> __NEED_I_SIZE_ORDERED</span></span><br><span class="line">    <span class="keyword">seqcount_t</span>        i_size_seqcount;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Misc */</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span>        i_state;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">rw_semaphore</span>    <span class="title">i_rwsem</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span>        dirtied_when;    <span class="comment">/* jiffies of first dirtying */</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span>        dirtied_time_when;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">hlist_node</span>    <span class="title">i_hash</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span>    <span class="title">i_io_list</span>;</span>    <span class="comment">/* backing dev IO list */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_CGROUP_WRITEBACK</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">bdi_writeback</span>    *<span class="title">i_wb</span>;</span>        <span class="comment">/* the associated cgroup wb */</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* foreign inode detection, see wbc_detach_inode() */</span></span><br><span class="line">    <span class="keyword">int</span>            i_wb_frn_winner;</span><br><span class="line">    u16            i_wb_frn_avg_time;</span><br><span class="line">    u16            i_wb_frn_history;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span>    <span class="title">i_lru</span>;</span>        <span class="comment">/* inode LRU list */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span>    <span class="title">i_sb_list</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span>    <span class="title">i_wb_list</span>;</span>    <span class="comment">/* backing dev writeback list */</span></span><br><span class="line">    <span class="class"><span class="keyword">union</span> &#123;</span></span><br><span class="line">        <span class="class"><span class="keyword">struct</span> <span class="title">hlist_head</span>    <span class="title">i_dentry</span>;</span></span><br><span class="line">        <span class="class"><span class="keyword">struct</span> <span class="title">rcu_head</span>        <span class="title">i_rcu</span>;</span></span><br><span class="line">    &#125;;</span><br><span class="line">    <span class="keyword">atomic64_t</span>        i_version;</span><br><span class="line">    <span class="keyword">atomic64_t</span>        i_sequence; <span class="comment">/* see futex */</span></span><br><span class="line">    <span class="keyword">atomic_t</span>        i_count;</span><br><span class="line">    <span class="keyword">atomic_t</span>        i_dio_count;</span><br><span class="line">    <span class="keyword">atomic_t</span>        i_writecount;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> defined(CONFIG_IMA) || defined(CONFIG_FILE_LOCKING)</span></span><br><span class="line">    <span class="keyword">atomic_t</span>        i_readcount; <span class="comment">/* struct files open RO */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    <span class="class"><span class="keyword">union</span> &#123;</span></span><br><span class="line">        <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">file_operations</span>    *<span class="title">i_fop</span>;</span>    <span class="comment">/* former -&gt;i_op-&gt;default_file_ops */</span></span><br><span class="line">        <span class="keyword">void</span> (*free_inode)(struct inode *);</span><br><span class="line">    &#125;;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">file_lock_context</span>    *<span class="title">i_flctx</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">address_space</span>    <span class="title">i_data</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span>    <span class="title">i_devices</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">union</span> &#123;</span></span><br><span class="line">        <span class="class"><span class="keyword">struct</span> <span class="title">pipe_inode_info</span>    *<span class="title">i_pipe</span>;</span></span><br><span class="line">        <span class="class"><span class="keyword">struct</span> <span class="title">cdev</span>        *<span class="title">i_cdev</span>;</span> <span class="comment">// 若是字符设备，为其对应的 cdev 结构体指针</span></span><br><span class="line">        <span class="keyword">char</span>            *i_link;</span><br><span class="line">        <span class="keyword">unsigned</span>        i_dir_seq;</span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    __u32            i_generation;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_FSNOTIFY</span></span><br><span class="line">    __u32            i_fsnotify_mask; <span class="comment">/* all events this inode cares about */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">fsnotify_mark_connector</span> __<span class="title">rcu</span>    *<span class="title">i_fsnotify_marks</span>;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_FS_ENCRYPTION</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">fscrypt_info</span>    *<span class="title">i_crypt_info</span>;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_FS_VERITY</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">fsverity_info</span>    *<span class="title">i_verity_info</span>;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">void</span>            *i_private; <span class="comment">/* fs or device private pointer */</span></span><br><span class="line">&#125; __randomize_layout;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>i_rdev</code> 表示设备编号，由高12位主设备号和低20位次设备号组成，使用下面的函数获取主次设备号<ul>
+<li>主设备号代表同一类设备，次设备号表示使用该设备的实例对象</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MINORBITS    20</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MINORMASK    ((1U &lt;&lt; MINORBITS) - 1)</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MAJOR(dev)    ((unsigned int) ((dev) &gt;&gt; MINORBITS))</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MINOR(dev)    ((unsigned int) ((dev) &amp; MINORMASK))</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MKDEV(ma,mi)    (((ma) &lt;&lt; MINORBITS) | (mi))</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">unsigned</span> <span class="title">iminor</span><span class="params">(<span class="keyword">const</span> struct inode *inode)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> MINOR(inode-&gt;i_rdev);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">unsigned</span> <span class="title">imajor</span><span class="params">(<span class="keyword">const</span> struct inode *inode)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> MAJOR(inode-&gt;i_rdev);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>也可以在 <code>/proc/devices</code> 中得到注册设备的主设备号和设备名</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat /proc/devices</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>可以在 <code>/dev/</code> 下得到注册设备的主次设备号</li>
+</ul>
+<h1 id="udev-用户空间设备管理"><a href="#udev-用户空间设备管理" class="headerlink" title="udev 用户空间设备管理"></a>udev 用户空间设备管理</h1><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Linux设计中强调的一个基本观点是机制和策略分离。</span><br><span class="line">机制是做某样事情的固定步骤、方法，而策略是每一个步骤所采取的不同方式。</span><br><span class="line">机制是固定的，而每个步骤采用的策略是不固定的。机制是稳定的，而策略是灵活的。</span><br><span class="line">因此，在Linux内核中，不应该实现策略。</span><br></pre></td></tr></table></figure>
+
+<p>udev完全在用户态工作，利用设备加入或移出时内核所发送的热拔插事件(Hotplug Event)来工作。<br>在热拔插时，设备的详细信息会由内核通过netlink套接字发送出来，发出的事件叫uevent。<br>udev的设备命名策略、权限控制和事件处理都是在用户态下完成的，它利用从内核收到的信息来进行创建设备文件节点等工作。</p>
+<p>udev的工作过程：</p>
+<ol>
+<li>当内核检测到系统中出现了新设备后，内核会通过netlink套接字发送uevent</li>
+<li>udev获取内核发送的信息，进行规则的匹配。匹配的事物包括SUBSYSTEM、ACTION、attribute，内核提供的名称(通过KERNEL=)以及其他的环境变量</li>
+</ol>
+<p>使用下面的代码就可以接收 netlink 消息：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;assert.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;poll.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/netlink.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span>* argv[])</span> </span>&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_nl</span> <span class="title">nls</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">pollfd</span> <span class="title">pfd</span>;</span></span><br><span class="line">    <span class="keyword">char</span> buf[<span class="number">512</span>];</span><br><span class="line"></span><br><span class="line">    <span class="built_in">memset</span>(&amp;nls, <span class="number">0</span>, <span class="keyword">sizeof</span>(nls));</span><br><span class="line"></span><br><span class="line">    nls.nl_family = AF_NETLINK;</span><br><span class="line">    nls.nl_pid = getpid();</span><br><span class="line">    nls.nl_groups = <span class="number">-1</span>;</span><br><span class="line"></span><br><span class="line">    pfd.events = POLLIN;</span><br><span class="line">    pfd.fd = socket(PF_NETLINK, SOCK_DGRAM, NETLINK_KOBJECT_UEVENT);</span><br><span class="line">    assert(pfd.fd != <span class="number">-1</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> ret = bind(pfd.fd, (<span class="keyword">void</span> *)&amp;nls, <span class="keyword">sizeof</span>(nls));</span><br><span class="line">    assert(ret == <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (poll(&amp;pfd, <span class="number">1</span>, <span class="number">-1</span>) != <span class="number">-1</span>) &#123;</span><br><span class="line">        <span class="keyword">int</span> len = recv(pfd.fd, buf, <span class="keyword">sizeof</span>(buf), MSG_DONTWAIT);</span><br><span class="line">        assert(len != <span class="number">-1</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">while</span> (i &lt; len) &#123;</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;%s\n&quot;</span>, buf + i);</span><br><span class="line">            i += <span class="built_in">strlen</span>(buf + i) + <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果想要让内核主动发出一次 uevent，则可以对 <code>/sys/module</code> 中的模块主动写 <code>add</code> 命令：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">echo add &gt; /sys/module/psmouse/uevent</span><br></pre></td></tr></table></figure>
+
+<p>会输出类似以下的消息:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">add@/module/psmouse</span><br><span class="line">ACTION=add</span><br><span class="line">DEVPATH=/module/psmouse</span><br><span class="line">SUBSYSTEM=module</span><br><span class="line">SYNTH_UUID=0</span><br><span class="line">SEQNUM=739</span><br></pre></td></tr></table></figure>
+
+<h1 id="sysfs"><a href="#sysfs" class="headerlink" title="sysfs"></a>sysfs</h1><p>sysfs是内核设备模型的一个全局概览，此目录下的多个顶层文件是站在不同的角度来查看设备模型的：</p>
+<ul>
+<li><code>bus</code> 是以总线的视角来看待。<ul>
+<li>首先，总线有很多种类型，所以在bus目录下会有多个代表不同总线类型的文件</li>
+<li>其次，每种总线相对应的就包含设备和驱动，所以就会有 <code>devices,drivers</code> 文件夹<ul>
+<li>设备下的文件是 <code>/sys/devices</code> 中文件的符号链接</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><code>devices</code> 是以设备的视角看待<ul>
+<li>首先，设备是以层级的方式拓扑的，所以目录也是以此层级进行排列的</li>
+<li>其次，当设备与驱动匹配以后，对应设备目录就会有 <code>driver</code> 目录</li>
+</ul>
+</li>
+<li><code>class</code> 是以设备种类的视角看待设备<ul>
+<li>此目录下都是以种类区分各种设备</li>
+<li>设备下的文件是 <code>/sys/devices</code> 中文件的符号链接</li>
+</ul>
+</li>
+<li><code>block</code> 是单独列出块设备文件</li>
+<li><code>dev</code> 是块设备和字符设备文件</li>
+</ul>
+<p>在代码实现中，分别使用 <code>bus_type,device_driver,device</code> 来描述总线、驱动和设备:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">bus_type</span> &#123;</span></span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">char</span>        *name;</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">char</span>        *dev_name;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">device</span>        *<span class="title">dev_root</span>;</span></span><br><span class="line">    <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">attribute_group</span> **<span class="title">bus_groups</span>;</span></span><br><span class="line">    <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">attribute_group</span> **<span class="title">dev_groups</span>;</span></span><br><span class="line">    <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">attribute_group</span> **<span class="title">drv_groups</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> (*match)(struct device *dev, struct device_driver *drv);</span><br><span class="line">    <span class="keyword">int</span> (*uevent)(struct device *dev, struct kobj_uevent_env *env);</span><br><span class="line">    <span class="keyword">int</span> (*probe)(struct device *dev);</span><br><span class="line">    <span class="keyword">void</span> (*sync_state)(struct device *dev);</span><br><span class="line">    <span class="keyword">void</span> (*remove)(struct device *dev);</span><br><span class="line">    <span class="keyword">void</span> (*shutdown)(struct device *dev);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> (*online)(struct device *dev);</span><br><span class="line">    <span class="keyword">int</span> (*offline)(struct device *dev);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> (*suspend)(struct device *dev, <span class="keyword">pm_message_t</span> state);</span><br><span class="line">    <span class="keyword">int</span> (*resume)(struct device *dev);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> (*num_vf)(struct device *dev);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> (*dma_configure)(struct device *dev);</span><br><span class="line">    <span class="keyword">void</span> (*dma_cleanup)(struct device *dev);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">dev_pm_ops</span> *<span class="title">pm</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">iommu_ops</span> *<span class="title">iommu_ops</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">subsys_private</span> *<span class="title">p</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">lock_class_key</span> <span class="title">lock_key</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">bool</span> need_parent_lock;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">device_driver</span> &#123;</span></span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">char</span>        *name;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">bus_type</span>        *<span class="title">bus</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">module</span>        *<span class="title">owner</span>;</span></span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">char</span>        *mod_name;    <span class="comment">/* used for built-in modules */</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">bool</span> suppress_bind_attrs;    <span class="comment">/* disables bind/unbind via sysfs */</span></span><br><span class="line">    <span class="class"><span class="keyword">enum</span> <span class="title">probe_type</span> <span class="title">probe_type</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">of_device_id</span>    *<span class="title">of_match_table</span>;</span></span><br><span class="line">    <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">acpi_device_id</span>    *<span class="title">acpi_match_table</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> (*probe) (struct device *dev);</span><br><span class="line">    <span class="keyword">void</span> (*sync_state)(struct device *dev);</span><br><span class="line">    <span class="keyword">int</span> (*remove) (struct device *dev);</span><br><span class="line">    <span class="keyword">void</span> (*shutdown) (struct device *dev);</span><br><span class="line">    <span class="keyword">int</span> (*suspend) (struct device *dev, <span class="keyword">pm_message_t</span> state);</span><br><span class="line">    <span class="keyword">int</span> (*resume) (struct device *dev);</span><br><span class="line">    <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">attribute_group</span> **<span class="title">groups</span>;</span></span><br><span class="line">    <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">attribute_group</span> **<span class="title">dev_groups</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">dev_pm_ops</span> *<span class="title">pm</span>;</span></span><br><span class="line">    <span class="keyword">void</span> (*coredump) (struct device *dev);</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">driver_private</span> *<span class="title">p</span>;</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">device</span> &#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">kobject</span> <span class="title">kobj</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">device</span>        *<span class="title">parent</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">device_private</span>    *<span class="title">p</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">char</span>        *init_name; <span class="comment">/* initial name of the device */</span></span><br><span class="line">    <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">device_type</span> *<span class="title">type</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">bus_type</span>    *<span class="title">bus</span>;</span>        <span class="comment">/* type of bus device is on */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">device_driver</span> *<span class="title">driver</span>;</span>    <span class="comment">/* which driver has allocated this</span></span><br><span class="line"><span class="comment">                       device */</span></span><br><span class="line">    <span class="keyword">void</span>        *platform_data;    <span class="comment">/* Platform specific data, device</span></span><br><span class="line"><span class="comment">                       core doesn&#x27;t touch it */</span></span><br><span class="line">    <span class="keyword">void</span>        *driver_data;    <span class="comment">/* Driver data, set and get with</span></span><br><span class="line"><span class="comment">                       dev_set_drvdata/dev_get_drvdata */</span></span><br><span class="line">    <span class="comment">//...</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>device_driver 和 device 都依附于总线，所以都包含了 <code>bus_type</code> 指针。而 device 又由 driver 驱动，所以它还包含了 <code>device_driver</code> 指针。</p>
+<p>设备和驱动都是分开被注册的，总线的<code>match</code>函数来进行对应的匹配，匹配成功后驱动的<code>probe()</code>函数就会被调用。</p>
+<p>总线、设备和驱动都会映射在 <code>sysfs</code> 中，其中的目录来源于 <code>bus_type,device_driver,device</code> ，而目录中的文件来源于 <code>attribute</code> 。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">attribute</span> &#123;</span></span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">char</span>        *name;</span><br><span class="line">    <span class="keyword">umode_t</span>            mode;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_DEBUG_LOCK_ALLOC</span></span><br><span class="line">    <span class="keyword">bool</span>            ignore_lockdep:<span class="number">1</span>;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">lock_class_key</span>    *<span class="title">key</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">lock_class_key</span>    <span class="title">skey</span>;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">bus_attribute</span> &#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">attribute</span>    <span class="title">attr</span>;</span></span><br><span class="line">    <span class="keyword">ssize_t</span> (*show)(struct bus_type *bus, <span class="keyword">char</span> *buf);</span><br><span class="line">    <span class="keyword">ssize_t</span> (*store)(struct bus_type *bus, <span class="keyword">const</span> <span class="keyword">char</span> *buf, <span class="keyword">size_t</span> count);</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">device_attribute</span> &#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">attribute</span>    <span class="title">attr</span>;</span></span><br><span class="line">    <span class="keyword">ssize_t</span> (*show)(struct device *dev, struct device_attribute *attr,</span><br><span class="line">            <span class="keyword">char</span> *buf);</span><br><span class="line">    <span class="keyword">ssize_t</span> (*store)(struct device *dev, struct device_attribute *attr,</span><br><span class="line">             <span class="keyword">const</span> <span class="keyword">char</span> *buf, <span class="keyword">size_t</span> count);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>对于以上结构，内核提供了快捷的操作宏：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DEVICE_ATTR(_name, _mode, _show, _store) \</span></span><br><span class="line"><span class="meta">    struct device_attribute dev_attr_##_name = __ATTR(_name, _mode, _show, _store)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DEVICE_ATTR_PREALLOC(_name, _mode, _show, _store) \</span></span><br><span class="line"><span class="meta">    struct device_attribute dev_attr_##_name = \</span></span><br><span class="line"><span class="meta">        __ATTR_PREALLOC(_name, _mode, _show, _store)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DEVICE_ATTR_RW(_name) \</span></span><br><span class="line"><span class="meta">    struct device_attribute dev_attr_##_name = __ATTR_RW(_name)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DEVICE_ATTR_ADMIN_RW(_name) \</span></span><br><span class="line"><span class="meta">    struct device_attribute dev_attr_##_name = __ATTR_RW_MODE(_name, 0600)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DEVICE_ATTR_RO(_name) \</span></span><br><span class="line"><span class="meta">    struct device_attribute dev_attr_##_name = __ATTR_RO(_name)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DEVICE_ATTR_ADMIN_RO(_name) \</span></span><br><span class="line"><span class="meta">    struct device_attribute dev_attr_##_name = __ATTR_RO_MODE(_name, 0400)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DEVICE_ATTR_WO(_name) \</span></span><br><span class="line"><span class="meta">    struct device_attribute dev_attr_##_name = __ATTR_WO(_name)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DEVICE_ULONG_ATTR(_name, _mode, _var) \</span></span><br><span class="line"><span class="meta">    struct dev_ext_attribute dev_attr_##_name = \</span></span><br><span class="line"><span class="meta">        &#123; __ATTR(_name, _mode, device_show_ulong, device_store_ulong), &amp;(_var) &#125;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DEVICE_INT_ATTR(_name, _mode, _var) \</span></span><br><span class="line"><span class="meta">    struct dev_ext_attribute dev_attr_##_name = \</span></span><br><span class="line"><span class="meta">        &#123; __ATTR(_name, _mode, device_show_int, device_store_int), &amp;(_var) &#125;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DEVICE_BOOL_ATTR(_name, _mode, _var) \</span></span><br><span class="line"><span class="meta">    struct dev_ext_attribute dev_attr_##_name = \</span></span><br><span class="line"><span class="meta">        &#123; __ATTR(_name, _mode, device_show_bool, device_store_bool), &amp;(_var) &#125;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DEVICE_ATTR_IGNORE_LOCKDEP(_name, _mode, _show, _store) \</span></span><br><span class="line"><span class="meta">    struct device_attribute dev_attr_##_name =        \</span></span><br><span class="line"><span class="meta">        __ATTR_IGNORE_LOCKDEP(_name, _mode, _show, _store)</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> BUS_ATTR_RW(_name) \</span></span><br><span class="line"><span class="meta">    struct bus_attribute bus_attr_##_name = __ATTR_RW(_name)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> BUS_ATTR_RO(_name) \</span></span><br><span class="line"><span class="meta">    struct bus_attribute bus_attr_##_name = __ATTR_RO(_name)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> BUS_ATTR_WO(_name) \</span></span><br><span class="line"><span class="meta">    struct bus_attribute bus_attr_##_name = __ATTR_WO(_name)</span></span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>kcmetercec
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://kcmetercec.top/2024/09/10/linux_fs_hello/" title="Linux文件系统基本操作">http://kcmetercec.top/2024/09/10/linux_fs_hello/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux/" rel="tag"> <i class="fa fa-tag"></i> linux</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/09/08/linux_fs_overview/" rel="prev" title="Linux文件系统结构概览">
+      <i class="fa fa-chevron-left"></i> Linux文件系统结构概览
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/09/13/linux_fs_detail/" rel="next" title="Linux文件系统基本实现">
+      Linux文件系统基本实现 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BC%96%E7%A8%8B%E6%8E%A5%E5%8F%A3"><span class="nav-number">1.</span> <span class="nav-text">编程接口</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B8%B8%E7%94%A8%E6%8E%A5%E5%8F%A3"><span class="nav-number">1.1.</span> <span class="nav-text">常用接口</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E7%9A%84%E5%88%9B%E5%BB%BA"><span class="nav-number">1.1.1.</span> <span class="nav-text">文件的创建</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E5%8F%8A%E6%89%93%E5%BC%80"><span class="nav-number">1.1.2.</span> <span class="nav-text">创建及打开</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E8%AF%BB%E5%86%99"><span class="nav-number">1.1.3.</span> <span class="nav-text">文件读写</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E5%AE%9A%E4%BD%8D"><span class="nav-number">1.1.4.</span> <span class="nav-text">文件定位</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%88%AA%E6%96%AD%E6%96%87%E4%BB%B6"><span class="nav-number">1.1.5.</span> <span class="nav-text">截断文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E5%85%B3%E9%97%AD"><span class="nav-number">1.1.6.</span> <span class="nav-text">文件关闭</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E5%A4%B9%E6%93%8D%E4%BD%9C"><span class="nav-number">1.1.7.</span> <span class="nav-text">文件夹操作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E4%BE%8B"><span class="nav-number">1.1.8.</span> <span class="nav-text">实例</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E4%B8%AA%E8%BF%9B%E7%A8%8B%E6%89%93%E5%BC%80%E5%90%8C%E4%B8%80%E4%B8%AA%E6%96%87%E4%BB%B6"><span class="nav-number">1.2.</span> <span class="nav-text">多个进程打开同一个文件</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%92%E6%96%A5%E6%93%8D%E4%BD%9C"><span class="nav-number">1.2.1.</span> <span class="nav-text">互斥操作</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E7%B4%A2%E5%BC%95%E7%9A%84%E5%A4%8D%E5%88%B6"><span class="nav-number">1.3.</span> <span class="nav-text">文件索引的复制</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BB%E5%8A%A8%E5%86%99%E5%9B%9E%E6%95%B0%E6%8D%AE%E5%88%B0%E7%A1%AC%E7%9B%98"><span class="nav-number">1.4.</span> <span class="nav-text">主动写回数据到硬盘</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E8%BF%90%E8%A1%8C%E6%97%B6%E6%8E%A7%E5%88%B6"><span class="nav-number">1.5.</span> <span class="nav-text">文件运行时控制</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E7%9A%84%E6%9D%83%E9%99%90%E4%B8%8E%E5%B1%9E%E6%80%A7"><span class="nav-number">1.6.</span> <span class="nav-text">文件的权限与属性</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%8E%B7%E5%8F%96%E6%96%87%E4%BB%B6%E5%B1%9E%E6%80%A7"><span class="nav-number">1.6.1.</span> <span class="nav-text">获取文件属性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E6%96%87%E4%BB%B6%E7%9A%84%E6%9D%83%E9%99%90"><span class="nav-number">1.6.2.</span> <span class="nav-text">操作文件的权限</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9%E6%9D%83%E9%99%90"><span class="nav-number">1.6.3.</span> <span class="nav-text">修改权限</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A1%AC%E9%93%BE%E6%8E%A5"><span class="nav-number">1.7.</span> <span class="nav-text">硬链接</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%A6%E5%8F%B7%E9%93%BE%E6%8E%A5"><span class="nav-number">1.8.</span> <span class="nav-text">符号链接</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%8D%E7%A7%B0"><span class="nav-number">1.9.</span> <span class="nav-text">名称</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E4%B8%8E%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8-include-linux-fs-h"><span class="nav-number">2.</span> <span class="nav-text">文件系统与设备驱动(include&#x2F;linux&#x2F;fs.h)</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#file"><span class="nav-number">2.1.</span> <span class="nav-text">file</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#inode"><span class="nav-number">2.2.</span> <span class="nav-text">inode</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#udev-%E7%94%A8%E6%88%B7%E7%A9%BA%E9%97%B4%E8%AE%BE%E5%A4%87%E7%AE%A1%E7%90%86"><span class="nav-number">3.</span> <span class="nav-text">udev 用户空间设备管理</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#sysfs"><span class="nav-number">4.</span> <span class="nav-text">sysfs</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">Qt, C++, linux, CS</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">107</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">55</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:kcmeter.cec@gmail.com" title="E-Mail → mailto:kcmeter.cec@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2021 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">206k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">3:08</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+document.querySelectorAll('.pdfobject-container').forEach(element => {
+  let url = element.dataset.target;
+  let pdfOpenParams = {
+    navpanes : 0,
+    toolbar  : 0,
+    statusbar: 0,
+    pagemode : 'thumbs',
+    view     : 'FitH'
+  };
+  let pdfOpenFragment = '#' + Object.entries(pdfOpenParams).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
+  let fullURL = `/lib/pdf/web/viewer.html?file=${encodeURIComponent(url)}${pdfOpenFragment}`;
+
+  if (NexT.utils.supportsPDFs()) {
+    element.innerHTML = `<embed class="pdfobject" src="${url + pdfOpenFragment}" type="application/pdf" style="height: ${element.dataset.height};">`;
+  } else {
+    element.innerHTML = `<iframe src="${fullURL}" style="height: ${element.dataset.height};" frameborder="0"></iframe>`;
+  }
+});
+</script>
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'f938893867df78f94802',
+      clientSecret: 'b6d8470939c53d26c98c4e3b9d4c9ceb55d6e78e',
+      repo        : 'kcmetercec.github.io',
+      owner       : 'KcMeterCEC',
+      admin       : ['KcMeterCEC'],
+      id          : '46ad6e000a3c4a86be906d34ff334962',
+        language: 'zh-CN',
+      distractionFreeMode: false
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+    </div>
+</body>
+</html>

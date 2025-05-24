@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="这里记录 ZynqMP 的启动和配置过程。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ZynqMP 的启动和配置">
+<meta property="og:url" content="http://kcmetercec.top/2024/12/31/zynqmp_boot/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="这里记录 ZynqMP 的启动和配置过程。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5Bprocessor%5D/%5BZynq%5D/%5BWhat%5DZynqmp-boot/pic/bootmode.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5Bprocessor%5D/%5BZynq%5D/%5BWhat%5DZynqmp-boot/pic/boot_search_limit.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5Bprocessor%5D/%5BZynq%5D/%5BWhat%5DZynqmp-boot/pic/boot_search.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5Bprocessor%5D/%5BZynq%5D/%5BWhat%5DZynqmp-boot/pic/normal_boot_image_format.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5Bprocessor%5D/%5BZynq%5D/%5BWhat%5DZynqmp-boot/pic/boot_image_format.jpg?raw=true">
+<meta property="article:published_time" content="2024-12-30T16:00:00.000Z">
+<meta property="article:modified_time" content="2024-12-30T16:00:00.000Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="zynq">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5Bprocessor%5D/%5BZynq%5D/%5BWhat%5DZynqmp-boot/pic/bootmode.jpg?raw=true">
+
+<link rel="canonical" href="http://kcmetercec.top/2024/12/31/zynqmp_boot/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>ZynqMP 的启动和配置 | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112423075-1# <app_id>"></script>
+    <script data-pjax>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-112423075-1# <app_id>');
+      }
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+        <li class="menu-item menu-item-commonweal">
+
+    <a href="/404/" rel="section"><i class="fa fa-heartbeat fa-fw"></i>公益 404</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2024/12/31/zynqmp_boot/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="Qt, C++, linux, CS">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          ZynqMP 的启动和配置
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-12-31 00:00:00" itemprop="dateCreated datePublished" datetime="2024-12-31T00:00:00+08:00">2024-12-31</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/processor/" itemprop="url" rel="index"><span itemprop="name">processor</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/processor/zynq/" itemprop="url" rel="index"><span itemprop="name">zynq</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>这里记录 ZynqMP 的启动和配置过程。</p>
+<span id="more"></span>
+
+<h1 id="Overview"><a href="#Overview" class="headerlink" title="Overview"></a>Overview</h1><p>zynqmp 的启动及配置过程由 PMU（Platform management unit）和 CSU（configuration security unit）来管理，其大体上包含以下 3 个过程：</p>
+<ol>
+<li><p>Pre-confituration stage：系统上电启动时会复位 CSU 和 PMU，PMU 会执行 PMU ROM Code 来设置系统。主要是用于基本的初始化和唤醒处理器。</p>
+</li>
+<li><p>Configuration stage：CSU ROM 会分析<code>boot.bin</code>的文件头，配置系统。然后将 FSBL 加载到内部的 on-chip RAM 执行安全或非安全启动。CSU 还会加载 PMU 用户固件（PMU FW）到 PMU RAM，用于对系统硬件进行管理配置。</p>
+</li>
+<li><p>Post-configuration stage：当 FSBL 开始执行后，CSU ROM 就会进入 post-configuration 阶段。这个阶段是 CSU 硬件提供对文件的校验、配置 PL 、解密等功能。</p>
+</li>
+</ol>
+<h2 id="启动流程"><a href="#启动流程" class="headerlink" title="启动流程"></a>启动流程</h2><p>PMU 启动时会执行一些必须和可选的流程：</p>
+<ul>
+<li><p>清零低功耗域（LPD）寄存器（可选）：当 LPD_SC eFUSEs 被编程，则会执行该步骤</p>
+</li>
+<li><p>清零全功耗域（FPD）寄存器（可选）：当 FPD_SC eFUSEs 被编程，则会执行该步骤</p>
+</li>
+<li><p>清零 PMU RAM：先将 RAM 写 0 然后回读验证，以确保写入成功</p>
+</li>
+<li><p>清零 PMU 处理器的 TLB 内存</p>
+</li>
+<li><p>电压检测：PMU 会检查 LPD、AUX、专用 I/O 的电压，以确保可以正常工作</p>
+</li>
+<li><p>清零内存：PMU 会清零 CSU、LPD、FPD 的内存</p>
+</li>
+</ul>
+<p>PMU 的职责之一就是在硬件上电复位后，对系统各部分进行正确的上电，然后进入后台模式（管理其他部分的上电、睡眠、唤醒等），其上电复位后 PMU ROM code 执行流程为：</p>
+<ol>
+<li><p>初始化 PS SYSMON 单元以及 PLL</p>
+</li>
+<li><p>清空 PMU RAM 和 CSU RAM</p>
+</li>
+<li><p>检查 PLL 是否锁定</p>
+</li>
+<li><p>通过 PS SYSMON 单元检查 LPD，AUX 以及 I/O 电压是否在正常范围内</p>
+</li>
+<li><p>清空低功耗域以及全功耗域</p>
+</li>
+<li><p>当以上步骤无误后，进入到 CSU 阶段，并且自己进入服务模式（如果 PMUFW 没有被使用，则 PMU 模块进入睡眠模式）</p>
+</li>
+</ol>
+<p>CSU 启动后，其执行流程为：</p>
+<ol>
+<li><p>初始化片内 RAM</p>
+</li>
+<li><p>PMU 在复位阶段获取到了启动引脚的配置，CSU 根据该配置来确定应该从哪里读取启动代码</p>
+</li>
+<li><p>CSU 将 FSBL 加载到片内 RAM 执行。</p>
+</li>
+<li><p>CSU 将 PMU FW 加载到 PMU RAM 进行执行</p>
+</li>
+</ol>
+<p>PMU FW 主要用于对硬件进行管理，它与 FSBL 进行结合使用。</p>
+<p>CSU 主要用于加密和非加密的系统配置、密钥管理、PS/PL 编程接口等，它主要由以下两个部分组成：</p>
+<ol>
+<li><p>三重冗余的安全处理器</p>
+</li>
+<li><p>加密接口，包括 AES、RSA、SHA3 等</p>
+</li>
+</ol>
+<h2 id="启动模式"><a href="#启动模式" class="headerlink" title="启动模式"></a>启动模式</h2><p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5Bprocessor%5D/%5BZynq%5D/%5BWhat%5DZynqmp-boot/pic/bootmode.jpg?raw=true"><br>zynqmp 支持 multi-boot 搜寻，其搜寻范围如下：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5Bprocessor%5D/%5BZynq%5D/%5BWhat%5DZynqmp-boot/pic/boot_search_limit.jpg?raw=true"><br>那么很明显，在 QSPI 中，应该使用 32bit 模式以支持更大的范围。</p>
+<h2 id="启动代码的搜寻"><a href="#启动代码的搜寻" class="headerlink" title="启动代码的搜寻"></a>启动代码的搜寻</h2><p>CSU 运行 BootROM 来搜寻合法的 boot header 并运行启动代码，是根据搜寻头中是否有字符串<code>XLNX</code>来判断头的合法性。一旦找到该字符串，就会对头进行校验和。如果校验和成功则会从启动代码中载入 FSBL 到 OCM 执行。</p>
+<p>启动代码存放的位置需要以 32KB 对齐，因为 BootROM 会以 32KB 的步进来搜寻合法的启动头。</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5Bprocessor%5D/%5BZynq%5D/%5BWhat%5DZynqmp-boot/pic/boot_search.jpg?raw=true"><br>在 FSBL 中，可以将备份的启动代码位置除以 32KB 写入<code>CSU.csu_multi_boot</code>寄存器，在热复位以后就可以从该寄存器获取地址然后乘以 32KB得到启动代码的位置。</p>
+<p>如果该备份启动代码头不合法，则会通过常规的方式来查找合法的启动代码头。</p>
+<h1 id="启动镜像的结构"><a href="#启动镜像的结构" class="headerlink" title="启动镜像的结构"></a>启动镜像的结构</h1><p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5Bprocessor%5D/%5BZynq%5D/%5BWhat%5DZynqmp-boot/pic/normal_boot_image_format.jpg?raw=true"><br>上图是普通启动镜像的结构，无论镜像是否加密，它们的<code>boot header</code>和<code>partition header</code>都是一样的。</p>
+<h2 id="Boot-Header-Format"><a href="#Boot-Header-Format" class="headerlink" title="Boot Header Format"></a>Boot Header Format</h2><table>
+<thead>
+<tr>
+<th>偏移</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0x00~0x1C</td>
+<td>为支持 XIP 方式的 Flash 而保留的中断向量表</td>
+</tr>
+<tr>
+<td>0x20</td>
+<td>指定 QSPI 的位宽</td>
+</tr>
+<tr>
+<td>0x24</td>
+<td>启动镜像的头<code>XNLX</code></td>
+</tr>
+<tr>
+<td>0x28</td>
+<td>加密状态</td>
+</tr>
+<tr>
+<td>0x2C</td>
+<td>FSBL 的执行地址</td>
+</tr>
+<tr>
+<td>0x30</td>
+<td>PMU FW 和 FSBL 的存放起始地址</td>
+</tr>
+<tr>
+<td>0x34</td>
+<td>PMU FW 的原始镜像大小</td>
+</tr>
+<tr>
+<td>0x38</td>
+<td>总共 PMU FW 镜像的大小</td>
+</tr>
+<tr>
+<td>0x3c</td>
+<td>FSBL 原始镜像大小</td>
+</tr>
+<tr>
+<td>0x40</td>
+<td>总共 FSBL 镜像大小</td>
+</tr>
+<tr>
+<td>0x44</td>
+<td>镜像的属性</td>
+</tr>
+<tr>
+<td>0x48</td>
+<td>头的检验和从 0x20~0x44</td>
+</tr>
+<tr>
+<td>0x4c-0x68</td>
+<td>混淆密钥，只在加密状态为A35C_7CA5h 才有效</td>
+</tr>
+<tr>
+<td>0x6c</td>
+<td>保留</td>
+</tr>
+<tr>
+<td>0x70~0x9c</td>
+<td>FSBL/User 定义</td>
+</tr>
+<tr>
+<td>0xa0~0xa8</td>
+<td>加密镜像的初始向量</td>
+</tr>
+<tr>
+<td>0xac~0xb4</td>
+<td></td>
+</tr>
+<tr>
+<td>0xb8~0x8b4</td>
+<td>系统寄存器的初始化值</td>
+</tr>
+<tr>
+<td>0x8b8~0xec0</td>
+<td>PUF 帮助数据</td>
+</tr>
+</tbody></table>
+<h2 id="QSPI-的位宽判定"><a href="#QSPI-的位宽判定" class="headerlink" title="QSPI 的位宽判定"></a>QSPI 的位宽判定</h2><p>如果启动设备是 QSPI 的话，BootROM 会先以 X1 的方式读取启动镜像的头，如果地址<code>0x20</code>处的位宽值为<code>0xAA995566</code>，则表示 flash 位宽为 4 位位宽。然后 BootROM 会切换为 X4 模式读取镜像文件内容（如果 X4 失败了，则会依次尝试 X2、X1 模式）。</p>
+<h2 id="镜像文件的属性"><a href="#镜像文件的属性" class="headerlink" title="镜像文件的属性"></a>镜像文件的属性</h2><p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5Bprocessor%5D/%5BZynq%5D/%5BWhat%5DZynqmp-boot/pic/boot_image_format.jpg?raw=true"></p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>kcmetercec
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://kcmetercec.top/2024/12/31/zynqmp_boot/" title="ZynqMP 的启动和配置">http://kcmetercec.top/2024/12/31/zynqmp_boot/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/zynq/" rel="tag"> <i class="fa fa-tag"></i> zynq</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/12/19/linux_make_swupdate/" rel="prev" title="Swupdate 的简易使用">
+      <i class="fa fa-chevron-left"></i> Swupdate 的简易使用
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/02/15/effective_cpp_attribute/" rel="next" title="Effective C++ ：属性">
+      Effective C++ ：属性 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Overview"><span class="nav-number">1.</span> <span class="nav-text">Overview</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B"><span class="nav-number">1.1.</span> <span class="nav-text">启动流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8%E6%A8%A1%E5%BC%8F"><span class="nav-number">1.2.</span> <span class="nav-text">启动模式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8%E4%BB%A3%E7%A0%81%E7%9A%84%E6%90%9C%E5%AF%BB"><span class="nav-number">1.3.</span> <span class="nav-text">启动代码的搜寻</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8%E9%95%9C%E5%83%8F%E7%9A%84%E7%BB%93%E6%9E%84"><span class="nav-number">2.</span> <span class="nav-text">启动镜像的结构</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Boot-Header-Format"><span class="nav-number">2.1.</span> <span class="nav-text">Boot Header Format</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#QSPI-%E7%9A%84%E4%BD%8D%E5%AE%BD%E5%88%A4%E5%AE%9A"><span class="nav-number">2.2.</span> <span class="nav-text">QSPI 的位宽判定</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%95%9C%E5%83%8F%E6%96%87%E4%BB%B6%E7%9A%84%E5%B1%9E%E6%80%A7"><span class="nav-number">2.3.</span> <span class="nav-text">镜像文件的属性</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">Qt, C++, linux, CS</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">107</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">55</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:kcmeter.cec@gmail.com" title="E-Mail → mailto:kcmeter.cec@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2021 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">206k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">3:08</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+document.querySelectorAll('.pdfobject-container').forEach(element => {
+  let url = element.dataset.target;
+  let pdfOpenParams = {
+    navpanes : 0,
+    toolbar  : 0,
+    statusbar: 0,
+    pagemode : 'thumbs',
+    view     : 'FitH'
+  };
+  let pdfOpenFragment = '#' + Object.entries(pdfOpenParams).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
+  let fullURL = `/lib/pdf/web/viewer.html?file=${encodeURIComponent(url)}${pdfOpenFragment}`;
+
+  if (NexT.utils.supportsPDFs()) {
+    element.innerHTML = `<embed class="pdfobject" src="${url + pdfOpenFragment}" type="application/pdf" style="height: ${element.dataset.height};">`;
+  } else {
+    element.innerHTML = `<iframe src="${fullURL}" style="height: ${element.dataset.height};" frameborder="0"></iframe>`;
+  }
+});
+</script>
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'f938893867df78f94802',
+      clientSecret: 'b6d8470939c53d26c98c4e3b9d4c9ceb55d6e78e',
+      repo        : 'kcmetercec.github.io',
+      owner       : 'KcMeterCEC',
+      admin       : ['KcMeterCEC'],
+      id          : 'fe4eb5cd3674526c22cba393fa9b3649',
+        language: 'zh-CN',
+      distractionFreeMode: false
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+    </div>
+</body>
+</html>

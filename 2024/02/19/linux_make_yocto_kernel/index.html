@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="重新来梳理一下内核编译。  简单粗暴的选择 SOC &#x2F; 开发板厂商所提供的内核是明智的。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="编译内核">
+<meta property="og:url" content="http://kcmetercec.top/2024/02/19/linux_make_yocto_kernel/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="重新来梳理一下内核编译。  简单粗暴的选择 SOC &#x2F; 开发板厂商所提供的内核是明智的。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-02-18T16:00:00.000Z">
+<meta property="article:modified_time" content="2024-02-18T16:00:00.000Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="yocto">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://kcmetercec.top/2024/02/19/linux_make_yocto_kernel/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>编译内核 | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112423075-1# <app_id>"></script>
+    <script data-pjax>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-112423075-1# <app_id>');
+      }
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+        <li class="menu-item menu-item-commonweal">
+
+    <a href="/404/" rel="section"><i class="fa fa-heartbeat fa-fw"></i>公益 404</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2024/02/19/linux_make_yocto_kernel/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="Qt, C++, linux, CS">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          编译内核
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-02-19 00:00:00" itemprop="dateCreated datePublished" datetime="2024-02-19T00:00:00+08:00">2024-02-19</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/make/" itemprop="url" rel="index"><span itemprop="name">make</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/make/yocto/" itemprop="url" rel="index"><span itemprop="name">yocto</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.1k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>重新来梳理一下内核编译。</p>
+<blockquote>
+<p>简单粗暴的选择 SOC / 开发板厂商所提供的内核是明智的。</p>
+</blockquote>
+<span id="more"></span>
+
+<p>编译内核和编译 U-boot 类似，都是以下 3 个步骤：</p>
+<ol>
+<li>引用默认配置</li>
+<li>在配置上做修改</li>
+<li>编译得到镜像文件</li>
+</ol>
+<h1 id="内核文件分布"><a href="#内核文件分布" class="headerlink" title="内核文件分布"></a>内核文件分布</h1><ul>
+<li><code>arch</code>：与不同架构相关的文件</li>
+<li><code>Documentation</code>：内核相关文档，虽然有些文档很老了，但是依然是第一参考资料。</li>
+<li><code>drivers</code>：设备驱动</li>
+<li><code>fs</code>：文件系统</li>
+<li><code>include</code>：内核头文件</li>
+<li><code>init</code>：内核启动相关代码</li>
+<li><code>kernel</code>：内核核心代码，包括调度、锁、定时器、电源管理、调试代码。</li>
+<li><code>mm</code>：内存管理</li>
+<li><code>net</code>：网络协议</li>
+<li><code>scripts</code>：很有用的脚本</li>
+<li><code>tools</code>：对开发和检查内核很有用的工具集</li>
+</ul>
+<h1 id="KConfig"><a href="#KConfig" class="headerlink" title="KConfig"></a>KConfig</h1><p>内核通过<code>Kbuild</code>来读取<code>Kconfig</code>文件进行配置。</p>
+<blockquote>
+<p><code>Documentation/kbuild</code>对此做了详细解释</p>
+</blockquote>
+<ul>
+<li><p><code>ARCH</code>：指定要编译的架构</p>
+<blockquote>
+<p>其值就是在 <code>arch</code> 目录下的子目录名</p>
+</blockquote>
+</li>
+<li><p><code>xxxx_defonfig</code>：默认的配置</p>
+</li>
+</ul>
+<h2 id="选项类型"><a href="#选项类型" class="headerlink" title="选项类型"></a>选项类型</h2><p>KConfig 的配置具有以下几种类型：</p>
+<ul>
+<li><p><code>bool</code>：其值要么是<code>y</code>要么就是不会被定义</p>
+<blockquote>
+<p>CONFIG_DEVMEM=y</p>
+</blockquote>
+</li>
+<li><p><code>tristate</code>：用于指定一个模块是被设置为模块（<code>m</code>），还是被编译进内核（<code>y</code>）</p>
+</li>
+<li><p><code>int</code>：10 进制的值</p>
+</li>
+<li><p><code>hex</code>： 16 进制的值</p>
+</li>
+<li><p><code>string</code>：字符串值</p>
+</li>
+</ul>
+<h2 id="依赖与选择"><a href="#依赖与选择" class="headerlink" title="依赖与选择"></a>依赖与选择</h2><p><code>depends</code>代表当前选项依赖于其他选项：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">config MTD_CMDLINE_PARTS</span><br><span class="line">    tristate &quot;Command line partition table parsing&quot;</span><br><span class="line">    # 当 CONFIG_MTD 被使能后，当前选项才会被显示</span><br><span class="line">    depends on MTD</span><br></pre></td></tr></table></figure>
+
+<p><code>select</code>则是用于使能其他选项：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 当 ARM 选项被使能时，其他 select 选项指明的选项也会被使能</span></span><br><span class="line">config ARM</span><br><span class="line">    bool</span><br><span class="line">    default y</span><br><span class="line">    select ARCH_CLOCKSOURCE_DATA</span><br><span class="line">    select ARCH_HAS_DEVMEM_IS_ALLOWED</span><br><span class="line">[…]</span><br></pre></td></tr></table></figure>
+
+<h2 id="使用-menuconfig"><a href="#使用-menuconfig" class="headerlink" title="使用 menuconfig"></a>使用 menuconfig</h2><p>使用 menuconfig 需要确保<code>ncurses,flex,bison</code>被安装：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> sudo apt install libncurses5-dev flex bison</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 然后便是基于默认配置来进一步配置</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> make ARCH=&lt;arch&gt; &lt;xxx_defconfig&gt; menuconfig</span></span><br></pre></td></tr></table></figure>
+
+<p>当开始编译内核后，会自动生成<code>include/generated/autoconf.h</code>文件，包含配置文件的宏定义，这是一个很好的用于检查的文件。</p>
+<h2 id="标记自己内核的版本"><a href="#标记自己内核的版本" class="headerlink" title="标记自己内核的版本"></a>标记自己内核的版本</h2><p>可以通过修改<code>General setup -&gt; Local version</code>来为版本增加自己的后缀。</p>
+<p>然后使用<code>make</code>来查看是否生效：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> make ARCH=arm kernelrelease</span></span><br></pre></td></tr></table></figure>
+
+<p>这个输出可以与运行时的 <code>uname</code> 进行对比，以排查是否相同的内核。</p>
+<h1 id="编译内核"><a href="#编译内核" class="headerlink" title="编译内核"></a>编译内核</h1><p>内核构建系统<code>Kbuild</code>从<code>.config</code>文件中获取配置，然后进行编译。</p>
+<h2 id="编译的输出类型"><a href="#编译的输出类型" class="headerlink" title="编译的输出类型"></a>编译的输出类型</h2><p>根据不同的 bootloader，其所需要一般内核压缩包是不一样的：</p>
+<ul>
+<li><p>U-Boot：一般可以适配<code>uImage</code>和<code>zImage</code></p>
+<blockquote>
+<p>$ make -j 4 ARCH=arm CROSS_COMPILE=arm-cortex_a8-linux-gnueabihf-  zImage</p>
+</blockquote>
+</li>
+<li><p>x86：<code>bzImage</code></p>
+</li>
+<li><p>其他的 bootloader：<code>zImage</code></p>
+</li>
+</ul>
+<h2 id="编译输出内核文件"><a href="#编译输出内核文件" class="headerlink" title="编译输出内核文件"></a>编译输出内核文件</h2><p>编译完成后，在顶层目录会有<code>vmlinux</code>和<code>System.map</code>文件。</p>
+<p><code>vmlinux</code>是内核的 ELF 二进制文件，如果使能了<code>CONFIG_DEBUG_INFO</code>，那么此文件将会包含很多调试信息，可以使用<code>kgdb</code>这种工具对内核进行调试。</p>
+<p><code>System.map</code>文件包含内核完整的符号表。</p>
+<ul>
+<li><code>Image</code>：<code>vmlinux</code>去掉所有调试信息后的纯净的二进制文件</li>
+<li><code>zImage</code>：将<code>Image</code>文件压缩后的文件</li>
+<li><code>uImage</code>：<code>zImage</code>加上 64 字节的 U-boot 头</li>
+</ul>
+<p>在编译过程中，如果有编译错误，那么可以加上<code>V=1</code>选项来查看编译命令：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> make -j 4 ARCH=arm CROSS_COMPILE=arm-cortex_a8-linux-</span></span><br><span class="line">gnueabihf- V=1 zImage</span><br></pre></td></tr></table></figure>
+
+<h2 id="编译设备树"><a href="#编译设备树" class="headerlink" title="编译设备树"></a>编译设备树</h2><p>设备树编译的搜寻路径也是<code>arch/$ARCH/boot/dts/</code>，所以编译设备树指定<code>ARCH</code>变量即可：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> make ARCH=arm dtbs</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="编译模块"><a href="#编译模块" class="headerlink" title="编译模块"></a>编译模块</h2><p>编译模块和编译内核是一样的，只是指定其编译类型是模块即可：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> make -j 4 ARCH=arm CROSS_COMPILE=arm-cortex_a8-linux-gnueabihf- modules</span></span><br></pre></td></tr></table></figure>
+
+<p>默认情况下，<code>.ko</code>的模块文件会与源码目录在一起。</p>
+<p>可以设置<code>INSTALL_MOD_PATH</code>来指定安装目录，模块会安装在目录的<code>./lib/modules/&lt;kernel_version&gt;</code>文件夹中。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> make -j4 ARCH=arm CROSS_COMPILE=arm-cortex_a8-linux-gnueabihf- \</span></span><br><span class="line"><span class="bash">INSTALL_MOD_PATH=<span class="variable">$HOME</span>/rootfs modules_install</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="清理编译输出"><a href="#清理编译输出" class="headerlink" title="清理编译输出"></a>清理编译输出</h2><p><code>make</code>根下面几种选择来进行清理：</p>
+<ul>
+<li><code>clean</code>：删除目标文件和其他中间文件</li>
+<li><code>mrproper</code>：删除所有的中间文件，包含<code>.config</code>文件</li>
+<li><code>distclean</code>：在<code>mrproper</code>的基础上，删除基本的备份文件、补丁文件等</li>
+</ul>
+<h2 id="编译-imx8mm-内核"><a href="#编译-imx8mm-内核" class="headerlink" title="编译 imx8mm 内核"></a>编译 imx8mm 内核</h2><p>为了简化编译，这里使用<a target="_blank" rel="noopener" href="https://github.com/MYiR-Dev/myir-imx-linux">米尔科技的内核分支</a>。</p>
+<p>先安装基础包：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> sudo apt install -y libssl-dev libelf-dev</span></span><br></pre></td></tr></table></figure>
+
+<p>首先需要将交叉编译工具链，加入当前 SHELL 的环境变量中：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> <span class="built_in">export</span> PATH=/home/cec/x-tools/aarch64-unknown-linux-gnu/bin:<span class="variable">$&#123;PATH&#125;</span></span></span><br></pre></td></tr></table></figure>
+
+<p>然后按照惯例，先清理一下中间文件：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> make distclean</span></span><br></pre></td></tr></table></figure>
+
+<p>配置常使用的全局变量：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> <span class="built_in">export</span> CROSS_COMPILE=aarch64-unknown-linux-gnu-</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> <span class="built_in">export</span> ARCH=arm64</span></span><br></pre></td></tr></table></figure>
+
+<p>接下来为内核指定要编译的构架，及其使用的默认配置：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> make myd_imx8mm_defconfig</span></span><br></pre></td></tr></table></figure>
+
+<p>最后就是编译内核文件、模块、设备树：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> make -j8 dtbs Image modules</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>Image</code>文件编译后位于<code>arch/arm64/boot/Image</code></li>
+<li>设备树位于<code>arch/arm64/boot/dts/myir/</code></li>
+</ul>
+<h2 id="编译-bbb-内核"><a href="#编译-bbb-内核" class="headerlink" title="编译 bbb 内核"></a>编译 bbb 内核</h2><p>按照以下步骤即可：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 清除中间文件</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> make ARCH=arm CROSS_COMPILE=arm-cortex_a8-linux-gnueabihf-</span> </span><br><span class="line">mrproper</span><br><span class="line"><span class="meta">#</span><span class="bash"> 生成配置文件</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> make ARCH=arm multi_v7_defconfig</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 编译内核</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> make -j4 ARCH=arm CROSS_COMPILE=arm-cortex_a8-linux-</span></span><br><span class="line">gnueabihf- zImage</span><br><span class="line"><span class="meta">#</span><span class="bash"> 编译模块</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> make -j4 ARCH=arm CROSS_COMPILE=arm-cortex_a8-linux-</span></span><br><span class="line">gnueabihf- modules</span><br><span class="line"><span class="meta">#</span><span class="bash"> 编译设备树</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> make ARCH=arm CROSS_COMPILE=arm-cortex_a8-linux-gnueabihf-</span> </span><br><span class="line">dtbs</span><br></pre></td></tr></table></figure>
+
+<h1 id="启动内核"><a href="#启动内核" class="headerlink" title="启动内核"></a>启动内核</h1><h2 id="当没有文件系统时"><a href="#当没有文件系统时" class="headerlink" title="当没有文件系统时"></a>当没有文件系统时</h2><p>当仅启动了内核，而没有文件系统时，就会出现内核<code>panic</code>以表示无法挂载根文件系统：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[ 1.886379] Kernel panic - not syncing: VFS: Unable to mount </span><br><span class="line">root fs on unknown-block(0,0)</span><br><span class="line">[ 1.895105] ---[ end Kernel panic - not syncing: VFS: Unable to </span><br><span class="line">mount root fs on unknown-block(0, 0)</span><br></pre></td></tr></table></figure>
+
+<p>为了将系统从内核态切换到用户态，内核需要挂载根文件系统，然后执行根文件系统中的初始化程序。</p>
+<p>这个是开始于执行<code>init/main.c</code>中的<code>rest_init()</code>函数，它会创建一个 PID 为 1 的进程，然后执行<code>kernel_init()</code>。</p>
+<p>接着尝试执行<code>/init</code>程序，如果执行失败则会尝试执行<code>prepare_namespace()</code>函数，这个函数会读取<code>root=</code>命令行参数，挂载对应的分区，<code>root</code>命令一般如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">root=/dev/&lt;disk name&gt;&lt;partition number&gt;</span><br><span class="line"><span class="meta">#</span><span class="bash"> 或者对于 emmc/sd 设备</span></span><br><span class="line">root=/dev/&lt;disk name&gt;p&lt;partition number&gt;</span><br></pre></td></tr></table></figure>
+
+<p>挂载成功后，将会依次尝试执行<code>/sbin/init,/etc/init,/bin/init,/bin/sh</code>，其中任何一个执行成功了，后面的便不会被执行了。</p>
+<blockquote>
+<p>当然也可以设定<code>init=</code>参数来指定执行哪个特定的程序。</p>
+</blockquote>
+<h2 id="内核的命令行参数"><a href="#内核的命令行参数" class="headerlink" title="内核的命令行参数"></a>内核的命令行参数</h2><p>目标内核的命令行参数都是通过设备树中的<code>bootargs</code>属性来设定了，在<code>Documentation/kernel-parameters.txt</code>有参数的详细说明，下面是一些常用的参数：</p>
+<ul>
+<li><p><code>debug</code>：设置调试信息输出等级，小于该数值的调试信息将被输出</p>
+</li>
+<li><p><code>init=</code>：在挂载根文件系统后，所运行的<code>init</code>程序路径</p>
+</li>
+<li><p><code>lpj=</code>：设置<code>loops_per_jiffy</code>以降低开机测试所消耗的时间</p>
+</li>
+<li><p><code>panic=</code>：当内核出现 panics 时的行为</p>
+<blockquote>
+<p>小于 0：当出现 panic 则立即重启</p>
+<p>等于 0（默认）：当出现 panic 不重启</p>
+<p>大于 0：当出现 panic 时，等待多少秒后重启</p>
+</blockquote>
+</li>
+<li><p><code>quiet</code>：除了紧急信息，其他的调试信息都不输出</p>
+</li>
+<li><p><code>rdinit=</code>：与<code>init=</code>一致，不过这个是针对 <code>ramdisk</code>的</p>
+</li>
+<li><p><code>ro</code>：以只读的方式挂载根文件系统</p>
+</li>
+<li><p><code>root=</code>：指定挂载根文件系统的设备</p>
+</li>
+<li><p><code>rootdelay=</code>：等待多少秒后才挂载根文件系统，用于等待设备初始化完成</p>
+</li>
+<li><p><code>rootfstype=</code>：指定根文件系统的类型，默认情况下都是自动检测的</p>
+</li>
+<li><p><code>rootwait</code>：一直等到设备初始化完毕以后，才挂载根文件系统</p>
+</li>
+<li><p><code>rw</code>：以读写的方式挂载根文件系统</p>
+</li>
+</ul>
+<h2 id="imx8mm-内核启动"><a href="#imx8mm-内核启动" class="headerlink" title="imx8mm 内核启动"></a>imx8mm 内核启动</h2><h3 id="制作启动-SD-卡"><a href="#制作启动-SD-卡" class="headerlink" title="制作启动 SD 卡"></a>制作启动 SD 卡</h3><p>从 Uboot 中的启动命令可知：它将在 mmc 的 1 分区中寻找<code>Image</code>文件和对应的设备树。</p>
+<p>并且，前面我们将由<a target="_blank" rel="noopener" href="https://source.codeaurora.org/external/imx/imx-mkimage">imx-mkimage</a>打包的 bootloader 拷贝到了 SD 卡的 33K 偏移处，也就是说需要保留这部分裸数据，前面制作好的<code>flash.bin</code>有 1M 多的大小，需要考虑好这个偏移。</p>
+<ol>
+<li><p>由于 SD 卡是 512 字节的扇区，先用 fdisk 简单粗暴的将第一个分区的起始扇区设为 20480，这样就预留了有 10MB 的空间给 bootloader。</p>
+</li>
+<li><p>使用<code>sudo mkfs.vfat /dev/sdd1</code>将分区格式化为 FAT32 格式</p>
+</li>
+<li><p>将编译得到的<code>Image</code>和<code>myb-imx8mm-base.dtb</code>拷贝到 SD 卡分区</p>
+<blockquote>
+<p>这里选择 <code>myb-imx8mm-base.dtb</code>，是因为前面打包 bootloader 也是这个设备树</p>
+</blockquote>
+</li>
+<li><p>修改 U-boot 默认环境变量<code>fdt_file</code>的值为<code>myb-imx8mm-base.dtb</code>，这样才能一一对应</p>
+</li>
+</ol>
+<h2 id="bbb-启动"><a href="#bbb-启动" class="headerlink" title="bbb 启动"></a>bbb 启动</h2><p>将编译好的<code>zImage</code>和<code>am335x-boneblack.dtb</code>拷贝到 SD 卡中，启动 u-boot 后。</p>
+<p>首先，读取内核到内存：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fatload mmc 0:1 0x80200000 zImage</span><br></pre></td></tr></table></figure>
+
+<p>然后，读取设备树到内存：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fatload mmc 0:1 0x80f00000 am335x-boneblack.dtb</span><br></pre></td></tr></table></figure>
+
+<p>设置终端设备：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">setenv bootargs console=ttyO0,115200</span><br></pre></td></tr></table></figure>
+
+<p>使用 <code>bootz</code> 启动：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bootz 0x80200000 - 0x80f00000</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>kcmetercec
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://kcmetercec.top/2024/02/19/linux_make_yocto_kernel/" title="编译内核">http://kcmetercec.top/2024/02/19/linux_make_yocto_kernel/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/yocto/" rel="tag"> <i class="fa fa-tag"></i> yocto</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/02/04/linux_make_yocto_bootloader/" rel="prev" title="认识 bootloader">
+      <i class="fa fa-chevron-left"></i> 认识 bootloader
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/02/27/linux_make_yocto_fs/" rel="next" title="构建根文件系统">
+      构建根文件系统 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E6%96%87%E4%BB%B6%E5%88%86%E5%B8%83"><span class="nav-number">1.</span> <span class="nav-text">内核文件分布</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#KConfig"><span class="nav-number">2.</span> <span class="nav-text">KConfig</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%89%E9%A1%B9%E7%B1%BB%E5%9E%8B"><span class="nav-number">2.1.</span> <span class="nav-text">选项类型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BE%9D%E8%B5%96%E4%B8%8E%E9%80%89%E6%8B%A9"><span class="nav-number">2.2.</span> <span class="nav-text">依赖与选择</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-menuconfig"><span class="nav-number">2.3.</span> <span class="nav-text">使用 menuconfig</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%87%E8%AE%B0%E8%87%AA%E5%B7%B1%E5%86%85%E6%A0%B8%E7%9A%84%E7%89%88%E6%9C%AC"><span class="nav-number">2.4.</span> <span class="nav-text">标记自己内核的版本</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BC%96%E8%AF%91%E5%86%85%E6%A0%B8"><span class="nav-number">3.</span> <span class="nav-text">编译内核</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%96%E8%AF%91%E7%9A%84%E8%BE%93%E5%87%BA%E7%B1%BB%E5%9E%8B"><span class="nav-number">3.1.</span> <span class="nav-text">编译的输出类型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%96%E8%AF%91%E8%BE%93%E5%87%BA%E5%86%85%E6%A0%B8%E6%96%87%E4%BB%B6"><span class="nav-number">3.2.</span> <span class="nav-text">编译输出内核文件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%96%E8%AF%91%E8%AE%BE%E5%A4%87%E6%A0%91"><span class="nav-number">3.3.</span> <span class="nav-text">编译设备树</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%96%E8%AF%91%E6%A8%A1%E5%9D%97"><span class="nav-number">3.4.</span> <span class="nav-text">编译模块</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B8%85%E7%90%86%E7%BC%96%E8%AF%91%E8%BE%93%E5%87%BA"><span class="nav-number">3.5.</span> <span class="nav-text">清理编译输出</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%96%E8%AF%91-imx8mm-%E5%86%85%E6%A0%B8"><span class="nav-number">3.6.</span> <span class="nav-text">编译 imx8mm 内核</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%96%E8%AF%91-bbb-%E5%86%85%E6%A0%B8"><span class="nav-number">3.7.</span> <span class="nav-text">编译 bbb 内核</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8%E5%86%85%E6%A0%B8"><span class="nav-number">4.</span> <span class="nav-text">启动内核</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BD%93%E6%B2%A1%E6%9C%89%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E6%97%B6"><span class="nav-number">4.1.</span> <span class="nav-text">当没有文件系统时</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E7%9A%84%E5%91%BD%E4%BB%A4%E8%A1%8C%E5%8F%82%E6%95%B0"><span class="nav-number">4.2.</span> <span class="nav-text">内核的命令行参数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#imx8mm-%E5%86%85%E6%A0%B8%E5%90%AF%E5%8A%A8"><span class="nav-number">4.3.</span> <span class="nav-text">imx8mm 内核启动</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%B6%E4%BD%9C%E5%90%AF%E5%8A%A8-SD-%E5%8D%A1"><span class="nav-number">4.3.1.</span> <span class="nav-text">制作启动 SD 卡</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#bbb-%E5%90%AF%E5%8A%A8"><span class="nav-number">4.4.</span> <span class="nav-text">bbb 启动</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">Qt, C++, linux, CS</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">107</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">55</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:kcmeter.cec@gmail.com" title="E-Mail → mailto:kcmeter.cec@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2021 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">206k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">3:08</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+document.querySelectorAll('.pdfobject-container').forEach(element => {
+  let url = element.dataset.target;
+  let pdfOpenParams = {
+    navpanes : 0,
+    toolbar  : 0,
+    statusbar: 0,
+    pagemode : 'thumbs',
+    view     : 'FitH'
+  };
+  let pdfOpenFragment = '#' + Object.entries(pdfOpenParams).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
+  let fullURL = `/lib/pdf/web/viewer.html?file=${encodeURIComponent(url)}${pdfOpenFragment}`;
+
+  if (NexT.utils.supportsPDFs()) {
+    element.innerHTML = `<embed class="pdfobject" src="${url + pdfOpenFragment}" type="application/pdf" style="height: ${element.dataset.height};">`;
+  } else {
+    element.innerHTML = `<iframe src="${fullURL}" style="height: ${element.dataset.height};" frameborder="0"></iframe>`;
+  }
+});
+</script>
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'f938893867df78f94802',
+      clientSecret: 'b6d8470939c53d26c98c4e3b9d4c9ceb55d6e78e',
+      repo        : 'kcmetercec.github.io',
+      owner       : 'KcMeterCEC',
+      admin       : ['KcMeterCEC'],
+      id          : 'fbb2964401d56f706a1d1320c23c3ec7',
+        language: 'zh-CN',
+      distractionFreeMode: false
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+    </div>
+</body>
+</html>

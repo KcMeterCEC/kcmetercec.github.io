@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="理解服务器是如何区分 I&#x2F;O 密集型和 CPU 密集型任务的。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="高性能服务器程序框架">
+<meta property="og:url" content="http://kcmetercec.top/2022/06/11/net_base_server_framework/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="理解服务器是如何区分 I&#x2F;O 密集型和 CPU 密集型任务的。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BgoodBook%5D/%5BWhat%5DgoodBook--Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/chapter8/struct_cs.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BgoodBook%5D/%5BWhat%5DgoodBook--Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/chapter8/p2p_view.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BgoodBook%5D/%5BWhat%5DgoodBook--Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/chapter8/program_struct.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BgoodBook%5D/%5BWhat%5DgoodBook--Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/chapter8/reactor_overview.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BgoodBook%5D/%5BWhat%5DgoodBook--Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/chapter8/proactor_overview.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BgoodBook%5D/%5BWhat%5DgoodBook--Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/chapter8/simulate_proactor.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BgoodBook%5D/%5BWhat%5DgoodBook--Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/chapter8/sync_async_mode.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BgoodBook%5D/%5BWhat%5DgoodBook--Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/chapter8/sync_reactive_mode.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BgoodBook%5D/%5BWhat%5DgoodBook--Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/chapter8/async_advance.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BgoodBook%5D/%5BWhat%5DgoodBook--Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/chapter8/master_slave.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BgoodBook%5D/%5BWhat%5DgoodBook--Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/chapter8/thread_con.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BgoodBook%5D/%5BWhat%5DgoodBook--Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/chapter8/leader_follower_overview.jpg?raw=true">
+<meta property="article:published_time" content="2022-06-10T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-06-10T16:00:00.000Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="network">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BgoodBook%5D/%5BWhat%5DgoodBook--Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/chapter8/struct_cs.jpg?raw=true">
+
+<link rel="canonical" href="http://kcmetercec.top/2022/06/11/net_base_server_framework/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>高性能服务器程序框架 | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112423075-1# <app_id>"></script>
+    <script data-pjax>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-112423075-1# <app_id>');
+      }
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+        <li class="menu-item menu-item-commonweal">
+
+    <a href="/404/" rel="section"><i class="fa fa-heartbeat fa-fw"></i>公益 404</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2022/06/11/net_base_server_framework/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="Qt, C++, linux, CS">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          高性能服务器程序框架
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-06-11 00:00:00" itemprop="dateCreated datePublished" datetime="2022-06-11T00:00:00+08:00">2022-06-11</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/network/" itemprop="url" rel="index"><span itemprop="name">network</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/network/basic/" itemprop="url" rel="index"><span itemprop="name">basic</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>5.6k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>5 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>理解服务器是如何区分 I/O 密集型和 CPU 密集型任务的。</p>
+<span id="more"></span>
+
+<h1 id="服务器模型"><a href="#服务器模型" class="headerlink" title="服务器模型"></a>服务器模型</h1><h2 id="C-S-（客户端-服务器）模型"><a href="#C-S-（客户端-服务器）模型" class="headerlink" title="C/S （客户端/服务器）模型"></a>C/S （客户端/服务器）模型</h2><p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BgoodBook%5D/%5BWhat%5DgoodBook--Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/chapter8/struct_cs.jpg?raw=true"><br>虽然 TCP/IP 协议并没有客户端和服务器的概念，节点之间都是对等的。但由于资源的集中性，最常用的便是 C/S 模型：所有的客户端都通过访问服务器来获取所需资源。</p>
+<p>C/S 模型实现起来简单，但其缺点是：当访问量过大时，所有的客户端得到的响应速度都可能慢下来。</p>
+<h2 id="P2P-（点对点）模型"><a href="#P2P-（点对点）模型" class="headerlink" title="P2P （点对点）模型"></a>P2P （点对点）模型</h2><p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BgoodBook%5D/%5BWhat%5DgoodBook--Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/chapter8/p2p_view.jpg?raw=true"><br>P2P（Peer to Peer, 点对点）模型，使得每台机器在消耗服务的同时，也给别人提供服务，所有主机回归对等的地位。</p>
+<p>P2P 模型使得资源能够充分、自由地共享，但当用户之间传输的请求过多时，网络的负载将加重。</p>
+<p>实际使用的 P2P 模型通常都会带有一个专门的发现服务器，此服务器主要提供查找服务，使得每个客户都能尽快地找到自己需要的资源。</p>
+<h1 id="服务器编程框架"><a href="#服务器编程框架" class="headerlink" title="服务器编程框架"></a>服务器编程框架</h1><p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BgoodBook%5D/%5BWhat%5DgoodBook--Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/chapter8/program_struct.jpg?raw=true"><br>如上图，服务器各个部件的含义和功能如下表：</p>
+<table>
+<thead>
+<tr>
+<th>模块</th>
+<th>单个服务器程序</th>
+<th>服务器机群</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>I/O 处理单元</td>
+<td>处理客户连接，读写网络数据</td>
+<td>作为接入服务器，实现负载均衡</td>
+</tr>
+<tr>
+<td>逻辑单元</td>
+<td>业务进程或线程</td>
+<td>逻辑服务器</td>
+</tr>
+<tr>
+<td>网络存储单元</td>
+<td>本地数据库、文件或缓存</td>
+<td>数据库服务器</td>
+</tr>
+<tr>
+<td>请求队列</td>
+<td>各单元之间的通信方式</td>
+<td>各服务器之间的永久 TCP 连接</td>
+</tr>
+</tbody></table>
+<p>I/O 处理单元用于管理服务器和客户端之间的连接，主要职责：</p>
+<ul>
+<li>等待并接收新的客户连接</li>
+<li>接收客户数据和将服务器响应数据返回给客户端<ul>
+<li>数据收发也可能在逻辑单元中执行</li>
+</ul>
+</li>
+<li>对于机群来说，I/O 处理单元就是一个专门的接入服务器，实现负载均衡，从所有逻辑服务器中选取负荷最小的一台来服务客户。</li>
+</ul>
+<p>逻辑单元通常是一个进程或线程，它分析并处理客户数据，然后将结果传递给 I/O 处理单元或直接发送给客户端。对机群来说，一个逻辑单元就是一台逻辑服务器。</p>
+<p>网络存储单元可以是数据库、缓存、文件、服务器，但不是所有的服务都需要存储功能。</p>
+<p>请求队列是各个单元之间通信方式的抽象。请求队列通常被实现为池的一部分。对于服务机群而言，请求队列是各台服务器之间预先建立的、静态的、永久的 TCP 连接。</p>
+<h1 id="I-O-模型"><a href="#I-O-模型" class="headerlink" title="I/O 模型"></a>I/O 模型</h1><p>I/O 分为阻塞和非阻塞，非阻塞只有在事件已经发生的情况下操作才能提高程序效率（否则就是不断的查询，也消耗 CPU 资源），需要配合 I/O 复用和 SIGIO 信号。</p>
+<ul>
+<li>I/O 复用函数有 select、poll、epoll_wait，它们本身是阻塞的，但它们具有同时监听多个 I/O 事件的能力</li>
+<li>将 SIGIO 信号与宿主进程绑定，当事件发生时，对应的信号处理函数被触发，就可以对相应目标文件执行非阻塞 I/O 操作了</li>
+</ul>
+<p>阻塞 I/O、I/O 复用和 SIGIO 都是同步 I/O 模型，<strong>因为它们都是在 I/O 事件发生之后再执行相应的读写操作，读写操作真正发生在用户空间。</strong></p>
+<p>对异步 I/O 而言，用户可以提前将 I/O 操作的缓存告知内核，内核待时机一到便执行相应的 I/O 操作，然后通知用户空间操作完成，<strong>读写操作真正发生在内核空间。</strong></p>
+<h1 id="事件处理模式"><a href="#事件处理模式" class="headerlink" title="事件处理模式"></a>事件处理模式</h1><p>服务器程序通常需要处理三类事件：I/O 事件、信号及定时事件。</p>
+<p>对应事件有两种高效处理模式： Reactor 和 Proactor。</p>
+<ul>
+<li>同步 I/O 模型通常用于实现 Reactor 模式</li>
+<li>异步 I/O 模型通常用于实现 Proactor 模式</li>
+</ul>
+<h2 id="Reactor-模式"><a href="#Reactor-模式" class="headerlink" title="Reactor 模式"></a>Reactor 模式</h2><p>Reactor 模式要求主线程（I/O 处理单元）只负责监听文件描述符上是否有事件发生，有的话就将该事件通知工作线程（逻辑单元）。除此之外，主线程不做其他工作。读写数据、接收新连接以及处理客户请求都在工作线程中完成。</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BgoodBook%5D/%5BWhat%5DgoodBook--Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/chapter8/reactor_overview.jpg?raw=true"><br>使用同步 I/O 模型实现 Reactor 模式的工作流程是：</p>
+<ol>
+<li>主线程向 I/O 复用函数注册 socket 上的读就绪事件</li>
+<li>主线程调用 I/O 复用函数等待 socket 上有数据可读</li>
+<li>当 socket 上有数据可读时， I/O 复用函数通知主线程，主线程将 socket 可读事件放入请求队列</li>
+<li>睡眠在请求队列上的某个工作线程被唤醒，它从 socket 读取数据并处理请求，然后往 I/O 复用函数注册写就绪事件（如果需要返回数据的话）</li>
+<li>主线程调用 I/O 复用函数等待 socket 可写</li>
+<li>当 socket 可写时，I/O 复用函数通知主线程，主线程将 socket 可写事件放入请求队列</li>
+<li>睡眠在请求队列上的某个工作线程被唤醒，它往 socket 上写入服务器处理客户请求的结果</li>
+</ol>
+<p>主线程的主要目的就是监听 socket 是否可读可写，然后将对应事件放入请求队列，相当于是 I/O 密集型任务。</p>
+<p>工作线程是不用关心 socket 当前是否可读可写的，只要它被唤醒了，那只需要根据事件类型执行相应操作即可，相当于是 CPU 密集型任务。</p>
+<p>这种模式就充分利用了 IO 密集型的快速响应特点，也使得处理用户请求的吞吐量上去了。</p>
+<h2 id="Proactor-模式"><a href="#Proactor-模式" class="headerlink" title="Proactor 模式"></a>Proactor 模式</h2><p>Proactor 模式将所有的 I/O 操作都交给主线程和内核来处理，工作线程仅仅负责业务逻辑，这种方式看起来更加优雅。</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BgoodBook%5D/%5BWhat%5DgoodBook--Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/chapter8/proactor_overview.jpg?raw=true"><br>使用异步 I/O 模型实现 Proactor 模式的工作流程是：</p>
+<ol>
+<li>主线程调用异步 I/O 函数向内核注册 socket 上的读完成事件，并告诉内核用户读缓冲区的位置，以及读操作完成时如何通知应用程序。</li>
+<li>主线程继续处理其他逻辑</li>
+<li>当 socket 上的数据被读入用户缓冲区后，内核将向应用程序发送一个信号，以通知应用程序数据已经可用。</li>
+<li>应用程序预先定义好的信号处理函数选择一个工作线程来处理客户请求。工作线程处理完客户请求后，调用异步写函数向内核注册 socket 上的写完成事件，并告诉内核用户写缓冲区的位置，以及写操作完成时如何通知应用程序。</li>
+<li>主线程继续处理其他逻辑</li>
+<li>当用户缓冲区的数据被写入 socket 之后，内核将向应用程序发送一个信号，以通知应用程序数据已经发送完毕。</li>
+<li>应用程序预先定义好的信号处理函数选择一个工作线程来做善后处理。</li>
+</ol>
+<p>可以看到，这种模式下复用 I/O 仅仅用于监听连接请求，工作线程仅仅用于处理业务，而读写则是由内核来完成。</p>
+<h2 id="模拟-Proactor-模式"><a href="#模拟-Proactor-模式" class="headerlink" title="模拟 Proactor 模式"></a>模拟 Proactor 模式</h2><p>同步 I/O 模拟 Proactor 模式的原理是：主线程执行数据读写操作，读写完成之后，主线程向工作线程通知完成事件。</p>
+<blockquote>
+<p>也就是把原来工作线程需要完成的读写工作，移交给了主线程，工作线程就只管处理业务逻辑了。</p>
+</blockquote>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BgoodBook%5D/%5BWhat%5DgoodBook--Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/chapter8/simulate_proactor.jpg?raw=true"><br>工作流程如下：</p>
+<ol>
+<li>主线程向 I/O 复用函数注册读就绪事件</li>
+<li>主线程等待 socket 上有数据可读</li>
+<li>当 socket 上有数据可读时， I/O 复用函数通知主线程。主线程从 socket 循环读取数据，直到没有更多数据可读，然后将读取到的数据封装成一个请求对象并插入请求队列</li>
+<li>睡眠在请求队列上的某个工作线程被唤醒，它获得请求对象并处理客户请求，然后向 I/O 复用函数注册写就绪事件</li>
+<li>主线程等待 socket 可写</li>
+<li>当 socket 可写时， I/O 复用通知主线程。主线程往 socket 写入服务器处理客户请求的结果。</li>
+</ol>
+<p>可以看到，无论是 reactor 还是 proactor 模式，其主要目的就是为了工作线程不能因为 IO 而被阻塞，它应该尽可能快的完成用户请求。所以 IO 等待处理都由 IO 处理线程或者内核来完成。</p>
+<h1 id="并发模式"><a href="#并发模式" class="headerlink" title="并发模式"></a>并发模式</h1><p>对于服务器而言，并发模式是指 I/O 处理单元和多个逻辑单元之间协调完成任务的方法。</p>
+<p>主要有两种并发编程模式：半同步/半异步（half-sync/half-async）模式和领导者/追随者（Leader/Followers）模式。</p>
+<h2 id="半同步-半异步模式"><a href="#半同步-半异步模式" class="headerlink" title="半同步/半异步模式"></a>半同步/半异步模式</h2><ul>
+<li>同步：程序完全按照代码序列的顺序执行</li>
+<li>异步：程序的执行需要由系统事件来驱动，比如中断、信号等</li>
+</ul>
+<p>按照同步方式运行的线程称为同步线程，按照异步方式运行的线程称为异步线程，显然异步的吞吐量和 I/O 响应速度都更好。</p>
+<p>在对于像服务器这种既要求较好的实时性，又要求能同时处理多个客户请求的应用程序，一般同时使用同步线程和异步线程的方式，称为<strong>半同步/半异步模式</strong>。</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BgoodBook%5D/%5BWhat%5DgoodBook--Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/chapter8/sync_async_mode.jpg?raw=true"><br>如上图所示，半同步/半异步模式中，同步线程用于处理业务逻辑，异步线程处理 I/O 事件。异步线程监听到客户请求后，将其封装为请求对象并插入请求队列。请求队列通知某个同步模式下的工作线程。</p>
+<p>半同步/半异步模式加上几种 I/O 模型，就存在多种变体。其中一种就是<strong>半同步/半反应堆（half-sync/half-reactive）模式</strong>。</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BgoodBook%5D/%5BWhat%5DgoodBook--Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/chapter8/sync_reactive_mode.jpg?raw=true"><br>如上图所示，其工作流程如下：</p>
+<ol>
+<li>只有一个主线程作为异步 I/O 线程，首先监听所有 socket 上的事件</li>
+<li>当 socket 上有可读事件时，代表有新连接，主线程接受该连接后，向 I/O 复用函数注册读写事件</li>
+<li>如果连接的 socket 上有读写事件，主线程将<strong>该连接 socket 插入请求队列中</strong></li>
+<li>工作线程通过竞争（比如申请互斥锁）的方式获取该 socket 后处理（只有空闲线程才可能获取到）。</li>
+</ol>
+<p>插入请求队列中的是 socket，也就是说这种处理模式是 Reactor 模式，也就像需要工作线程自己完成读写操作。</p>
+<p>半同步/半反应堆模式存在如下缺点：</p>
+<ul>
+<li>主线程和工作线程共享请求队列：由于共享队列，在主线程和工作线程在操作队列时需要加锁互斥，白白耗费 CPU 时间。</li>
+<li>每个工作线程在同一时间只能处理一个客户请求。如果客户数量较多而工作线程较少，则会堆积很多任务对象在请求队列中，服务器的响应速度就会很慢。<ul>
+<li>假设暴力的增加工作线程的数量，那么多个线程的切换也将耗费大量的 CPU 时间。</li>
+</ul>
+</li>
+</ul>
+<p>为此一个优化方案如下：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BgoodBook%5D/%5BWhat%5DgoodBook--Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/chapter8/async_advance.jpg?raw=true"></p>
+<ul>
+<li>主线程只管监听 socket，对 socket 的连接和读写检查由工作线程来完成</li>
+<li>主线程可以通过管道的方式向工作线程派发 socket</li>
+</ul>
+<p>这样子一个工作线程就可以并发的处理多个客户请求，此时的主线程和工作线程都是异步模式。</p>
+<h2 id="领导者-追随者模式"><a href="#领导者-追随者模式" class="headerlink" title="领导者/追随者模式"></a>领导者/追随者模式</h2><p>领导者/追随者模式是多个工作线程轮流获得事件源集合，轮流监听、分发并处理事件的一种模式。</p>
+<p>在任意时间点，程序都仅有一个领导者线程，它负责监听 I/O 事件。而其他线程则都是追随者，它们休眠在线程池中等待成为新的领导者。</p>
+<p>当前领导者如果检测到 I/O 事件，首先要从线程池中推选出新的领导者线程，新领导者等待新的 I/O 事件，原来的领导者处理 I/O 事件。</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BgoodBook%5D/%5BWhat%5DgoodBook--Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/chapter8/master_slave.jpg?raw=true"><br>领导者/追随者模式包含如下几个组建：句柄集（HandleSet）、线程集（ThreadSet）、事件处理器（EventHandler）和具体的事件处理器（ConcreteEventHandler）。</p>
+<h3 id="句柄集"><a href="#句柄集" class="headerlink" title="句柄集"></a>句柄集</h3><p>句柄（Handle）用于表示 I/O 资源，在 Linux 下就对应一个文件描述符。</p>
+<p>句柄与<code>EventHandler</code>进行绑定，也就是该句柄及其对应的处理方式。</p>
+<p>句柄集使用 <code>wait_for_event</code> 方法监听众多句柄，并将就绪事件通知给领导者线程。</p>
+<p>领导者调用绑定到 Handle 上的事件处理器来处理事件（多态），领导者调用句柄集中的 <code>register_handle</code> 方法实现 Handle 和事件处理器的绑定。</p>
+<h3 id="线程集"><a href="#线程集" class="headerlink" title="线程集"></a>线程集</h3><p>线程集管理所有工作线程（包括领导者线程和追随者线程），它负责各线程之间的同步以及新领导者线程的推选。</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BgoodBook%5D/%5BWhat%5DgoodBook--Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/chapter8/thread_con.jpg?raw=true"><br>如上图所示，线程集中的线程在任一时间必处于如下三种状态之一：</p>
+<ul>
+<li>Leader：线程当前处于领导者身份，负责等待句柄集上的 I/O 事件</li>
+<li>Processing：线程正在处理事件。领导者检测到 I/O 事件之后，可以转移到 Processing 状态来处理事件，并调用 <code>promote_new_leader()</code> 方法推选新的领导者。也可以指定其他追随者来处理事件（Event Handoff），此时领导者的地位不变。<ul>
+<li>当处于 Processing 状态的线程处理完事件之后，如果当前线程集中没有领导者，则它将成为新的领导者，否则它就直接变为追随者。</li>
+</ul>
+</li>
+<li>Follower：线程当前处于追随者身份，通过调用线程集的 <code>join()</code> 方法等待成为新的领导者，也可能被当前的领导者指定来处理新的任务。</li>
+</ul>
+<p>领导者线程推选新的领导者和追随者等待成为新的领导者，这两个操作都将修改线程集，所以线程集提供了一个 <code>Synchronizer</code> 来同步这两个操作，避免竞态。</p>
+<h3 id="事件处理器和具体的事件处理器"><a href="#事件处理器和具体的事件处理器" class="headerlink" title="事件处理器和具体的事件处理器"></a>事件处理器和具体的事件处理器</h3><p>事件处理器包含一个或多个回调函数 <code>handle_event()</code> ，用于处理事件对应的业务逻辑。</p>
+<p>事件处理器在使用前需要被绑定到某个句柄上，当句柄上有事件发生时，领导者就执行与之绑定的事件处理器中的回调函数。</p>
+<p>具体的事件处理器是事件处理器的派生类，它们必须重新实现基类的 <code>handle_event</code> 方法，以处理特定的任务。</p>
+<p>最终领导者/追随者模式流程如下图：<br><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BgoodBook%5D/%5BWhat%5DgoodBook--Linux%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/chapter8/leader_follower_overview.jpg?raw=true"><br>可以看到：由于领导者线程自己监听 I/O 并处理客户请求，所以不会像半同步/半反应堆模式那样在线程之间传递数据。但它仅支持一个事件源集合，所以无法让每个工作线程独立地管理多个客户连接。</p>
+<h1 id="有限状态机"><a href="#有限状态机" class="headerlink" title="有限状态机"></a>有限状态机</h1><p>逻辑单元内部的一种高效编程方法就是：有限状态机（finite state machine）。</p>
+<p>有限状态机就是根据数据的类型，进行相应的处理，并且根据当前处理的状态在各个状态之间转移的机制。</p>
+<ul>
+<li>对于 c/c++ 来说，通常使用 <code>switch</code> 实现多种状态的散转</li>
+</ul>
+<h1 id="提高服务器性能"><a href="#提高服务器性能" class="headerlink" title="提高服务器性能"></a>提高服务器性能</h1><h2 id="池"><a href="#池" class="headerlink" title="池"></a>池</h2><p>池（pool）是一组资源的集合，在服务器启动之初就被完全创建好并初始化，这称为静态资源分配。</p>
+<ul>
+<li>当处理客户请求时，客户如果需要池含有的资源，那么直接获取即可，无需动态分配</li>
+<li>当不需要资源时，可以将资源放回池中</li>
+</ul>
+<p>这种机制避免了申请和释放资源操作的系统调用，避免服务器对内核的频繁访问，提高效率。</p>
+<p>池资源的预先分配原则是：先分配一些资源，当剩余资源不够用时再申请一大块资源放入池中。</p>
+<p>常见的池有内存池、进程池、线程池、连接池：</p>
+<ul>
+<li>内存池通常用于 socket 的接收和发送缓存</li>
+<li>进程池和线程池用于处理用户请求，需要的时候直接从池中取得执行实体，而不用动态调用 <code>fork()</code> 或 <code>pthread_create()</code> </li>
+<li>连接池通常用于服务器或服务器机群的内部永久连接。<ul>
+<li>比如服务端需要向内部数据库获取数据，那么可以从连接池中取得连接实体即可</li>
+</ul>
+</li>
+</ul>
+<h2 id="数据复制"><a href="#数据复制" class="headerlink" title="数据复制"></a>数据复制</h2><p>在用户态中内存的复制和用户态到内核态内存的复制都是比较耗时的，在设计是应该尽量避免低效的内存拷贝。</p>
+<h2 id="上下文切换和锁"><a href="#上下文切换和锁" class="headerlink" title="上下文切换和锁"></a>上下文切换和锁</h2><p>进程和线程的切换从业务逻辑上来讲属于无用功，要根据当前 CPU 数量来合理的配置进程和线程数。</p>
+<ul>
+<li>频繁的切换除了上下文的开销，还有 cache miss 开销，对于进程而言还有页表建立的开销</li>
+<li>对于工作线程，是 CPU 密集型任务时，为了能够处理多个客户端，协程是个不错的选择</li>
+</ul>
+<p>要尽量避免锁的存在，等待获取锁时系统的吞吐量会下降。</p>
+<ul>
+<li>半同步/半异步模式是一种比较合理的解决方案。</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>kcmetercec
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://kcmetercec.top/2022/06/11/net_base_server_framework/" title="高性能服务器程序框架">http://kcmetercec.top/2022/06/11/net_base_server_framework/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/network/" rel="tag"> <i class="fa fa-tag"></i> network</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/06/10/net_base_norm/" rel="prev" title="Linux 服务器程序规范">
+      <i class="fa fa-chevron-left"></i> Linux 服务器程序规范
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/06/11/net_base_io%20multiplexing/" rel="next" title="Linux I/O 复用">
+      Linux I/O 复用 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.</span> <span class="nav-text">服务器模型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#C-S-%EF%BC%88%E5%AE%A2%E6%88%B7%E7%AB%AF-%E6%9C%8D%E5%8A%A1%E5%99%A8%EF%BC%89%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.1.</span> <span class="nav-text">C&#x2F;S （客户端&#x2F;服务器）模型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#P2P-%EF%BC%88%E7%82%B9%E5%AF%B9%E7%82%B9%EF%BC%89%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.2.</span> <span class="nav-text">P2P （点对点）模型</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B%E6%A1%86%E6%9E%B6"><span class="nav-number">2.</span> <span class="nav-text">服务器编程框架</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#I-O-%E6%A8%A1%E5%9E%8B"><span class="nav-number">3.</span> <span class="nav-text">I&#x2F;O 模型</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8B%E4%BB%B6%E5%A4%84%E7%90%86%E6%A8%A1%E5%BC%8F"><span class="nav-number">4.</span> <span class="nav-text">事件处理模式</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Reactor-%E6%A8%A1%E5%BC%8F"><span class="nav-number">4.1.</span> <span class="nav-text">Reactor 模式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Proactor-%E6%A8%A1%E5%BC%8F"><span class="nav-number">4.2.</span> <span class="nav-text">Proactor 模式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A8%A1%E6%8B%9F-Proactor-%E6%A8%A1%E5%BC%8F"><span class="nav-number">4.3.</span> <span class="nav-text">模拟 Proactor 模式</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B9%B6%E5%8F%91%E6%A8%A1%E5%BC%8F"><span class="nav-number">5.</span> <span class="nav-text">并发模式</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%8A%E5%90%8C%E6%AD%A5-%E5%8D%8A%E5%BC%82%E6%AD%A5%E6%A8%A1%E5%BC%8F"><span class="nav-number">5.1.</span> <span class="nav-text">半同步&#x2F;半异步模式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A2%86%E5%AF%BC%E8%80%85-%E8%BF%BD%E9%9A%8F%E8%80%85%E6%A8%A1%E5%BC%8F"><span class="nav-number">5.2.</span> <span class="nav-text">领导者&#x2F;追随者模式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%A5%E6%9F%84%E9%9B%86"><span class="nav-number">5.2.1.</span> <span class="nav-text">句柄集</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E9%9B%86"><span class="nav-number">5.2.2.</span> <span class="nav-text">线程集</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%8B%E4%BB%B6%E5%A4%84%E7%90%86%E5%99%A8%E5%92%8C%E5%85%B7%E4%BD%93%E7%9A%84%E4%BA%8B%E4%BB%B6%E5%A4%84%E7%90%86%E5%99%A8"><span class="nav-number">5.2.3.</span> <span class="nav-text">事件处理器和具体的事件处理器</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9C%89%E9%99%90%E7%8A%B6%E6%80%81%E6%9C%BA"><span class="nav-number">6.</span> <span class="nav-text">有限状态机</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%8F%90%E9%AB%98%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%80%A7%E8%83%BD"><span class="nav-number">7.</span> <span class="nav-text">提高服务器性能</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B1%A0"><span class="nav-number">7.1.</span> <span class="nav-text">池</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%A4%8D%E5%88%B6"><span class="nav-number">7.2.</span> <span class="nav-text">数据复制</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8A%E4%B8%8B%E6%96%87%E5%88%87%E6%8D%A2%E5%92%8C%E9%94%81"><span class="nav-number">7.3.</span> <span class="nav-text">上下文切换和锁</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">Qt, C++, linux, CS</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">107</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">55</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:kcmeter.cec@gmail.com" title="E-Mail → mailto:kcmeter.cec@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2021 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">206k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">3:08</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+document.querySelectorAll('.pdfobject-container').forEach(element => {
+  let url = element.dataset.target;
+  let pdfOpenParams = {
+    navpanes : 0,
+    toolbar  : 0,
+    statusbar: 0,
+    pagemode : 'thumbs',
+    view     : 'FitH'
+  };
+  let pdfOpenFragment = '#' + Object.entries(pdfOpenParams).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
+  let fullURL = `/lib/pdf/web/viewer.html?file=${encodeURIComponent(url)}${pdfOpenFragment}`;
+
+  if (NexT.utils.supportsPDFs()) {
+    element.innerHTML = `<embed class="pdfobject" src="${url + pdfOpenFragment}" type="application/pdf" style="height: ${element.dataset.height};">`;
+  } else {
+    element.innerHTML = `<iframe src="${fullURL}" style="height: ${element.dataset.height};" frameborder="0"></iframe>`;
+  }
+});
+</script>
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'f938893867df78f94802',
+      clientSecret: 'b6d8470939c53d26c98c4e3b9d4c9ceb55d6e78e',
+      repo        : 'kcmetercec.github.io',
+      owner       : 'KcMeterCEC',
+      admin       : ['KcMeterCEC'],
+      id          : '66ae38db902e268718bd967729f9641a',
+        language: 'zh-CN',
+      distractionFreeMode: false
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+    </div>
+</body>
+</html>

@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="先以最简单的方式来认识 FM&#x2F;PM 调制。 因为频率或相位的变化都是载波余弦角度的变化，所以调频和调相统称为角度调制。  频率和相位之间存在密切的关系，调频必调相，调相必调频。  因为调频和调相信号的频谱不再是线性搬移，而是频谱的非线性变换，产生新的频率成分，因此调频和调相属于非线性调制。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="初步认识 FM&#x2F;PM 调制">
+<meta property="og:url" content="http://kcmetercec.top/2023/07/20/rf_dsp_modulation_fm_hello/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="先以最简单的方式来认识 FM&#x2F;PM 调制。 因为频率或相位的变化都是载波余弦角度的变化，所以调频和调相统称为角度调制。  频率和相位之间存在密切的关系，调频必调相，调相必调频。  因为调频和调相信号的频谱不再是线性搬移，而是频谱的非线性变换，产生新的频率成分，因此调频和调相属于非线性调制。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BFM%5D/pic/freq_and_phase1.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BFM%5D/pic/freq_and_initphase.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BFM%5D/pic/pm_formula.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BFM%5D/pic/pm_formula2.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BFM%5D/pic/fm_formula.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BFM%5D/pic/pm_fm_cmp1.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BFM%5D/pic/pm_fm_cmp2.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BFM%5D/pic/pm_fm_cmp3.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BFM%5D/pic/pm_fm_cmp4.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BFM%5D/pic/pm_single_tone.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BFM%5D/pic/pm_single_tone.jpg?raw=true">
+<meta property="article:published_time" content="2023-07-19T16:00:00.000Z">
+<meta property="article:modified_time" content="2023-07-22T16:00:00.000Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="DSP">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BFM%5D/pic/freq_and_phase1.jpg?raw=true">
+
+<link rel="canonical" href="http://kcmetercec.top/2023/07/20/rf_dsp_modulation_fm_hello/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>初步认识 FM/PM 调制 | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112423075-1# <app_id>"></script>
+    <script data-pjax>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-112423075-1# <app_id>');
+      }
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+        <li class="menu-item menu-item-commonweal">
+
+    <a href="/404/" rel="section"><i class="fa fa-heartbeat fa-fw"></i>公益 404</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2023/07/20/rf_dsp_modulation_fm_hello/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="Qt, C++, linux, CS">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          初步认识 FM/PM 调制
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-07-20 00:00:00" itemprop="dateCreated datePublished" datetime="2023-07-20T00:00:00+08:00">2023-07-20</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-07-23 00:00:00" itemprop="dateModified" datetime="2023-07-23T00:00:00+08:00">2023-07-23</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/DSP/" itemprop="url" rel="index"><span itemprop="name">DSP</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/DSP/Modulation/" itemprop="url" rel="index"><span itemprop="name">Modulation</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/DSP/Modulation/FM-PM/" itemprop="url" rel="index"><span itemprop="name">FM/PM</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.9k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>先以最简单的方式来认识 FM/PM 调制。</p>
+<p>因为频率或相位的变化都是载波余弦角度的变化，所以调频和调相统称为<strong>角度调制</strong>。</p>
+<blockquote>
+<p>频率和相位之间存在密切的关系，调频必调相，调相必调频。</p>
+</blockquote>
+<p>因为调频和调相信号的频谱不再是线性搬移，而是频谱的非线性变换，产生新的频率成分，<br>因此调频和调相属于非线性调制。</p>
+<span id="more"></span>
+
+<h1 id="认识角度调制"><a href="#认识角度调制" class="headerlink" title="认识角度调制"></a>认识角度调制</h1><p>任何一个正余弦型时间函数，如果它的幅度不变，则可用下式表示：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BFM%5D/pic/freq_and_phase1.jpg?raw=true"><br>如果加上了初相，就是：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BFM%5D/pic/freq_and_initphase.jpg?raw=true"></p>
+<h2 id="相位调制"><a href="#相位调制" class="headerlink" title="相位调制"></a>相位调制</h2><p>调相指的是：瞬时相位偏移与调制信号成正比。</p>
+<p>其公式为：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BFM%5D/pic/pm_formula.jpg?raw=true">从前面的<strong>瞬时频率</strong>公式可以看出，相位的变换也会导致频率的变化，那么：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BFM%5D/pic/pm_formula2.jpg?raw=true"></p>
+<h2 id="频率调制"><a href="#频率调制" class="headerlink" title="频率调制"></a>频率调制</h2><p>调频指的是：载波的瞬时频率偏移与调制信号成比例：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BFM%5D/pic/fm_formula.jpg?raw=true">## 频率与相位的比较</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BFM%5D/pic/pm_fm_cmp1.jpg?raw=true"><br><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BFM%5D/pic/pm_fm_cmp2.jpg?raw=true"><br><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BFM%5D/pic/pm_fm_cmp3.jpg?raw=true"><br><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BFM%5D/pic/pm_fm_cmp4.jpg?raw=true"></p>
+<h1 id="几种典型的角度调制"><a href="#几种典型的角度调制" class="headerlink" title="几种典型的角度调制"></a>几种典型的角度调制</h1><h2 id="单音调相"><a href="#单音调相" class="headerlink" title="单音调相"></a>单音调相</h2><h3 id="理论"><a href="#理论" class="headerlink" title="理论"></a>理论</h3><p>对于基带信号，其表示为：</p>
+<p>$$<br>m(t) = A_{m}cosω_{m}t<br>$$<br>而对于调相，其表示为：</p>
+<p>$$<br>S_{PM}(t) = A_{0}cos[ω_{c}t+k_{p}m(t)]<br>= A_{0}cos[ω_{c}t+k_{p}A_{m}cosω_{m}t]<br>$$<br>上式中的 $k_{p}A_{m}cosω_{m}t$ 就是瞬时频偏，其中的 $m_{p}=k_{p}A_{m}$ 就叫做调相指数，表示最大的相偏。</p>
+<p>那么对其做微分，以求得瞬时频偏：</p>
+<p>$$<br>\frac{d[ω_{c}t+m_{p}cosω_{m}t]}{dt} = ω_{c}-m_{p}ω_{m}sinω_{m}t<br>$$</p>
+<ul>
+<li>其瞬时频偏就是 $-m_{p}ω_{m}sinω_{m}t$</li>
+<li>其最大频偏就是 $\Delta_{max} = m_{p}ω_{m}$</li>
+</ul>
+<p>从上面的公式也可以看出，$m_{p}$ 也表示最大相对频偏：</p>
+<p>$$<br>m_{p} = \frac{\Delta_{max}}{\omega_{m}} = \frac{\Delta f_{max}}{f_{m}}<br>$$</p>
+<p>比如基带信号的频率为 <code>10Hz</code>，其幅度为 <code>3</code>，那么可以被表示为：</p>
+<p>$$<br>S_{m}t=A_{0}cos[ω_{c}t+3cosω_{m}t]<br>$$<br>根据上面的推导，其最大相偏就是 $m_{p}=3$ 弧度。</p>
+<p>而最大频偏就是：</p>
+<p>$$<br>\frac{d[ω_{c}t+3cosω_{m}t]}{dt} = ω_{c}-3ω_{m}sinω_{m}t<br>$$<br>又由于当前基带频率是 <code>10Hz</code>，那么最大频偏就是 <code>30Hz</code>。</p>
+<h3 id="验证"><a href="#验证" class="headerlink" title="验证"></a>验证</h3><p>下面通过 matlab 来进行验证。</p>
+<figure class="highlight fortran"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">clear;</span><br><span class="line">close <span class="built_in">all</span>;</span><br><span class="line">clc;</span><br><span class="line"></span><br><span class="line">base_freq = <span class="number">10</span>;</span><br><span class="line">base_amp = <span class="number">3</span>;</span><br><span class="line"></span><br><span class="line">carry_freq = <span class="number">100</span>;</span><br><span class="line">carry_amp = <span class="number">1</span>;</span><br><span class="line">fs = <span class="number">1024</span>;</span><br><span class="line"></span><br><span class="line">n = [<span class="number">1</span>:fs];</span><br><span class="line"></span><br><span class="line">pm_signal = carry_amp * <span class="built_in">cos</span>(<span class="number">2</span> * pi * carry_freq * n / fs + ...</span><br><span class="line">    base_amp * <span class="built_in">cos</span>(<span class="number">2</span> * pi * base_freq * n / fs));</span><br><span class="line"></span><br><span class="line">figure;</span><br><span class="line">subplot(<span class="number">2</span>, <span class="number">1</span>, <span class="number">1</span>);</span><br><span class="line">plot(pm_signal);</span><br><span class="line">subplot(<span class="number">2</span>, <span class="number">1</span>, <span class="number">2</span>);</span><br><span class="line">plot(<span class="number">20</span>* <span class="built_in">log10</span>(<span class="built_in">abs</span>(fft(pm_signal)) ./ fs));</span><br></pre></td></tr></table></figure>
+
+<p>其效果如下：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BFM%5D/pic/pm_single_tone.jpg?raw=true"></p>
+<h2 id="单音调频"><a href="#单音调频" class="headerlink" title="单音调频"></a>单音调频</h2><h3 id="理论-1"><a href="#理论-1" class="headerlink" title="理论"></a>理论</h3><p>单音调频的表示为：</p>
+<p>$$<br>\begin{aligned}<br>S_{FM}(t) &amp;= A_{0} cos[\omega_{c}t + k_{f}\int_{-\infty}^\tau m(\tau)d\tau]\<br>&amp;= A_{0} cos[\omega_{c}t + k_{f}\int_{-\infty}^\tau A_{m}cos\omega_{m}\tau d\tau]\<br>&amp;= A_{0} cos[\omega_{c}t + \frac{k_{f}A_{m}sin\omega_{m}t}{\omega_{m}}]\<br>&amp;= A_{0} cos[\omega_{c}t + m_{f}sin\omega_{m}t]\<br>\end{aligned}<br>$$</p>
+<p>上式子中 $m_{f} = \frac{k_{f}A_{m}}{\omega_{m}}$ 叫做调频指数，以表示<strong>最大相偏</strong>。</p>
+<blockquote>
+<p>上面式子经过化简后，就和调相的公式一致了（sin 和 cos 只是有个相位偏移的差异罢了）<br>这也就是为什么将调频和调相放在一起看。</p>
+</blockquote>
+<p>为了求<strong>最大频偏</strong>，就需要对公式求微分，得到瞬时频率：</p>
+<p>$$<br>\frac{d[\omega_{c}t + m_{f}sin\omega_{m}t]}{dt} = \omega_{c} +<br>m_{f}\omega_{m}cos\omega_{m}t<br>$$<br>那么就可以得出其最大频偏（rad/s）是 $m_{f}\omega_{m}=k_{f}A_{m}$，将该值除以 2Π，得到的就是最大频偏（Hz /s）。</p>
+<p>$m_{f}$ 也表示最大相对频偏：</p>
+<p>$$<br>m = \Phi_{max} (最大相偏) = \frac{\Delta\omega_{max}}{\omega_{m}} = \frac{\Delta f_{max}}{f_{m}} (最大相对频偏)<br>$$</p>
+<p>比如基带信号为<code>1kHz</code>，其幅值为 $4*10^3\pi$，<code>kf</code> 为 2，那么其最大频偏就是：</p>
+<p>$$<br>m_{f} \omega_{m} = k_{f} * A_{m} = 8 * 10^3\pi<br>$$</p>
+<p>该值再除以 $2\pi$ 就是就是 4kHz 的频偏。</p>
+<h3 id="验证-1"><a href="#验证-1" class="headerlink" title="验证"></a>验证</h3><p>matlab 脚本如下：</p>
+<figure class="highlight fortran"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">clear <span class="built_in">all</span>;</span><br><span class="line">clc;</span><br><span class="line">close <span class="built_in">all</span>;</span><br><span class="line"></span><br><span class="line">kf = <span class="number">2</span>;</span><br><span class="line">Am = <span class="number">4e3</span>*pi;</span><br><span class="line">base_freq = <span class="number">1e3</span>;</span><br><span class="line">carry_freq = <span class="number">10e3</span>;</span><br><span class="line">fs = <span class="number">10e4</span>;</span><br><span class="line"></span><br><span class="line">n = [<span class="number">1</span>:fs];</span><br><span class="line"></span><br><span class="line">fm_signal = <span class="built_in">cos</span>(<span class="number">2</span>*pi*carry_freq*n/fs + ...</span><br><span class="line">    kf * Am * <span class="built_in">sin</span>(<span class="number">2</span> * pi * base_freq * n / fs) / (<span class="number">2</span> * pi * base_freq));</span><br><span class="line"></span><br><span class="line">figure;</span><br><span class="line">subplot(<span class="number">2</span>, <span class="number">1</span>, <span class="number">1</span>);</span><br><span class="line">plot(fm_signal);</span><br><span class="line">subplot(<span class="number">2</span>, <span class="number">1</span>, <span class="number">2</span>);</span><br><span class="line">plot(<span class="number">20</span> * <span class="built_in">log10</span>(<span class="built_in">abs</span>(fft(fm_signal))./fs));</span><br></pre></td></tr></table></figure>
+
+<p>运行效果如下：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BFM%5D/pic/pm_single_tone.jpg?raw=true"></p>
+<h2 id="窄带调角"><a href="#窄带调角" class="headerlink" title="窄带调角"></a>窄带调角</h2><p>当最大相位偏移小于 $\frac{\pi}{6}$ （或 0.5）时，就称其为窄带角度调制，反之为宽带调角。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>kcmetercec
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://kcmetercec.top/2023/07/20/rf_dsp_modulation_fm_hello/" title="初步认识 FM&#x2F;PM 调制">http://kcmetercec.top/2023/07/20/rf_dsp_modulation_fm_hello/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/DSP/" rel="tag"> <i class="fa fa-tag"></i> DSP</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2023/07/09/linux_driver_device_tree_hello/" rel="prev" title="认识设备树">
+      <i class="fa fa-chevron-left"></i> 认识设备树
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2023/07/31/linux_kernel_debug_printk/" rel="next" title="使用 printk 调试内核">
+      使用 printk 调试内核 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AE%A4%E8%AF%86%E8%A7%92%E5%BA%A6%E8%B0%83%E5%88%B6"><span class="nav-number">1.</span> <span class="nav-text">认识角度调制</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%B8%E4%BD%8D%E8%B0%83%E5%88%B6"><span class="nav-number">1.1.</span> <span class="nav-text">相位调制</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A2%91%E7%8E%87%E8%B0%83%E5%88%B6"><span class="nav-number">1.2.</span> <span class="nav-text">频率调制</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%87%A0%E7%A7%8D%E5%85%B8%E5%9E%8B%E7%9A%84%E8%A7%92%E5%BA%A6%E8%B0%83%E5%88%B6"><span class="nav-number">2.</span> <span class="nav-text">几种典型的角度调制</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%95%E9%9F%B3%E8%B0%83%E7%9B%B8"><span class="nav-number">2.1.</span> <span class="nav-text">单音调相</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%90%86%E8%AE%BA"><span class="nav-number">2.1.1.</span> <span class="nav-text">理论</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%AA%8C%E8%AF%81"><span class="nav-number">2.1.2.</span> <span class="nav-text">验证</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%95%E9%9F%B3%E8%B0%83%E9%A2%91"><span class="nav-number">2.2.</span> <span class="nav-text">单音调频</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%90%86%E8%AE%BA-1"><span class="nav-number">2.2.1.</span> <span class="nav-text">理论</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%AA%8C%E8%AF%81-1"><span class="nav-number">2.2.2.</span> <span class="nav-text">验证</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AA%84%E5%B8%A6%E8%B0%83%E8%A7%92"><span class="nav-number">2.3.</span> <span class="nav-text">窄带调角</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">Qt, C++, linux, CS</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">107</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">55</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:kcmeter.cec@gmail.com" title="E-Mail → mailto:kcmeter.cec@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2021 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">206k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">3:08</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+document.querySelectorAll('.pdfobject-container').forEach(element => {
+  let url = element.dataset.target;
+  let pdfOpenParams = {
+    navpanes : 0,
+    toolbar  : 0,
+    statusbar: 0,
+    pagemode : 'thumbs',
+    view     : 'FitH'
+  };
+  let pdfOpenFragment = '#' + Object.entries(pdfOpenParams).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
+  let fullURL = `/lib/pdf/web/viewer.html?file=${encodeURIComponent(url)}${pdfOpenFragment}`;
+
+  if (NexT.utils.supportsPDFs()) {
+    element.innerHTML = `<embed class="pdfobject" src="${url + pdfOpenFragment}" type="application/pdf" style="height: ${element.dataset.height};">`;
+  } else {
+    element.innerHTML = `<iframe src="${fullURL}" style="height: ${element.dataset.height};" frameborder="0"></iframe>`;
+  }
+});
+</script>
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'f938893867df78f94802',
+      clientSecret: 'b6d8470939c53d26c98c4e3b9d4c9ceb55d6e78e',
+      repo        : 'kcmetercec.github.io',
+      owner       : 'KcMeterCEC',
+      admin       : ['KcMeterCEC'],
+      id          : '24d7b2a8e103563795c3666f5d8de38f',
+        language: 'zh-CN',
+      distractionFreeMode: false
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+    </div>
+</body>
+</html>

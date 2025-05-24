@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="这里记录 Swupdate 的简易使用说明。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Swupdate 的简易使用">
+<meta property="og:url" content="http://kcmetercec.top/2024/12/19/linux_make_swupdate/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="这里记录 Swupdate 的简易使用说明。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmake%5D/%5BWhat%5DLinux--yocto/pic/swupdate_file_struct.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmake%5D/%5BWhat%5DLinux--yocto/pic/swupdate_single_copy.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmake%5D/%5BWhat%5DLinux--yocto/pic/swupdate_double_copy.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmake%5D/%5BWhat%5DLinux--yocto/pic/swupdate_statemachine.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmake%5D/%5BWhat%5DLinux--yocto/pic/swupdate_double_copy_rescue.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmake%5D/%5BWhat%5DLinux--yocto/pic/swupdate_progress.jpg?raw=true">
+<meta property="article:published_time" content="2024-12-18T16:00:00.000Z">
+<meta property="article:modified_time" content="2024-12-25T16:00:00.000Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="swupdate">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmake%5D/%5BWhat%5DLinux--yocto/pic/swupdate_file_struct.jpg?raw=true">
+
+<link rel="canonical" href="http://kcmetercec.top/2024/12/19/linux_make_swupdate/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Swupdate 的简易使用 | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112423075-1# <app_id>"></script>
+    <script data-pjax>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-112423075-1# <app_id>');
+      }
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+        <li class="menu-item menu-item-commonweal">
+
+    <a href="/404/" rel="section"><i class="fa fa-heartbeat fa-fw"></i>公益 404</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2024/12/19/linux_make_swupdate/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="Qt, C++, linux, CS">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Swupdate 的简易使用
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-12-19 00:00:00" itemprop="dateCreated datePublished" datetime="2024-12-19T00:00:00+08:00">2024-12-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-12-26 00:00:00" itemprop="dateModified" datetime="2024-12-26T00:00:00+08:00">2024-12-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/make/" itemprop="url" rel="index"><span itemprop="name">make</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/make/swupdate/" itemprop="url" rel="index"><span itemprop="name">swupdate</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>7.3k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>7 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>这里记录 Swupdate 的简易使用说明。</p>
+<span id="more"></span>
+
+<h1 id="初识"><a href="#初识" class="headerlink" title="初识"></a>初识</h1><h2 id="流程"><a href="#流程" class="headerlink" title="流程"></a>流程</h2><p>SWUpdate 是位于用户空间的应用程序，用于升级嵌入式系统（不包含 bootloader）。</p>
+<p>它以事务的方式标识整个升级过程，事务的标识会写入到 bootloader 中，bootloader 会根据事务标记的值来确认当前升级是否成功。</p>
+<p>比如 SWUpdate 通过设置环境变量<code>recovery_status</code>，来表示升级过程：</p>
+<ol>
+<li><p>开始升级时，其值为<code>progress</code></p>
+</li>
+<li><p>升级成功后，其值会被擦除</p>
+</li>
+<li><p>升级失败，其值为<code>failed</code></p>
+</li>
+</ol>
+<p>bootloader 通过查看其值为<code>progress</code>或<code>failed</code>则代表其升级未完成：</p>
+<ul>
+<li><p>如果当前为<code>single-copy</code>模式，则会再次启动升级流程</p>
+</li>
+<li><p>如果当前为<code>double-copy</code>模式，则会启动上一个版本的程序</p>
+</li>
+</ul>
+<h2 id="文件格式"><a href="#文件格式" class="headerlink" title="文件格式"></a>文件格式</h2><p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmake%5D/%5BWhat%5DLinux--yocto/pic/swupdate_file_struct.jpg?raw=true"><br>上图为其打包后的文件版本，主要是<code>sw-description</code>来实现多个镜像文件的描述。</p>
+<p>可以看到它是将多个文件打包为一个<code>cpio</code>文件，那么这里再来复习一下<code>cpio</code>工具的操作：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"><span class="comment">## 打包</span></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 创建打包：通过 find 遍历当前文件及文件夹输出给 cpio</span></span><br><span class="line">find . -depth -print | cpio -o &gt; /path/archive.cpio</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment">## 解包</span></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 可以解包所有文件</span></span><br><span class="line">cpio -i -vd &lt; archive.cpio</span><br><span class="line"><span class="meta">#</span><span class="bash"> 也可以只提取指定文件</span></span><br><span class="line">cpio -i -d /etc/fstab &lt; archive.cpio</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment">## 查看</span></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 仅查看内容不解包</span></span><br><span class="line">cpio -t &lt; archive.cpio</span><br></pre></td></tr></table></figure>
+
+<p><strong>需要注意的是：</strong> cpio 打包后的文件大小不能超过 4GB.</p>
+<h2 id="编译"><a href="#编译" class="headerlink" title="编译"></a>编译</h2><p>在 <code>buildroot</code>中只需要搜<code>swupdate</code>就可以找到该包并使能，如果想要更细致的配置，可以通过以下命令配置：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">make swupdate-menuconfig</span><br></pre></td></tr></table></figure>
+
+<p>在输出路径<code>output/build/swupdate/tools</code>中有文件<code>swupdate-progress.c</code>可以作为很好的参考，用于与<code>swupdate</code>交互获取当前的状态。</p>
+<p>为了与 U-Boot 交互，则需要进行以下配置：</p>
+<ul>
+<li><p>在<code>Bootloader Interfaces</code>中使能 U-Boot，并设定文件<code>/etc/fw_env.config</code>以及<code>/etc/u-boot-initial-en</code></p>
+</li>
+<li><p>设定<code>U-Boot</code>中变量为<code>ustate</code></p>
+</li>
+</ul>
+<h2 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h2><p><code>swupdate</code>的一般流程如下：</p>
+<ol>
+<li><p>提取<code>sw-description</code>并校验，如果还使能了签名验证，还会提取<code>sw-description.sig</code> 文件进行签名验证。</p>
+</li>
+<li><p>根据<code>sw-description</code>中提供的信息，读取当前设备的硬件版本，来验证是否有兼容该硬件版本的软件包。</p>
+</li>
+<li><p>根据<code>sw-description</code>中的信息识别哪些软件包需要被安装，如果具有<code>embedded-script</code>则会在解析这些软件包前执行这些脚本，如果具有<code>hooks</code>则会在解析软件包时执行（即使这些软件包会被跳过）。最终生成一张执行列表和对应的哪些<code>handler</code>需要被调用。</p>
+</li>
+<li><p>如果有<code>pre update command</code>，则先执行这些命令</p>
+</li>
+<li><p>如果有分区的必要，则执行<code>partition handlers</code></p>
+</li>
+<li><p>依次从<code>cpio</code>文件中提取需要安装的软件包，在读取软件包时还会进行内容校验，如果检验失败则报错。</p>
+</li>
+<li><p>在安装软件包之前，如果具有<code>pre-install</code>脚本，则会先执行这些脚本</p>
+</li>
+<li><p>执行对应软件包的<code>handler</code>来安装软件包</p>
+</li>
+<li><p>安装完成后，如果具有<code>post-install</code>脚本，则会执行这些脚本</p>
+</li>
+<li><p>更新 bootloader 的环境变量</p>
+</li>
+<li><p>向外部接口输出升级状态</p>
+</li>
+<li><p>如果具有<code>post update command</code>则执行这些命令</p>
+</li>
+</ol>
+<p>使用<code>swupdate</code>执行升级命令为：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">swupdate -i &lt;filename&gt;</span><br></pre></td></tr></table></figure>
+
+<p>也可以启动一个网络服务，通过网页来升级：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 启动后就可以通过 http://&lt;target_ip&gt;:8080 来访问</span></span><br><span class="line">swupdate -w &quot;--document-root ./www --port 8080&quot;</span><br></pre></td></tr></table></figure>
+
+<h2 id="改变-U-BOOT"><a href="#改变-U-BOOT" class="headerlink" title="改变 U-BOOT"></a>改变 U-BOOT</h2><p><code>U-BOOT</code>可以保存两份环境变量，便于保证在更新环境变量时的安全性，要使能这个特性，需要配置<code>CONFIG_ENV_OFFSET_REDUND</code>或<code>CONFIG_ENV_ADDR_REDUND</code>。</p>
+<p>除此之外，还可以在<code>U-BOOT</code>中增加一个启动计数器，如果计数器没有正确的被应用程序清零则意味着这个版本升级的应用没有正常运行，然后可以切换到之前备份的应用。</p>
+<h2 id="构建升级包"><a href="#构建升级包" class="headerlink" title="构建升级包"></a>构建升级包</h2><p>升级包需要<code>sw-updescription</code>是第一个文件，其余的镜像可以依次往后放即可。使用类似下面的脚本就可以打包：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">CONTAINER_VER=&quot;1.0&quot;</span><br><span class="line">PRODUCT_NAME=&quot;my-software&quot;</span><br><span class="line">FILES=&quot;sw-description image1.ubifs  \</span><br><span class="line">       image2.gz.u-boot uImage.bin myfile sdcard.img&quot;</span><br><span class="line">for i in $FILES;do</span><br><span class="line">        echo $i;done | cpio -ov -H crc &gt;  $&#123;PRODUCT_NAME&#125;_$&#123;CONTAINER_VER&#125;.swu</span><br></pre></td></tr></table></figure>
+
+<p>也可以通过<a target="_blank" rel="noopener" href="https://github.com/sbabic/swugenerator/">GitHub - sbabic/swugenerator: A host tool to generate SWU update package for SWUpdate</a>来打包生成升级包。</p>
+<p>升级包的查看可以通过下面的命令完成：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">swupdate -c -i my-software_1.0.swu</span><br></pre></td></tr></table></figure>
+
+<h1 id="升级策略"><a href="#升级策略" class="headerlink" title="升级策略"></a>升级策略</h1><h2 id="single-copy"><a href="#single-copy" class="headerlink" title="single copy"></a>single copy</h2><p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmake%5D/%5BWhat%5DLinux--yocto/pic/swupdate_single_copy.jpg?raw=true"><br>正常情况下，bootloader 直接启动用户的内核，进入文件系统运行应用程序。</p>
+<p>当需要升级时：</p>
+<ol>
+<li><p>通知 bootloader 需要启动<code>swupdate</code>，然后重启系统</p>
+<ul>
+<li>通知的方式多种多样，比如通过环境变量、GPIO等</li>
+</ul>
+</li>
+<li><p>bootloader 启动带 swupdate 的内核和 RAMFS</p>
+</li>
+<li><p>在 RAMFS 中启动<code>swupdate</code>分析升级包并升级</p>
+</li>
+</ol>
+<p>如果升级过程失败，应用程序无法正确清空 bootloader 的启动计数器，则 bootloader 会主动进入升级系统。</p>
+<h2 id="double-copy"><a href="#double-copy" class="headerlink" title="double copy"></a>double copy</h2><p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmake%5D/%5BWhat%5DLinux--yocto/pic/swupdate_double_copy.jpg?raw=true"><br>bootloader 交替的启动切换最新的软件，<code>swupdate</code>则升级那个未被启动的软件分区。</p>
+<p>当当前应用程序没有正确清空 bootloader 的启动计数器时，bootloader 会主动切换回上一个版本的应用程序。</p>
+<p>bootloader 根据变量<code>ustate</code>的值为1，来确认目前有新的软件被安装，那么就需要通过计数器来测试该软件是否安装正确。当测试失败，bootloader 也可以修改<code>ustate</code>的值为 3，来通知应用程序升级是否成功。</p>
+<ul>
+<li><p>当<code>ustate=0</code>，则表示当前无新升级，bootloader 正常引导</p>
+</li>
+<li><p>当<code>ustate=1</code>，表示有新软件被安装，需要测试</p>
+<ul>
+<li><p>测试失败，由 bootloader 将值设置为 3</p>
+</li>
+<li><p>测试成功，由应用程序将值设置为 0</p>
+</li>
+</ul>
+</li>
+</ul>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmake%5D/%5BWhat%5DLinux--yocto/pic/swupdate_statemachine.jpg?raw=true"><br>在 bootloader 中，需要准备的变量有：</p>
+<ol>
+<li><h2 id="double-copy-with-rescue-system"><a href="#double-copy-with-rescue-system" class="headerlink" title="double-copy with rescue system"></a>double-copy with rescue system</h2></li>
+</ol>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmake%5D/%5BWhat%5DLinux--yocto/pic/swupdate_double_copy_rescue.jpg?raw=true"><br>在<code>double-copy</code>的基础上，还可以增加一个救援系统，这样当两个版本都无法正确运行（或那个硬盘损坏）的情况下，仍然可以启动救援系统来重新格式化、更新系统。</p>
+<blockquote>
+<p>这个救援系统也是可以被更新的</p>
+</blockquote>
+<h1 id="语法"><a href="#语法" class="headerlink" title="语法"></a>语法</h1><h2 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h2><p>一个典型的<code>sw-description</code>文件内容如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br></pre></td><td class="code"><pre><span class="line">software =</span><br><span class="line">&#123;</span><br><span class="line">        version = &quot;0.1.0&quot;;</span><br><span class="line">        description = &quot;Firmware update for XXXXX Project&quot;;</span><br><span class="line"></span><br><span class="line">        hardware-compatibility: [ &quot;1.0&quot;, &quot;1.2&quot;, &quot;1.3&quot;];</span><br><span class="line"></span><br><span class="line">        /* partitions tag is used to resize UBI partitions */</span><br><span class="line">        partitions: ( /* UBI Volumes */</span><br><span class="line">                &#123;</span><br><span class="line">                        name = &quot;rootfs&quot;;</span><br><span class="line">                        device = &quot;mtd4&quot;;</span><br><span class="line">                        size = 104896512; /* in bytes */</span><br><span class="line">                &#125;,</span><br><span class="line">                &#123;</span><br><span class="line">                        name = &quot;data&quot;;</span><br><span class="line">                        device = &quot;mtd5&quot;;</span><br><span class="line">                        size = 50448384; /* in bytes */</span><br><span class="line">                &#125;</span><br><span class="line">        );</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        images: (</span><br><span class="line">                &#123;</span><br><span class="line">                        filename = &quot;rootfs.ubifs&quot;;</span><br><span class="line">                        volume = &quot;rootfs&quot;;</span><br><span class="line">                &#125;,</span><br><span class="line">                &#123;</span><br><span class="line">                        filename = &quot;swupdate.ext3.gz.u-boot&quot;;</span><br><span class="line">                        volume = &quot;fs_recovery&quot;;</span><br><span class="line">                &#125;,</span><br><span class="line">                &#123;</span><br><span class="line">                        filename = &quot;sdcard.ext3.gz&quot;;</span><br><span class="line">                        device = &quot;/dev/mmcblk0p1&quot;;</span><br><span class="line">                        compressed = &quot;zlib&quot;;</span><br><span class="line">                &#125;,</span><br><span class="line">                &#123;</span><br><span class="line">                        filename = &quot;bootlogo.bmp&quot;;</span><br><span class="line">                        volume = &quot;splash&quot;;</span><br><span class="line">                &#125;,</span><br><span class="line">                &#123;</span><br><span class="line">                        filename = &quot;uImage.bin&quot;;</span><br><span class="line">                        volume = &quot;kernel&quot;;</span><br><span class="line">                &#125;,</span><br><span class="line">                &#123;</span><br><span class="line">                        filename = &quot;fpga.txt&quot;;</span><br><span class="line">                        type = &quot;fpga&quot;;</span><br><span class="line">                &#125;,</span><br><span class="line">                &#123;</span><br><span class="line">                        filename = &quot;bootloader-env&quot;;</span><br><span class="line">                        type = &quot;bootloader&quot;;</span><br><span class="line">                &#125;</span><br><span class="line">        );</span><br><span class="line"></span><br><span class="line">        files: (</span><br><span class="line">                &#123;</span><br><span class="line">                        filename = &quot;README&quot;;</span><br><span class="line">                        path = &quot;/README&quot;;</span><br><span class="line">                        device = &quot;/dev/mmcblk0p1&quot;;</span><br><span class="line">                        filesystem = &quot;vfat&quot;</span><br><span class="line">                &#125;</span><br><span class="line">        );</span><br><span class="line"></span><br><span class="line">        scripts: (</span><br><span class="line">                &#123;</span><br><span class="line">                        filename = &quot;erase_at_end&quot;;</span><br><span class="line">                        type = &quot;lua&quot;;</span><br><span class="line">                &#125;,</span><br><span class="line">                &#123;</span><br><span class="line">                        filename = &quot;display_info&quot;;</span><br><span class="line">                        type = &quot;lua&quot;;</span><br><span class="line">                &#125;</span><br><span class="line">        );</span><br><span class="line"></span><br><span class="line">        bootenv: (</span><br><span class="line">                &#123;</span><br><span class="line">                        name = &quot;vram&quot;;</span><br><span class="line">                        value = &quot;4M&quot;;</span><br><span class="line">                &#125;,</span><br><span class="line">                &#123;</span><br><span class="line">                        name = &quot;addfb&quot;;</span><br><span class="line">                        value = &quot;setenv bootargs $&#123;bootargs&#125; omapfb.vram=1:2M,2:2M,3:2M omapdss.def_disp=lcd&quot;</span><br><span class="line">                &#125;</span><br><span class="line">        );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>以<code>software</code>tag为顶层描述，下面的就是为各个镜像的单独说明。</p>
+<p>上面中的<code>hardware-compatib</code>是为了软件与硬件的兼容，而硬件的信息则存储于<code>/etc/hwrevision</code>中，其格式为：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> boardname：设备名称，为了便于一个升级包还可以升级多种不同设备</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> revision：设备的硬件版本</span></span><br><span class="line">&lt;boardname&gt; &lt;revision&gt;</span><br></pre></td></tr></table></figure>
+
+<p>对于 double copy 的升级策略，一个升级包可能会对应两个分区，那么配置文件应该这样描述：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">software =</span><br><span class="line">&#123;</span><br><span class="line">        version = &quot;0.1.0&quot;;</span><br><span class="line"></span><br><span class="line">        stable = &#123;</span><br><span class="line">                copy-1: &#123;</span><br><span class="line">                        images: (</span><br><span class="line">                        &#123;</span><br><span class="line">                                device = &quot;/dev/mtd4&quot;</span><br><span class="line">                                ...</span><br><span class="line">                        &#125;</span><br><span class="line">                        );</span><br><span class="line">                &#125;</span><br><span class="line">                copy-2: &#123;</span><br><span class="line">                        images: (</span><br><span class="line">                        &#123;</span><br><span class="line">                                device = &quot;/dev/mtd5&quot;</span><br><span class="line">                                ...</span><br><span class="line">                        &#125;</span><br><span class="line">                        );</span><br><span class="line">                &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在实际升级时，到底应该是选择哪个分区，则是由应用程序来区分（比如查看当前程序是挂载在哪个分区），然后给<code>swupdate</code>发送消息。</p>
+<blockquote>
+<p>这个消息是要在 <code>swupdate</code>启动前就确认要升级哪个分区，然后通过<code>-e &lt;selection,mode&gt;</code>来告知<code>swupdate</code>。</p>
+<p>也可以在启动前创建一个连接文件<code>/dev/standby</code>指向需要被升级的分区。</p>
+<p>如果要在运行时来区分，就要在<code>sw-description</code>中编写嵌入式脚本来区分，Lua 脚本使用<code>getroot()</code>函数获取当前文件系统挂载的分区。</p>
+</blockquote>
+<h2 id="硬件兼容性"><a href="#硬件兼容性" class="headerlink" title="硬件兼容性"></a>硬件兼容性</h2><p>一个软件包可以兼容多个版本的硬件，则可以像前面一样，在文件内容开始一次性给出。但也有可能在不同的硬件版本下的文件会略有不同，那么还可以再进一步说明：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br></pre></td><td class="code"><pre><span class="line">software =</span><br><span class="line">&#123;</span><br><span class="line">        version = &quot;0.1.0&quot;;</span><br><span class="line"></span><br><span class="line">        myboard = &#123;</span><br><span class="line">            stable = &#123;</span><br><span class="line"></span><br><span class="line">                hardware-compatibility: [&quot;1.0&quot;, &quot;1.2&quot;, &quot;2.0&quot;, &quot;1.3&quot;, &quot;3.0&quot;, &quot;3.1&quot;];</span><br><span class="line">                rev-1.0: &#123;</span><br><span class="line">                        images: (</span><br><span class="line">                                ...</span><br><span class="line">                        );</span><br><span class="line">                        scripts: (</span><br><span class="line">                                ...</span><br><span class="line">                        );</span><br><span class="line">                &#125;</span><br><span class="line">                rev-1.2: &#123;</span><br><span class="line">                        hardware-compatibility: [&quot;1.2&quot;];</span><br><span class="line">                        images: (</span><br><span class="line">                                ...</span><br><span class="line">                        );</span><br><span class="line">                        scripts: (</span><br><span class="line">                                ...</span><br><span class="line">                        );</span><br><span class="line">                &#125;</span><br><span class="line">                rev-2.0: &#123;</span><br><span class="line">                        hardware-compatibility: [&quot;2.0&quot;];</span><br><span class="line">                        images: (</span><br><span class="line">                                ...</span><br><span class="line">                        );</span><br><span class="line">                        scripts: (</span><br><span class="line">                           ...</span><br><span class="line">                        );</span><br><span class="line">                &#125;</span><br><span class="line">                rev-1.3: &#123;</span><br><span class="line">                        hardware-compatibility: [&quot;1.3&quot;];</span><br><span class="line">                        images: (</span><br><span class="line">                            ...</span><br><span class="line">                        );</span><br><span class="line">                        scripts: (</span><br><span class="line">                            ...</span><br><span class="line">                        );</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                rev-3.0:</span><br><span class="line">                &#123;</span><br><span class="line">                        hardware-compatibility: [&quot;3.0&quot;];</span><br><span class="line">                        images: (</span><br><span class="line">                                ...</span><br><span class="line">                        );</span><br><span class="line">                        scripts: (</span><br><span class="line">                                ...</span><br><span class="line">                        );</span><br><span class="line">                &#125;</span><br><span class="line">                rev-3.1:</span><br><span class="line">                &#123;</span><br><span class="line">                        hardware-compatibility: [&quot;3.1&quot;];</span><br><span class="line">                        images: (</span><br><span class="line">                                ...</span><br><span class="line">                        );</span><br><span class="line">                        scripts: (</span><br><span class="line">                                ...</span><br><span class="line">                        );</span><br><span class="line">                &#125;</span><br><span class="line">             &#125;</span><br><span class="line">        &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果其中有部分版本完全一致，那么还可以使用引用的方式：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line">software =</span><br><span class="line"> &#123;</span><br><span class="line">         version = &quot;0.1.0&quot;;</span><br><span class="line"></span><br><span class="line">         myboard = &#123;</span><br><span class="line">             stable = &#123;</span><br><span class="line"></span><br><span class="line">                 hardware-compatibility: [&quot;1.0&quot;, &quot;1.2&quot;, &quot;2.0&quot;, &quot;1.3&quot;, &quot;3.0&quot;, &quot;3.1&quot;];</span><br><span class="line">                 rev-1x: &#123;</span><br><span class="line">                         images: (</span><br><span class="line">                            ...</span><br><span class="line">                         );</span><br><span class="line">                         scripts: (</span><br><span class="line">                             ...</span><br><span class="line">                         );</span><br><span class="line">                 &#125;</span><br><span class="line">                 rev1.0 = &#123;</span><br><span class="line">                         ref = &quot;#./rev-1x&quot;;</span><br><span class="line">                 &#125;</span><br><span class="line">                 rev1.2 = &#123;</span><br><span class="line">                         ref = &quot;#./rev-1x&quot;;</span><br><span class="line">                 &#125;</span><br><span class="line">                 rev1.3 = &#123;</span><br><span class="line">                         ref = &quot;#./rev-1x&quot;;</span><br><span class="line">                 &#125;</span><br><span class="line">                 rev-2x: &#123;</span><br><span class="line">                         images: (</span><br><span class="line">                              ...</span><br><span class="line">                         );</span><br><span class="line">                         scripts: (</span><br><span class="line">                              ...</span><br><span class="line">                         );</span><br><span class="line">                 &#125;</span><br><span class="line">                 rev2.0 = &#123;</span><br><span class="line">                         ref = &quot;#./rev-2x&quot;;</span><br><span class="line">                 &#125;</span><br><span class="line"></span><br><span class="line">                 rev-3x: &#123;</span><br><span class="line">                         images: (</span><br><span class="line">                              ...</span><br><span class="line">                         );</span><br><span class="line">                         scripts: (</span><br><span class="line">                               ...</span><br><span class="line">                         );</span><br><span class="line">                 &#125;</span><br><span class="line">                 rev3.0 = &#123;</span><br><span class="line">                         ref = &quot;#./rev-3x&quot;;</span><br><span class="line">                 &#125;</span><br><span class="line">                 rev3.1 = &#123;</span><br><span class="line">                         ref = &quot;#./rev-3x&quot;;</span><br><span class="line">                 &#125;</span><br><span class="line">              &#125;</span><br><span class="line">         &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>ref</code>是表示引用的关键字，后面的<code>#</code>是必须的。可以用<code>./</code>表示当前层级，用<code>../</code>表示上一个层级。</p>
+<p><code>swupdate</code>获取版本号是在<code>/etc/hwrevision</code>文件中，但是这个文件的内容则可以在应用程序启动时通过各种方式进行更新，比如读取当前硬件上的 EEPROM 获取版本号等。</p>
+<h2 id="images"><a href="#images" class="headerlink" title="images"></a>images</h2><p><code>images</code>标识表示要更新到系统中的镜像文件，其语法为：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">images: (</span><br><span class="line">        &#123;</span><br><span class="line">                filename[mandatory] = &lt;Name in CPIO Archive&gt;;</span><br><span class="line">                volume[optional] = &lt;destination volume&gt;;</span><br><span class="line">                device[optional] = &lt;destination volume&gt;;</span><br><span class="line">                mtdname[optional] = &lt;destination mtd name&gt;;</span><br><span class="line">                type[optional] = &lt;handler&gt;;</span><br><span class="line">                /* optionally, the image can be copied at a specific offset */</span><br><span class="line">                offset[optional] = &lt;offset&gt;;</span><br><span class="line">                /* optionally, the image can be compressed if it is in raw mode */</span><br><span class="line">                compressed;</span><br><span class="line">        &#125;,</span><br><span class="line">        /* Next Image */</span><br><span class="line">        .....</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p>对于 emmc 而言，其内容大体如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">        filename = &quot;core-image-base.ext3&quot;;</span><br><span class="line">        device = &quot;/dev/mmcblk0p1&quot;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>对于 flash 而言，其内容大体如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">        filename = &quot;u-boot.bin&quot;;</span><br><span class="line">        device = &quot;/dev/mmcblk0p1&quot;;</span><br><span class="line">        offset = &quot;16K&quot;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="Files"><a href="#Files" class="headerlink" title="Files"></a>Files</h2><p><code>files</code>标识用于拷贝文件到系统，其语法如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">files: (</span><br><span class="line">        &#123;</span><br><span class="line">                filename = &lt;Name in CPIO Archive&gt;;</span><br><span class="line">                path = &lt;path in filesystem&gt;;</span><br><span class="line">                device[optional] = &lt;device node &gt;;</span><br><span class="line">                filesystem[optional] = &lt;filesystem for mount&gt;;</span><br><span class="line">                properties[optional] = &#123;create-destination = &quot;true&quot;;&#125;</span><br><span class="line">        &#125;</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p>主要就是将文件拷贝到对应路径。</p>
+<h2 id="scripts"><a href="#scripts" class="headerlink" title="scripts"></a>scripts</h2><p><code>scripts</code>标记用于执行一系列的脚本，默认情况下如果没有标注脚本的类型，<code>swupdate</code>会认为是<code>lua</code>脚本。</p>
+<h3 id="lua"><a href="#lua" class="headerlink" title="lua"></a>lua</h3><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">scripts: (</span><br><span class="line">        &#123;</span><br><span class="line">                filename = &lt;Name in CPIO Archive&gt;;</span><br><span class="line">                type = &quot;lua&quot;;</span><br><span class="line">        &#125;</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p>lua 脚本必须至少包含 3 个函数：</p>
+<ul>
+<li><p><code>function preinst()</code>：安装镜像前会被执行</p>
+</li>
+<li><p><code>function postinst()</code>：安装镜像后会被执行</p>
+</li>
+<li><p><code>function postfailure()</code>：升级失败后会被执行</p>
+</li>
+</ul>
+<h3 id="shellscript"><a href="#shellscript" class="headerlink" title="shellscript"></a>shellscript</h3><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">scripts: (</span><br><span class="line">        &#123;</span><br><span class="line">                filename = &lt;Name in CPIO Archive&gt;;</span><br><span class="line">                type = &quot;shellscript&quot;;</span><br><span class="line">        &#125;</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p><code>swupdate</code>会在镜像安装前后执行脚本，在执行时会传入参数”preinst”、”postinst”或”postfailure”，脚本可以依据这些参数进行不同的操作。</p>
+<p>除此之外，也可以单独编写<code>preinstall</code>和<code>postinstall</code>脚本：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">scripts: (</span><br><span class="line">        &#123;</span><br><span class="line">                filename = &lt;Name in CPIO Archive&gt;;</span><br><span class="line">                type = &quot;preinstall&quot;;</span><br><span class="line">        &#125;</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">scripts: (</span><br><span class="line">        &#123;</span><br><span class="line">                filename = &lt;Name in CPIO Archive&gt;;</span><br><span class="line">                type = &quot;postinstall&quot;;</span><br><span class="line">        &#125;</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<h2 id="升级过程中的标记状态"><a href="#升级过程中的标记状态" class="headerlink" title="升级过程中的标记状态"></a>升级过程中的标记状态</h2><p>默认情况下<code>swupdate</code>通过设置 bootloader 的环境变量<code>recovery_status</code>来表示升级的过程，其值有以下几种情况：</p>
+<ul>
+<li><p><code>in_progress</code>：正在升级过程中</p>
+</li>
+<li><p>值被清空：升级成功</p>
+</li>
+<li><p><code>failed</code>：升级失败</p>
+</li>
+</ul>
+<p>如果想关闭这些状态记录，可以在配置文件中设置：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">software =</span><br><span class="line">&#123;</span><br><span class="line">        version = &quot;0.1.0&quot;;</span><br><span class="line">        bootloader_transaction_marker = false;</span><br><span class="line">        ...</span><br></pre></td></tr></table></figure>
+
+<p>除了这种字符串标记外，还有将 bootloader 的环境变量<code>ustate</code>来设数值方式：</p>
+<ul>
+<li><p><code>1</code>：安装成功</p>
+</li>
+<li><p><code>3</code>：安装失败</p>
+</li>
+</ul>
+<p>关闭<code>ustate</code>也是在配置文件中设置：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">software =</span><br><span class="line">&#123;</span><br><span class="line">        version = &quot;0.1.0&quot;;</span><br><span class="line">        bootloader_state_markerer = false;</span><br></pre></td></tr></table></figure>
+
+<h2 id="更新-bootloader-的环境变量"><a href="#更新-bootloader-的环境变量" class="headerlink" title="更新 bootloader 的环境变量"></a>更新 bootloader 的环境变量</h2><p>有两种方式可以更新 bootloader 的环境变量，一种方式是将变量写在文件中，然后将此文件在配置文件中标注一下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">images: (</span><br><span class="line">        &#123;</span><br><span class="line">                filename = &quot;bootloader-env&quot;;</span><br><span class="line">                type = &quot;bootloader&quot;;</span><br><span class="line">        &#125;</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p>文件中变量赋值的格式为：<code>&lt;name of variable&gt;=&lt;value&gt;</code>，如果值不设置，则该变量会被清除掉。</p>
+<p>就像下面这样：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> Default variables</span></span><br><span class="line">bootslot=0</span><br><span class="line">board_name=myboard</span><br><span class="line">baudrate=115200</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># Board Revision dependent</span></span></span><br><span class="line">board_revision=1.0</span><br></pre></td></tr></table></figure>
+
+<p>另一种方式是直接在配置文件中就写变量：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">bootenv: (</span><br><span class="line">        &#123;</span><br><span class="line">                name = &lt;Variable name&gt;;</span><br><span class="line">                value = &lt;Variable value&gt;;</span><br><span class="line">        &#125;</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<h2 id="版本管理"><a href="#版本管理" class="headerlink" title="版本管理"></a>版本管理</h2><p><code>swupdate</code>可以进行版本号比较，默认格式为：<code>&lt;major&gt;.&lt;minor&gt;.&lt;revision&gt;.&lt;build&gt;</code></p>
+<p>每个小段都是由数值组成的，其值为 0~65535，4 个 16 位组合成 64 位进行大小比较。</p>
+<p>在启动<code>swupdate</code>之前，应用软件需要更新<code>/etc/sw-versions</code>来保存各个软件包的版本，然后再来启动<code>swupdate</code>进行版本管理，文件内容格式为：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;name of component&gt;     &lt;version&gt;</span><br></pre></td></tr></table></figure>
+
+<h2 id="嵌入式脚本-Embedded-Script"><a href="#嵌入式脚本-Embedded-Script" class="headerlink" title="嵌入式脚本(Embedded Script)"></a>嵌入式脚本(Embedded Script)</h2><p>嵌入式脚本指的是在<code>sw-description</code>中嵌入脚本，该脚本是对配置文件全局可见的。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">embedded-script = &quot;&lt;Lua code&gt;&quot;</span><br></pre></td></tr></table></figure>
+
+<p>在编写脚本时需要注意：双引号应该使用转义字符进行转义，以避免影响脚本的解析。</p>
+<p>比如：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">print (\&quot;Test\&quot;)</span><br></pre></td></tr></table></figure>
+
+<p>在配置文件中的镜像文件或普通文件类型都可以调用一个嵌入式脚本的函数，通过<code>hook</code>标记函数名：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">files: (</span><br><span class="line">        &#123;</span><br><span class="line">                filename = &quot;examples.tar&quot;;</span><br><span class="line">                type = &quot;archive&quot;;</span><br><span class="line">                path = &quot;/tmp/test&quot;;</span><br><span class="line">                hook = &quot;set_version&quot;;</span><br><span class="line">                preserve-attributes = true;</span><br><span class="line">        &#125;</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p>一个脚本的示例如下：</p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">set_version</span><span class="params">(image)</span></span></span><br><span class="line">        <span class="built_in">print</span> (\<span class="string">&quot;RECOVERY_STATUS.RUN: \&quot;.. swupdate.RECOVERY_STATUS.RUN)</span></span><br><span class="line"><span class="string">        for k,l in pairs(image) do</span></span><br><span class="line"><span class="string">                swupdate.trace(\&quot;image[\&quot; .. tostring(k) .. \&quot;] = \&quot; .. tostring(l))</span></span><br><span class="line"><span class="string">        end</span></span><br><span class="line"><span class="string">        image.version = \&quot;1.0\&quot;</span></span><br><span class="line"><span class="string">        image.install_if_different = true</span></span><br><span class="line"><span class="string">        return true, image</span></span><br><span class="line"><span class="string">end</span></span><br></pre></td></tr></table></figure>
+
+<p>上述的<code>image</code>则为传入的参数列表，该脚本设置了版本和安装属性然后返回。</p>
+<p><code>swupdate</code>提供了一些函数便于调用，在脚本前需要写入：</p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">require</span> (<span class="string">&#x27;swupdate&#x27;</span>)</span><br></pre></td></tr></table></figure>
+
+<h1 id="验证与签名"><a href="#验证与签名" class="headerlink" title="验证与签名"></a>验证与签名</h1><h2 id="基本逻辑"><a href="#基本逻辑" class="headerlink" title="基本逻辑"></a>基本逻辑</h2><p><code>swupdate</code>的逻辑为：</p>
+<ol>
+<li><p>对<code>sw-description</code>进行签名验证，确保该文件未被篡改</p>
+</li>
+<li><p>在<code>sw-description</code>中包含各个独立镜像文件的哈希校验，确认这些镜像文件的正确性</p>
+</li>
+</ol>
+<p><code>swupdate</code>可以通过<code>menuconfig</code>来配置签名验证使用的算法</p>
+<ul>
+<li><p>RSA 公钥/私钥验证：私钥存放在构建主机中，公钥存放在目标设备上</p>
+</li>
+<li><p>CMS 用于证书</p>
+</li>
+<li><p>GPG 用于签名</p>
+</li>
+</ul>
+<h2 id="生成密钥和证书"><a href="#生成密钥和证书" class="headerlink" title="生成密钥和证书"></a>生成密钥和证书</h2><p>对于<code>RSA</code>和<code>CMS</code>算法，OpenSSL 用来生成密钥，对于<code>GPG</code>，gpg 用于生成密钥和对镜像文件签名。</p>
+<h3 id="使用-RSA"><a href="#使用-RSA" class="headerlink" title="使用 RSA"></a>使用 RSA</h3><p>生成公钥和私钥：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 先生成私钥</span></span><br><span class="line">openssl genrsa -aes256 -out priv.pem</span><br><span class="line"><span class="meta">#</span><span class="bash"> 再生成公钥</span></span><br><span class="line">openssl rsa -in priv.pem -out public.pem -outform PEM -pubout</span><br></pre></td></tr></table></figure>
+
+<p>使用 RSA 生成签名：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 对 sw-description 生成 rsa-pkcs<span class="comment">#1.5 签名</span></span></span><br><span class="line">openssl dgst -sha256 -sign priv.pem sw-description &gt; sw-description.sig</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 也可以生成 rsa-pss 签名</span></span><br><span class="line">openssl dgst -sha256 -sign priv.pem -sigopt rsa_padding_mode:pss \</span><br><span class="line">    -sigopt rsa_pss_saltlen:-2 sw-description &gt; sw-description.sig</span><br></pre></td></tr></table></figure>
+
+<h3 id="证书生成"><a href="#证书生成" class="headerlink" title="证书生成"></a>证书生成</h3><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">openssl req -x509 -newkey rsa:4096 -nodes -keyout mycert.key.pem \</span><br><span class="line">    -out mycert.cert.pem -subj &quot;/O=SWUpdate /CN=target&quot;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p><code>mycert.key.pem</code>用于保存在构建主机上</p>
+</li>
+<li><p><code>mycert.cert.pe</code>用于保存在目标设备机上</p>
+</li>
+</ul>
+<h3 id="使用-CMS-进行签名"><a href="#使用-CMS-进行签名" class="headerlink" title="使用 CMS 进行签名"></a>使用 CMS 进行签名</h3><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">openssl cms -sign -in  sw-description -out sw-description.sig -signer mycert.cert.pem \</span><br><span class="line">        -inkey mycert.key.pem -outform DER -nosmimecap -binary</span><br></pre></td></tr></table></figure>
+
+<h2 id="使用签名和验证"><a href="#使用签名和验证" class="headerlink" title="使用签名和验证"></a>使用签名和验证</h2><p>对于签名而言，配置文件<code>sw-description</code>和<code>sw-description.sig</code>结合使用，签名文件跟在配置文件之后。</p>
+<p>在配置文件中的镜像都需要包含属性<code>sha256</code>，代表该镜像文件的校验和。</p>
+<p>下面的脚本演示了如何打包：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">!/bin/bash</span></span><br><span class="line"></span><br><span class="line">MODE=&quot;RSA-PKCS-1.5&quot;</span><br><span class="line">PRODUCT_NAME=&quot;myproduct&quot;</span><br><span class="line">CONTAINER_VER=&quot;1.0&quot;</span><br><span class="line">IMAGES=&quot;rootfs kernel&quot;</span><br><span class="line">FILES=&quot;sw-description sw-description.sig $IMAGES&quot;</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="keyword">if</span> you use RSA</span></span><br><span class="line">if [ x&quot;$MODE&quot; == &quot;xRSA-PKCS-1.5&quot; ]; then</span><br><span class="line">    openssl dgst -sha256 -sign priv.pem sw-description &gt; sw-description.sig</span><br><span class="line">elif if [ x&quot;$MODE&quot; == &quot;xRSA-PSS&quot; ]; then</span><br><span class="line">    openssl dgst -sha256 -sign priv.pem -sigopt rsa_padding_mode:pss \</span><br><span class="line">        -sigopt rsa_pss_saltlen:-2 sw-description &gt; sw-description.sig</span><br><span class="line">elif if [ x&quot;$MODE&quot; == &quot;xGPG&quot; ]; then</span><br><span class="line">    gpg --batch --homedir &quot;$&#123;GPG_HOME_DIR&#125;&quot; --default-key &quot;$&#123;GPG_KEY&#125;&quot; \</span><br><span class="line">        --output sw-description.sig --detach-sig sw-description</span><br><span class="line">else</span><br><span class="line">    openssl cms -sign -in  sw-description -out sw-description.sig -signer mycert.cert.pem \</span><br><span class="line">        -inkey mycert.key.pem -outform DER -nosmimecap -binary</span><br><span class="line">fi</span><br><span class="line">for i in $FILES;do</span><br><span class="line">        echo $i;done | cpio -ov -H crc &gt;  $&#123;PRODUCT_NAME&#125;_$&#123;CONTAINER_VER&#125;.swu</span><br></pre></td></tr></table></figure>
+
+<p>下面的配置文件演示了带有 sha256 校验的内容：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">software =</span><br><span class="line">&#123;</span><br><span class="line">        version = &quot;0.1.0&quot;;</span><br><span class="line"></span><br><span class="line">        hardware-compatibility: [ &quot;revC&quot;];</span><br><span class="line"></span><br><span class="line">        images: (</span><br><span class="line">                &#123;</span><br><span class="line">                    filename = &quot;core-image-full-cmdline-beaglebone.ext3&quot;;</span><br><span class="line">                    device = &quot;/dev/mmcblk0p2&quot;;</span><br><span class="line">                    type = &quot;raw&quot;;</span><br><span class="line">                    sha256 = &quot;43cdedde429d1ee379a7d91e3e7c4b0b9ff952543a91a55bb2221e5c72cb342b&quot;;</span><br><span class="line">                &#125;</span><br><span class="line">        );</span><br><span class="line">        scripts: (</span><br><span class="line">                &#123;</span><br><span class="line">                    filename = &quot;test.lua&quot;;</span><br><span class="line">                    type = &quot;lua&quot;;</span><br><span class="line">                    sha256 = &quot;f53e0b271af4c2896f56a6adffa79a1ffa3e373c9ac96e00c4cfc577b9bea5f1&quot;;</span><br><span class="line">                 &#125;</span><br><span class="line">        );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="对称加密"><a href="#对称加密" class="headerlink" title="对称加密"></a>对称加密</h1><p><code>swupdate</code>支持使用 AES 对镜像文件进行对称加密，在配置<code>swupdate</code>时需要使能<code>ENCRYPTED_IMAGES</code>.其使用步骤如下：</p>
+<h2 id="生成密钥"><a href="#生成密钥" class="headerlink" title="生成密钥"></a>生成密钥</h2><p>对于<code>aes-256-cbc</code>，需要生成 32 字节密钥和 16 字节初始化向量：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">openssl rand -hex 32</span><br><span class="line"><span class="meta">#</span><span class="bash"> key, <span class="keyword">for</span> example 390ad54490a4a5f53722291023c19e08ffb5c4677a59e958c96ffa6e641df040</span></span><br><span class="line">openssl rand -hex 16</span><br><span class="line"><span class="meta">#</span><span class="bash"> IV, <span class="keyword">for</span> example d5d601bacfe13100b149177318ebc7a4</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="加密镜像"><a href="#加密镜像" class="headerlink" title="加密镜像"></a>加密镜像</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">openssl enc -aes-256-cbc -in &lt;INFILE&gt; -out &lt;OUTFILE&gt; -K &lt;KEY&gt; -iv &lt;IV&gt;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p><code>&lt;INFILE&gt;</code>：输入的原始镜像文件</p>
+</li>
+<li><p><code>&lt;OUTFILE&gt;</code>：加密后的镜像文件</p>
+</li>
+<li><p><code>&lt;KEY&gt;</code>：上面生成的 32 字节的密钥</p>
+</li>
+<li><p><code>&lt;IV&gt;</code>：上面生成的 16 字节初始化向量</p>
+</li>
+</ul>
+<h2 id="创建密钥文件"><a href="#创建密钥文件" class="headerlink" title="创建密钥文件"></a>创建密钥文件</h2><p>创建密钥文件，将密钥和初始化向量以空格分隔，写入文件。并在启动 <code>swupdate</code>时，以<code>-K</code>选项传入该文件：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">390ad54490a4a5f53722291023c19e08ffb5c4677a59e958c96ffa6e641df040 d5d601bacfe13100b149177318ebc7a4</span><br></pre></td></tr></table></figure>
+
+<h2 id="配置示例"><a href="#配置示例" class="headerlink" title="配置示例"></a>配置示例</h2><p>最后是在配置文件中加入描述：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">software =</span><br><span class="line">&#123;</span><br><span class="line">        version = &quot;0.0.1&quot;;</span><br><span class="line">        images: ( &#123;</span><br><span class="line">                        filename = &quot;core-image-full-cmdline-beaglebone.ext3.enc&quot;;</span><br><span class="line">                        device = &quot;/dev/mmcblk0p3&quot;;</span><br><span class="line">                        encrypted = true;</span><br><span class="line">                        ivt = &quot;65D793B87B6724BB27954C7664F15FF3&quot;;</span><br><span class="line">                &#125;</span><br><span class="line">        );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="handler"><a href="#handler" class="headerlink" title="handler"></a>handler</h1><p><code>handler</code>指的就是对各种镜像文件的安装处理程序，根据镜像文件的类型来匹配不同的<code>handler</code>。</p>
+<p><code>swupdate</code>开放了接口，可以扩展增加各种<code>handler</code>，以适配用户定义的类型。</p>
+<h2 id="创建新的-handler"><a href="#创建新的-handler" class="headerlink" title="创建新的 handler"></a>创建新的 <code>handler</code></h2><p>只需要按照<code>swupdate</code>的接口注册执行函数就可以了。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">my_handler</span><span class="params">(struct img_type *img,</span></span></span><br><span class="line"><span class="params"><span class="function">        <span class="keyword">void</span> __attribute__ ((__unused__)) *data)</span></span></span><br></pre></td></tr></table></figure>
+
+<p><code>img_type</code>指向要安装的镜像文件的起始，处理函数通过此结构体获取文件的信息，然后读取文件内容并执行安装。</p>
+<p><code>data</code>是用于描述安装过程的数据指针，对于脚本的 handler，其为<code>struct script_handler_data</code></p>
+<p><code>swupdate</code>还提供了通用函数，将流数据拷贝到目的地址：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">copyfile</span><span class="params">(<span class="keyword">int</span> fdin, <span class="keyword">int</span> fdout, <span class="keyword">int</span> nbytes, <span class="keyword">unsigned</span> <span class="keyword">long</span> *offs,</span></span></span><br><span class="line"><span class="params"><span class="function">        <span class="keyword">int</span> skip_file, <span class="keyword">int</span> compressed, <span class="keyword">uint32_t</span> *checksum, <span class="keyword">unsigned</span> <span class="keyword">char</span> *hash)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p><code>fdin</code>：输入流，在处理函数中通过<code>img-&gt;fdin</code>获得</p>
+</li>
+<li><p><code>hash</code>：镜像文件的签名</p>
+</li>
+</ul>
+<p>用户通过下面的函数注册新的<code>handler</code>函数：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">__attribute__((constructor))</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">my_handler_init</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">        <span class="built_in">register_handler</span>(<span class="string">&quot;mytype&quot;</span>, my_handler, my_mask, data);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其函数原型为：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">register_handler</span>(my_image_type, my_handler, my_mask, data);</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p><code>my_image_type</code>：以字符串表示的匹配镜像文件类型</p>
+</li>
+<li><p><code>my_handler</code>：处理函数的指针</p>
+</li>
+<li><p><code>my_mask</code>：<code>HANDLER_MASK</code>枚举值，表示可以处理的类型</p>
+</li>
+<li><p><code>data</code>：用于传递给处理函数的数据</p>
+</li>
+</ul>
+<h1 id="API"><a href="#API" class="headerlink" title="API"></a>API</h1><p><code>swupdate</code>具有可被外部程序调用的 API，用于启动<code>swupdate</code>，发送镜像文件，获取状态等。</p>
+<p><code>swupdate</code>使用的是 Unix Domain Socket，socket 路径按照以下顺序来决定：</p>
+<ol>
+<li><p>编译时配置的<code>CONFIG_SOCKET_CTRL_PATH</code></p>
+</li>
+<li><p>当环境变量<code>RUNTIME_DIRECTORY</code>设置了，则其位于<code>$RUNTIME_DIRECTORY/sockinstctrl</code></p>
+</li>
+<li><p>当环境变量<code>TMPDIR</code>设置了，则其位于<code>$TMPDIR/sockinstctrl</code></p>
+</li>
+<li><p><code>/tmp/sockinstctrl</code></p>
+</li>
+</ol>
+<blockquote>
+<p>swupdate 也编译了一个 <code>swupdate-client</code>工具，用于演示客户端如何与服务端进行通信。</p>
+</blockquote>
+<p>这也就意味着<code>swupdate</code>在系统启动后就已经启动服务了，其脚本<code>swupdate.sh</code>，用于启动该服务。该脚本还会遍历位于<code>/etc/swupdate/conf.d/</code>处的配置文件。</p>
+<h2 id="客户端与服务端的通信逻辑"><a href="#客户端与服务端的通信逻辑" class="headerlink" title="客户端与服务端的通信逻辑"></a>客户端与服务端的通信逻辑</h2><p>同时，<code>swupdate</code>提供了客户端库，便于以直接调用函数的方式来完成通信。</p>
+<p>在文件<code>network_ipc.h</code>中定义了通信的帧结构：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">        <span class="keyword">int</span> magic;</span><br><span class="line">        <span class="keyword">int</span> type;</span><br><span class="line">        msgdata data;</span><br><span class="line">&#125; ipc_message;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p><code>magic</code>：通信包的魔数</p>
+</li>
+<li><p><code>type</code>：包类型，包含：<code>REQ_INSTALL, ACK, NACK, GET_STATUS, POST_UPDATE, SWUPDATE_SUBPROCESS, SET_AES_KEY</code></p>
+</li>
+<li><p><code>msgdata</code>：通信的数据数据</p>
+</li>
+</ul>
+<p>客户端和<code>swupdate</code>通信的流程如下图：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmake%5D/%5BWhat%5DLinux--yocto/pic/swupdate_progress.jpg?raw=true"></p>
+<ol>
+<li><p>客户端先发<code>REQ_INSTALL</code>，等待获取到<code>ACK</code>，然后就可以发送镜像文件了</p>
+</li>
+<li><p>客户端持续发送镜像文件直到发送完成，发送标记给<code>swupdate</code></p>
+</li>
+<li><p>客户端从<code>swupdate</code>获取多次获取状态，来记录升级的进度</p>
+</li>
+</ol>
+<h2 id="客户端的-API-库说明"><a href="#客户端的-API-库说明" class="headerlink" title="客户端的 API 库说明"></a>客户端的 API 库说明</h2><h3 id="启动升级"><a href="#启动升级" class="headerlink" title="启动升级"></a>启动升级</h3><p>与升级相关的 API 有以下几个：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">swupdate_async_start</span><span class="params">(writedata wr_func, getstatus status_func,</span></span></span><br><span class="line"><span class="params"><span class="function">        terminated end_func, <span class="keyword">void</span> *req, <span class="keyword">ssize_t</span> size)</span></span></span><br><span class="line"><span class="function"><span class="keyword">typedef</span> <span class="title">int</span> <span class="params">(*writedata)</span><span class="params">(<span class="keyword">char</span> **buf, <span class="keyword">int</span> *size)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">typedef</span> <span class="title">int</span> <span class="params">(*getstatus)</span><span class="params">(ipc_message *msg)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">typedef</span> <span class="title">int</span> <span class="params">(*terminated)</span><span class="params">(RECOVERY_STATUS status)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>swupdate_async_start</code>：创建了一个线程与<code>swupdate</code>进行通信<ul>
+<li><p><code>wr_func</code>：当需要获取升级包时，此函数会被调用</p>
+</li>
+<li><p><code>status_func</code>：当完成数据流传输时，有状态改变时该函数会被调用</p>
+</li>
+<li><p><code>end_func</code>：当 <code>swupdate</code>停止后，该函数会被调用</p>
+</li>
+<li><p><code>req</code>：是<code>swupdate_request</code>结构体，用于控制升级过程</p>
+</li>
+<li><p><code>size</code>：即为结构体的大小</p>
+</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">swupdate_request</span> &#123;</span></span><br><span class="line">        <span class="keyword">unsigned</span> <span class="keyword">int</span> apiversion;</span><br><span class="line">        sourcetype source;</span><br><span class="line">        <span class="keyword">int</span> dry_run;</span><br><span class="line">        <span class="keyword">size_t</span> len;</span><br><span class="line">        <span class="keyword">char</span> info[<span class="number">512</span>];</span><br><span class="line">        <span class="keyword">char</span> software_set[<span class="number">256</span>];</span><br><span class="line">        <span class="keyword">char</span> running_mode[<span class="number">256</span>];</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p><code>source</code>：指定数据源的类型，包含<code>SOURCE_UNKNOWN, SOURCE_WEBSERVER, SOURCE_SURICATTA, SOURCE_DOWNLOADER, SOURCE_LOCAL</code></p>
+</li>
+<li><p><code>dry_run</code>：运行状态，包含<code>RUN_DEFAULT (set from command line), RUN_DRYRUN, RUN_INSTALL</code></p>
+</li>
+<li><p><code>info,len</code>：用于转发处理进程的接口</p>
+</li>
+<li><p><code>software_set,running_mode</code>：选择设置状态</p>
+</li>
+</ul>
+<p><code>swupdate_request</code>结构体需要首先通过<code>swupdate_prepare_req()</code>来设置为默认值后再来进一步设置。</p>
+<p>具体的使用流程，可以参考<code>examples/client</code>文件夹。</p>
+<h3 id="设置-AES-密钥"><a href="#设置-AES-密钥" class="headerlink" title="设置 AES 密钥"></a>设置 AES 密钥</h3><p>AES 解密的密钥可以在命令行通过<code>-K</code>选项输入，也可以通过下面的函数输入：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">swupdate_set_aes</span><span class="params">(<span class="keyword">char</span> *key, <span class="keyword">char</span> *ivt)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p>这里固定了是 AES-256 算法，所以<code>key</code>的长度是 64 字节的字符串，<code>ivt</code>是 32 字节的字符串。</p>
+<h3 id="控制swupdate"><a href="#控制swupdate" class="headerlink" title="控制swupdate"></a>控制<code>swupdate</code></h3><p>函数<code>ipc_send_cmd</code>用于给<code>swupdate</code>发送命令，这个函数是同步发送的：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ipc_message</span> &#123;</span></span><br><span class="line">   sourcetype source; <span class="comment">/* Who triggered the update */</span></span><br><span class="line">   <span class="keyword">int</span>     cmd;       <span class="comment">/* Optional encoded command */</span></span><br><span class="line">   <span class="keyword">int</span>     timeout;     <span class="comment">/* timeout in seconds if an aswer is expected */</span></span><br><span class="line">   <span class="keyword">unsigned</span> <span class="keyword">int</span> len;    <span class="comment">/* Len of data valid in buf */</span></span><br><span class="line">   <span class="keyword">char</span>    buf[<span class="number">2048</span>];   <span class="comment">/*</span></span><br><span class="line"><span class="comment">                         * Buffer that each source can fill</span></span><br><span class="line"><span class="comment">                         * with additional information</span></span><br><span class="line"><span class="comment">                         */</span></span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line">   <span class="function"><span class="keyword">int</span> <span class="title">ipc_send_cmd</span><span class="params">(ipc_message *msg)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p><code>source</code>的值为<code>SWUPDATE_SUBPROCESS</code></p>
+</li>
+<li><p><code>cmd</code>的类型可以参考<code>network_ipc.h</code></p>
+</li>
+</ul>
+<h3 id="在升级过程中获取信息"><a href="#在升级过程中获取信息" class="headerlink" title="在升级过程中获取信息"></a>在升级过程中获取信息</h3><p>除了可以获取升级的成功与失败外，还可以获取升级过程中的进度。客户端可以注册一个函数，来获取升级过程中的状态。</p>
+<blockquote>
+<p>swupdate-progress 是一个工具用于获取升级过程中的状态</p>
+</blockquote>
+<p>客户端注册的方式是通过<code>connect</code>来连接<code>/tmp/swupdateprog</code>，然后使用<code>recv</code>来获取消息即可，消息的结构如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">progress_msg</span> &#123;</span></span><br><span class="line">        <span class="keyword">unsigned</span> <span class="keyword">int</span>    magic;          <span class="comment">/* Magic Number */</span></span><br><span class="line">        <span class="keyword">unsigned</span> <span class="keyword">int</span>    status;         <span class="comment">/* Update Status (Running, Failure) */</span></span><br><span class="line">        <span class="keyword">unsigned</span> <span class="keyword">int</span>    dwl_percent;    <span class="comment">/* % downloaded data */</span></span><br><span class="line">        <span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">long</span> dwl_bytes;   <span class="comment">/* total of bytes to be downloaded */</span></span><br><span class="line">        <span class="keyword">unsigned</span> <span class="keyword">int</span>    nsteps;         <span class="comment">/* No. total of steps */</span></span><br><span class="line">        <span class="keyword">unsigned</span> <span class="keyword">int</span>    cur_step;       <span class="comment">/* Current step index */</span></span><br><span class="line">        <span class="keyword">unsigned</span> <span class="keyword">int</span>    cur_percent;    <span class="comment">/* % in current step */</span></span><br><span class="line">        <span class="keyword">char</span>            cur_image[<span class="number">256</span>]; <span class="comment">/* Name of image to be installed */</span></span><br><span class="line">        <span class="keyword">char</span>            hnd_name[<span class="number">64</span>];   <span class="comment">/* Name of running handler */</span></span><br><span class="line">        sourcetype      source;         <span class="comment">/* Interface that triggered the update */</span></span><br><span class="line">        <span class="keyword">unsigned</span> <span class="keyword">int</span>    infolen;        <span class="comment">/* Len of data valid in info */</span></span><br><span class="line">        <span class="keyword">char</span>            info[<span class="number">2048</span>];     <span class="comment">/* additional information about install */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p><code>status</code>：大的状态，包含<code>START, RUN, SUCCESS, FAILURE, DOWNLOAD, DONE</code></p>
+</li>
+<li><p><code>dwl_percent</code>：当状态为<code>DOWNLOAD</code>时，表示下载的状态</p>
+</li>
+<li><p><code>dwl_bytes</code>：已经下载的总字节数</p>
+</li>
+<li><p><code>nsteps</code>：总共运行的 handler 的数量</p>
+</li>
+<li><p><code>cur_step</code>：当前运行的 handler 的序号</p>
+</li>
+<li><p><code>cur_percent</code>：当前运行的 <code>handler</code>的进度</p>
+</li>
+<li><p><code>cur_images</code>：当前正在安装的镜像名</p>
+</li>
+<li><p><code>hnd_name</code>：当前正在运行的 handler 名</p>
+</li>
+<li><p><code>infolen</code>：info 数组中包含的数据长度</p>
+</li>
+<li><p><code>info</code>：安装过程的附加信息</p>
+</li>
+</ul>
+<p>整个过程的示例代码位于：<code>tools/swupdate-progress.c</code></p>
+<h3 id="bootloader-接口"><a href="#bootloader-接口" class="headerlink" title="bootloader 接口"></a>bootloader 接口</h3><p>bootloader 接口主要是对其环境变量进行设定的接口，其位于<code>include/bootloader.h</code>文件中，包含的有：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 获取环境变量</span></span><br><span class="line"><span class="function"><span class="keyword">char</span> *<span class="title">env_get</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *name)</span></span>;</span><br><span class="line"><span class="comment">// 设置环境变量</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">env_set</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *name, <span class="keyword">const</span> <span class="keyword">char</span> *value)</span></span>;</span><br><span class="line"><span class="comment">// 删除环境变量</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">env_unset</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *name)</span></span>;</span><br><span class="line"><span class="comment">// 从文件中读取并批量写入文件变量</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">apply_list</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *filename)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p>这些函数需要一开始被注册：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> bootloader trunk = &#123;</span><br><span class="line">    .env_get = &amp;do_env_get,</span><br><span class="line">    .env_set = &amp;do_env_set,</span><br><span class="line">    .env_unset = &amp;do_env_unset,</span><br><span class="line">    .apply_list = &amp;do_apply_list</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">__attribute__((constructor))</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">trunk_probe</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    (<span class="keyword">void</span>)<span class="built_in">register_bootloader</span>(BOOTLOADER_TRUNK, &amp;trunk);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在 <code>bootloader/uboot.c</code>中有使用示例。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>kcmetercec
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://kcmetercec.top/2024/12/19/linux_make_swupdate/" title="Swupdate 的简易使用">http://kcmetercec.top/2024/12/19/linux_make_swupdate/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/swupdate/" rel="tag"> <i class="fa fa-tag"></i> swupdate</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/10/21/professional_cpp_fmt/" rel="prev" title="认识 fmt">
+      <i class="fa fa-chevron-left"></i> 认识 fmt
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/12/31/zynqmp_boot/" rel="next" title="ZynqMP 的启动和配置">
+      ZynqMP 的启动和配置 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%88%9D%E8%AF%86"><span class="nav-number">1.</span> <span class="nav-text">初识</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%81%E7%A8%8B"><span class="nav-number">1.1.</span> <span class="nav-text">流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E6%A0%BC%E5%BC%8F"><span class="nav-number">1.2.</span> <span class="nav-text">文件格式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%96%E8%AF%91"><span class="nav-number">1.3.</span> <span class="nav-text">编译</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8"><span class="nav-number">1.4.</span> <span class="nav-text">使用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%94%B9%E5%8F%98-U-BOOT"><span class="nav-number">1.5.</span> <span class="nav-text">改变 U-BOOT</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9E%84%E5%BB%BA%E5%8D%87%E7%BA%A7%E5%8C%85"><span class="nav-number">1.6.</span> <span class="nav-text">构建升级包</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8D%87%E7%BA%A7%E7%AD%96%E7%95%A5"><span class="nav-number">2.</span> <span class="nav-text">升级策略</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#single-copy"><span class="nav-number">2.1.</span> <span class="nav-text">single copy</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#double-copy"><span class="nav-number">2.2.</span> <span class="nav-text">double copy</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#double-copy-with-rescue-system"><span class="nav-number">2.3.</span> <span class="nav-text">double-copy with rescue system</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AF%AD%E6%B3%95"><span class="nav-number">3.</span> <span class="nav-text">语法</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B"><span class="nav-number">3.1.</span> <span class="nav-text">示例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A1%AC%E4%BB%B6%E5%85%BC%E5%AE%B9%E6%80%A7"><span class="nav-number">3.2.</span> <span class="nav-text">硬件兼容性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#images"><span class="nav-number">3.3.</span> <span class="nav-text">images</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Files"><span class="nav-number">3.4.</span> <span class="nav-text">Files</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#scripts"><span class="nav-number">3.5.</span> <span class="nav-text">scripts</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#lua"><span class="nav-number">3.5.1.</span> <span class="nav-text">lua</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#shellscript"><span class="nav-number">3.5.2.</span> <span class="nav-text">shellscript</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%87%E7%BA%A7%E8%BF%87%E7%A8%8B%E4%B8%AD%E7%9A%84%E6%A0%87%E8%AE%B0%E7%8A%B6%E6%80%81"><span class="nav-number">3.6.</span> <span class="nav-text">升级过程中的标记状态</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9B%B4%E6%96%B0-bootloader-%E7%9A%84%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F"><span class="nav-number">3.7.</span> <span class="nav-text">更新 bootloader 的环境变量</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%89%88%E6%9C%AC%E7%AE%A1%E7%90%86"><span class="nav-number">3.8.</span> <span class="nav-text">版本管理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B5%8C%E5%85%A5%E5%BC%8F%E8%84%9A%E6%9C%AC-Embedded-Script"><span class="nav-number">3.9.</span> <span class="nav-text">嵌入式脚本(Embedded Script)</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%AA%8C%E8%AF%81%E4%B8%8E%E7%AD%BE%E5%90%8D"><span class="nav-number">4.</span> <span class="nav-text">验证与签名</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E9%80%BB%E8%BE%91"><span class="nav-number">4.1.</span> <span class="nav-text">基本逻辑</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%9F%E6%88%90%E5%AF%86%E9%92%A5%E5%92%8C%E8%AF%81%E4%B9%A6"><span class="nav-number">4.2.</span> <span class="nav-text">生成密钥和证书</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-RSA"><span class="nav-number">4.2.1.</span> <span class="nav-text">使用 RSA</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%81%E4%B9%A6%E7%94%9F%E6%88%90"><span class="nav-number">4.2.2.</span> <span class="nav-text">证书生成</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-CMS-%E8%BF%9B%E8%A1%8C%E7%AD%BE%E5%90%8D"><span class="nav-number">4.2.3.</span> <span class="nav-text">使用 CMS 进行签名</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E7%AD%BE%E5%90%8D%E5%92%8C%E9%AA%8C%E8%AF%81"><span class="nav-number">4.3.</span> <span class="nav-text">使用签名和验证</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AF%B9%E7%A7%B0%E5%8A%A0%E5%AF%86"><span class="nav-number">5.</span> <span class="nav-text">对称加密</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%9F%E6%88%90%E5%AF%86%E9%92%A5"><span class="nav-number">5.1.</span> <span class="nav-text">生成密钥</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8A%A0%E5%AF%86%E9%95%9C%E5%83%8F"><span class="nav-number">5.2.</span> <span class="nav-text">加密镜像</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E5%AF%86%E9%92%A5%E6%96%87%E4%BB%B6"><span class="nav-number">5.3.</span> <span class="nav-text">创建密钥文件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E7%A4%BA%E4%BE%8B"><span class="nav-number">5.4.</span> <span class="nav-text">配置示例</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#handler"><span class="nav-number">6.</span> <span class="nav-text">handler</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E6%96%B0%E7%9A%84-handler"><span class="nav-number">6.1.</span> <span class="nav-text">创建新的 handler</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#API"><span class="nav-number">7.</span> <span class="nav-text">API</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%A2%E6%88%B7%E7%AB%AF%E4%B8%8E%E6%9C%8D%E5%8A%A1%E7%AB%AF%E7%9A%84%E9%80%9A%E4%BF%A1%E9%80%BB%E8%BE%91"><span class="nav-number">7.1.</span> <span class="nav-text">客户端与服务端的通信逻辑</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%A2%E6%88%B7%E7%AB%AF%E7%9A%84-API-%E5%BA%93%E8%AF%B4%E6%98%8E"><span class="nav-number">7.2.</span> <span class="nav-text">客户端的 API 库说明</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8%E5%8D%87%E7%BA%A7"><span class="nav-number">7.2.1.</span> <span class="nav-text">启动升级</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AE-AES-%E5%AF%86%E9%92%A5"><span class="nav-number">7.2.2.</span> <span class="nav-text">设置 AES 密钥</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8E%A7%E5%88%B6swupdate"><span class="nav-number">7.2.3.</span> <span class="nav-text">控制swupdate</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9C%A8%E5%8D%87%E7%BA%A7%E8%BF%87%E7%A8%8B%E4%B8%AD%E8%8E%B7%E5%8F%96%E4%BF%A1%E6%81%AF"><span class="nav-number">7.2.4.</span> <span class="nav-text">在升级过程中获取信息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#bootloader-%E6%8E%A5%E5%8F%A3"><span class="nav-number">7.2.5.</span> <span class="nav-text">bootloader 接口</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">Qt, C++, linux, CS</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">107</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">55</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:kcmeter.cec@gmail.com" title="E-Mail → mailto:kcmeter.cec@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2021 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">206k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">3:08</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+document.querySelectorAll('.pdfobject-container').forEach(element => {
+  let url = element.dataset.target;
+  let pdfOpenParams = {
+    navpanes : 0,
+    toolbar  : 0,
+    statusbar: 0,
+    pagemode : 'thumbs',
+    view     : 'FitH'
+  };
+  let pdfOpenFragment = '#' + Object.entries(pdfOpenParams).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
+  let fullURL = `/lib/pdf/web/viewer.html?file=${encodeURIComponent(url)}${pdfOpenFragment}`;
+
+  if (NexT.utils.supportsPDFs()) {
+    element.innerHTML = `<embed class="pdfobject" src="${url + pdfOpenFragment}" type="application/pdf" style="height: ${element.dataset.height};">`;
+  } else {
+    element.innerHTML = `<iframe src="${fullURL}" style="height: ${element.dataset.height};" frameborder="0"></iframe>`;
+  }
+});
+</script>
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'f938893867df78f94802',
+      clientSecret: 'b6d8470939c53d26c98c4e3b9d4c9ceb55d6e78e',
+      repo        : 'kcmetercec.github.io',
+      owner       : 'KcMeterCEC',
+      admin       : ['KcMeterCEC'],
+      id          : 'f4b402d067d40b8c449388479c158539',
+        language: 'zh-CN',
+      distractionFreeMode: false
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+    </div>
+</body>
+</html>

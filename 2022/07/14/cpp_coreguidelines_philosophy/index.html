@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="通过阅读 CppCoreGuidelines 来理解现代 c++ 编码规范，同时也是对 Effective C++，Effective Modern C++，C++ Concurrency in Action 的温习。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="C++ Core Guidelines：一些基本规则">
+<meta property="og:url" content="http://kcmetercec.top/2022/07/14/cpp_coreguidelines_philosophy/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="通过阅读 CppCoreGuidelines 来理解现代 c++ 编码规范，同时也是对 Effective C++，Effective Modern C++，C++ Concurrency in Action 的温习。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-07-13T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-07-25T16:00:00.000Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="cpp">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://kcmetercec.top/2022/07/14/cpp_coreguidelines_philosophy/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>C++ Core Guidelines：一些基本规则 | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112423075-1# <app_id>"></script>
+    <script data-pjax>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-112423075-1# <app_id>');
+      }
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+        <li class="menu-item menu-item-commonweal">
+
+    <a href="/404/" rel="section"><i class="fa fa-heartbeat fa-fw"></i>公益 404</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2022/07/14/cpp_coreguidelines_philosophy/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="Qt, C++, linux, CS">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          C++ Core Guidelines：一些基本规则
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-07-14 00:00:00" itemprop="dateCreated datePublished" datetime="2022-07-14T00:00:00+08:00">2022-07-14</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-07-26 00:00:00" itemprop="dateModified" datetime="2022-07-26T00:00:00+08:00">2022-07-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/cpp/" itemprop="url" rel="index"><span itemprop="name">cpp</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/cpp/CoreGuidelines/" itemprop="url" rel="index"><span itemprop="name">CoreGuidelines</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.6k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>通过阅读 <a target="_blank" rel="noopener" href="https://github.com/isocpp/CppCoreGuidelines">CppCoreGuidelines</a> 来理解现代 c++ 编码规范，同时也是对 <a target="_blank" rel="noopener" href="https://book.douban.com/subject/1842426/">Effective C++</a>，<a target="_blank" rel="noopener" href="https://book.douban.com/subject/25923597/">Effective Modern C++</a>，<a target="_blank" rel="noopener" href="https://book.douban.com/subject/27036085/">C++ Concurrency in Action</a> 的温习。</p>
+<span id="more"></span>
+
+<h1 id="准确清晰的表达代码意图"><a href="#准确清晰的表达代码意图" class="headerlink" title="准确清晰的表达代码意图"></a>准确清晰的表达代码意图</h1><p>表达的代码意图越完整清晰，越有利于利用编译器来帮我们排除问题。</p>
+<h2 id="约束限定"><a href="#约束限定" class="headerlink" title="约束限定"></a>约束限定</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Date</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function">Month <span class="title">month</span><span class="params">()</span> <span class="keyword">const</span></span>;  <span class="comment">// do</span></span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">month</span><span class="params">()</span></span>;          <span class="comment">// don&#x27;t</span></span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>上面代码中，第一个函数声明优于第二个函数声明：第一个函数明确表示了返回类型是 Month，且不会改变对象的成员变量。这不仅利于编译器检查，更让代码的可读性更好。</p>
+<blockquote>
+<p>关于<code>const</code>的相关事项，在<a href="http://kcmetercec.top/2022/04/10/effective_cpp_use_const/">这里有了详细的说明</a>。</p>
+</blockquote>
+<h2 id="充分利用标准库"><a href="#充分利用标准库" class="headerlink" title="充分利用标准库"></a>充分利用标准库</h2><p>要善于利用标准库提供的工具，不仅使得代码简短清晰，效率也非常高。</p>
+<p>比如，要实现一个函数，比较用户输入的字符串与字符串容器是否有匹配：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">f</span><span class="params">(vector&lt;string&gt;&amp; v)</span> </span>&#123;</span><br><span class="line">    string val;</span><br><span class="line">    cin &gt;&gt; val;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    <span class="keyword">int</span> index = <span class="number">-1</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; v.<span class="built_in">size</span>(); ++i) &#123;</span><br><span class="line">        <span class="keyword">if</span> (v[i] == val) &#123;</span><br><span class="line">            index = i;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上面的这种方式就是便利的比较，以返回符合条件的索引，那么标准库的<code>std::find</code>则更加的简洁明了：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">f</span><span class="params">(vector&lt;string&gt;&amp; v)</span> </span>&#123;</span><br><span class="line">    string val;</span><br><span class="line">    cin &gt;&gt; val;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    <span class="keyword">auto</span> p = <span class="built_in">find</span>(<span class="built_in">begin</span>(v), <span class="built_in">end</span>(v), val);  <span class="comment">// better</span></span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>以上一行代码，便清晰明确的表达了上面 7 行代码想要表达的意图。</p>
+<p>再比如要将标准输入的值存入内存：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> sz = <span class="number">100</span>;</span><br><span class="line"><span class="keyword">int</span>* p = (<span class="keyword">int</span>*) <span class="built_in">malloc</span>(<span class="built_in"><span class="keyword">sizeof</span></span>(<span class="keyword">int</span>) * sz);</span><br><span class="line"><span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line"><span class="comment">// ...</span></span><br><span class="line"><span class="keyword">for</span> (;;) &#123;</span><br><span class="line">    <span class="comment">// ... read an int into x, exit loop if end of file is reached ...</span></span><br><span class="line">    <span class="comment">// ... check that x is valid ...</span></span><br><span class="line">    <span class="keyword">if</span> (count == sz)</span><br><span class="line">        p = (<span class="keyword">int</span>*) <span class="built_in">realloc</span>(p, <span class="built_in"><span class="keyword">sizeof</span></span>(<span class="keyword">int</span>) * sz * <span class="number">2</span>);</span><br><span class="line">    p[count++] = x;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>以上杂乱的代码，使用<code>std::vector</code>是个更好的选择：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">vector&lt;<span class="keyword">int</span>&gt; v;</span><br><span class="line">v.<span class="built_in">reserve</span>(<span class="number">100</span>);</span><br><span class="line"><span class="comment">// ...</span></span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">int</span> x; cin &gt;&gt; x; ) &#123;</span><br><span class="line">    <span class="comment">// ... check that x is valid ...</span></span><br><span class="line">    v.<span class="built_in">push_back</span>(x);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="参数的正确命名"><a href="#参数的正确命名" class="headerlink" title="参数的正确命名"></a>参数的正确命名</h2><p>为了更好的可读性，变量、函数参数的名称等都需要一个清晰的命名，必要时候需要为其自定义类型。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">change_speed</span>(<span class="keyword">double</span> s);   <span class="comment">// bad: what does s signify?</span></span><br><span class="line"><span class="comment">// ...</span></span><br><span class="line"><span class="built_in">change_speed</span>(<span class="number">2.3</span>);</span><br></pre></td></tr></table></figure>
+
+<p>上面这个代码，并没有明确标出 s 所对应的单位。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">change_speed</span>(Speed s);    <span class="comment">// better: the meaning of s is specified</span></span><br><span class="line"><span class="comment">// ...</span></span><br><span class="line"><span class="built_in">change_speed</span>(<span class="number">2.3</span>);        <span class="comment">// error: no unit</span></span><br><span class="line"><span class="built_in">change_speed</span>(<span class="number">23</span>_m / <span class="number">10</span>s);  <span class="comment">// meters per second</span></span><br></pre></td></tr></table></figure>
+
+<p>这里定义了新的类型，便可以带有单位。</p>
+<h1 id="编译时检查优于运行时检查"><a href="#编译时检查优于运行时检查" class="headerlink" title="编译时检查优于运行时检查"></a>编译时检查优于运行时检查</h1><p>在编译时检查既能很好的表达意图，还能提高代码的运行性能。</p>
+<p>比如，下面的代码想要检查<code>int</code>类型是否大于 32 位：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> bits = <span class="number">0</span>;         </span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i; i &lt;&lt;= <span class="number">1</span>)</span><br><span class="line">    ++bits;</span><br><span class="line"><span class="keyword">if</span> (bits &lt; <span class="number">32</span>)</span><br><span class="line">    std::cerr &lt;&lt; <span class="string">&quot;int too small\n&quot;</span>;</span><br></pre></td></tr></table></figure>
+
+<p>上面代码可读性不好，且会占用运行时时间，而在编译时检查则一行代码就可以了：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in"><span class="keyword">static_assert</span></span>(<span class="built_in"><span class="keyword">sizeof</span></span>(<span class="keyword">int</span>) &gt;= <span class="number">4</span>);    <span class="comment">// do: compile-time check</span></span><br></pre></td></tr></table></figure>
+
+<p>在比如需要给函数传入数组地址，那么一般也会需要传入数组的大小：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">read</span><span class="params">(<span class="keyword">int</span>* p, <span class="keyword">int</span> n)</span></span>;   <span class="comment">// read max n integers into *p</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">int</span> a[<span class="number">100</span>];</span><br><span class="line"><span class="built_in">read</span>(a, <span class="number">1000</span>);    <span class="comment">// bad, off the end</span></span><br></pre></td></tr></table></figure>
+
+<p>但是当数组大小值传入大于数组时，就会引发数组越界。这种情况下一个方法是使用<code>std::array&lt;T&gt;</code>替代传统数组，另一个方法是使用<code>std::span&lt;T&gt;</code>由编译器来获取数组的大小：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;span&gt;</span></span></span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">ReadArray</span><span class="params">(std::span&lt;<span class="keyword">int</span>&gt; array)</span> </span>&#123;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;The size of array is &quot;</span> &lt;&lt; array.<span class="built_in">size</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span>* argv[])</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> array[<span class="number">100</span>] = &#123;&#125;;</span><br><span class="line">    </span><br><span class="line">    <span class="built_in">ReadArray</span>(array);</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="编译时无法检查的运行时应尽量检查"><a href="#编译时无法检查的运行时应尽量检查" class="headerlink" title="编译时无法检查的运行时应尽量检查"></a>编译时无法检查的运行时应尽量检查</h1><p>很多错误无法在编译期完成检查，那么在运行期，需要尽可能的检查其余错误，避免程序漏洞。</p>
+<p>比如下面的代码就忽略了运行期检查：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// separately compiled, possibly dynamically loaded</span></span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">void</span> <span class="title">f</span><span class="params">(<span class="keyword">int</span>* p)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">g</span><span class="params">(<span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// bad: the number of elements is not passed to f()</span></span><br><span class="line">    <span class="built_in">f</span>(<span class="keyword">new</span> <span class="keyword">int</span>[n]);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上面直接在形参处申请了动态内存传给外部库函数<code>f</code>，那么当前代码都无法获取到动态内存的地址，就无法做任何错误检查（包括申请的地址，以及申请的大小）。</p>
+<p>下面假设库函数加上了数组大小：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// separately compiled, possibly dynamically loaded</span></span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">void</span> <span class="title">f2</span><span class="params">(<span class="keyword">int</span>* p, <span class="keyword">int</span> n)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">g2</span><span class="params">(<span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">f2</span>(<span class="keyword">new</span> <span class="keyword">int</span>[n], m);  <span class="comment">// bad: a wrong number of elements can be passed to f()</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>直接以<code>new</code>的形式传入参数也是不可取的，因为并不知道<code>f2</code>内部是否会<code>delete</code>这段内存，且传入数组的大小也会出错。</p>
+<p>下面再改进使参数成为智能指针：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// separately compiled, possibly dynamically loaded</span></span><br><span class="line"><span class="comment">// NB: this assumes the calling code is ABI-compatible, using a</span></span><br><span class="line"><span class="comment">// compatible C++ compiler and the same stdlib implementation</span></span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">void</span> <span class="title">f3</span><span class="params">(std::unique_ptr&lt;<span class="keyword">int</span>[]&gt;, <span class="keyword">int</span> n)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">g3</span><span class="params">(<span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">f3</span>(std::make_unique&lt;<span class="keyword">int</span>[]&gt;(n), m);    <span class="comment">// bad: pass ownership and size separately</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这种方式就不用担心指针释放的问题，但是智能指针不能传入申请内存的大小，所以还是可能出错。</p>
+<p>所以最好的方式就是传入对象，该对象包含了内存的大小：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">void</span> <span class="title">f4</span><span class="params">(vector&lt;<span class="keyword">int</span>&gt;&amp;)</span></span>;   <span class="comment">// separately compiled, possibly dynamically loaded</span></span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">void</span> <span class="title">f4</span><span class="params">(span&lt;<span class="keyword">int</span>&gt;)</span></span>;      <span class="comment">// separately compiled, possibly dynamically loaded</span></span><br><span class="line">                                <span class="comment">// NB: this assumes the calling code is ABI-compatible, using a</span></span><br><span class="line">                                <span class="comment">// compatible C++ compiler and the same stdlib implementation</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">g3</span><span class="params">(<span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="function">vector&lt;<span class="keyword">int</span>&gt; <span class="title">v</span><span class="params">(n)</span></span>;</span><br><span class="line">    <span class="built_in">f4</span>(v);                     <span class="comment">// pass a reference, retain ownership</span></span><br><span class="line">    <span class="built_in">f4</span>(span&lt;<span class="keyword">int</span>&gt;&#123;v&#125;);          <span class="comment">// pass a view, retain ownership</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="尽早的捕获运行时错误"><a href="#尽早的捕获运行时错误" class="headerlink" title="尽早的捕获运行时错误"></a>尽早的捕获运行时错误</h1><p>比如下面的代码，当 m &gt; n 时，就会发生数组越界：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">increment1</span><span class="params">(<span class="keyword">int</span>* p, <span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; ++i) ++p[i];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">use1</span><span class="params">(<span class="keyword">int</span> m)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">int</span> n = <span class="number">10</span>;</span><br><span class="line">    <span class="keyword">int</span> a[n] = &#123;&#125;;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    <span class="built_in">increment1</span>(a, m);   <span class="comment">// maybe typo, maybe m &lt;= n is supposed</span></span><br><span class="line">                        <span class="comment">// but assume that m == 20</span></span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>而通过使用<code>std::span</code>则可以捕获该问题：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;span&gt;</span></span></span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">increment2</span><span class="params">(std::span&lt;<span class="keyword">int</span>&gt; p)</span> </span>&#123;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;array size: &quot;</span> &lt;&lt; p.<span class="built_in">size</span>() &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span>&amp; x : p) ++x;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">use2</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">int</span> n = <span class="number">10</span>;</span><br><span class="line">    <span class="keyword">int</span> a[n] = &#123;&#125;;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    <span class="built_in">increment2</span>(a);    <span class="comment">// maybe typo, maybe m &lt;= n is supposed</span></span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; ++i) &#123;</span><br><span class="line">        std::cout &lt;&lt; a[i] &lt;&lt; <span class="string">&quot;,&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span>* argv[])</span> </span>&#123;</span><br><span class="line">    <span class="built_in">use2</span>();</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="尽量避免资源泄露"><a href="#尽量避免资源泄露" class="headerlink" title="尽量避免资源泄露"></a>尽量避免资源泄露</h1><p>这里的资源除了内存，还有文件句柄、socket、控制权等等。</p>
+<p>就算是很小的几个字节泄露，对于需要长时间运行的程序而言都会最终造成灾难。</p>
+<p>比如下面这个文件句柄泄露的例子：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">f</span><span class="params">(<span class="keyword">char</span>* name)</span> </span>&#123;</span><br><span class="line">    FILE* input = <span class="built_in">fopen</span>(name, <span class="string">&quot;r&quot;</span>);</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    <span class="keyword">if</span> (something) <span class="keyword">return</span>;   <span class="comment">// bad: if something == true, a file handle is leaked</span></span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    <span class="built_in">fclose</span>(input);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当<code>if</code>为真时，该文件句柄便泄露了，长时间运行该函数，会到达操作系统限制量而杀死该进程。</p>
+<p>显然，这种情况使用 RAII 是最合适不过了：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">f</span><span class="params">(<span class="keyword">char</span>* name)</span> </span>&#123;</span><br><span class="line">    std::ifstream input &#123;name&#125;;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    <span class="keyword">if</span> (something) <span class="keyword">return</span>;   <span class="comment">// OK: no leak</span></span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>当该函数退出后，<code>std::ifstream</code>的析构被调用，从而会释放该资源。</p>
+<h1 id="不要浪费时间和空间"><a href="#不要浪费时间和空间" class="headerlink" title="不要浪费时间和空间"></a>不要浪费时间和空间</h1><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;exception&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdexcept&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;cstring&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">X</span> &#123;</span></span><br><span class="line">    <span class="keyword">char</span> ch;</span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line">    std::string s;</span><br><span class="line">    <span class="keyword">char</span> ch2;</span><br><span class="line"></span><br><span class="line">    X&amp; <span class="keyword">operator</span>=(<span class="keyword">const</span> X&amp; a) &#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">X</span>(<span class="keyword">const</span> X&amp;) &#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">X</span>() = <span class="keyword">default</span>;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function">X <span class="title">waste</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span>* p)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!p) <span class="keyword">throw</span> std::<span class="built_in">invalid_argument</span>(<span class="string">&quot;nullptr&quot;</span>);</span><br><span class="line">    <span class="keyword">int</span> n = std::<span class="built_in">strlen</span>(p);</span><br><span class="line">    <span class="keyword">auto</span> buf = <span class="keyword">new</span> <span class="keyword">char</span>[n];</span><br><span class="line">    <span class="keyword">if</span> (!buf) <span class="keyword">throw</span> std::<span class="built_in">bad_alloc</span>();</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; ++i) buf[i] = p[i];</span><br><span class="line">    <span class="comment">// ... manipulate buffer ...</span></span><br><span class="line">    X x;</span><br><span class="line">    x.ch = <span class="string">&#x27;a&#x27;</span>;</span><br><span class="line">    x.s = std::<span class="built_in">string</span>(<span class="string">&quot;&quot;</span>, n);    <span class="comment">// give x.s space for *p</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; x.s.<span class="built_in">size</span>(); ++i) x.s[i] = buf[i];  <span class="comment">// copy buf into x.s</span></span><br><span class="line">    <span class="keyword">delete</span>[] buf;</span><br><span class="line">    <span class="keyword">return</span> x;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">driver</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    X x = <span class="built_in">waste</span>(<span class="string">&quot;Typical argument&quot;</span>);</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;contents of x : &quot;</span> &lt;&lt; x.s &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="built_in">driver</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>以上这段代码，在时间和空间上都有所浪费：</p>
+<ol>
+<li>类<code>X</code>中的成员<code>i</code>和<code>ch2</code>都没有被使用，这造成了内存空间的浪费</li>
+<li>由于类<code>X</code>显示定义了拷贝构造和拷贝赋值函数，导致编译期没有默认生成移动构造函数，所以无法使用返回值优化（RVO），造成了运行时间的浪费（默认函数参考<a href="http://kcmetercec.top/2022/04/13/effective_cpp_default_func/">此文章</a>）</li>
+<li>将形参<code>p</code>拷贝到<code>string</code>，并不需要再申请一段临时的空间来存储数据后再来拷贝，这造成了运行时间的浪费</li>
+</ol>
+<p>修改后的高效代码应该如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;exception&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdexcept&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;cstring&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">X</span> &#123;</span></span><br><span class="line">    <span class="keyword">char</span> ch;</span><br><span class="line">    std::string s;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function">X <span class="title">waste</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span>* p)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!p) <span class="keyword">throw</span> std::<span class="built_in">invalid_argument</span>(<span class="string">&quot;nullptr&quot;</span>);</span><br><span class="line"></span><br><span class="line">    X x;</span><br><span class="line">    x.ch = <span class="string">&#x27;a&#x27;</span>;</span><br><span class="line">    x.s = std::<span class="built_in">string</span>(p, std::<span class="built_in">strlen</span>(p));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> x;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">driver</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    X x = <span class="built_in">waste</span>(<span class="string">&quot;Typical argument&quot;</span>);</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;contents of x : &quot;</span> &lt;&lt; x.s &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="built_in">driver</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>再比如下面的循环：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">lower</span><span class="params">(zstring s)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="built_in">strlen</span>(s); ++i) s[i] = <span class="built_in">tolower</span>(s[i]);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>每执行一次，都要执行<code>std::strlen</code>，这浪费了很多时间。正确的做法是进入循环前首先获取一次长度存入变量，然后直接使用该变量即可。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>kcmetercec
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://kcmetercec.top/2022/07/14/cpp_coreguidelines_philosophy/" title="C++ Core Guidelines：一些基本规则">http://kcmetercec.top/2022/07/14/cpp_coreguidelines_philosophy/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/cpp/" rel="tag"> <i class="fa fa-tag"></i> cpp</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/06/13/net_base_linux_timer/" rel="prev" title="Linux 定时器">
+      <i class="fa fa-chevron-left"></i> Linux 定时器
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/07/21/qtwidget_painter_viewport_window/" rel="next" title="理解 Window 和 Viewport">
+      理解 Window 和 Viewport <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%87%86%E7%A1%AE%E6%B8%85%E6%99%B0%E7%9A%84%E8%A1%A8%E8%BE%BE%E4%BB%A3%E7%A0%81%E6%84%8F%E5%9B%BE"><span class="nav-number">1.</span> <span class="nav-text">准确清晰的表达代码意图</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BA%A6%E6%9D%9F%E9%99%90%E5%AE%9A"><span class="nav-number">1.1.</span> <span class="nav-text">约束限定</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%85%E5%88%86%E5%88%A9%E7%94%A8%E6%A0%87%E5%87%86%E5%BA%93"><span class="nav-number">1.2.</span> <span class="nav-text">充分利用标准库</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E6%95%B0%E7%9A%84%E6%AD%A3%E7%A1%AE%E5%91%BD%E5%90%8D"><span class="nav-number">1.3.</span> <span class="nav-text">参数的正确命名</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BC%96%E8%AF%91%E6%97%B6%E6%A3%80%E6%9F%A5%E4%BC%98%E4%BA%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%A3%80%E6%9F%A5"><span class="nav-number">2.</span> <span class="nav-text">编译时检查优于运行时检查</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BC%96%E8%AF%91%E6%97%B6%E6%97%A0%E6%B3%95%E6%A3%80%E6%9F%A5%E7%9A%84%E8%BF%90%E8%A1%8C%E6%97%B6%E5%BA%94%E5%B0%BD%E9%87%8F%E6%A3%80%E6%9F%A5"><span class="nav-number">3.</span> <span class="nav-text">编译时无法检查的运行时应尽量检查</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%BD%E6%97%A9%E7%9A%84%E6%8D%95%E8%8E%B7%E8%BF%90%E8%A1%8C%E6%97%B6%E9%94%99%E8%AF%AF"><span class="nav-number">4.</span> <span class="nav-text">尽早的捕获运行时错误</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%BD%E9%87%8F%E9%81%BF%E5%85%8D%E8%B5%84%E6%BA%90%E6%B3%84%E9%9C%B2"><span class="nav-number">5.</span> <span class="nav-text">尽量避免资源泄露</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%8D%E8%A6%81%E6%B5%AA%E8%B4%B9%E6%97%B6%E9%97%B4%E5%92%8C%E7%A9%BA%E9%97%B4"><span class="nav-number">6.</span> <span class="nav-text">不要浪费时间和空间</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">Qt, C++, linux, CS</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">107</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">55</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:kcmeter.cec@gmail.com" title="E-Mail → mailto:kcmeter.cec@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2021 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">206k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">3:08</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+document.querySelectorAll('.pdfobject-container').forEach(element => {
+  let url = element.dataset.target;
+  let pdfOpenParams = {
+    navpanes : 0,
+    toolbar  : 0,
+    statusbar: 0,
+    pagemode : 'thumbs',
+    view     : 'FitH'
+  };
+  let pdfOpenFragment = '#' + Object.entries(pdfOpenParams).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
+  let fullURL = `/lib/pdf/web/viewer.html?file=${encodeURIComponent(url)}${pdfOpenFragment}`;
+
+  if (NexT.utils.supportsPDFs()) {
+    element.innerHTML = `<embed class="pdfobject" src="${url + pdfOpenFragment}" type="application/pdf" style="height: ${element.dataset.height};">`;
+  } else {
+    element.innerHTML = `<iframe src="${fullURL}" style="height: ${element.dataset.height};" frameborder="0"></iframe>`;
+  }
+});
+</script>
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'f938893867df78f94802',
+      clientSecret: 'b6d8470939c53d26c98c4e3b9d4c9ceb55d6e78e',
+      repo        : 'kcmetercec.github.io',
+      owner       : 'KcMeterCEC',
+      admin       : ['KcMeterCEC'],
+      id          : '4048cab0ed6b943e42a6c6479d09c809',
+        language: 'zh-CN',
+      distractionFreeMode: false
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+    </div>
+</body>
+</html>

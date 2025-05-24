@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="kernel version arch    v5.4.0 arm32">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 内存的申请与释放">
+<meta property="og:url" content="http://kcmetercec.top/2024/08/13/linux_memory_overview_allocAndFree/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="kernel version arch    v5.4.0 arm32">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmm%5D/skeleton/buddy_struct.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmm%5D/skeleton/malloc.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmm%5D/skeleton/malloc_ex.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmm%5D/skeleton/vss_rss.jpg?raw=true">
+<meta property="article:published_time" content="2024-08-12T16:00:00.000Z">
+<meta property="article:modified_time" content="2024-08-12T16:00:00.000Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="linux">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmm%5D/skeleton/buddy_struct.jpg?raw=true">
+
+<link rel="canonical" href="http://kcmetercec.top/2024/08/13/linux_memory_overview_allocAndFree/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Linux 内存的申请与释放 | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112423075-1# <app_id>"></script>
+    <script data-pjax>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-112423075-1# <app_id>');
+      }
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+        <li class="menu-item menu-item-commonweal">
+
+    <a href="/404/" rel="section"><i class="fa fa-heartbeat fa-fw"></i>公益 404</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2024/08/13/linux_memory_overview_allocAndFree/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="Qt, C++, linux, CS">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux 内存的申请与释放
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-08-13 00:00:00" itemprop="dateCreated datePublished" datetime="2024-08-13T00:00:00+08:00">2024-08-13</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/memory/" itemprop="url" rel="index"><span itemprop="name">memory</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/memory/overview/" itemprop="url" rel="index"><span itemprop="name">overview</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.7k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <table>
+<thead>
+<tr>
+<th>kernel version</th>
+<th>arch</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>v5.4.0</td>
+<td>arm32</td>
+</tr>
+</tbody></table>
+<span id="more"></span>
+
+<h1 id="buddy-算法缺陷"><a href="#buddy-算法缺陷" class="headerlink" title="buddy 算法缺陷"></a>buddy 算法缺陷</h1><h2 id="算法页面连续性缺陷"><a href="#算法页面连续性缺陷" class="headerlink" title="算法页面连续性缺陷"></a>算法页面连续性缺陷</h2><p>buddy算法虽然是动态的分离和合并，但合并的前置条件是这段物理页内存空间需要是连续的。但在申请内存的时候，确是分散的。<br>随着时间的推移，最终必然会造成很多空闲内存页分散的情况。</p>
+<p>这就会造成一个问题： <strong>当DMA需要申请一个连续的物理内存空间时，虽然空闲页面远远大于此内存，但由于它们都是分散的，导致申请失败!</strong></p>
+<ul>
+<li>对于用户而言，虚拟地址空间连续即可，物理空间是否分散都不影响其使用，而DMA是直接对应物理内存操作的，需要其物理内存真的连续。</li>
+</ul>
+<h2 id="页面连续性问题解决方案"><a href="#页面连续性问题解决方案" class="headerlink" title="页面连续性问题解决方案"></a>页面连续性问题解决方案</h2><h3 id="reserved-内存"><a href="#reserved-内存" class="headerlink" title="reserved 内存"></a>reserved 内存</h3><p>为了保证 DMA 在任何时候都可以申请到连续的物理内存，所以在一开始就指定一片内存区域为保留区，仅仅用于DMA申请连续物理内存。</p>
+<p>但这会导致当平时DMA不使用时，这片内存也无法用作其他用途，造成空间浪费。</p>
+<h3 id="CMA-Contiguous-Memory-Allocator-连续内存分配器"><a href="#CMA-Contiguous-Memory-Allocator-连续内存分配器" class="headerlink" title="CMA(Contiguous Memory Allocator, 连续内存分配器)"></a>CMA(Contiguous Memory Allocator, 连续内存分配器)</h3><p>为了弥补 reserved 方式的不足，三星提出了CMA方式，其基本思想为：</p>
+<ol>
+<li><p>在物理内存分配了一片CMA区域(设备树中指定)，这片区域是物理内存连续的。</p>
+</li>
+<li><p>当DMA没有使用时，这片CMA区域交付给用户空间使用</p>
+</li>
+<li><p>当DMA要使用时，将用户空间的虚拟与物理内存对应表进行修改，也就是将这片物理内存区域移动到其他物理内存区域，空闲出 CMA 区。</p>
+<ul>
+<li>在这个过程中，由于应用程序的虚拟地址没有改变，所以其感知不到这个变化</li>
+<li>在移动应用程序对应的物理内存时，新申请的内存是否连续对应用程序并不影响</li>
+<li>由于在移动过程中需要重新修改页表，这段时间应用程序无法操作物理内存，会有短暂的卡顿。</li>
+</ul>
+</li>
+<li><p>将CMA区交付给DMA使用。</p>
+</li>
+</ol>
+<ul>
+<li>有关reserved内存在设备树中的配置文档位于 <code>Documentation/devicetree/bindings/reserved-memory/reserved-memory.txt</code> </li>
+</ul>
+<p>可以在 menuconfig 中配置 cma：</p>
+<ul>
+<li><code>Memory Management options -&gt; Contiguous Memory Allocator</code> : 使能cma</li>
+<li><code>Library routines -&gt; DMA Contiguous Mmeory Allocator</code> : 使能dma_cma</li>
+</ul>
+<h2 id="算法粒度问题"><a href="#算法粒度问题" class="headerlink" title="算法粒度问题"></a>算法粒度问题</h2><p>由于buddy算法的基本单位是页，而目前大部分页都是4K字节，这就导致当一个用户仅申请几个字节时，剩余的3K多字节就白白浪费了！</p>
+<p>为了解决这个问题，Linux内核在buddy的基础之上进行了二次管理。</p>
+<h2 id="内存碎片"><a href="#内存碎片" class="headerlink" title="内存碎片"></a>内存碎片</h2><p>在内核空间申请的内存都是不可移动的，这也会导致最终的内存碎片。虽然内存中有足够多的空间，但这些空间由于其不连续而导致申请大内存失败。</p>
+<p>为此linux将内存空间又分为了可移动的、不可移动的、可回收类型，内核空间就在不可移动内存中申请空间，用户空间就在可移动内存中申请空间。这样内核就可以整理可移动的内存空间以腾出大片的连续内存。</p>
+<p>但这些类型的分配都是一个动态的过程，最开始都是可移动的页面，只有在内核申请时才会从可移动页面申请一部分为不可移动内存。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> ,* This array describes the order lists are fallen back to when</span></span><br><span class="line"><span class="comment"> ,* the free lists for the desirable migrate type are depleted</span></span><br><span class="line"><span class="comment"> ,*/</span></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">int</span> fallbacks[MIGRATE_TYPES][<span class="number">4</span>] = &#123;</span><br><span class="line">                                          [MIGRATE_UNMOVABLE]   = &#123; MIGRATE_RECLAIMABLE, MIGRATE_MOVABLE,   MIGRATE_TYPES &#125;,</span><br><span class="line">                                          [MIGRATE_RECLAIMABLE] = &#123; MIGRATE_UNMOVABLE,   MIGRATE_MOVABLE,   MIGRATE_TYPES &#125;,</span><br><span class="line">                                          [MIGRATE_MOVABLE]     = &#123; MIGRATE_RECLAIMABLE, MIGRATE_UNMOVABLE, MIGRATE_TYPES &#125;,</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_CMA</span></span><br><span class="line">                                          [MIGRATE_CMA]         = &#123; MIGRATE_TYPES &#125;, <span class="comment">/* Never used */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_MEMORY_ISOLATION</span></span><br><span class="line">                                          [MIGRATE_ISOLATE]     = &#123; MIGRATE_TYPES &#125;, <span class="comment">/* Never used */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>上面的代码展示了不同类型的内存在其空间不够用时寻找内存的顺序。</p>
+<ul>
+<li>比如内核要申请 UNMOVABLE(不可移动) 内存时如果当前类型空间不够了，依次在RECLAIMABLE(可回收)、MOVABLE(可移动)类型中寻找。</li>
+</ul>
+<p>主动触发可移动页面整理:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">echo 1 &gt; /proc/sys/vm/compact_memory</span><br></pre></td></tr></table></figure>
+
+<h1 id="buddy-算法与slab-malloc之间的关系"><a href="#buddy-算法与slab-malloc之间的关系" class="headerlink" title="buddy 算法与slab,malloc之间的关系"></a>buddy 算法与slab,malloc之间的关系</h1><p>buddy算法与slab,malloc之间的关系可以简单的以下图表示:</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmm%5D/skeleton/buddy_struct.jpg?raw=true"><br>从上图可以看出：</p>
+<ol>
+<li>buddy算法是针对整个内存条的，它将内存条进行统一的管理。 <strong>而内核态或是用户态对它来说都是客户而已！</strong><ul>
+<li>也就是说：内核和用户对buddy来说都是平级的，无论是哪一方申请走了内存，另外一方都无法再申请同一处内存。</li>
+</ul>
+</li>
+<li>在 <strong>内核空间</strong> 中 slab策略 将 buddy 的内存进行了二次管理，将从 buddy 申请的一大块内存分成很多小块给内核 kmalloc,kfree 使用<ul>
+<li>slab并非是每次都要与buddy交互，这要根据内核中申请的内存大小而定。</li>
+<li>并且可以看出 kmalloc 和 kfree 与 buddy 没有直接的关系，其申请与释放都是与slab交互的</li>
+<li>buddy将内存条视为内存池，而slab将buddy视为内存池，所以它们在算法上是对等的</li>
+</ul>
+</li>
+<li>在 <strong>内核空间</strong> 中，vmalloc直接与buddy进行交互，并没有二级管理<ul>
+<li>所以申请的数量都是2的n次方页， <strong>所以使用vmalloc不适合申请小内存!</strong></li>
+</ul>
+</li>
+<li>在 <strong>用户空间</strong> 中 glibc 库通过 <code>brk,mmap</code> 将buddy的内存进行了二次管理，提供给用户函数 <code>malloc,free</code> 使用<ul>
+<li>glibc 也并非是每次都要与 buddy 交互，依然根据用户空间申请的内存大小而定</li>
+<li>malloc,free 属于是库函数接口，不是系统调用</li>
+</ul>
+</li>
+</ol>
+<h2 id="slab机制-内核空间"><a href="#slab机制-内核空间" class="headerlink" title="slab机制(内核空间)"></a>slab机制(内核空间)</h2><h3 id="基本思想"><a href="#基本思想" class="headerlink" title="基本思想"></a>基本思想</h3><p>slab先从buddy中申请一块内存，当内核空间要申请一小块内存时，slab将申请好的内存分成多个 <strong>相同的小块</strong> ，并将其中一块给予内核空间。<br>当预先申请的内存使用完后，slab再从buddy中申请一块内存来使用。</p>
+<p>这一个小块，在slab中就称为一个object.</p>
+<ul>
+<li>使用命令 <code>sudo cat /proc/slabinfo</code> 就可以看到内核中slab的分配情况<ul>
+<li>输出的前半部分，表示slab为内核中一些常用的数据分配的空间</li>
+<li>输出的后半部分，表示slab为内核通用的用户提供的可以申请的内存块</li>
+</ul>
+</li>
+</ul>
+<h3 id="slab算法分类"><a href="#slab算法分类" class="headerlink" title="slab算法分类"></a>slab算法分类</h3><p>slab机制分为slab,slub,slob三种算法来实现slab机制。</p>
+<h2 id="glibc-用户空间"><a href="#glibc-用户空间" class="headerlink" title="glibc(用户空间)"></a>glibc(用户空间)</h2><p>gblic从buddy先申请内存，而后提供接口给用户使用，这样可以避免频繁的系统调用，减少CPU在IO切换上的消耗，提高系统吞吐量。</p>
+<h3 id="通过设置收缩阀值，提高申请内存速度"><a href="#通过设置收缩阀值，提高申请内存速度" class="headerlink" title="通过设置收缩阀值，提高申请内存速度"></a>通过设置收缩阀值，提高申请内存速度</h3><p>glibc会在释放的内存到达一定的阀值后，才将其释放给buddy内存池，下次申请大内存的时候glibc又要从buddy申请，这无疑会影响申请速度。</p>
+<p>为了提高内存申请速度，可以设置glibc不释放内存给buddy，这样下次再来申请时，其速度就会快很多!</p>
+<p>试验代码如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;malloc.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/mman.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/time.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;assert.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SOME_SIZE (200 * 1024 * 1024)</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">char</span> *buffer;</span><br><span class="line">  <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">timeval</span> <span class="title">start</span>;</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">timeval</span> <span class="title">end</span>;</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> timer;</span><br><span class="line"></span><br><span class="line">  gettimeofday(&amp;start, <span class="literal">NULL</span>);</span><br><span class="line">  buffer = (<span class="keyword">unsigned</span> <span class="keyword">char</span>*)<span class="built_in">malloc</span>(SOME_SIZE);</span><br><span class="line">  assert(buffer != <span class="literal">NULL</span>);</span><br><span class="line">  <span class="built_in">memset</span>(buffer, <span class="number">0</span>, SOME_SIZE);</span><br><span class="line">  gettimeofday(&amp;end, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">  timer = <span class="number">1000000</span> * (end.tv_sec - start.tv_sec) + end.tv_usec - start.tv_usec;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;malloc bytes through normal mode: %ldus\n&quot;</span>, timer);</span><br><span class="line"></span><br><span class="line">  gettimeofday(&amp;start, <span class="literal">NULL</span>);</span><br><span class="line">  <span class="built_in">free</span>(buffer);</span><br><span class="line">  gettimeofday(&amp;end, <span class="literal">NULL</span>);</span><br><span class="line">  timer = <span class="number">1000000</span> * (end.tv_sec - start.tv_sec) + end.tv_usec - start.tv_usec;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;free bytes through normal mode: %ldus\n&quot;</span>, timer);</span><br><span class="line"></span><br><span class="line">  gettimeofday(&amp;start, <span class="literal">NULL</span>);</span><br><span class="line">  buffer = (<span class="keyword">unsigned</span> <span class="keyword">char</span>*)<span class="built_in">malloc</span>(SOME_SIZE);</span><br><span class="line">  assert(buffer != <span class="literal">NULL</span>);</span><br><span class="line">  <span class="comment">//在真实写入操作时，glibc才会将此虚拟内存映射到物理内存</span></span><br><span class="line">  <span class="built_in">memset</span>(buffer, <span class="number">0</span>, SOME_SIZE);</span><br><span class="line">  gettimeofday(&amp;end, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">  timer = <span class="number">1000000</span> * (end.tv_sec - start.tv_sec) + end.tv_usec - start.tv_usec;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;malloc bytes again through normal mode: %ldus\n&quot;</span>, timer);</span><br><span class="line">  <span class="built_in">free</span>(buffer);</span><br><span class="line"></span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;\n***************\n&quot;</span>);</span><br><span class="line">  <span class="keyword">if</span>(!mlockall(MCL_CURRENT | MCL_FUTURE))</span><br><span class="line">  &#123;</span><br><span class="line">    <span class="comment">//设置收缩阀值为无穷大</span></span><br><span class="line">    mallopt(M_TRIM_THRESHOLD, <span class="number">-1UL</span>);</span><br><span class="line">  &#125;</span><br><span class="line">  mallopt(M_MMAP_MAX, <span class="number">0</span>);</span><br><span class="line">  gettimeofday(&amp;start, <span class="literal">NULL</span>);</span><br><span class="line">  buffer = (<span class="keyword">unsigned</span> <span class="keyword">char</span>*)<span class="built_in">malloc</span>(SOME_SIZE);</span><br><span class="line">  assert(buffer != <span class="literal">NULL</span>);</span><br><span class="line">  <span class="built_in">memset</span>(buffer, <span class="number">0</span>, SOME_SIZE);</span><br><span class="line">  gettimeofday(&amp;end, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">  timer = <span class="number">1000000</span> * (end.tv_sec - start.tv_sec) + end.tv_usec - start.tv_usec;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;malloc bytes through fast mode: %ldus\n&quot;</span>, timer);</span><br><span class="line"></span><br><span class="line">  gettimeofday(&amp;start, <span class="literal">NULL</span>);</span><br><span class="line">  <span class="comment">//此时的free只还给了glibc但没有还给buddy内存池</span></span><br><span class="line">  <span class="built_in">free</span>(buffer);</span><br><span class="line">  gettimeofday(&amp;end, <span class="literal">NULL</span>);</span><br><span class="line">  timer = <span class="number">1000000</span> * (end.tv_sec - start.tv_sec) + end.tv_usec - start.tv_usec;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;free bytes through fast mode: %ldus\n&quot;</span>, timer);</span><br><span class="line"></span><br><span class="line">  gettimeofday(&amp;start, <span class="literal">NULL</span>);</span><br><span class="line">  buffer = (<span class="keyword">unsigned</span> <span class="keyword">char</span>*)<span class="built_in">malloc</span>(SOME_SIZE);</span><br><span class="line">  assert(buffer != <span class="literal">NULL</span>);</span><br><span class="line">  <span class="built_in">memset</span>(buffer, <span class="number">0</span>, SOME_SIZE);</span><br><span class="line">  gettimeofday(&amp;end, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">  timer = <span class="number">1000000</span> * (end.tv_sec - start.tv_sec) + end.tv_usec - start.tv_usec;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;malloc bytes again through fast mode: %ldus\n&quot;</span>, timer);</span><br><span class="line">  <span class="built_in">free</span>(buffer);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="内存申请的流程"><a href="#内存申请的流程" class="headerlink" title="内存申请的流程"></a>内存申请的流程</h1><p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmm%5D/skeleton/malloc.jpg?raw=true"><br><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmm%5D/skeleton/malloc_ex.jpg?raw=true"><br>由上两幅图可以看出：</p>
+<ul>
+<li>vmalloc 可以用于申请内存的任何位置以及映射寄存器<ul>
+<li>使用 <code>sudo cat /proc/vmallocinfo | grep ioremap</code> 可以查看当前寄存器被映射的情况</li>
+<li><strong>通过vmalloc申请的地址其虚拟地址连续但物理地址不一定连续</strong></li>
+</ul>
+</li>
+<li>kmalloc 申请低端内存时，由于不需要修改页表，所以其操作简便<ul>
+<li>正因为kmalloc与物理内存的简单映射关系，所以 <strong>其物理地址连续并且对应的虚拟地址也是连续的</strong></li>
+</ul>
+</li>
+<li>高端内存映射区通过kmap对应申请高端物理内存</li>
+<li>用户空间malloc则可以 <strong>申请内存条的任意位置</strong><ul>
+<li><strong>通过malloc申请的地址其虚拟地址连续但物理地址不一定连续</strong></li>
+</ul>
+</li>
+</ul>
+<h2 id="malloc-申请机制"><a href="#malloc-申请机制" class="headerlink" title="malloc 申请机制"></a>malloc 申请机制</h2><p>malloc在用户使用时，其内部使用的是 lazy机制：</p>
+<ol>
+<li>当用户调用 <code>malloc</code> 时，malloc将其申请的虚拟地址都指向0页，并且 <strong>此页是一个只读页</strong><ul>
+<li>此时用户还没有真正拥有内存，并且使用代码读取时读到的都是0</li>
+</ul>
+</li>
+<li>当用户 <strong>真正是写时由于0页是只读页，此时发生pagefault，内核才会去分配真正的内存</strong><ul>
+<li>也就是说在用户第一次写对应虚拟空间页时，内核才依次的为其分配内存。</li>
+<li><strong>pagefault几乎是所有应用程序获取物理内存的途径</strong><ul>
+<li>代码段、数据段、栈、堆都是一样的lazy机制</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<p>由此就引出两个概念：</p>
+<ul>
+<li>VSS(Virtual Set size)：用户调用 malloc 返回的虚拟地址空间大小</li>
+<li>RSS(resident set size)：用户真正获取到的对应的物理内存空间(驻留内存)大小</li>
+</ul>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmm%5D/skeleton/vss_rss.jpg?raw=true"></p>
+<h3 id="引发的问题"><a href="#引发的问题" class="headerlink" title="引发的问题"></a>引发的问题</h3><p>既然内核给用户空间的内存都是lazy机制的，那么就完全有可能出现VSS大于真正的RSS的情况，导致用户真正写内存时内存不够用的情况。</p>
+<p>此时Linux就会启动OOM(out of memory)机制， <strong>将内存打分因子最高</strong> 的应用给Kill掉以释放足够的内存。</p>
+<p>在内存为1G的32位虚拟机上，按照如下流程体验：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">使用root身份，关闭交换空间</span></span><br><span class="line">swapoff -a</span><br><span class="line">echo 1 &gt; /proc/sys/vm/overcommit_memory</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;assert.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">int</span> max = <span class="number">-1</span>;</span><br><span class="line">  <span class="keyword">int</span> mb = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">char</span> *buffer;</span><br><span class="line">  <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SIZE 2000</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span> *p = <span class="built_in">malloc</span>(<span class="number">1024</span> * <span class="number">1024</span> * SIZE);</span><br><span class="line">  assert(p != <span class="literal">NULL</span>);</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;malloc buffer addr = %p\n&quot;</span>, p);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">for</span>( i = <span class="number">0</span>; i &lt; <span class="number">1024</span> * <span class="number">1024</span> * (SIZE/<span class="keyword">sizeof</span>(<span class="keyword">int</span>));i++)</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="comment">//此时才会真正分配到物理内存</span></span><br><span class="line">      p[i] = <span class="number">123</span>;</span><br><span class="line">      <span class="keyword">if</span>((i &amp; <span class="number">0xfffff</span>) == <span class="number">0</span>)</span><br><span class="line">        &#123;</span><br><span class="line">          <span class="built_in">printf</span>(<span class="string">&quot;%d MB written\n&quot;</span>, i &gt;&gt; <span class="number">18</span>);</span><br><span class="line">          usleep(<span class="number">100000</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  pause();</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以发现应用会被内核强制杀死,并在dmesg中也会看到相应的提示。</p>
+<h3 id="打分因子"><a href="#打分因子" class="headerlink" title="打分因子"></a>打分因子</h3><p>Linux会为每个进程进行打分，每个进程的 oom score 取决于:</p>
+<ul>
+<li>驻留内存、pagetable和swap的使用量<ul>
+<li>采用百分比乘以10(percent-times-tem):一个使用全部内存的进程得分1000，使用0字节的进程得分0</li>
+</ul>
+</li>
+<li>root用户进程减去30分</li>
+<li>oom_score_adj: oom_score 会加上 oom_score_adj 这个值</li>
+<li>oom_adj: -15 ~ 15 的系数范围调整</li>
+</ul>
+<p>这部分规则的代码位于函数 <code>/mm/oom_kill.c/oom_badness()</code> 中:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> ,* oom_badness - heuristic function to determine which candidate task to kill</span></span><br><span class="line"><span class="comment"> ,* @p: task struct of which task we should calculate</span></span><br><span class="line"><span class="comment"> ,* @totalpages: total present RAM allowed for page allocation</span></span><br><span class="line"><span class="comment"> ,*</span></span><br><span class="line"><span class="comment"> ,* The heuristic for determining which task to kill is made to be as simple and</span></span><br><span class="line"><span class="comment"> ,* predictable as possible.  The goal is to return the highest value for the</span></span><br><span class="line"><span class="comment"> ,* task consuming the most memory to avoid subsequent oom failures.</span></span><br><span class="line"><span class="comment"> ,*/</span></span><br><span class="line"><span class="function"><span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="title">oom_badness</span><span class="params">(struct task_struct *p, struct mem_cgroup *memcg,</span></span></span><br><span class="line"><span class="params"><span class="function">        <span class="keyword">const</span> <span class="keyword">nodemask_t</span> *nodemask, <span class="keyword">unsigned</span> <span class="keyword">long</span> totalpages)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">long</span> points;</span><br><span class="line">  <span class="keyword">long</span> adj;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (oom_unkillable_task(p, memcg, nodemask))</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  p = find_lock_task_mm(p);</span><br><span class="line">  <span class="keyword">if</span> (!p)</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  adj = (<span class="keyword">long</span>)p-&gt;signal-&gt;oom_score_adj;</span><br><span class="line">  <span class="keyword">if</span> (adj == OOM_SCORE_ADJ_MIN) &#123;</span><br><span class="line">    task_unlock(p);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">   ,* The baseline for the badness score is the proportion of RAM that each</span></span><br><span class="line"><span class="comment">   ,* task&#x27;s rss, pagetable and swap space use.</span></span><br><span class="line"><span class="comment">   ,*/</span></span><br><span class="line">  points = get_mm_rss(p-&gt;mm) + get_mm_counter(p-&gt;mm, MM_SWAPENTS) +</span><br><span class="line">    atomic_long_read(&amp;p-&gt;mm-&gt;nr_ptes) + mm_nr_pmds(p-&gt;mm);</span><br><span class="line">  task_unlock(p);</span><br><span class="line"></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">   ,* Root processes get 3% bonus, just like the __vm_enough_memory()</span></span><br><span class="line"><span class="comment">   ,* implementation used by LSMs.</span></span><br><span class="line"><span class="comment">   ,*/</span></span><br><span class="line">  <span class="keyword">if</span> (has_capability_noaudit(p, CAP_SYS_ADMIN))</span><br><span class="line">    points -= (points * <span class="number">3</span>) / <span class="number">100</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Normalize to oom_score_adj units */</span></span><br><span class="line">  adj *= totalpages / <span class="number">1000</span>;</span><br><span class="line">  points += adj;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">   ,* Never return 0 for an eligible task regardless of the root bonus and</span></span><br><span class="line"><span class="comment">   ,* oom_score_adj (oom_score_adj can&#x27;t be OOM_SCORE_ADJ_MIN here).</span></span><br><span class="line"><span class="comment">   ,*/</span></span><br><span class="line">  <span class="keyword">return</span> points &gt; <span class="number">0</span> ? points : <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以手动来调整每个进程的oom_score_adj或oom_adj来改变进程打分，这样可以偏向让系统首先杀死谁。</p>
+<ul>
+<li>在 <code>/proc/&lt;pid&gt;/</code> 下就具有这些文件</li>
+</ul>
+<p>安卓主动将前台进程的oom调低，将后台的进程oom调高，这样以保证可以杀死后台来给予前台更多的运行内存。</p>
+<h3 id="oom调试"><a href="#oom调试" class="headerlink" title="oom调试"></a>oom调试</h3><p>将 <code>/proc/sys/vm/panic_on_oom</code> 写1，这样当出现oom时，内核会奔溃，这在调试嵌入式程序是比较有帮助的。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>kcmetercec
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://kcmetercec.top/2024/08/13/linux_memory_overview_allocAndFree/" title="Linux 内存的申请与释放">http://kcmetercec.top/2024/08/13/linux_memory_overview_allocAndFree/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux/" rel="tag"> <i class="fa fa-tag"></i> linux</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/08/05/linux_memory_hello/" rel="prev" title="初步认识 Linux 内存管理">
+      <i class="fa fa-chevron-left"></i> 初步认识 Linux 内存管理
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/08/16/linux_memory_consume/" rel="next" title="Linux 进程(用户空间)内存的消耗与泄露">
+      Linux 进程(用户空间)内存的消耗与泄露 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#buddy-%E7%AE%97%E6%B3%95%E7%BC%BA%E9%99%B7"><span class="nav-number">1.</span> <span class="nav-text">buddy 算法缺陷</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AE%97%E6%B3%95%E9%A1%B5%E9%9D%A2%E8%BF%9E%E7%BB%AD%E6%80%A7%E7%BC%BA%E9%99%B7"><span class="nav-number">1.1.</span> <span class="nav-text">算法页面连续性缺陷</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A1%B5%E9%9D%A2%E8%BF%9E%E7%BB%AD%E6%80%A7%E9%97%AE%E9%A2%98%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-number">1.2.</span> <span class="nav-text">页面连续性问题解决方案</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#reserved-%E5%86%85%E5%AD%98"><span class="nav-number">1.2.1.</span> <span class="nav-text">reserved 内存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CMA-Contiguous-Memory-Allocator-%E8%BF%9E%E7%BB%AD%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E5%99%A8"><span class="nav-number">1.2.2.</span> <span class="nav-text">CMA(Contiguous Memory Allocator, 连续内存分配器)</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AE%97%E6%B3%95%E7%B2%92%E5%BA%A6%E9%97%AE%E9%A2%98"><span class="nav-number">1.3.</span> <span class="nav-text">算法粒度问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E7%A2%8E%E7%89%87"><span class="nav-number">1.4.</span> <span class="nav-text">内存碎片</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#buddy-%E7%AE%97%E6%B3%95%E4%B8%8Eslab-malloc%E4%B9%8B%E9%97%B4%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="nav-number">2.</span> <span class="nav-text">buddy 算法与slab,malloc之间的关系</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#slab%E6%9C%BA%E5%88%B6-%E5%86%85%E6%A0%B8%E7%A9%BA%E9%97%B4"><span class="nav-number">2.1.</span> <span class="nav-text">slab机制(内核空间)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%80%9D%E6%83%B3"><span class="nav-number">2.1.1.</span> <span class="nav-text">基本思想</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#slab%E7%AE%97%E6%B3%95%E5%88%86%E7%B1%BB"><span class="nav-number">2.1.2.</span> <span class="nav-text">slab算法分类</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#glibc-%E7%94%A8%E6%88%B7%E7%A9%BA%E9%97%B4"><span class="nav-number">2.2.</span> <span class="nav-text">glibc(用户空间)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%9A%E8%BF%87%E8%AE%BE%E7%BD%AE%E6%94%B6%E7%BC%A9%E9%98%80%E5%80%BC%EF%BC%8C%E6%8F%90%E9%AB%98%E7%94%B3%E8%AF%B7%E5%86%85%E5%AD%98%E9%80%9F%E5%BA%A6"><span class="nav-number">2.2.1.</span> <span class="nav-text">通过设置收缩阀值，提高申请内存速度</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E7%94%B3%E8%AF%B7%E7%9A%84%E6%B5%81%E7%A8%8B"><span class="nav-number">3.</span> <span class="nav-text">内存申请的流程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#malloc-%E7%94%B3%E8%AF%B7%E6%9C%BA%E5%88%B6"><span class="nav-number">3.1.</span> <span class="nav-text">malloc 申请机制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%95%E5%8F%91%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">3.1.1.</span> <span class="nav-text">引发的问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%89%93%E5%88%86%E5%9B%A0%E5%AD%90"><span class="nav-number">3.1.2.</span> <span class="nav-text">打分因子</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#oom%E8%B0%83%E8%AF%95"><span class="nav-number">3.1.3.</span> <span class="nav-text">oom调试</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">Qt, C++, linux, CS</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">107</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">55</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:kcmeter.cec@gmail.com" title="E-Mail → mailto:kcmeter.cec@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2021 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">206k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">3:08</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+document.querySelectorAll('.pdfobject-container').forEach(element => {
+  let url = element.dataset.target;
+  let pdfOpenParams = {
+    navpanes : 0,
+    toolbar  : 0,
+    statusbar: 0,
+    pagemode : 'thumbs',
+    view     : 'FitH'
+  };
+  let pdfOpenFragment = '#' + Object.entries(pdfOpenParams).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
+  let fullURL = `/lib/pdf/web/viewer.html?file=${encodeURIComponent(url)}${pdfOpenFragment}`;
+
+  if (NexT.utils.supportsPDFs()) {
+    element.innerHTML = `<embed class="pdfobject" src="${url + pdfOpenFragment}" type="application/pdf" style="height: ${element.dataset.height};">`;
+  } else {
+    element.innerHTML = `<iframe src="${fullURL}" style="height: ${element.dataset.height};" frameborder="0"></iframe>`;
+  }
+});
+</script>
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'f938893867df78f94802',
+      clientSecret: 'b6d8470939c53d26c98c4e3b9d4c9ceb55d6e78e',
+      repo        : 'kcmetercec.github.io',
+      owner       : 'KcMeterCEC',
+      admin       : ['KcMeterCEC'],
+      id          : '0a9d5c791ef972c522d05c2b4afed975',
+        language: 'zh-CN',
+      distractionFreeMode: false
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+    </div>
+</body>
+</html>

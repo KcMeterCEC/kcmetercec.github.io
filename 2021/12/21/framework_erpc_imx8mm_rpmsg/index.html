@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="NXP 官方提供了 M4 和 A53 通信的 demo，但是仅仅是演示作用：  M4 端仅使用 rpmsg 与 A53 进行通信，没有 ERPC 封装 A53 端将 rpmsg 操作暴露成了一个 tty 设备，仅适合 echo 演示，不适合编写代码完成通信 需要在 rpmsg 的基础上进行 ERPC 封装  那么完成的步骤就是：  完成用户态代码实现与 M4 进行 rpmsg 通信 对 rpmsg">
+<meta property="og:type" content="article">
+<meta property="og:title" content="IMX8MM 使用 ERPC 结合 rpmsg 完成 A53 和 M4 的通信">
+<meta property="og:url" content="http://kcmetercec.top/2021/12/21/framework_erpc_imx8mm_rpmsg/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="NXP 官方提供了 M4 和 A53 通信的 demo，但是仅仅是演示作用：  M4 端仅使用 rpmsg 与 A53 进行通信，没有 ERPC 封装 A53 端将 rpmsg 操作暴露成了一个 tty 设备，仅适合 echo 演示，不适合编写代码完成通信 需要在 rpmsg 的基础上进行 ERPC 封装  那么完成的步骤就是：  完成用户态代码实现与 M4 进行 rpmsg 通信 对 rpmsg">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2021-12-20T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-12-22T16:00:00.000Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="framework">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://kcmetercec.top/2021/12/21/framework_erpc_imx8mm_rpmsg/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>IMX8MM 使用 ERPC 结合 rpmsg 完成 A53 和 M4 的通信 | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112423075-1# <app_id>"></script>
+    <script data-pjax>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-112423075-1# <app_id>');
+      }
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+        <li class="menu-item menu-item-commonweal">
+
+    <a href="/404/" rel="section"><i class="fa fa-heartbeat fa-fw"></i>公益 404</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2021/12/21/framework_erpc_imx8mm_rpmsg/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="Qt, C++, linux, CS">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          IMX8MM 使用 ERPC 结合 rpmsg 完成 A53 和 M4 的通信
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-12-21 00:00:00" itemprop="dateCreated datePublished" datetime="2021-12-21T00:00:00+08:00">2021-12-21</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-12-23 00:00:00" itemprop="dateModified" datetime="2021-12-23T00:00:00+08:00">2021-12-23</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/framework/" itemprop="url" rel="index"><span itemprop="name">framework</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/framework/ERPC/" itemprop="url" rel="index"><span itemprop="name">ERPC</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.8k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>NXP 官方提供了 M4 和 A53 通信的 demo，但是仅仅是演示作用：</p>
+<ul>
+<li>M4 端仅使用 rpmsg 与 A53 进行通信，没有 ERPC 封装</li>
+<li>A53 端将 rpmsg 操作暴露成了一个 tty 设备，仅适合 <code>echo</code> 演示，不适合编写代码完成通信</li>
+<li>需要在 rpmsg 的基础上进行 ERPC 封装</li>
+</ul>
+<p>那么完成的步骤就是：</p>
+<ol>
+<li>完成用户态代码实现与 M4 进行 rpmsg 通信</li>
+<li>对 rpmsg 进行 ERPC 封装</li>
+</ol>
+<span id="more"></span>
+
+<h1 id="rpmsg-char-驱动"><a href="#rpmsg-char-驱动" class="headerlink" title="rpmsg_char 驱动"></a><code>rpmsg_char</code> 驱动</h1><p>内核文件 <code>drivers/rpmsg/rpmsg_char.c</code> 驱动，可以将 rpmsg 相关操作暴露在用户空间的 <code>/dev/rpmsg_ctrlX</code> 路径中。</p>
+<p>用户可以操作 <code>/dev/rpmsg_ctrlX</code> 文件，以创建对应通信端口。</p>
+<h2 id="打补丁"><a href="#打补丁" class="headerlink" title="打补丁"></a>打补丁</h2><p>kernel 主线的代码对 <code>rpmsg_char</code> 的支持不够完善，所以我们需要先应用<a target="_blank" rel="noopener" href="https://lwn.net/Articles/743115/">这个补丁</a>，以完成对通信端口动态的创建。</p>
+<h2 id="使能"><a href="#使能" class="headerlink" title="使能"></a>使能</h2><p>在 menuconfig 路径 <code>Device Drivers -&gt; Rpmsg drivers</code> 确认 <code>RPMSG device interface</code>使能。</p>
+<blockquote>
+<p>使能后，<code>Enable Virtio RPMSG char device driver support</code> 也会默认使能。</p>
+</blockquote>
+<p>启动新编译的内核后，便可以看到 rpmsg 的控制设备 <code>/dev/rpmsg_ctrl0</code>。</p>
+<h1 id="编写用户态代码"><a href="#编写用户态代码" class="headerlink" title="编写用户态代码"></a>编写用户态代码</h1><h2 id="流程"><a href="#流程" class="headerlink" title="流程"></a>流程</h2><p>对应的头文件位于 <code>include/uapi/linux/rpmsg.h</code>，根据该头文件及其代码可以看出应用流程为：</p>
+<ol>
+<li>首先使用 <code>ioctl()</code> 操作 <code>/dev/rpmsg_ctrl0</code> 设备，发送命令 <code>RPMSG_CREATE_EPT_IOCTL</code> 来创建一个端口。</li>
+<li>操作端口 <code>/dev/rpmsgX</code> ，使用 <code>read()</code>,<code>write()</code> 系统调用完成对端口的读写操作</li>
+<li>对端口 <code>/dev/rpmsgX</code>，使用 <code>ioctl()</code>，发送命令 <code>RPMSG_DESTROY_EPT_IOCTL</code> 来销毁该端口</li>
+</ol>
+<p>在创建端口设备时，需要填充结构体 <code>rpmsg_endpoint_info</code>:<br> <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * struct rpmsg_endpoint_info - endpoint info representation</span></span><br><span class="line"><span class="comment"> * @name: name of service</span></span><br><span class="line"><span class="comment"> * @src: local address</span></span><br><span class="line"><span class="comment"> * @dst: destination address</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">rpmsg_endpoint_info</span> &#123;</span></span><br><span class="line">    <span class="keyword">char</span> name[<span class="number">32</span>];</span><br><span class="line">    <span class="keyword">uint32_t</span> src;</span><br><span class="line">    <span class="keyword">uint32_t</span> dst;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure><br>这里面填充的值，需要根据 M4 端创建的服务端而定。</p>
+<p>在使用 NXP 所提供的 <code>imx_rpmsg_tty.c</code> 驱动中，其输出：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">imx_rpmsg_tty virtio0.rpmsg-virtual-tty-channel-1.-1.30: new channel: 0x400 -&gt; 0x1e!</span><br></pre></td></tr></table></figure>
+<p>也就是说，其对应：</p>
+<ul>
+<li>name：<code>rpmsg-virtual-tty-channel-1</code></li>
+<li>src：<code>0x400</code></li>
+<li>dst：<code>0x1e</code></li>
+</ul>
+<h2 id="编写及测试"><a href="#编写及测试" class="headerlink" title="编写及测试"></a>编写及测试</h2><p>有了上面的基础，那就可以写一个简单的测试程序了：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * file: rpmsg_test.c</span></span><br><span class="line"><span class="comment"> * author: kcmetercec (kcmeter.cec@gmail.com)</span></span><br><span class="line"><span class="comment"> */</span> </span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/ioctl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/stat.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/rpmsg.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DEVICE_CONTROL_NAME		<span class="meta-string">&quot;/dev/rpmsg_ctrl0&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DEVICE_EP_NAME			<span class="meta-string">&quot;/dev/rpmsg0&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> READ_BUF_SIZE	(128)</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span>* argv[])</span> </span>&#123;</span><br><span class="line">	<span class="keyword">if</span> (argc != <span class="number">2</span>) &#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;usage: %s &lt;send command&gt;\n&quot;</span>, argv[<span class="number">0</span>]);</span><br><span class="line"></span><br><span class="line">		<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">int</span> control_device_fd = <span class="built_in">open</span>(DEVICE_CONTROL_NAME, O_RDWR);</span><br><span class="line">	<span class="keyword">if</span> (control_device_fd == <span class="number">-1</span>) &#123;</span><br><span class="line">		<span class="built_in">perror</span>(<span class="string">&quot;Can&#x27;t open control device: &quot;</span>);</span><br><span class="line"></span><br><span class="line">		<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">rpmsg_endpoint_info</span> <span class="title">ep_info</span> =</span> &#123;</span><br><span class="line">		.name = <span class="string">&quot;rpmsg-virtual-tty-channel-1&quot;</span>,</span><br><span class="line">		.src = <span class="number">0x400</span>,</span><br><span class="line">		.dst = <span class="number">0x1e</span>,</span><br><span class="line">	&#125;;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (<span class="built_in">ioctl</span>(control_device_fd, RPMSG_CREATE_EPT_IOCTL, &amp;ep_info)) &#123;</span><br><span class="line">		<span class="built_in">perror</span>(<span class="string">&quot;Can&#x27;t create endpoint:&quot;</span>);</span><br><span class="line"></span><br><span class="line">		<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">int</span> ep_fd = <span class="built_in">open</span>(DEVICE_EP_NAME, O_RDWR);</span><br><span class="line">	<span class="keyword">if</span> (ep_fd == <span class="number">-1</span>) &#123;</span><br><span class="line">		<span class="built_in">perror</span>(<span class="string">&quot;Can&#x27;t open endpoint device: &quot;</span>);</span><br><span class="line"></span><br><span class="line">		<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">	&#125;	</span><br><span class="line"></span><br><span class="line">	<span class="keyword">int</span> write_size = <span class="built_in">strlen</span>(argv[<span class="number">1</span>]);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">ssize_t</span> ret = <span class="built_in">write</span>(ep_fd, argv[<span class="number">1</span>], write_size);</span><br><span class="line">	<span class="keyword">if</span> (ret != write_size) &#123;</span><br><span class="line">		<span class="built_in">perror</span>(<span class="string">&quot;write failed:&quot;</span>);</span><br><span class="line"></span><br><span class="line">		<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">char</span> read_buf[READ_BUF_SIZE];</span><br><span class="line"></span><br><span class="line">	ret = <span class="built_in">read</span>(ep_fd, read_buf, READ_BUF_SIZE);</span><br><span class="line">	<span class="keyword">if</span> (ret &lt; <span class="number">0</span>) &#123;</span><br><span class="line">		<span class="built_in">perror</span>(<span class="string">&quot;read failed:&quot;</span>);</span><br><span class="line">	&#125; <span class="keyword">else</span> <span class="keyword">if</span>(ret == <span class="number">0</span>) &#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;read end of file.\n&quot;</span>);</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		read_buf[READ_BUF_SIZE - <span class="number">1</span>] = <span class="string">&#x27;\0&#x27;</span>;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;read from m4: %s\n&quot;</span>, read_buf);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (<span class="built_in">ioctl</span>(ep_fd, RPMSG_DESTROY_EPT_IOCTL)) &#123;</span><br><span class="line">		<span class="built_in">perror</span>(<span class="string">&quot;Can&#x27;t destroy endpoint:&quot;</span>);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="built_in">close</span>(ep_fd);</span><br><span class="line">	<span class="built_in">close</span>(control_device_fd);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>通过以上简单的代码，便可以完成与 M4 的回环测试了。</p>
+<h1 id="EPRC-封装"><a href="#EPRC-封装" class="headerlink" title="EPRC 封装"></a>EPRC 封装</h1><p>在 M4 和 A53 通信的过程中，M4 是作为服务端（remote）而存在的，而 A53 是作为客户端（master）而存在的。</p>
+<h2 id="服务端实现"><a href="#服务端实现" class="headerlink" title="服务端实现"></a>服务端实现</h2><p>查看当前 ERPC 的代码，其已经具备了 <code>erpc_transport_rpmsg_lite_rtos_remote_init()</code> 函数，其创建的实例是 <code>RPMsgRTOSTransport</code> 类。</p>
+<p><code>RPMsgRTOSTransport</code> 类已经实现了直接使用 <code>rpmsg_lite</code> 库的创建、读、写函数，所以对于 M4 而言，只需要将 ERPC 库移植到其代码中即可。</p>
+<h2 id="客户端实现"><a href="#客户端实现" class="headerlink" title="客户端实现"></a>客户端实现</h2><p>客户端则是使用 <code>rpmsg_char</code> 接口完成的数据读写，所以这里需要我们自己实现一个 transport 类以及对应的 setup 函数。</p>
+<h3 id="编译无法通过的坑"><a href="#编译无法通过的坑" class="headerlink" title="编译无法通过的坑"></a>编译无法通过的坑</h3><p>在将 ERPC 源码移植到 M4 工程中时，会有如下类似警告：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">MIMX8MM6_cm4.h:6371:51: error: &#x27;reinterpret_cast&lt;CCM_Type*&gt;(808976384)&#x27; is not a constant expression</span><br></pre></td></tr></table></figure>
+<p>这个警告造成的原因是有如下代码：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// ...</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> CCM_BASE (0x30380000u)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> CCM ((CCM_Type*)CCM_BASE)</span></span><br><span class="line"><span class="comment">// ...</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">enum</span> _<span class="title">clock_root_control</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    kCLOCK_RootM4 = (<span class="keyword">uint32_t</span>)(&amp;(CCM)-&gt;ROOT[<span class="number">1</span>].TARGET_ROOT),</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125; <span class="keyword">clock_root_control_t</span>;</span><br></pre></td></tr></table></figure>
+<p>注意看，<strong>这是一个枚举类型</strong>。</p>
+<p>C++ 标准规定，枚举类型的值必须是常量表达式，而 <code>CCM</code> 宏的实现方式由 c++ 编译器解释就是使用 <code>reinterpret_cast</code> 对指针进行从新解释。那就是说它不是一个常量表达式，这就会造成编译时报错。</p>
+<p>所以，为了解决这个报错，就需要将这行代码替换为常量表达式。</p>
+<p>这个代码的意义就是为了获取 <code>CCM</code> 空间下 <code>ROOT[1].TARGET_ROOT</code> 处所在的地址，地址以整型表示。</p>
+<p>而 C/C++ 提供了宏 <code>offsetof</code> 来以常量的方式计算地址偏移：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stddef.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> offsetof(type, member)</span></span><br></pre></td></tr></table></figure>
+<p>那么上面的枚举就可以修改为：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kCLOCK_RootM4 = (<span class="keyword">uint32_t</span>)(CCM_BASE + <span class="built_in">offsetof</span>(CCM_Type, ROOT[<span class="number">1</span>].TARGET_ROOT)),</span><br></pre></td></tr></table></figure>
+
+<h3 id="transport-类"><a href="#transport-类" class="headerlink" title="transport 类"></a>transport 类</h3><p>根据前面的测试代码，再继承自 <code>Transport</code> 类，很容易就能写出 <code>transport</code> 类。</p>
+<p>头文件：<code>erpc_rpmsg_char_transport.h</code></p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Copyright (c) 2014-2016, Freescale Semiconductor, Inc.</span></span><br><span class="line"><span class="comment"> * Copyright 2016-2020 NXP</span></span><br><span class="line"><span class="comment"> * Copyright 2021 kcmetercec (kcmeter.cec@gmail.com)</span></span><br><span class="line"><span class="comment"> * </span></span><br><span class="line"><span class="comment"> * All rights reserved.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * SPDX-License-Identifier: BSD-3-Clause</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> _EMBEDDED_RPC__RPMSG_CHAR_TRANSPORT_H_</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> _EMBEDDED_RPC__RPMSG_CHAR_TRANSPORT_H_</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/rpmsg.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;array&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&quot;erpc_transport.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/*!</span></span><br><span class="line"><span class="comment"> * @addtogroup rpmsg_char_transport</span></span><br><span class="line"><span class="comment"> * @&#123;</span></span><br><span class="line"><span class="comment"> * @file</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="comment">////////////////////////////////////////////////////////////////////////////////</span></span><br><span class="line"><span class="comment">// Classes</span></span><br><span class="line"><span class="comment">////////////////////////////////////////////////////////////////////////////////</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">namespace</span> erpc &#123;</span><br><span class="line"><span class="comment">/*!</span></span><br><span class="line"><span class="comment"> * @brief Client side of rpmsg transport.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * @ingroup rpmsg_char_transport</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">RPMsgCharTransport</span> :</span> <span class="keyword">public</span> Transport</span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="comment">/*!</span></span><br><span class="line"><span class="comment">     * @brief Constructor.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * This function initializes object attributes.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * @param[in] name Specify the name of the remote device.</span></span><br><span class="line"><span class="comment">     * @param[in] src Specify the local address.</span></span><br><span class="line"><span class="comment">     * @param[in] dst Specify the destination address.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="built_in">RPMsgCharTransport</span>(<span class="keyword">const</span> <span class="keyword">char</span> *name, <span class="keyword">uint32_t</span> src, <span class="keyword">uint32_t</span> dst);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*!</span></span><br><span class="line"><span class="comment">     * @brief RPMsgCharTransport destructor</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">virtual</span> ~<span class="built_in">RPMsgCharTransport</span>();</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*!</span></span><br><span class="line"><span class="comment">     * @brief This function will connect client to the server.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * @retval #kErpcStatus_Success When client connected successfully.</span></span><br><span class="line"><span class="comment">     * @retval #kErpcStatus_ConnectionFailure Connecting to the specified host failed.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">erpc_status_t</span> <span class="title">connect</span><span class="params">(<span class="keyword">void</span>)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*!</span></span><br><span class="line"><span class="comment">     * @brief This function disconnects client.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * @retval #kErpcStatus_Success Always return this.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">erpc_status_t</span> <span class="title">disconnect</span><span class="params">(<span class="keyword">void</span>)</span></span>;</span><br><span class="line">    <span class="comment">/*!</span></span><br><span class="line"><span class="comment">     * @brief Store incoming message to message buffer.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * In block while no message come.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * @param[in] message Message buffer, to which will be stored incoming message.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * @retval kErpcStatus_ReceiveFailed Failed to receive message buffer.</span></span><br><span class="line"><span class="comment">     * @retval kErpcStatus_Success Successfully received all data.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">erpc_status_t</span> <span class="title">receive</span><span class="params">(MessageBuffer *message)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*!</span></span><br><span class="line"><span class="comment">     * @brief Function to send prepared message.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * @param[in] message Pass message buffer to send.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * @retval kErpcStatus_SendFailed Failed to send message buffer.</span></span><br><span class="line"><span class="comment">     * @retval kErpcStatus_Success Successfully sent all data.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">erpc_status_t</span> <span class="title">send</span><span class="params">(MessageBuffer *message)</span></span>;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">rpmsg_endpoint_info</span> <span class="title">m_ep_info</span>;</span></span><br><span class="line">    <span class="keyword">int</span> m_control_fd = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> m_ep_fd = <span class="number">0</span>;</span><br><span class="line">    std::array&lt;<span class="keyword">char</span>, 256&gt; m_read_buf;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">&#125; <span class="comment">// namespace erpc</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/*! @&#125; */</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">// _EMBEDDED_RPC__RPMSG_CHAR_TRANSPORT_H_</span></span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>源文件：<code>erpc_rpmsg_char_transport.cc</code></p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Copyright (c) 2015, Freescale Semiconductor, Inc.</span></span><br><span class="line"><span class="comment"> * Copyright 2016 NXP</span></span><br><span class="line"><span class="comment"> * Copyright 2021 kcmetercec (kcmeter.cec@gmail.com)</span></span><br><span class="line"><span class="comment"> * </span></span><br><span class="line"><span class="comment"> * All rights reserved.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * SPDX-License-Identifier: BSD-3-Clause</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&quot;erpc_rpmsg_char_transport.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/stat.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/ioctl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;cstring&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;cstdio&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> erpc;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DEVICE_CONTROL_NAME		<span class="meta-string">&quot;/dev/rpmsg_ctrl0&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DEVICE_EP_NAME			<span class="meta-string">&quot;/dev/rpmsg0&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">////////////////////////////////////////////////////////////////////////////////</span></span><br><span class="line"><span class="comment">// Code</span></span><br><span class="line"><span class="comment">////////////////////////////////////////////////////////////////////////////////</span></span><br><span class="line"></span><br><span class="line">RPMsgCharTransport::<span class="built_in">RPMsgCharTransport</span>(<span class="keyword">const</span> <span class="keyword">char</span> *name, <span class="keyword">uint32_t</span> src, <span class="keyword">uint32_t</span> dst)</span><br><span class="line">:<span class="built_in">Transport</span>()</span><br><span class="line">&#123;</span><br><span class="line">    std::<span class="built_in">memcpy</span>(m_ep_info.name, name, std::<span class="built_in">strlen</span>(name));</span><br><span class="line">    m_ep_info.name[<span class="number">31</span>] = <span class="string">&#x27;\0&#x27;</span>;</span><br><span class="line">    m_ep_info.src = src;</span><br><span class="line">    m_ep_info.dst = dst;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">RPMsgCharTransport::~<span class="built_in">RPMsgCharTransport</span>()</span><br><span class="line">&#123;</span><br><span class="line">    <span class="built_in">disconnect</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">erpc_status_t</span> <span class="title">RPMsgCharTransport::connect</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> m_control_fd = <span class="built_in">open</span>(DEVICE_CONTROL_NAME, O_RDWR);</span><br><span class="line">	<span class="keyword">if</span> (m_control_fd == <span class="number">-1</span>) </span><br><span class="line">    &#123;</span><br><span class="line">		std::<span class="built_in">perror</span>(<span class="string">&quot;Can&#x27;t open control device: &quot;</span>);</span><br><span class="line"></span><br><span class="line">		<span class="keyword">return</span> kErpcStatus_ConnectionFailure;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (<span class="built_in">ioctl</span>(m_control_fd, RPMSG_CREATE_EPT_IOCTL, &amp;m_ep_info)) </span><br><span class="line">    &#123;</span><br><span class="line">		std::<span class="built_in">perror</span>(<span class="string">&quot;Can&#x27;t create endpoint:&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="built_in">disconnect</span>();</span><br><span class="line">		<span class="keyword">return</span> kErpcStatus_ConnectionFailure;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	m_ep_fd = <span class="built_in">open</span>(DEVICE_EP_NAME, O_RDWR);</span><br><span class="line">	<span class="keyword">if</span> (m_ep_fd == <span class="number">-1</span>) &#123;</span><br><span class="line">		std::<span class="built_in">perror</span>(<span class="string">&quot;Can&#x27;t open endpoint device: &quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="built_in">disconnect</span>();</span><br><span class="line">		<span class="keyword">return</span> kErpcStatus_ConnectionFailure;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> 	kErpcStatus_Success;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">erpc_status_t</span> <span class="title">RPMsgCharTransport::disconnect</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (m_ep_fd)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (<span class="built_in">ioctl</span>(m_ep_fd, RPMSG_DESTROY_EPT_IOCTL)) </span><br><span class="line">        &#123;</span><br><span class="line">		    std::<span class="built_in">perror</span>(<span class="string">&quot;Can&#x27;t destroy endpoint:&quot;</span>);</span><br><span class="line">	    &#125;</span><br><span class="line">        <span class="built_in">close</span>(m_ep_fd);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (m_control_fd)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">close</span>(m_control_fd);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    m_ep_fd = <span class="number">0</span>;</span><br><span class="line">    m_control_fd = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> 	kErpcStatus_Success;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">erpc_status_t</span> <span class="title">RPMsgCharTransport::receive</span><span class="params">(MessageBuffer *message)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">int</span> ret = <span class="built_in">read</span>(m_ep_fd, m_read_buf.<span class="built_in">data</span>(), m_read_buf.<span class="built_in">size</span>());</span><br><span class="line">	<span class="keyword">if</span> (ret &lt; <span class="number">0</span>) </span><br><span class="line">    &#123;</span><br><span class="line">		std::<span class="built_in">perror</span>(<span class="string">&quot;read failed:&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> kErpcStatus_ReceiveFailed;</span><br><span class="line">	&#125; </span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span>(ret == <span class="number">0</span>) </span><br><span class="line">    &#123;</span><br><span class="line">		std::<span class="built_in">perror</span>(<span class="string">&quot;read end of file:&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> kErpcStatus_ReceiveFailed;</span><br><span class="line">	&#125; </span><br><span class="line">    <span class="keyword">else</span> </span><br><span class="line">    &#123;</span><br><span class="line">		message-&gt;<span class="built_in">set</span>(<span class="keyword">reinterpret_cast</span>&lt;<span class="keyword">uint8_t</span>*&gt;(m_read_buf.<span class="built_in">data</span>()), ret);</span><br><span class="line">        message-&gt;<span class="built_in">setUsed</span>(ret);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> kErpcStatus_Success;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">erpc_status_t</span> <span class="title">RPMsgCharTransport::send</span><span class="params">(MessageBuffer *message)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">uint8_t</span>* buf = message-&gt;<span class="built_in">get</span>();</span><br><span class="line">    <span class="keyword">uint32_t</span> length = message-&gt;<span class="built_in">getLength</span>();</span><br><span class="line">    <span class="keyword">uint32_t</span> used = message-&gt;<span class="built_in">getUsed</span>();</span><br><span class="line"></span><br><span class="line">    message-&gt;<span class="built_in">set</span>(<span class="literal">NULL</span>, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">ssize_t</span> ret = <span class="built_in">write</span>(m_ep_fd, buf, used);</span><br><span class="line">	<span class="keyword">if</span> (ret != used) </span><br><span class="line">    &#123;</span><br><span class="line">		std::<span class="built_in">perror</span>(<span class="string">&quot;write failed:&quot;</span>);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        message-&gt;<span class="built_in">set</span>(buf, length);</span><br><span class="line">        message-&gt;<span class="built_in">setUsed</span>(used);</span><br><span class="line">		<span class="keyword">return</span> kErpcStatus_SendFailed;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> kErpcStatus_Success; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="setup-函数"><a href="#setup-函数" class="headerlink" title="setup 函数"></a>setup 函数</h3><p>setup 函数就是创建连接即可，然后在 <code>erpc_transport_setup.h</code> 中声明该函数即可。</p>
+<p>源文件：<code>erpc_setup_rpmsg_char.cpp</code></p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Copyright (c) 2014-2016, Freescale Semiconductor, Inc.</span></span><br><span class="line"><span class="comment"> * Copyright 2016-2020 NXP</span></span><br><span class="line"><span class="comment"> * Copyright 2021 kcmetercec (kcmeter.cec@gmail.com)</span></span><br><span class="line"><span class="comment"> * All rights reserved.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * SPDX-License-Identifier: BSD-3-Clause</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&quot;erpc_manually_constructed.h&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&quot;erpc_rpmsg_char_transport.h&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&quot;erpc_transport_setup.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> erpc;</span><br><span class="line"></span><br><span class="line"><span class="comment">////////////////////////////////////////////////////////////////////////////////</span></span><br><span class="line"><span class="comment">// Variables</span></span><br><span class="line"><span class="comment">////////////////////////////////////////////////////////////////////////////////</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> ManuallyConstructed&lt;RPMsgCharTransport&gt; s_transport;</span><br><span class="line"></span><br><span class="line"><span class="comment">////////////////////////////////////////////////////////////////////////////////</span></span><br><span class="line"><span class="comment">// Code</span></span><br><span class="line"><span class="comment">////////////////////////////////////////////////////////////////////////////////</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">erpc_transport_t</span> <span class="title">erpc_transport_rpmsg_char_init</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *name, <span class="keyword">uint32_t</span> src, <span class="keyword">uint32_t</span> dst)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">erpc_transport_t</span> transport;</span><br><span class="line"></span><br><span class="line">    s_transport.<span class="built_in">construct</span>(name, src, dst);</span><br><span class="line">    <span class="keyword">if</span> (s_transport-&gt;<span class="built_in">connect</span>() == kErpcStatus_Success)</span><br><span class="line">    &#123;</span><br><span class="line">        transport = <span class="keyword">reinterpret_cast</span>&lt;<span class="keyword">erpc_transport_t</span>&gt;(s_transport.<span class="built_in">get</span>());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    &#123;</span><br><span class="line">        transport = <span class="literal">NULL</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> transport;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="验证"><a href="#验证" class="headerlink" title="验证"></a>验证</h1><p>将 A53 端代码交叉编译并验证，一切工作如预期。😊</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>kcmetercec
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://kcmetercec.top/2021/12/21/framework_erpc_imx8mm_rpmsg/" title="IMX8MM 使用 ERPC 结合 rpmsg 完成 A53 和 M4 的通信">http://kcmetercec.top/2021/12/21/framework_erpc_imx8mm_rpmsg/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/framework/" rel="tag"> <i class="fa fa-tag"></i> framework</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/12/20/framework_erpc_cs_together/" rel="prev" title="ERPC 同时运行一个服务端和客户端">
+      <i class="fa fa-chevron-left"></i> ERPC 同时运行一个服务端和客户端
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/01/17/framework_erpc_allocate_free/" rel="next" title="ERPC 接口内存的申请和释放">
+      ERPC 接口内存的申请和释放 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#rpmsg-char-%E9%A9%B1%E5%8A%A8"><span class="nav-number">1.</span> <span class="nav-text">rpmsg_char 驱动</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%89%93%E8%A1%A5%E4%B8%81"><span class="nav-number">1.1.</span> <span class="nav-text">打补丁</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E8%83%BD"><span class="nav-number">1.2.</span> <span class="nav-text">使能</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BC%96%E5%86%99%E7%94%A8%E6%88%B7%E6%80%81%E4%BB%A3%E7%A0%81"><span class="nav-number">2.</span> <span class="nav-text">编写用户态代码</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%81%E7%A8%8B"><span class="nav-number">2.1.</span> <span class="nav-text">流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%96%E5%86%99%E5%8F%8A%E6%B5%8B%E8%AF%95"><span class="nav-number">2.2.</span> <span class="nav-text">编写及测试</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#EPRC-%E5%B0%81%E8%A3%85"><span class="nav-number">3.</span> <span class="nav-text">EPRC 封装</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%8D%E5%8A%A1%E7%AB%AF%E5%AE%9E%E7%8E%B0"><span class="nav-number">3.1.</span> <span class="nav-text">服务端实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%A2%E6%88%B7%E7%AB%AF%E5%AE%9E%E7%8E%B0"><span class="nav-number">3.2.</span> <span class="nav-text">客户端实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BC%96%E8%AF%91%E6%97%A0%E6%B3%95%E9%80%9A%E8%BF%87%E7%9A%84%E5%9D%91"><span class="nav-number">3.2.1.</span> <span class="nav-text">编译无法通过的坑</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#transport-%E7%B1%BB"><span class="nav-number">3.2.2.</span> <span class="nav-text">transport 类</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#setup-%E5%87%BD%E6%95%B0"><span class="nav-number">3.2.3.</span> <span class="nav-text">setup 函数</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%AA%8C%E8%AF%81"><span class="nav-number">4.</span> <span class="nav-text">验证</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">Qt, C++, linux, CS</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">107</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">55</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:kcmeter.cec@gmail.com" title="E-Mail → mailto:kcmeter.cec@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2021 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">206k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">3:08</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+document.querySelectorAll('.pdfobject-container').forEach(element => {
+  let url = element.dataset.target;
+  let pdfOpenParams = {
+    navpanes : 0,
+    toolbar  : 0,
+    statusbar: 0,
+    pagemode : 'thumbs',
+    view     : 'FitH'
+  };
+  let pdfOpenFragment = '#' + Object.entries(pdfOpenParams).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
+  let fullURL = `/lib/pdf/web/viewer.html?file=${encodeURIComponent(url)}${pdfOpenFragment}`;
+
+  if (NexT.utils.supportsPDFs()) {
+    element.innerHTML = `<embed class="pdfobject" src="${url + pdfOpenFragment}" type="application/pdf" style="height: ${element.dataset.height};">`;
+  } else {
+    element.innerHTML = `<iframe src="${fullURL}" style="height: ${element.dataset.height};" frameborder="0"></iframe>`;
+  }
+});
+</script>
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'f938893867df78f94802',
+      clientSecret: 'b6d8470939c53d26c98c4e3b9d4c9ceb55d6e78e',
+      repo        : 'kcmetercec.github.io',
+      owner       : 'KcMeterCEC',
+      admin       : ['KcMeterCEC'],
+      id          : 'c38aaedf5db5224dd44aecf557d13cc2',
+        language: 'zh-CN',
+      distractionFreeMode: false
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+    </div>
+</body>
+</html>

@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="理解进程可能会收到的信号，以及捕捉该信号。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 信号">
+<meta property="og:url" content="http://kcmetercec.top/2022/06/12/net_base_signal/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="理解进程可能会收到的信号，以及捕捉该信号。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-06-11T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-06-12T16:00:00.000Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="network">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://kcmetercec.top/2022/06/12/net_base_signal/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Linux 信号 | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112423075-1# <app_id>"></script>
+    <script data-pjax>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-112423075-1# <app_id>');
+      }
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+        <li class="menu-item menu-item-commonweal">
+
+    <a href="/404/" rel="section"><i class="fa fa-heartbeat fa-fw"></i>公益 404</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2022/06/12/net_base_signal/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="Qt, C++, linux, CS">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux 信号
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-06-12 00:00:00" itemprop="dateCreated datePublished" datetime="2022-06-12T00:00:00+08:00">2022-06-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-06-13 00:00:00" itemprop="dateModified" datetime="2022-06-13T00:00:00+08:00">2022-06-13</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/network/" itemprop="url" rel="index"><span itemprop="name">network</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/network/basic/" itemprop="url" rel="index"><span itemprop="name">basic</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>2.7k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>理解进程可能会收到的信号，以及捕捉该信号。</p>
+<span id="more"></span>
+
+<h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>信号可以由用户、系统或进程发送给目标进程，信号可以由如下条件产生：</p>
+<ul>
+<li>对于前台进程，用户可以通过输入特殊的终端字符串来给它发信号。比如 Ctrl+C 会发送中断信号。</li>
+<li>系统异常，比如非法访问内存</li>
+<li>系统状态变化，比如 alarm 定时器到期引起 SIGALRM 信号</li>
+<li>运行 kill 命令或调用 <code>kill()</code> 函数</li>
+</ul>
+<h2 id="发送信号"><a href="#发送信号" class="headerlink" title="发送信号"></a>发送信号</h2><p>一个进程给其他进程发送信号使用 kill 函数：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;signal.h&gt;</span></span></span><br><span class="line"><span class="comment">//将信号 sig 发送给 pid 进程</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">kill</span><span class="params">(<span class="keyword">pid_t</span> pid, <span class="keyword">int</span> sig)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p>pid 的取值如下：</p>
+<table>
+<thead>
+<tr>
+<th>pid 参数</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>pid &gt; 0</td>
+<td>信号发送给 PID 为 pid 的进程</td>
+</tr>
+<tr>
+<td>pid = 0</td>
+<td>信号发送给本进程组内的其他进程</td>
+</tr>
+<tr>
+<td>pid = -1</td>
+<td>信号发送给除 init 进程外的所有进程，但发送者需要拥有对目标进程发送信号的权限</td>
+</tr>
+<tr>
+<td>pid &lt; -1</td>
+<td>信号发送给组 ID 为 -pid 的进程组中的所有成员</td>
+</tr>
+</tbody></table>
+<h2 id="信号处理方式"><a href="#信号处理方式" class="headerlink" title="信号处理方式"></a>信号处理方式</h2><p>目标进程可以定义个回调函数来处理接收到的信号，信号原型为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;signal.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">//传入信号类型</span></span><br><span class="line"><span class="function"><span class="keyword">typedef</span> <span class="title">void</span> <span class="params">(*<span class="keyword">sighandler_t</span>)</span><span class="params">(<span class="keyword">int</span>)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p><strong>需要注意的是：</strong> 此函数应该是可重入的，否则很容易引发一些竞态条件！</p>
+<p>目标进程也可以使用宏传入 <code>signal()</code> 函数： </p>
+<ul>
+<li><code>SIG_DFL</code> ：使用默认处理方式，可以结束进程（Term）、忽略信号（Ign）、结束并生成核心转储文件（Core）、暂停进程（Stop）、继续进程（Cont）</li>
+<li><code>SIG_IGN</code> ：忽略目标信号</li>
+</ul>
+<h2 id="Linux-标准信号"><a href="#Linux-标准信号" class="headerlink" title="Linux 标准信号"></a>Linux 标准信号</h2><table>
+<thead>
+<tr>
+<th>信号</th>
+<th>起源</th>
+<th>默认行为</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SIGHUP</td>
+<td>POSIX</td>
+<td>Term</td>
+<td>控制终端挂起</td>
+</tr>
+<tr>
+<td>SIGINT</td>
+<td>ANSI</td>
+<td>Term</td>
+<td>键盘输入以中断进程（Ctrl + C）</td>
+</tr>
+<tr>
+<td>SIGQUIT</td>
+<td>POSIX</td>
+<td>Core</td>
+<td>键盘输入使进程退出（Ctrl + \）</td>
+</tr>
+<tr>
+<td>SIGILL</td>
+<td>ANSI</td>
+<td>Core</td>
+<td>非法指令</td>
+</tr>
+<tr>
+<td>SIGTRAP</td>
+<td>POSIX</td>
+<td>Core</td>
+<td>断点陷进，用于调试</td>
+</tr>
+<tr>
+<td>SIGABRT</td>
+<td>ANSI</td>
+<td>Core</td>
+<td>进程调用 =abort= 函数时生成该信号</td>
+</tr>
+<tr>
+<td>SIGIOT</td>
+<td>4.2BSD</td>
+<td>Core</td>
+<td>和 =SIGABRT= 相同</td>
+</tr>
+<tr>
+<td>SIGBUS</td>
+<td>4.2BSD</td>
+<td>Core</td>
+<td>总线错误，错误的内存访问</td>
+</tr>
+<tr>
+<td>SIGFPE</td>
+<td>ANSI</td>
+<td>Core</td>
+<td>浮点异常</td>
+</tr>
+<tr>
+<td>SIGKILL</td>
+<td>POSIX</td>
+<td>Term</td>
+<td>终止一个进程，该信号不可被捕获或忽略</td>
+</tr>
+<tr>
+<td>SIGUSR1</td>
+<td>POSIX</td>
+<td>Term</td>
+<td>用户自定义信号1</td>
+</tr>
+<tr>
+<td>SIGSEGV</td>
+<td>ANSI</td>
+<td>Core</td>
+<td>非法内存段引用</td>
+</tr>
+<tr>
+<td>SIGUSR2</td>
+<td>POSIX</td>
+<td>Term</td>
+<td>用户自定义信号2</td>
+</tr>
+<tr>
+<td>SIGPIPE</td>
+<td>POSIX</td>
+<td>Term</td>
+<td>往读端被关闭的管道或者 socket 的连接中写数据</td>
+</tr>
+<tr>
+<td>SIGALRM</td>
+<td>POSIX</td>
+<td>Term</td>
+<td>由 =alarm= 或 =setitimer= 设置的实时闹钟超时引起</td>
+</tr>
+<tr>
+<td>SIGTERM</td>
+<td>ANSI</td>
+<td>Term</td>
+<td>终止进程。kill 命令默认发送的信号就是 SIGTERM</td>
+</tr>
+<tr>
+<td>SIGSTKFLT</td>
+<td>linux</td>
+<td>Term</td>
+<td>早期的 Linux 使用该信号来报告数学协处理器栈错误</td>
+</tr>
+<tr>
+<td>SIGCLD</td>
+<td>System V</td>
+<td>Ign</td>
+<td>和 =SIGCHLD= 相同</td>
+</tr>
+<tr>
+<td>SIGCHILD</td>
+<td>POSIX</td>
+<td>Ign</td>
+<td>子进程状态发生变化（退出或暂停）</td>
+</tr>
+<tr>
+<td>SIGCONT</td>
+<td>POSIX</td>
+<td>Cont</td>
+<td>启动被暂停的进程（Ctrl+Q)</td>
+</tr>
+<tr>
+<td>SIGSTOP</td>
+<td>POSIX</td>
+<td>Stop</td>
+<td>暂停进程（Ctrl + S）。该信号不可被捕获或忽略</td>
+</tr>
+<tr>
+<td>SIGTSTP</td>
+<td>POSIX</td>
+<td>Stop</td>
+<td>挂起进程（Ctrl + Z）</td>
+</tr>
+<tr>
+<td>SIGTTIN</td>
+<td>POSIX</td>
+<td>Stop</td>
+<td>后台进程试图从终端读取输入</td>
+</tr>
+<tr>
+<td>SIGTTOU</td>
+<td>POSIX</td>
+<td>Stop</td>
+<td>后台进程试图向终端输出内容</td>
+</tr>
+<tr>
+<td>SIGURG</td>
+<td>4.2BSD</td>
+<td>Ign</td>
+<td>socket 连接上接收到紧急数据</td>
+</tr>
+<tr>
+<td>SIGXCPU</td>
+<td>4.2BSD</td>
+<td>Core</td>
+<td>进程的 CPU 使用时间超过其软限制</td>
+</tr>
+<tr>
+<td>SIGXFSZ</td>
+<td>4.2BSD</td>
+<td>Core</td>
+<td>文件尺寸超过其软限制</td>
+</tr>
+<tr>
+<td>SIGVTALRM</td>
+<td>4.2BSD</td>
+<td>Term</td>
+<td>与 =SIGALRM= 类似，但它只统计进程用户空间代码的运行时间</td>
+</tr>
+<tr>
+<td>SIGPROF</td>
+<td>4.2BSD</td>
+<td>Term</td>
+<td>与 =SIGALRM= 类似，同时统计用户代码和内核的运行时间</td>
+</tr>
+<tr>
+<td>SIGWINCH</td>
+<td>4.3BSD</td>
+<td>Ign</td>
+<td>终端窗口大小发送变化</td>
+</tr>
+<tr>
+<td>SIGPOLL</td>
+<td>System V</td>
+<td>Term</td>
+<td>与 =SIGIO= 类似</td>
+</tr>
+<tr>
+<td>SIGIO</td>
+<td>4.2BSD</td>
+<td>Term</td>
+<td>IO 就绪事件</td>
+</tr>
+<tr>
+<td>SIGPWR</td>
+<td>System V</td>
+<td>Term</td>
+<td>对于使用 UPS 系统时电池电量过低时发出</td>
+</tr>
+<tr>
+<td>SIGSYS</td>
+<td>POSIX</td>
+<td>Core</td>
+<td>非法系统调用</td>
+</tr>
+<tr>
+<td>SIGUNUSED</td>
+<td></td>
+<td>Core</td>
+<td>保留，通常和 =SIGSYS= 效果相同</td>
+</tr>
+</tbody></table>
+<h2 id="Linux-中断系统调用"><a href="#Linux-中断系统调用" class="headerlink" title="Linux 中断系统调用"></a>Linux 中断系统调用</h2><p>如果程序在执行系统调用时处于阻塞状态，此时接收到信号，并且设置了信号处理函数，那么此系统调用将被中断，errno 被设置为 EINTR。</p>
+<ul>
+<li>对于默认行为是暂停进程的信号，如果没有设置信号处理函数，也可以中断某些系统调用。</li>
+</ul>
+<p>可以使用 <code>sigaction()</code> 函数为信号设置 <code>SA_RESTART</code> 标志以重启被中断的系统调用。</p>
+<h1 id="信号函数"><a href="#信号函数" class="headerlink" title="信号函数"></a>信号函数</h1><h2 id="signal-系统调用"><a href="#signal-系统调用" class="headerlink" title="signal 系统调用"></a>signal 系统调用</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;signal.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">//为信号 signum 设置对应的处理函数</span></span><br><span class="line"><span class="comment">//返回前一次调用 signal 函数时传入的函数指针或是 sig 对应的默认处理函数指针</span></span><br><span class="line"><span class="function"><span class="keyword">sighandler_t</span> <span class="title">signal</span><span class="params">(<span class="keyword">int</span> signum, <span class="keyword">sighandler_t</span> handler)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<h2 id="sigaction-系统调用"><a href="#sigaction-系统调用" class="headerlink" title="sigaction 系统调用"></a>sigaction 系统调用</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;signal.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sigaction</span> &#123;</span></span><br><span class="line">    <span class="keyword">void</span>     (*sa_handler)(<span class="keyword">int</span>);<span class="comment">//信号处理函数</span></span><br><span class="line">    <span class="keyword">void</span>     (*sa_sigaction)(<span class="keyword">int</span>, <span class="keyword">siginfo_t</span> *, <span class="keyword">void</span> *);</span><br><span class="line">    <span class="keyword">sigset_t</span>   sa_mask;<span class="comment">//信号掩码，指定哪些信号不能发送给本进程</span></span><br><span class="line">    <span class="keyword">int</span>        sa_flags;<span class="comment">//设置接收到信号时的行为</span></span><br><span class="line">    <span class="keyword">void</span>     (*sa_restorer)(<span class="keyword">void</span>);</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">//为信号 signum 设置新的 act 处理方式，并返回 oldact 老的处理方式</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">sigaction</span><span class="params">(<span class="keyword">int</span> signum, <span class="keyword">const</span> struct sigaction *act,</span></span></span><br><span class="line"><span class="params"><span class="function">            struct sigaction *oldact)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<h1 id="信号集"><a href="#信号集" class="headerlink" title="信号集"></a>信号集</h1><p>信号集用来表示一组信号。</p>
+<h2 id="信号集函数"><a href="#信号集函数" class="headerlink" title="信号集函数"></a>信号集函数</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;signal.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">//清空信号集</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">sigemptyset</span><span class="params">(<span class="keyword">sigset_t</span> *<span class="built_in">set</span>)</span></span>;</span><br><span class="line"><span class="comment">//设置所有信号</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">sigfillset</span><span class="params">(<span class="keyword">sigset_t</span> *<span class="built_in">set</span>)</span></span>;</span><br><span class="line"><span class="comment">//添加信号到信号集</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">sigaddset</span><span class="params">(<span class="keyword">sigset_t</span> *<span class="built_in">set</span>, <span class="keyword">int</span> signum)</span></span>;</span><br><span class="line"><span class="comment">//删除信号到信号集</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">sigdelset</span><span class="params">(<span class="keyword">sigset_t</span> *<span class="built_in">set</span>, <span class="keyword">int</span> signum)</span></span>;</span><br><span class="line"><span class="comment">//测试 signum 是否在信号集中</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">sigismember</span><span class="params">(<span class="keyword">const</span> <span class="keyword">sigset_t</span> *<span class="built_in">set</span>, <span class="keyword">int</span> signum)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<h2 id="进程信号掩码"><a href="#进程信号掩码" class="headerlink" title="进程信号掩码"></a>进程信号掩码</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;signal.h&gt;</span></span></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 设置或查看进程的信号掩码</span></span><br><span class="line"><span class="comment"> * @par set :设置新的信号掩码</span></span><br><span class="line"><span class="comment"> * @par oldset: 原来的信号掩码</span></span><br><span class="line"><span class="comment"> * @par how：指定设置进程信号掩码的方式，可以有以下值</span></span><br><span class="line"><span class="comment"> * SIG_BLOCK : 新进程信号掩码是其当前值和 set 指定信号集的并集</span></span><br><span class="line"><span class="comment"> * SIG_UNBLOCK：新的进程信号掩码是其当前值移除 set 信号集的结果</span></span><br><span class="line"><span class="comment"> * SIG_SETMASK：直接将进程信号掩码设置为 set</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">sigprocmask</span><span class="params">(<span class="keyword">int</span> how, <span class="keyword">const</span> <span class="keyword">sigset_t</span> *<span class="built_in">set</span>, <span class="keyword">sigset_t</span> *oldset)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<h2 id="被挂起的信号"><a href="#被挂起的信号" class="headerlink" title="被挂起的信号"></a>被挂起的信号</h2><p>设置进程信号掩码后，被屏蔽的信号将不能被进程接收。如果给进程发送一个被屏蔽的信号，<br>则操作系统将该信号设置为进程的一个被挂起的信号。</p>
+<p><strong>如果进程取消对被挂起信号的屏蔽，则它能立即被进程接收到。</strong></p>
+<p><code>sigpending()</code> 函数可以获得进程当前被挂起的信号集：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;signal.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">sigpending</span><span class="params">(<span class="keyword">sigset_t</span> *<span class="built_in">set</span>)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<h1 id="统一事件源"><a href="#统一事件源" class="headerlink" title="统一事件源"></a>统一事件源</h1><p>信号处理函数与程序主循环是两条不同的执行路线，并且信号处理函数要尽快的执行完以确保新的信号到来可以及时响应。</p>
+<p>很明显，信号处理函数是 I/O 密集型任务，那么就不应该让此函数来进行数据的处理。</p>
+<p>典型的解决方案是：信号处理逻辑放在主循环中，当信号处理函数被触发时，它通过管道将信号发送给主循环。</p>
+<blockquote>
+<p>这种处理方式就有点类似于中断中的顶半和底半处理。</p>
+</blockquote>
+<p>主循环通过 I/O 复用来统一监听信号时间和其他的 I/O 事件，这就被称为统一事件源。</p>
+<p>可以通过 <code>telnet</code> 测试以下代码。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;netinet/in.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;arpa/inet.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;signal.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/epoll.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;pthread.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;assert.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;errno.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdbool.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MAX_EVENT_NUMBER (1024)</span></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">int</span> pipefd[<span class="number">2</span>];</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">set_nonblocking</span><span class="params">(<span class="keyword">int</span> fd)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> old_opt = fcntl(fd, F_GETFL);</span><br><span class="line">    <span class="keyword">int</span> new_opt = old_opt | O_NONBLOCK;</span><br><span class="line"></span><br><span class="line">    fcntl(fd, F_SETFL, new_opt);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> old_opt;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 以边沿触发的方式加入文件描述符</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">add_fd</span><span class="params">(<span class="keyword">int</span> epoll_fd, <span class="keyword">int</span> fd)</span> </span>&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">epoll_event</span> <span class="title">event</span>;</span></span><br><span class="line"></span><br><span class="line">    event.data.fd = fd;</span><br><span class="line">    event.events = EPOLLIN | EPOLLET;</span><br><span class="line">    epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &amp;event);</span><br><span class="line"></span><br><span class="line">    set_nonblocking(fd);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">sig_handler</span><span class="params">(<span class="keyword">int</span> sig)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 这里是为了不破坏全局的 errno</span></span><br><span class="line">    <span class="keyword">int</span> save_errno = errno;</span><br><span class="line">    <span class="keyword">int</span> msg = sig;</span><br><span class="line">    <span class="comment">// 向 pipe 写入该消息的值</span></span><br><span class="line">    send(pipefd[<span class="number">1</span>], (<span class="keyword">char</span> *)&amp;msg, <span class="number">1</span>, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    errno = save_errno;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;sig %d received!\n&quot;</span>, sig);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">addsig</span><span class="params">(<span class="keyword">int</span> sig)</span> </span>&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sigaction</span> <span class="title">sa</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">memset</span>(&amp;sa, <span class="number">0</span>, <span class="keyword">sizeof</span>(sa));</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 指定信号处理函数</span></span><br><span class="line">    sa.sa_handler = sig_handler;</span><br><span class="line">    <span class="comment">// 当进程被打断后，系统调用可以继续运行</span></span><br><span class="line">    sa.sa_flags |= SA_RESTART;</span><br><span class="line">    sigfillset(&amp;sa.sa_mask);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 注册信号处理</span></span><br><span class="line">    <span class="keyword">int</span> ret = sigaction(sig, &amp;sa, <span class="literal">NULL</span>);</span><br><span class="line">    assert(ret == <span class="number">0</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[])</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> ret = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">if</span> (argc != <span class="number">2</span>) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;usage: %s &lt;port&gt;\n&quot;</span>, argv[<span class="number">0</span>]);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> port = atoi(argv[<span class="number">1</span>]);</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_in</span> <span class="title">server_addr</span>;</span></span><br><span class="line"></span><br><span class="line">    server_addr.sin_family = AF_INET;</span><br><span class="line">    server_addr.sin_port = htons(port);</span><br><span class="line">    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> server_sock = socket(server_addr.sin_family, SOCK_STREAM, <span class="number">0</span>);</span><br><span class="line">    assert(server_sock &gt; <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    ret = bind(server_sock, (<span class="keyword">const</span> struct sockaddr *)&amp;server_addr, <span class="keyword">sizeof</span>(server_addr));</span><br><span class="line">    assert(ret == <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    ret = listen(server_sock, <span class="number">5</span>);</span><br><span class="line">    assert(ret == <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">epoll_event</span> <span class="title">events</span>[<span class="title">MAX_EVENT_NUMBER</span>];</span></span><br><span class="line">    <span class="keyword">int</span> epoll_fd = epoll_create(<span class="number">5</span>);</span><br><span class="line">    assert(epoll_fd &gt;= <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    add_fd(epoll_fd, server_sock);</span><br><span class="line"></span><br><span class="line">    ret = socketpair(PF_UNIX, SOCK_STREAM, <span class="number">0</span>, pipefd);</span><br><span class="line">    assert(ret = <span class="number">-1</span>);</span><br><span class="line"></span><br><span class="line">    set_nonblocking(pipefd[<span class="number">1</span>]);</span><br><span class="line">    <span class="comment">// 监控读信号</span></span><br><span class="line">    add_fd(epoll_fd, pipefd[<span class="number">0</span>]);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 增加接受的信号</span></span><br><span class="line">    addsig(SIGINT);</span><br><span class="line">    addsig(SIGHUP);</span><br><span class="line">    addsig(SIGCHLD);</span><br><span class="line">    addsig(SIGTERM);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">bool</span> stop_server = <span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (!stop_server) &#123;</span><br><span class="line">        <span class="keyword">int</span> number = epoll_wait(epoll_fd, events, MAX_EVENT_NUMBER, <span class="number">-1</span>);</span><br><span class="line">        <span class="keyword">if</span> ((number &lt; <span class="number">0</span>) &amp;&amp; (errno != EINTR)) &#123;</span><br><span class="line">            perror(<span class="string">&quot;epoll failed:&quot;</span>);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; number; i++) &#123;</span><br><span class="line">            <span class="keyword">int</span> sock_fd = events[i].data.fd;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (sock_fd == server_sock) &#123;</span><br><span class="line">                <span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_in</span> <span class="title">client_addr</span>;</span></span><br><span class="line">                <span class="keyword">socklen_t</span> client_addr_len = <span class="keyword">sizeof</span>(client_addr);</span><br><span class="line">                <span class="keyword">int</span> connfd = accept(server_sock, (struct sockaddr *)&amp;client_addr,</span><br><span class="line">                &amp;client_addr_len);</span><br><span class="line"></span><br><span class="line">                <span class="built_in">printf</span>(<span class="string">&quot;client : %s -&gt; %d\n&quot;</span>, inet_ntoa(client_addr.sin_addr),ntohs(client_addr.sin_port));</span><br><span class="line"></span><br><span class="line">                add_fd(epoll_fd, connfd);</span><br><span class="line">            &#125; <span class="keyword">else</span> <span class="keyword">if</span> ((sock_fd == pipefd[<span class="number">0</span>]) &amp;&amp; (events[i].events &amp; EPOLLIN)) &#123;</span><br><span class="line">                <span class="keyword">int</span> sig;</span><br><span class="line">                <span class="keyword">char</span> signals[<span class="number">1024</span>];</span><br><span class="line">                ret = recv(pipefd[<span class="number">0</span>], signals, <span class="keyword">sizeof</span>(signals), <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">                <span class="keyword">if</span> (ret &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">                    <span class="keyword">continue</span>;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="comment">// 遍历读取到的信号</span></span><br><span class="line">                    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; ret; ++i) &#123;</span><br><span class="line">                        <span class="keyword">switch</span> (signals[i]) &#123;</span><br><span class="line">                            <span class="keyword">case</span> SIGCHLD:</span><br><span class="line">                            <span class="keyword">case</span> SIGHUP: &#123;</span><br><span class="line">                                <span class="built_in">printf</span>(<span class="string">&quot;continue\n&quot;</span>);</span><br><span class="line">                                <span class="keyword">continue</span>;</span><br><span class="line">                            &#125;<span class="keyword">break</span>;</span><br><span class="line">                            <span class="keyword">case</span> SIGTERM:</span><br><span class="line">                            <span class="keyword">case</span> SIGINT: &#123;</span><br><span class="line">                                stop_server = <span class="literal">true</span>;</span><br><span class="line">                                <span class="built_in">printf</span>(<span class="string">&quot;exit server\n&quot;</span>);</span><br><span class="line">                            &#125;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="keyword">char</span> recv_buf[<span class="number">1024</span>];</span><br><span class="line">                <span class="comment">// 由于工作在 ET 模式，所以需要一次性全部读出</span></span><br><span class="line">                <span class="keyword">while</span> (<span class="number">1</span>) &#123;</span><br><span class="line">                    <span class="built_in">memset</span>(recv_buf, <span class="number">0</span>, <span class="number">1024</span>);</span><br><span class="line">                    ret = recv(sock_fd, recv_buf, <span class="keyword">sizeof</span>(recv_buf), <span class="number">0</span>);</span><br><span class="line">                    <span class="keyword">if</span> (ret &lt; <span class="number">0</span>) &#123;</span><br><span class="line">                        <span class="keyword">if</span> ((errno == EAGAIN) || (errno == EWOULDBLOCK)) &#123;</span><br><span class="line">                            <span class="built_in">printf</span>(<span class="string">&quot;read empty!\n&quot;</span>);</span><br><span class="line">                            <span class="keyword">break</span>;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125; <span class="keyword">else</span> <span class="keyword">if</span>(ret == <span class="number">0</span>) &#123;</span><br><span class="line">                        close(sock_fd);</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                        <span class="built_in">printf</span>(<span class="string">&quot;client: %s\n&quot;</span>, recv_buf);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    close(server_sock);</span><br><span class="line">    close(pipefd[<span class="number">1</span>]);</span><br><span class="line">    close(pipefd[<span class="number">0</span>]);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="网络编程相关信号"><a href="#网络编程相关信号" class="headerlink" title="网络编程相关信号"></a>网络编程相关信号</h1><h2 id="SIGHUP"><a href="#SIGHUP" class="headerlink" title="SIGHUP"></a>SIGHUP</h2><p>当挂起进程的控制终端时，SIGHUP 信号将被触发。</p>
+<p>对于没有控制终端的网络后台程序而言，它们通常利用 SIGHUP 信号来强制服务器重读配置文件。</p>
+<p>比如 <code>xinetd</code> 超级服务程序，在接收到 SIGHUP 信号后将循环读取 <code>/etc/xinetd.d</code> 目录下每个配置文件，检测配置文件的变化，根据它们的内容来控制子服务程序。</p>
+<h2 id="SIGPIPE"><a href="#SIGPIPE" class="headerlink" title="SIGPIPE"></a>SIGPIPE</h2><p>向读端关闭的管道或 socket 连接中写数据将引发 SIGPIPE 信号，此时 errno 也会为 EPIPE。</p>
+<p><strong>代码需要显示的捕获或者忽略此信号，否则程序接收到 SIGPIPE 信号的默认行为便是结束进程。</strong></p>
+<p>当 <code>send()</code> 函数使用 <code>MSG_NOSIGNAL</code> 标志来禁止写操作触发 SIGPIPE 信号时，应该使用 <code>send()</code> 返回的 errno 来判断管道或 socket 读端已经关闭。</p>
+<p>也可以使用 I/O 复用函数来检测管道和 socket 连接的读端是否已经关闭，以 poll 为例：</p>
+<ul>
+<li>当管道的读端关闭时，写端文件描述符上的 POLLHUP 事件将被触发</li>
+<li>当 socket 连接被对方关闭时，socket 上的 POLLRDHUP 事件将被触发</li>
+</ul>
+<h2 id="SIGURG"><a href="#SIGURG" class="headerlink" title="SIGURG"></a>SIGURG</h2><p>除了可以通过<code>select()</code>读取带外信号，还可以通过接收 SIGURG 信号来接收带外数据。</p>
+<p>如下服务端代码：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;netinet/in.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;arpa/inet.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;signal.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;signal.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;errno.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;assert.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> BUF_SIZE (1024)</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">int</span> client_fd = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取到信号后，便读取内容</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">sig_urg</span><span class="params">(<span class="keyword">int</span> sig)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> save_errno = errno;</span><br><span class="line">    <span class="keyword">char</span> buffer[BUF_SIZE];</span><br><span class="line">    <span class="built_in">memset</span>(buffer, <span class="number">0</span>, BUF_SIZE);</span><br><span class="line">    <span class="keyword">int</span> ret = recv(client_fd, buffer, BUF_SIZE - <span class="number">1</span>, MSG_OOB);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;got %d bytes of oob data: %s\n&quot;</span>, ret, buffer);</span><br><span class="line"></span><br><span class="line">    errno = save_errno;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">add_sig</span><span class="params">(<span class="keyword">int</span> sig, <span class="keyword">void</span> (*sig_handler)(<span class="keyword">int</span>))</span> </span>&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sigaction</span> <span class="title">sa</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">memset</span>(&amp;sa, <span class="number">0</span>, <span class="keyword">sizeof</span>(sa));</span><br><span class="line"></span><br><span class="line">    sa.sa_handler = sig_handler;</span><br><span class="line">    sa.sa_flags |= SA_RESTART;</span><br><span class="line">    sigfillset(&amp;sa.sa_mask);</span><br><span class="line">    <span class="keyword">int</span> ret = sigaction(sig, &amp;sa, <span class="literal">NULL</span>);</span><br><span class="line">    assert(ret != <span class="number">-1</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[])</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (argc != <span class="number">2</span>) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;usage: %s &lt;port&gt;\n&quot;</span>, argv[<span class="number">0</span>]);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">int</span> port = atoi(argv[<span class="number">1</span>]);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//addr</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_in</span> <span class="title">socket_addr</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">memset</span>(&amp;socket_addr, <span class="number">0</span>, <span class="keyword">sizeof</span>(socket_addr));</span><br><span class="line">    socket_addr.sin_family = AF_INET;</span><br><span class="line">    socket_addr.sin_port = htons(port);</span><br><span class="line">    socket_addr.sin_addr.s_addr = htonl(INADDR_ANY);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//socket</span></span><br><span class="line">    <span class="keyword">int</span> socket_fd = socket(AF_INET, SOCK_STREAM, <span class="number">0</span>);</span><br><span class="line">    <span class="keyword">if</span> (socket_fd &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        perror(<span class="string">&quot;can&#x27;t create socket:&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//bind</span></span><br><span class="line">    <span class="keyword">if</span> (bind(socket_fd, (<span class="keyword">const</span> struct sockaddr *)&amp;socket_addr, <span class="keyword">sizeof</span>(socket_addr)) &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        perror(<span class="string">&quot;bind socket and address failed:&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//listen</span></span><br><span class="line">    <span class="keyword">if</span> (listen(socket_fd, <span class="number">5</span>) &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        perror(<span class="string">&quot;listen failed!\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;I&#x27;m waiting for client...\n&quot;</span>);</span><br><span class="line">    <span class="comment">//accept</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_in</span> <span class="title">client_addr</span>;</span></span><br><span class="line">    <span class="keyword">socklen_t</span>     addr_len = <span class="keyword">sizeof</span>(client_addr);</span><br><span class="line">    <span class="keyword">if</span> ((client_fd = accept(socket_fd, (struct sockaddr *)&amp;client_addr, &amp;addr_len)) &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        perror(<span class="string">&quot;accept failed:&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;connected to client ip: %s, port: %d\n&quot;</span>,</span><br><span class="line">    inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));</span><br><span class="line"></span><br><span class="line">    add_sig(SIGURG, sig_urg);</span><br><span class="line">    <span class="comment">//设置 socket 的宿主进程或进程组</span></span><br><span class="line">    fcntl(client_fd, F_SETOWN, getpid());</span><br><span class="line"></span><br><span class="line">    <span class="keyword">ssize_t</span> recv_len;</span><br><span class="line"></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">define</span> RECV_BUF_SIZE   (30)</span></span><br><span class="line">    <span class="keyword">char</span> recv_buf[RECV_BUF_SIZE];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (<span class="number">1</span>) &#123;</span><br><span class="line">        <span class="built_in">memset</span>(recv_buf, <span class="number">0</span>, RECV_BUF_SIZE);</span><br><span class="line">        recv_len = recv(client_fd, recv_buf, RECV_BUF_SIZE - <span class="number">1</span>, <span class="number">0</span>);</span><br><span class="line">        <span class="keyword">if</span> (recv_len &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;received %ld bytes : %s\n&quot;</span>, recv_len, recv_buf);</span><br><span class="line">    &#125;</span><br><span class="line">    close(client_fd);</span><br><span class="line">    close(socket_fd);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>kcmetercec
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://kcmetercec.top/2022/06/12/net_base_signal/" title="Linux 信号">http://kcmetercec.top/2022/06/12/net_base_signal/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/network/" rel="tag"> <i class="fa fa-tag"></i> network</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/06/11/net_base_io%20multiplexing/" rel="prev" title="Linux I/O 复用">
+      <i class="fa fa-chevron-left"></i> Linux I/O 复用
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/06/13/net_base_linux_timer/" rel="next" title="Linux 定时器">
+      Linux 定时器 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%91%E9%80%81%E4%BF%A1%E5%8F%B7"><span class="nav-number">1.1.</span> <span class="nav-text">发送信号</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%A1%E5%8F%B7%E5%A4%84%E7%90%86%E6%96%B9%E5%BC%8F"><span class="nav-number">1.2.</span> <span class="nav-text">信号处理方式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Linux-%E6%A0%87%E5%87%86%E4%BF%A1%E5%8F%B7"><span class="nav-number">1.3.</span> <span class="nav-text">Linux 标准信号</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Linux-%E4%B8%AD%E6%96%AD%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">1.4.</span> <span class="nav-text">Linux 中断系统调用</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BF%A1%E5%8F%B7%E5%87%BD%E6%95%B0"><span class="nav-number">2.</span> <span class="nav-text">信号函数</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#signal-%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">2.1.</span> <span class="nav-text">signal 系统调用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#sigaction-%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">2.2.</span> <span class="nav-text">sigaction 系统调用</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BF%A1%E5%8F%B7%E9%9B%86"><span class="nav-number">3.</span> <span class="nav-text">信号集</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%A1%E5%8F%B7%E9%9B%86%E5%87%BD%E6%95%B0"><span class="nav-number">3.1.</span> <span class="nav-text">信号集函数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E4%BF%A1%E5%8F%B7%E6%8E%A9%E7%A0%81"><span class="nav-number">3.2.</span> <span class="nav-text">进程信号掩码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A2%AB%E6%8C%82%E8%B5%B7%E7%9A%84%E4%BF%A1%E5%8F%B7"><span class="nav-number">3.3.</span> <span class="nav-text">被挂起的信号</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BB%9F%E4%B8%80%E4%BA%8B%E4%BB%B6%E6%BA%90"><span class="nav-number">4.</span> <span class="nav-text">统一事件源</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B%E7%9B%B8%E5%85%B3%E4%BF%A1%E5%8F%B7"><span class="nav-number">5.</span> <span class="nav-text">网络编程相关信号</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#SIGHUP"><span class="nav-number">5.1.</span> <span class="nav-text">SIGHUP</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SIGPIPE"><span class="nav-number">5.2.</span> <span class="nav-text">SIGPIPE</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SIGURG"><span class="nav-number">5.3.</span> <span class="nav-text">SIGURG</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">Qt, C++, linux, CS</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">107</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">55</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:kcmeter.cec@gmail.com" title="E-Mail → mailto:kcmeter.cec@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2021 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">206k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">3:08</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+document.querySelectorAll('.pdfobject-container').forEach(element => {
+  let url = element.dataset.target;
+  let pdfOpenParams = {
+    navpanes : 0,
+    toolbar  : 0,
+    statusbar: 0,
+    pagemode : 'thumbs',
+    view     : 'FitH'
+  };
+  let pdfOpenFragment = '#' + Object.entries(pdfOpenParams).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
+  let fullURL = `/lib/pdf/web/viewer.html?file=${encodeURIComponent(url)}${pdfOpenFragment}`;
+
+  if (NexT.utils.supportsPDFs()) {
+    element.innerHTML = `<embed class="pdfobject" src="${url + pdfOpenFragment}" type="application/pdf" style="height: ${element.dataset.height};">`;
+  } else {
+    element.innerHTML = `<iframe src="${fullURL}" style="height: ${element.dataset.height};" frameborder="0"></iframe>`;
+  }
+});
+</script>
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'f938893867df78f94802',
+      clientSecret: 'b6d8470939c53d26c98c4e3b9d4c9ceb55d6e78e',
+      repo        : 'kcmetercec.github.io',
+      owner       : 'KcMeterCEC',
+      admin       : ['KcMeterCEC'],
+      id          : 'c5440d3bebc3ea8b2a0fa20f37081bd1',
+        language: 'zh-CN',
+      distractionFreeMode: false
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+    </div>
+</body>
+</html>

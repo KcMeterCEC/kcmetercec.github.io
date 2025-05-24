@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="前面已经手撸了整个嵌入式系统的构建过程，但是在实际工作中，尤其是根文件系统的建立是很费时间的。这个时候一个自动化的构建工具就非常重要了。 自动化构建工具，需要能完成：  自动化的获取源码（不管是网络还是本地） 为源码打补丁，并进行一些配置 完成构建 将构建的文件组织成根文件系统 最终可以将多个镜像文件打包并装载到目标机。  以上的过程都是可以用户灵活配置的，并可以输出 SDK 便于多个开发人员的环">
+<meta property="og:type" content="article">
+<meta property="og:title" content="linux 构建系统">
+<meta property="og:url" content="http://kcmetercec.top/2024/03/09/linux_make_yocto_build_system/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="前面已经手撸了整个嵌入式系统的构建过程，但是在实际工作中，尤其是根文件系统的建立是很费时间的。这个时候一个自动化的构建工具就非常重要了。 自动化构建工具，需要能完成：  自动化的获取源码（不管是网络还是本地） 为源码打补丁，并进行一些配置 完成构建 将构建的文件组织成根文件系统 最终可以将多个镜像文件打包并装载到目标机。  以上的过程都是可以用户灵活配置的，并可以输出 SDK 便于多个开发人员的环">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmake%5D/%5BWhat%5DLinux--yocto/pic/buildroot_custom_compiler.jpg?raw=true">
+<meta property="article:published_time" content="2024-03-08T16:00:00.000Z">
+<meta property="article:modified_time" content="2024-03-08T16:00:00.000Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="yocto">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmake%5D/%5BWhat%5DLinux--yocto/pic/buildroot_custom_compiler.jpg?raw=true">
+
+<link rel="canonical" href="http://kcmetercec.top/2024/03/09/linux_make_yocto_build_system/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>linux 构建系统 | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112423075-1# <app_id>"></script>
+    <script data-pjax>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-112423075-1# <app_id>');
+      }
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+        <li class="menu-item menu-item-commonweal">
+
+    <a href="/404/" rel="section"><i class="fa fa-heartbeat fa-fw"></i>公益 404</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2024/03/09/linux_make_yocto_build_system/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="Qt, C++, linux, CS">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          linux 构建系统
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-03-09 00:00:00" itemprop="dateCreated datePublished" datetime="2024-03-09T00:00:00+08:00">2024-03-09</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/make/" itemprop="url" rel="index"><span itemprop="name">make</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/make/yocto/" itemprop="url" rel="index"><span itemprop="name">yocto</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>前面已经手撸了整个嵌入式系统的构建过程，但是在实际工作中，尤其是根文件系统的建立是很费时间的。这个时候一个自动化的构建工具就非常重要了。</p>
+<p>自动化构建工具，需要能完成：</p>
+<ol>
+<li>自动化的获取源码（不管是网络还是本地）</li>
+<li>为源码打补丁，并进行一些配置</li>
+<li>完成构建</li>
+<li>将构建的文件组织成根文件系统</li>
+<li>最终可以将多个镜像文件打包并装载到目标机。</li>
+</ol>
+<p>以上的过程都是可以用户灵活配置的，并可以输出 SDK 便于多个开发人员的环境统一。</p>
+<p>目前有以下自动化构建工具：</p>
+<ol>
+<li><a target="_blank" rel="noopener" href="https://buildroot.org/">Buildroot</a>：使用 Make 和 Kconfig 的构建工具，非常易于使用。</li>
+<li><a target="_blank" rel="noopener" href="https://www.embtoolkit.org/">EmbToolkit</a>：用于构建跟文件系统和工具链的简单构建工具</li>
+<li><a target="_blank" rel="noopener" href="https://openembedded.org/">OpenEmbedded</a>：功能强大的构建系统，是 Yocto 的核心组件</li>
+<li><a target="_blank" rel="noopener" href="https://openwrt.org/">OpenWrt</a>：专用于构建无线路由器软件包的工具</li>
+<li><a target="_blank" rel="noopener" href="https://www.ptxdist.org/">PTXdist</a>：简单的构建工具</li>
+<li><a target="_blank" rel="noopener" href="https://www.yoctoproject.org/">Yocto</a>基于 OpenEmbedded 扩展的元数据、工具、文档集，更为强大的构建工具</li>
+</ol>
+<p>其中 Buildroot 最易用，Yocto 最完善，所以这里只关注 Buildroot 和 Yocto。</p>
+<span id="more"></span>
+
+<h1 id="使用-Buildroot-构建"><a href="#使用-Buildroot-构建" class="headerlink" title="使用 Buildroot 构建"></a>使用 Buildroot 构建</h1><h2 id="安装依赖"><a href="#安装依赖" class="headerlink" title="安装依赖"></a>安装依赖</h2><p>要正常使用 Buildroot 需要至少安装以下依赖：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sudo apt install -y sed make binutils build-essential \</span><br><span class="line">diffutils gcc g++ bash patch gzip bzip2 perl tar cpio unzip \</span><br><span class="line">rsync file bc findutils wget python3 libncurses5-dev </span><br></pre></td></tr></table></figure>
+
+<h2 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h2><p>buildroot 具有一些默认配置文件，存在于<code>configs</code>文件夹下，也可以使用<code>make list-defconfigs</code> 来列出所有的默认配置。</p>
+<p>对于 bbb 而言就是：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">make beaglebone_defconfig menuconfig</span><br></pre></td></tr></table></figure>
+
+<p>接下来需要对配置做一些修改。</p>
+<ol>
+<li><p>选择自己构建的工具链：</p>
+<ul>
+<li><p><strong>Toolchain-&gt;Toolchain type-&gt;External toolchain</strong></p>
+</li>
+<li><p><strong>Toolchain-&gt;Toolchain-&gt;Custom toolchain</strong></p>
+</li>
+<li><p><strong>Toolchain-&gt;Toolchain path</strong>：填入工具链的路径</p>
+</li>
+<li><p><strong>Toolchain-&gt;Toolchain prefix</strong>：修改为正确的工具链前缀</p>
+</li>
+<li><p>选择 c 库为 glibc</p>
+</li>
+</ul>
+</li>
+<li><p>配置工具链的版本：</p>
+<ul>
+<li><strong>Toolchain-&gt;External toolchain gcc version</strong>：可以通过<code>arm-cortex_a8-linux-gnueabihf-gcc -v</code> 查看</li>
+</ul>
+</li>
+</ol>
+<p>工具链对应的头文件版本，有对应的说明：</p>
+<blockquote>
+<p>If unsure what version your toolchain is using, you can look  at the value of LINUX_VERSION_CODE in linux/version.h in your  toolchain. The Linux version is M.m.p, with:<br> M = ( LINUX_VERSION_CODE &gt;&gt; 16 ) &amp; 0xFF<br> m = ( LINUX_VERSION_CODE &gt;&gt; 8  ) &amp; 0xFF<br> p = ( LINUX_VERSION_CODE &gt;&gt; 0  ) &amp; 0xFF </p>
+</blockquote>
+<p>那么查看当前工具链：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat ./arm-cortex_a8-linux-gnueabihf/sysroot/usr/include/linux/version.h</span><br></pre></td></tr></table></figure>
+
+<p>得到如下输出：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">define LINUX_VERSION_CODE 328466</span></span><br><span class="line"><span class="meta">#</span><span class="bash">define KERNEL_VERSION(a,b,c) (((a) &lt;&lt; <span class="string">16) + ((b) &lt;&lt; 8) + (c))</span></span></span><br></pre></td></tr></table></figure>
+
+<p>那么就得到对应的版本是：5.03.18</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmake%5D/%5BWhat%5DLinux--yocto/pic/buildroot_custom_compiler.jpg?raw=true"><br>3. 以 initramfs 的方式构建：</p>
+<ul>
+<li><strong>Filesystem images-&gt;cpio the root filesystem (for use as an initial RAM filesystem)</strong></li>
+<li><strong>Compression method-&gt;lz4</strong>：这是为了文件系统尽量的小</li>
+</ul>
+<ol start="4">
+<li>取消 Kernel 和 Uboot 的构建，因为前面几章已经构建了自己的 bootloader 和 Kernel</li>
+</ol>
+<p>在取消了内核和 Uboot 构建后，需要修改文件 <code>board/beaglebone/genimage.cfg</code>，让它只生成 rootfs.cpio：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">image boot.vfat &#123;</span></span><br><span class="line"><span class="meta">#</span><span class="bash">    vfat &#123;</span></span><br><span class="line"><span class="meta">#</span><span class="bash">        files = &#123;</span></span><br><span class="line"><span class="meta">#</span><span class="bash">            <span class="string">&quot;MLO&quot;</span>,</span></span><br><span class="line"><span class="meta">#</span><span class="bash">            <span class="string">&quot;u-boot.img&quot;</span>,</span></span><br><span class="line"><span class="meta">#</span><span class="bash">            <span class="string">&quot;zImage&quot;</span>,</span></span><br><span class="line"><span class="meta">#</span><span class="bash">            <span class="string">&quot;uEnv.txt&quot;</span>,</span></span><br><span class="line"><span class="meta">#</span><span class="bash">            <span class="string">&quot;am335x-evm.dtb&quot;</span>,</span></span><br><span class="line"><span class="meta">#</span><span class="bash">            <span class="string">&quot;am335x-evmsk.dtb&quot;</span>,</span></span><br><span class="line"><span class="meta">#</span><span class="bash">            <span class="string">&quot;am335x-bone.dtb&quot;</span>,</span></span><br><span class="line"><span class="meta">#</span><span class="bash">            <span class="string">&quot;am335x-boneblack.dtb&quot;</span>,</span></span><br><span class="line"><span class="meta">#</span><span class="bash">            <span class="string">&quot;am335x-bonegreen.dtb&quot;</span>,</span></span><br><span class="line"><span class="meta">#</span><span class="bash">            <span class="string">&quot;am335x-boneblack-wireless.dtb&quot;</span>,</span></span><br><span class="line"><span class="meta">#</span><span class="bash">            <span class="string">&quot;am335x-bonegreen-wireless.dtb&quot;</span>,</span></span><br><span class="line"><span class="meta">#</span><span class="bash">            <span class="string">&quot;extlinux&quot;</span></span></span><br><span class="line"><span class="meta">#</span><span class="bash">        &#125;</span></span><br><span class="line"><span class="meta">#</span><span class="bash">    &#125;</span></span><br><span class="line"><span class="meta">#</span><span class="bash"></span></span><br><span class="line"><span class="bash"><span class="comment">#    size = 16M</span></span></span><br><span class="line"><span class="meta">#</span><span class="bash">&#125;</span></span><br><span class="line"></span><br><span class="line">image sdcard.img &#123;</span><br><span class="line">    hdimage &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    #partition u-boot &#123;</span><br><span class="line">    #    partition-type = 0xC</span><br><span class="line">    #    bootable = &quot;true&quot;</span><br><span class="line">    #    image = &quot;boot.vfat&quot;</span><br><span class="line">    #&#125;</span><br><span class="line"></span><br><span class="line">    partition rootfs &#123;</span><br><span class="line">        partition-type = 0x83</span><br><span class="line">        image = &quot;rootfs.cpio&quot;</span><br><span class="line">        size = 512M</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在使用 <code>make</code> 构建后，会产生两个新的目录：</p>
+<ul>
+<li><p><code>dl</code>：用于 Buildroot 构建的，从网络下载的软件包</p>
+</li>
+<li><p><code>output</code>：包含编译的中间文件和最终的文件</p>
+</li>
+</ul>
+<p>在 <code>output</code>中有以下目录：</p>
+<ul>
+<li><p><code>build</code>：包含所有组件的编译输出</p>
+</li>
+<li><p><code>host</code>：包含 Buildroot 所需要的主机上的工具</p>
+</li>
+<li><p><code>images</code>：打包好的镜像文件和一些脚本</p>
+</li>
+<li><p><code>staging</code>：指向编译器的<code>sysroot</code>的符号链接</p>
+</li>
+<li><p><code>target</code>：根文件系统，但是其权限不对，所以无法直接使用</p>
+</li>
+</ul>
+<h2 id="运行"><a href="#运行" class="headerlink" title="运行"></a>运行</h2><p>接下来，只需要把生成的<code>rootfs.cpio</code>编译进内核，然后在 Uboot 中输入命令就可以进入新做的文件系统了：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">fatload mmc 0:1 0x80200000 zImage</span><br><span class="line">fatload mmc 0:1 0x8CA00000 am335x-boneblack.dtb</span><br><span class="line">setenv bootargs console=ttyO0,115200 rdinit=/sbin/init</span><br><span class="line">bootz 0x80200000 - 0x8CA00000</span><br></pre></td></tr></table></figure>
+
+<h2 id="sdcard-img-内容查看"><a href="#sdcard-img-内容查看" class="headerlink" title="sdcard.img 内容查看"></a>sdcard.img 内容查看</h2><p>查看 sdcard.img 可以通过 fdisk 和 mount 在本机上查看：</p>
+<p>先通过 <code>fdisk -l ./sdcard.img</code> 查看分区情况：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">cec@box:$ fdisk -l ./sdcard.img </span><br><span class="line">Disk ./sdcard.img: 38.58 MiB, 40458240 bytes, 79020 sectors</span><br><span class="line">Units: sectors of 1 * 512 = 512 bytes</span><br><span class="line">Sector size (logical/physical): 512 bytes / 512 bytes</span><br><span class="line">I/O size (minimum/optimal): 512 bytes / 512 bytes</span><br><span class="line">Disklabel type: dos</span><br><span class="line">Disk identifier: 0x00000000</span><br><span class="line"></span><br><span class="line">Device        Boot Start     End Sectors  Size Id Type</span><br><span class="line">./sdcard.img1 *        1   32768   32768   16M  c W95 FAT32 (LBA)</span><br><span class="line">./sdcard.img2      32769 1081344 1048576  512M 83 Linux</span><br></pre></td></tr></table></figure>
+
+<p>可以看到分区大小和类型，然后可以挂载在当前某个空目录下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> offset 指定挂载的起始位置</span></span><br><span class="line">sudo mount -o loop,offset=$((1*512)) -t vfat ./sdcard.img ./mnt/</span><br></pre></td></tr></table></figure>
+
+<h2 id="将应用程序打包进-rootfs"><a href="#将应用程序打包进-rootfs" class="headerlink" title="将应用程序打包进 rootfs"></a>将应用程序打包进 rootfs</h2><h3 id="overlay-的方式"><a href="#overlay-的方式" class="headerlink" title="overlay 的方式"></a>overlay 的方式</h3><p>在编译完应用程序后，将其拷贝到 board 对应的 overlay 目录下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cec@box:~/github/buildroot-2024.02/board/beaglebone/rootfs_overlay$ mkdir -p usr/bin</span><br><span class="line"></span><br><span class="line">cp ~/lab/cpp/hello/hello /home/cec/github/buildroot-2024.02/board/beaglebone/rootfs_overlay</span><br></pre></td></tr></table></figure>
+
+<p>然后配置 buildroot 中的 <strong>System configuration | Root filesystem overlay directories</strong> 为此 overlay 路径，再次编译后该应用程序便被打包进去了。</p>
+<h1 id="重新认识构建过程"><a href="#重新认识构建过程" class="headerlink" title="重新认识构建过程"></a>重新认识构建过程</h1><h2 id="初始化构建环境"><a href="#初始化构建环境" class="headerlink" title="初始化构建环境"></a>初始化构建环境</h2><p>NXP 将构建初始化环境又封装了一次脚本，所以其构建命令如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">DISTRO=fsl-imx-xwayland MACHINE=myd-imx8mm source myir-setup-release.sh -b build-xwayland</span><br></pre></td></tr></table></figure>
+
+<p>可以先不去分析<code>myir-setup-release.sh</code>，而是看其输出的结果。</p>
+<h3 id="bblayers-conf"><a href="#bblayers-conf" class="headerlink" title="bblayers.conf"></a>bblayers.conf</h3><p>首先看<code>bblayers.conf</code>，这包含了 bitbake 将要构建的层：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">LCONF_VERSION = &quot;7&quot;</span><br><span class="line"></span><br><span class="line">BBPATH = &quot;$&#123;TOPDIR&#125;&quot;</span><br><span class="line">BSPDIR := &quot;$&#123;@os.path.abspath(os.path.dirname(d.getVar(&#x27;FILE&#x27;, True)) + &#x27;/../..&#x27;)&#125;&quot;</span><br><span class="line"></span><br><span class="line">BBFILES ?= &quot;&quot;</span><br><span class="line">BBLAYERS = &quot; \</span><br><span class="line"><span class="meta">  $</span><span class="bash">&#123;BSPDIR&#125;/sources/poky/meta \</span></span><br><span class="line"><span class="bash">  <span class="variable">$&#123;BSPDIR&#125;</span>/sources/poky/meta-poky \</span></span><br><span class="line"><span class="bash">  \</span></span><br><span class="line"><span class="bash">  <span class="variable">$&#123;BSPDIR&#125;</span>/sources/meta-openembedded/meta-oe \</span></span><br><span class="line"><span class="bash">  <span class="variable">$&#123;BSPDIR&#125;</span>/sources/meta-openembedded/meta-multimedia \</span></span><br><span class="line"><span class="bash">  <span class="variable">$&#123;BSPDIR&#125;</span>/sources/meta-openembedded/meta-python \</span></span><br><span class="line"><span class="bash">  \</span></span><br><span class="line"><span class="bash">  <span class="variable">$&#123;BSPDIR&#125;</span>/sources/meta-freescale \</span></span><br><span class="line"><span class="bash">  <span class="variable">$&#123;BSPDIR&#125;</span>/sources/meta-freescale-3rdparty \</span></span><br><span class="line"><span class="bash">  <span class="variable">$&#123;BSPDIR&#125;</span>/sources/meta-freescale-distro \</span></span><br><span class="line"><span class="bash"><span class="string">&quot;</span></span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="string"> i.MX Yocto Project Release layers</span></span></span><br><span class="line">BBLAYERS += &quot; $&#123;BSPDIR&#125;/sources/meta-myir/meta-bsp &quot;</span><br><span class="line">BBLAYERS += &quot; $&#123;BSPDIR&#125;/sources/meta-myir/meta-sdk &quot;</span><br><span class="line">BBLAYERS += &quot; $&#123;BSPDIR&#125;/sources/meta-myir/meta-ml &quot;</span><br><span class="line"></span><br><span class="line">BBLAYERS += &quot;$&#123;BSPDIR&#125;/sources/meta-browser&quot;</span><br><span class="line">BBLAYERS += &quot;$&#123;BSPDIR&#125;/sources/meta-rust&quot;</span><br><span class="line">BBLAYERS += &quot;$&#123;BSPDIR&#125;/sources/meta-openembedded/meta-gnome&quot;</span><br><span class="line">BBLAYERS += &quot;$&#123;BSPDIR&#125;/sources/meta-openembedded/meta-networking&quot;</span><br><span class="line">BBLAYERS += &quot;$&#123;BSPDIR&#125;/sources/meta-openembedded/meta-filesystems&quot;</span><br><span class="line">BBLAYERS += &quot;$&#123;BSPDIR&#125;/sources/meta-qt5&quot;</span><br></pre></td></tr></table></figure>
+
+<p>为了能够比较清楚的知道层之间的优先级，需要输出其优先级来看看：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> bitbake-layers show-layers</span></span><br><span class="line">NOTE: Starting bitbake server...</span><br><span class="line">layer                 path                                      priority</span><br><span class="line">==========================================================================</span><br><span class="line">meta                  ~/yocto/sources/poky/meta      5</span><br><span class="line">meta-poky             ~/yocto/sources/poky/meta-poky  5</span><br><span class="line">meta-oe               ~/yocto/sources/meta-openembedded/meta-oe  6</span><br><span class="line">meta-multimedia       ~/yocto/sources/meta-openembedded/meta-multimedia  6</span><br><span class="line">meta-python           ~/yocto/sources/meta-openembedded/meta-python  7</span><br><span class="line">meta-freescale        ~/yocto/sources/meta-freescale  5</span><br><span class="line">meta-freescale-3rdparty  ~/yocto/sources/meta-freescale-3rdparty  4</span><br><span class="line">meta-freescale-distro  ~/yocto/sources/meta-freescale-distro  4</span><br><span class="line">meta-bsp              ~/yocto/sources/meta-myir/meta-bsp  8</span><br><span class="line">meta-sdk              ~/yocto/sources/meta-myir/meta-sdk  8</span><br><span class="line">meta-ml               ~/yocto/sources/meta-myir/meta-ml  8</span><br><span class="line">meta-browser          ~/yocto/sources/meta-browser   7</span><br><span class="line">meta-rust             ~/yocto/sources/meta-rust      7</span><br><span class="line">meta-gnome            ~/yocto/sources/meta-openembedded/meta-gnome  7</span><br><span class="line">meta-networking       ~/yocto/sources/meta-openembedded/meta-networking  5</span><br><span class="line">meta-filesystems      ~/yocto/sources/meta-openembedded/meta-filesystems  6</span><br><span class="line">meta-qt5              ~/yocto/sources/meta-qt5       7</span><br></pre></td></tr></table></figure>
+
+<p>数值越大优先级越高（可以覆盖低优先级的配置），那么可以看到在<code>meta-myir</code>层中的优先级较高，在后面需要对当前配置进行微调时，可以在这个层中进行修改。</p>
+<h3 id="local-conf"><a href="#local-conf" class="headerlink" title="local.conf"></a>local.conf</h3><p><code>local.conf</code>是对构建环境变量的配置：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> cat conf/local.conf</span></span><br><span class="line">MACHINE ??= &#x27;myd-imx8mm&#x27;</span><br><span class="line">DISTRO ?= &#x27;fsl-imx-xwayland&#x27;</span><br><span class="line">PACKAGE_CLASSES ?= &#x27;package_rpm&#x27;</span><br><span class="line">EXTRA_IMAGE_FEATURES ?= &quot;debug-tweaks&quot;</span><br><span class="line">USER_CLASSES ?= &quot;buildstats image-mklibs image-prelink&quot;</span><br><span class="line">PATCHRESOLVE = &quot;noop&quot;</span><br><span class="line">BB_DISKMON_DIRS ??= &quot;\</span><br><span class="line">    STOPTASKS,$&#123;TMPDIR&#125;,1G,100K \</span><br><span class="line">    STOPTASKS,$&#123;DL_DIR&#125;,1G,100K \</span><br><span class="line">    STOPTASKS,$&#123;SSTATE_DIR&#125;,1G,100K \</span><br><span class="line">    STOPTASKS,/tmp,100M,100K \</span><br><span class="line">    ABORT,$&#123;TMPDIR&#125;,100M,1K \</span><br><span class="line">    ABORT,$&#123;DL_DIR&#125;,100M,1K \</span><br><span class="line">    ABORT,$&#123;SSTATE_DIR&#125;,100M,1K \</span><br><span class="line">    ABORT,/tmp,10M,1K&quot;</span><br><span class="line">PACKAGECONFIG_append_pn-qemu-system-native = &quot; sdl&quot;</span><br><span class="line">CONF_VERSION = &quot;1&quot;</span><br><span class="line"></span><br><span class="line">DL_DIR ?= &quot;$&#123;BSPDIR&#125;/downloads/&quot;</span><br><span class="line">ACCEPT_FSL_EULA = &quot;1&quot;</span><br></pre></td></tr></table></figure>
+
+<p>这里最主要的就是<code>MACHINE</code>和<code>DISTRO</code>两个环境变量：</p>
+<ul>
+<li><code>MACHINE</code>：主要表明了对用户空间以下的系统配置，比如 bootloader，kernel</li>
+<li><code>DISTRO</code>：则是对整个发型版的全局配置，比如发行版的名字，使用 x11 还是 wayland 等</li>
+</ul>
+<p>除了以上二者，还有个比较重要的就是<code>image</code>。</p>
+<h2 id="开始构建"><a href="#开始构建" class="headerlink" title="开始构建"></a>开始构建</h2><p>构建完整镜像，使用<code>bitbake myir-image-full</code>即可，这里表示了与之相关的 image 就是 <code>myir-image-full</code>。</p>
+<h2 id="构建的脉络"><a href="#构建的脉络" class="headerlink" title="构建的脉络"></a>构建的脉络</h2><p>基于<code>MACHINE</code>,<code>DISTRO</code>和<code>image</code>这 3 个最为重要的元素，以及所包含的 layer，便可以梳理出构建的主要脉络。</p>
+<h3 id="MACHINE"><a href="#MACHINE" class="headerlink" title="MACHINE"></a>MACHINE</h3><p>通过<code>MACHINE</code>的值，便可以搜寻到其关联的配置文件<code>myd-imx8mm.conf</code>。</p>
+<p>在这个文件中，便可以清楚明了的看到以下主要内容：</p>
+<ul>
+<li><code>bootloader</code>的配置</li>
+<li>会生成的设备树</li>
+<li>kernel 构建时调用的配置文件</li>
+</ul>
+<h3 id="DISTRO"><a href="#DISTRO" class="headerlink" title="DISTRO"></a>DISTRO</h3><p>通过<code>DISTRO</code>的值，可以搜寻到其关联的配置文件<code>fsl-imx-xwayland.conf</code>。</p>
+<p>通过展开其包含的头文件，就可以清楚明了的看到其使用的是<code>wayland</code>，初始化系统使用的是<code>systemd</code>等。</p>
+<h3 id="image"><a href="#image" class="headerlink" title="image"></a>image</h3><p>通过<code>myir-image-full</code>可以查到其对用的 recipe 文件就是<code>myir-image-full.bb</code>。</p>
+<p>可以看到它在<code>imx-image-multimedia.bb</code>的基础之上进行了文件系统的扩展。</p>
+<h3 id="layer-之间的覆盖"><a href="#layer-之间的覆盖" class="headerlink" title="layer 之间的覆盖"></a>layer 之间的覆盖</h3><p>可以使用命令<code>bitbake-layers show-appends</code>来查看对原有<code>recipe</code>的附加修改。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>如果仅仅是在官方提供的构建工具下做微调，那么只要把握<code>MACHINE</code>,<code>DISTRO</code>,<code>image</code>,<code>layers</code>这 4 个核心元素，就可以顺藤摸瓜了解整个系统的配置。</p>
+<p>其他的诸如变量表达式的意思、生成文件的路径、配置的增加及删除等等都是一些细枝末节的东西。只要把握重点，并通过查询文档便可以掌握这些细枝末节。</p>
+<p>整个嵌入式开发的重点难点依然是在<code>bootloader</code>,<code>kernel</code>，以及用户态的业务逻辑层。</p>
+<h1 id="认识-devtool"><a href="#认识-devtool" class="headerlink" title="认识 devtool"></a>认识 devtool</h1><p>简单的 recipe 可以使用 bitbake-layers 来创建，然后再手动编写。但是如果 recipe 太多时，就会比较繁琐。这个时候使用 devtool 就会更加方便。</p>
+<h2 id="devtool-的工作流"><a href="#devtool-的工作流" class="headerlink" title="devtool 的工作流"></a>devtool 的工作流</h2><p>首先初始化工作环境：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> <span class="built_in">source</span> oe-init-build-env build/</span></span><br></pre></td></tr></table></figure>
+
+<p>然后创建新的层：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> bitbake-layers create-layer ../meta-mine</span></span><br></pre></td></tr></table></figure>
+
+<p>接下来将新建的层加入构建任务中：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> bitbake-layers add-layer ../meta-mine</span></span><br></pre></td></tr></table></figure>
+
+<p>然后使用<code>devtool</code>来构建：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> devtool build-image core-image-sato</span></span><br></pre></td></tr></table></figure>
+
+<p>经过构建后，发现<code>conf</code>目录下新增了一个<code>devtool.conf</code>文件：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[General]</span><br><span class="line">workspace_path = /home/cec/github/poky/build/workspace</span><br><span class="line"></span><br><span class="line">[SDK]</span><br><span class="line">target_basename = core-image-sato</span><br></pre></td></tr></table></figure>
+
+<p>其中的<code>workspace_path</code>指定了由<code>devtool</code>所创建的沙盒工作区，可以在这里面做一些试验。</p>
+<blockquote>
+<p>可以看到在 bblayers.conf 中也加入了该 workspace 的路径，在用户测试完成后，可以将该路径移除。</p>
+</blockquote>
+<h2 id="创建新的-recipe"><a href="#创建新的-recipe" class="headerlink" title="创建新的 recipe"></a>创建新的 recipe</h2><p>下面以<code>devtool</code>来构建<a target="_blank" rel="noopener" href="https://github.com/containers/bubblewrap">bubblewrap</a>。</p>
+<h3 id="增加-recipe"><a href="#增加-recipe" class="headerlink" title="增加 recipe"></a>增加 recipe</h3><p>首先增加这个 recipe：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> devtool add https://github.com/containers/bubblewrap/releases/download/v0.5.0/bubblewrap-0.5.0.tar.xz</span></span><br></pre></td></tr></table></figure>
+
+<p>可以发现<code>devtool</code>会自动下载压缩包，然后解压缩文件，接下来会自动创建一些 recipe：</p>
+<ol>
+<li><p>在<code>appends</code>目录下创建<code>bubblewrap_0.5.0.bbappend</code></p>
+<blockquote>
+<p>这里面指定了本地解压缩源码的位置</p>
+</blockquote>
+</li>
+<li><p>在<code>recipes</code>目录下创建<code>bubblewrap/bubblewrap_0.5.0.bb</code></p>
+<blockquote>
+<p>这里面指定了远端 URI 及其校验，还根据源码推测了构建系统是 autotools</p>
+</blockquote>
+</li>
+<li><p>在<code>source</code>目录中即为 bubblewrap 的源码</p>
+</li>
+</ol>
+<h3 id="编辑"><a href="#编辑" class="headerlink" title="编辑"></a>编辑</h3><p>接下来是编辑文件：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> devtool edit-recipe bubblewrap</span></span><br></pre></td></tr></table></figure>
+
+<p>可以指定其说明文件安装目录：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> PN 代表 packagename，在这里就是 bubblewrap。将其说明安装到 /usr/share 目录中</span></span><br><span class="line"><span class="meta">FILES_$</span><span class="bash">&#123;PN&#125; += <span class="string">&quot;/usr/share/*&quot;</span></span></span><br></pre></td></tr></table></figure>
+
+<h3 id="构建"><a href="#构建" class="headerlink" title="构建"></a>构建</h3><p>构建命令也十分简单：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> devtool build bubblewrap</span></span><br></pre></td></tr></table></figure>
+
+<p>接下来便可以看到其配置、编译、打包的过程。</p>
+<h3 id="部署"><a href="#部署" class="headerlink" title="部署"></a>部署</h3><p><code>devtool</code>可以将构建的包直接部署到目标机，以便快速验证结果。</p>
+<p>这里先启动<code>qemu</code>来做演示：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> runqemu qemux86-64 nographic</span></span><br></pre></td></tr></table></figure>
+
+<p>可以通过 ifconfig 看到其 ip 是 192.168.7.2，那么就将该包部署过去：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> devtool deploy-target bubblewrap root@192.168.7.2</span></span><br></pre></td></tr></table></figure>
+
+<p><code>bwrap</code>可执行文件便安装完成了，且可执行了。</p>
+<h3 id="清除部署"><a href="#清除部署" class="headerlink" title="清除部署"></a>清除部署</h3><p>当测试完成后，便可以从目标机系统中清除该包：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> devtool undeploy-target bubblewrap root@192.168.7.2</span></span><br></pre></td></tr></table></figure>
+
+<p>执行该命令后，可以发现<code>bwrap</code>相关文件已经清理完毕了。</p>
+<h3 id="完成-recipe"><a href="#完成-recipe" class="headerlink" title="完成 recipe"></a>完成 recipe</h3><p>到目前为止还只是测试完毕，接下来就是将沙盒中的 recipe 更新到<code>meta-mine</code>中：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> devtool finish -f bubblewrap ../meta-mine</span></span><br></pre></td></tr></table></figure>
+
+<p>可以看到，<code>meta-mine</code>中已经包含了<code>bubblewrap</code>相关 recipe，干净又整洁！</p>
+<p>既然已经部署完成，便可以删除之前的沙盒了，为了以后再次构建，也可以仅仅在<code>bblayers.conf</code>中屏蔽这个沙盒 layer 即可。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>kcmetercec
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://kcmetercec.top/2024/03/09/linux_make_yocto_build_system/" title="linux 构建系统">http://kcmetercec.top/2024/03/09/linux_make_yocto_build_system/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/yocto/" rel="tag"> <i class="fa fa-tag"></i> yocto</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/02/27/linux_make_yocto_fs/" rel="prev" title="构建根文件系统">
+      <i class="fa fa-chevron-left"></i> 构建根文件系统
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/04/09/linux_make_yocto_buildroot/" rel="next" title="Buildroot 的定制化使用">
+      Buildroot 的定制化使用 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-Buildroot-%E6%9E%84%E5%BB%BA"><span class="nav-number">1.</span> <span class="nav-text">使用 Buildroot 构建</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85%E4%BE%9D%E8%B5%96"><span class="nav-number">1.1.</span> <span class="nav-text">安装依赖</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE"><span class="nav-number">1.2.</span> <span class="nav-text">配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%90%E8%A1%8C"><span class="nav-number">1.3.</span> <span class="nav-text">运行</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#sdcard-img-%E5%86%85%E5%AE%B9%E6%9F%A5%E7%9C%8B"><span class="nav-number">1.4.</span> <span class="nav-text">sdcard.img 内容查看</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%86%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F%E6%89%93%E5%8C%85%E8%BF%9B-rootfs"><span class="nav-number">1.5.</span> <span class="nav-text">将应用程序打包进 rootfs</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#overlay-%E7%9A%84%E6%96%B9%E5%BC%8F"><span class="nav-number">1.5.1.</span> <span class="nav-text">overlay 的方式</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%87%8D%E6%96%B0%E8%AE%A4%E8%AF%86%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B"><span class="nav-number">2.</span> <span class="nav-text">重新认识构建过程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9D%E5%A7%8B%E5%8C%96%E6%9E%84%E5%BB%BA%E7%8E%AF%E5%A2%83"><span class="nav-number">2.1.</span> <span class="nav-text">初始化构建环境</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#bblayers-conf"><span class="nav-number">2.1.1.</span> <span class="nav-text">bblayers.conf</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#local-conf"><span class="nav-number">2.1.2.</span> <span class="nav-text">local.conf</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%80%E5%A7%8B%E6%9E%84%E5%BB%BA"><span class="nav-number">2.2.</span> <span class="nav-text">开始构建</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9E%84%E5%BB%BA%E7%9A%84%E8%84%89%E7%BB%9C"><span class="nav-number">2.3.</span> <span class="nav-text">构建的脉络</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#MACHINE"><span class="nav-number">2.3.1.</span> <span class="nav-text">MACHINE</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DISTRO"><span class="nav-number">2.3.2.</span> <span class="nav-text">DISTRO</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#image"><span class="nav-number">2.3.3.</span> <span class="nav-text">image</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#layer-%E4%B9%8B%E9%97%B4%E7%9A%84%E8%A6%86%E7%9B%96"><span class="nav-number">2.3.4.</span> <span class="nav-text">layer 之间的覆盖</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">2.4.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AE%A4%E8%AF%86-devtool"><span class="nav-number">3.</span> <span class="nav-text">认识 devtool</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#devtool-%E7%9A%84%E5%B7%A5%E4%BD%9C%E6%B5%81"><span class="nav-number">3.1.</span> <span class="nav-text">devtool 的工作流</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E6%96%B0%E7%9A%84-recipe"><span class="nav-number">3.2.</span> <span class="nav-text">创建新的 recipe</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A2%9E%E5%8A%A0-recipe"><span class="nav-number">3.2.1.</span> <span class="nav-text">增加 recipe</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BC%96%E8%BE%91"><span class="nav-number">3.2.2.</span> <span class="nav-text">编辑</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9E%84%E5%BB%BA"><span class="nav-number">3.2.3.</span> <span class="nav-text">构建</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%83%A8%E7%BD%B2"><span class="nav-number">3.2.4.</span> <span class="nav-text">部署</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B8%85%E9%99%A4%E9%83%A8%E7%BD%B2"><span class="nav-number">3.2.5.</span> <span class="nav-text">清除部署</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%8C%E6%88%90-recipe"><span class="nav-number">3.2.6.</span> <span class="nav-text">完成 recipe</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">Qt, C++, linux, CS</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">107</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">55</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:kcmeter.cec@gmail.com" title="E-Mail → mailto:kcmeter.cec@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2021 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">206k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">3:08</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+document.querySelectorAll('.pdfobject-container').forEach(element => {
+  let url = element.dataset.target;
+  let pdfOpenParams = {
+    navpanes : 0,
+    toolbar  : 0,
+    statusbar: 0,
+    pagemode : 'thumbs',
+    view     : 'FitH'
+  };
+  let pdfOpenFragment = '#' + Object.entries(pdfOpenParams).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
+  let fullURL = `/lib/pdf/web/viewer.html?file=${encodeURIComponent(url)}${pdfOpenFragment}`;
+
+  if (NexT.utils.supportsPDFs()) {
+    element.innerHTML = `<embed class="pdfobject" src="${url + pdfOpenFragment}" type="application/pdf" style="height: ${element.dataset.height};">`;
+  } else {
+    element.innerHTML = `<iframe src="${fullURL}" style="height: ${element.dataset.height};" frameborder="0"></iframe>`;
+  }
+});
+</script>
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'f938893867df78f94802',
+      clientSecret: 'b6d8470939c53d26c98c4e3b9d4c9ceb55d6e78e',
+      repo        : 'kcmetercec.github.io',
+      owner       : 'KcMeterCEC',
+      admin       : ['KcMeterCEC'],
+      id          : 'f6699485bbf027e5750eb63306f306d9',
+        language: 'zh-CN',
+      distractionFreeMode: false
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+    </div>
+</body>
+</html>

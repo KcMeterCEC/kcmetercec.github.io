@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="先以最简单的方式来认识 AM 调制。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="初步认识 AM 调制">
+<meta property="og:url" content="http://kcmetercec.top/2023/07/06/rf_dsp_modulation_am_hello/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="先以最简单的方式来认识 AM 调制。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/real_multiply_formula.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/real_multiply_euler_formula.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/multiply_fft.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/normal_am_block.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/normal_am_single_tone.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/normal_am_cplx_single_tone.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/normal_am_gnuradio_tx.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/normal_am_gnuradio_rx.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/normal_am_gnuradio_tx_overmodulation.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/normal_am_gnuradio_tx_overmodulation_wave.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/normal_am_envelope_detection.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/normal_am_envelope_detection2.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/normal_dm_demodu_method.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/normal_am_cohernet_demodu.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/normal_am_cohernet_demodu_fft.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/depth_dB_formula.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/DSB_formula.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/dsb_wave.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/matlab_dsb_out.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/dsb_demodu_method.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/dsb_demodu_method2.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/dsb_demodu_method3.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/dsb_demodulate_wave.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/ssb_pic.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/ssb_method1.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/ssb_demodu_method.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/ssb_memory.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/ssb_demodu_wave.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/vsb_method.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/vsb_method2.jpg?raw=true">
+<meta property="article:published_time" content="2023-07-05T16:00:00.000Z">
+<meta property="article:modified_time" content="2023-07-15T16:00:00.000Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="DSP">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/real_multiply_formula.jpg?raw=true">
+
+<link rel="canonical" href="http://kcmetercec.top/2023/07/06/rf_dsp_modulation_am_hello/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>初步认识 AM 调制 | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112423075-1# <app_id>"></script>
+    <script data-pjax>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-112423075-1# <app_id>');
+      }
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+        <li class="menu-item menu-item-commonweal">
+
+    <a href="/404/" rel="section"><i class="fa fa-heartbeat fa-fw"></i>公益 404</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2023/07/06/rf_dsp_modulation_am_hello/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="Qt, C++, linux, CS">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          初步认识 AM 调制
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-07-06 00:00:00" itemprop="dateCreated datePublished" datetime="2023-07-06T00:00:00+08:00">2023-07-06</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-07-16 00:00:00" itemprop="dateModified" datetime="2023-07-16T00:00:00+08:00">2023-07-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/DSP/" itemprop="url" rel="index"><span itemprop="name">DSP</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/DSP/Modulation/" itemprop="url" rel="index"><span itemprop="name">Modulation</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/DSP/Modulation/AM/" itemprop="url" rel="index"><span itemprop="name">AM</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.8k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>先以最简单的方式来认识 AM 调制。</p>
+<span id="more"></span>
+
+<h1 id="实数混频"><a href="#实数混频" class="headerlink" title="实数混频"></a>实数混频</h1><h2 id="理解公式"><a href="#理解公式" class="headerlink" title="理解公式"></a>理解公式</h2><p>实数混频就是时域实信号的相乘，由于是实部所以取 cos 为信号产生函数：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/real_multiply_formula.jpg?raw=true">可以看到：两个实信号的混频得到的是其和频与差频。</p>
+<p>这点通过欧拉公式也可以理解：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/real_multiply_euler_formula.jpg?raw=true">从上面的欧拉运算结果来看，其频谱图会出现两组对称的和频和差频。</p>
+<h2 id="实例"><a href="#实例" class="headerlink" title="实例"></a>实例</h2><p>将上面以 matlab 运算来看效果：</p>
+<figure class="highlight fortran"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">clear;</span><br><span class="line">clc;</span><br><span class="line">close <span class="built_in">all</span>;</span><br><span class="line"></span><br><span class="line">% 采样率及信号频率</span><br><span class="line">fs = <span class="number">10240</span>;</span><br><span class="line">f1 = <span class="number">100</span>;</span><br><span class="line">f2 = <span class="number">300</span>;</span><br><span class="line">n = [<span class="number">1</span>:fs];</span><br><span class="line"></span><br><span class="line">% 产生信号</span><br><span class="line">signal_f1 = <span class="built_in">cos</span>(<span class="number">2</span>*pi*f1*n/fs);</span><br><span class="line">signal_f2 = <span class="built_in">cos</span>(<span class="number">2</span>*pi*f2*n/fs);</span><br><span class="line"></span><br><span class="line">% 相乘</span><br><span class="line">signal_multiply = signal_f1 .* signal_f2;</span><br><span class="line"></span><br><span class="line">% 绘制</span><br><span class="line">figure;</span><br><span class="line">subplot(<span class="number">3</span>, <span class="number">1</span>, <span class="number">1</span>);</span><br><span class="line">plot(signal_f1);title(<span class="string">&quot;100Hz&quot;</span>);</span><br><span class="line">subplot(<span class="number">3</span>, <span class="number">1</span>, <span class="number">2</span>);</span><br><span class="line">plot(signal_f2);title(<span class="string">&quot;300Hz&quot;</span>);</span><br><span class="line">subplot(<span class="number">3</span>, <span class="number">1</span>, <span class="number">3</span>);</span><br><span class="line">plot(<span class="built_in">abs</span>(fft(signal_multiply))./fs);title(<span class="string">&quot;fft&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<p>运行效果如下：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/multiply_fft.jpg?raw=true"></p>
+<p>可以看到，得到的频率和幅度与欧拉公式推导结果一致。</p>
+<blockquote>
+<p>上面的脚本中，幅度除以了 N，是因为以整个频谱来看的。如果只看一半的话，那么就需要再乘以 2 做补偿。<br>DFT 运算中则需要除以 N/2 ，因为 DFT 只产生 N/2 +1 点，而 FFT 产生的是 N 个点。<br>但是对于直流和 N / 2 索引点处，都是除以 N！ </p>
+</blockquote>
+<h1 id="常规-AM-调制"><a href="#常规-AM-调制" class="headerlink" title="常规 AM 调制"></a>常规 AM 调制</h1><p>其实最简单的 AM 调制也就是上面信号相乘的过程，只不过是具备了直流偏移而已。直流偏移的目的是为了使得信号的值在任意时刻都为正。</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/normal_am_block.jpg?raw=true"><br>如果 A0 值小于 m(t) 的最大值，则会发生过调制的现象。</p>
+<h2 id="单音调制"><a href="#单音调制" class="headerlink" title="单音调制"></a>单音调制</h2><p>那么对应上图（先忽略滤波器）的 matlab 脚本为：</p>
+<figure class="highlight fortran"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">close <span class="built_in">all</span>;</span><br><span class="line">clear;</span><br><span class="line">clc;</span><br><span class="line"></span><br><span class="line">fs=<span class="number">1024</span>;</span><br><span class="line">f1=<span class="number">10</span>;</span><br><span class="line">f2=<span class="number">100</span>;</span><br><span class="line"></span><br><span class="line">t=<span class="number">0</span>:<span class="number">1</span>/fs:(fs-<span class="number">1</span>)/fs;</span><br><span class="line"></span><br><span class="line">% 产生基带信号</span><br><span class="line">base_cos = <span class="built_in">cos</span>(<span class="number">2</span>*pi*f1*t);</span><br><span class="line">% 产生载波信号</span><br><span class="line">carry_cos = <span class="built_in">cos</span>(<span class="number">2</span>*pi*f2*t);</span><br><span class="line">% 调制后的信号</span><br><span class="line">s_modulate = (<span class="number">1</span> + base_cos).* carry_cos;</span><br><span class="line"></span><br><span class="line">s_fft = fft(s_modulate);</span><br><span class="line">s_fft_abs = <span class="built_in">abs</span>(s_fft) ./ fs;</span><br><span class="line"></span><br><span class="line">figure;</span><br><span class="line">subplot(<span class="number">4</span>,<span class="number">1</span>,<span class="number">1</span>);</span><br><span class="line">plot(base_cos);title(<span class="string">&quot;base band&quot;</span>);</span><br><span class="line">subplot(<span class="number">4</span>,<span class="number">1</span>,<span class="number">2</span>);</span><br><span class="line">plot(carry_cos);title(<span class="string">&quot;carrier&quot;</span>);</span><br><span class="line">subplot(<span class="number">4</span>,<span class="number">1</span>,<span class="number">3</span>);</span><br><span class="line">plot(s_modulate);title(<span class="string">&quot;modulate&quot;</span>);</span><br><span class="line">subplot(<span class="number">4</span>,<span class="number">1</span>,<span class="number">4</span>);</span><br><span class="line">plot(s_fft_abs);title(<span class="string">&quot;fft&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<p>对应的运行效果为：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/normal_am_single_tone.jpg?raw=true"><br>上图的载波频率和幅度与 1.2 节的预期一致，载波的幅度比边带大，这点也可以通过欧拉公式来推导出来。</p>
+<p>以上显示的是调制度为 100% 的情况，可以改变基带信号的幅度从 0<del>1，对应 0%</del>100% 调制深度。</p>
+<blockquote>
+<p>调制深度的计算是 Am/A0，也就是基带的幅度除以直流偏置。</p>
+</blockquote>
+<p>以上是实数混频的效果，当是复数混频时，频谱上就只会出现一个 载波及和频信号（这点通过欧拉公式也可以解释）：</p>
+<figure class="highlight fortran"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">close <span class="built_in">all</span>;</span><br><span class="line">clear;</span><br><span class="line">clc;</span><br><span class="line"></span><br><span class="line">fs=<span class="number">1024</span>;</span><br><span class="line">f1=<span class="number">10</span>;</span><br><span class="line">f2=<span class="number">100</span>;</span><br><span class="line"></span><br><span class="line">t=<span class="number">0</span>:<span class="number">1</span>/fs:(fs-<span class="number">1</span>)/fs;</span><br><span class="line"></span><br><span class="line">% 产生基带信号</span><br><span class="line">base = <span class="built_in">cos</span>(<span class="number">2</span>*pi*f1*t) + <span class="built_in">sin</span>(<span class="number">2</span>*pi*f1*t) * <span class="number">1</span>i;</span><br><span class="line">% 产生载波信号</span><br><span class="line">carry = <span class="built_in">cos</span>(<span class="number">2</span>*pi*f2*t) + <span class="built_in">sin</span>(<span class="number">2</span>*pi*f2*t) * <span class="number">1</span>i;</span><br><span class="line">% 调制后的信号</span><br><span class="line">s_modulate = (<span class="number">1</span> + base).* carry;</span><br><span class="line"></span><br><span class="line">s_fft = fft(s_modulate);</span><br><span class="line">s_fft_abs = <span class="built_in">abs</span>(s_fft) ./ fs;</span><br><span class="line"></span><br><span class="line">figure;</span><br><span class="line">subplot(<span class="number">2</span>,<span class="number">1</span>,<span class="number">1</span>);</span><br><span class="line">plot(<span class="keyword">real</span>(base));title(<span class="string">&quot;base band real&quot;</span>);</span><br><span class="line">subplot(<span class="number">2</span>,<span class="number">1</span>,<span class="number">2</span>);</span><br><span class="line">plot(imag(base));title(<span class="string">&quot;base band imag&quot;</span>);</span><br><span class="line"></span><br><span class="line">figure;</span><br><span class="line">subplot(<span class="number">2</span>,<span class="number">1</span>,<span class="number">1</span>);</span><br><span class="line">plot(<span class="keyword">real</span>(carry));title(<span class="string">&quot;carrier real&quot;</span>);</span><br><span class="line">subplot(<span class="number">2</span>,<span class="number">1</span>,<span class="number">2</span>);</span><br><span class="line">plot(imag(carry));title(<span class="string">&quot;carrier imag&quot;</span>);</span><br><span class="line"></span><br><span class="line">figure;</span><br><span class="line">subplot(<span class="number">2</span>,<span class="number">1</span>,<span class="number">1</span>);</span><br><span class="line">plot(<span class="keyword">real</span>(s_modulate));title(<span class="string">&quot;modulate real&quot;</span>);</span><br><span class="line">subplot(<span class="number">2</span>,<span class="number">1</span>,<span class="number">2</span>);</span><br><span class="line">plot(imag(s_modulate));title(<span class="string">&quot;modulate imag&quot;</span>);</span><br><span class="line"></span><br><span class="line">figure;plot(s_fft_abs);title(<span class="string">&quot;fft&quot;</span>);</span><br></pre></td></tr></table></figure>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/normal_am_cplx_single_tone.jpg?raw=true"></p>
+<h2 id="WAV-音频调制"><a href="#WAV-音频调制" class="headerlink" title="WAV 音频调制"></a>WAV 音频调制</h2><p>由于上面的是单音，所以可以很明显的区分出调制后的载波和上下边带。</p>
+<p>单如果是 WAV 音频，则会看到的是一个宽频谱：因为基带信号的频率和幅度是在一直变化的，我们就会看到一个宽频信号，且幅度也在不断变化。</p>
+<p>下面这段脚本是将双通道的 WAV 音频信号提取为 IQ 信号的过程：</p>
+<figure class="highlight fortran"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">clear;</span><br><span class="line">clc;</span><br><span class="line"></span><br><span class="line">[audio_data, fs] = audioread(<span class="string">&quot;./audio.wav&quot;</span>);</span><br><span class="line"></span><br><span class="line">% 加入直流偏置</span><br><span class="line">data_left = audio_data(:,<span class="number">1</span>) .+ <span class="number">1</span>;</span><br><span class="line">data_right = audio_data(:,<span class="number">2</span>) .+ <span class="number">1</span>;</span><br><span class="line">out_fs = <span class="number">220500</span>;</span><br><span class="line"></span><br><span class="line">% 重采样到高采样率以满足 SDR 发送的本振频率范围</span><br><span class="line">resample_left = resample(data_left(<span class="number">500000</span>:<span class="number">700000</span>), out_fs, fs);</span><br><span class="line">resample_right = resample(data_right(<span class="number">500000</span>:<span class="number">700000</span>), out_fs, fs);</span><br><span class="line"></span><br><span class="line">data_iq = <span class="keyword">complex</span>(resample_left, resample_right);</span><br><span class="line">audiowrite(<span class="string">&quot;./audio_out.wav&quot;</span>, data_iq, out_fs);</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>然后只使用其 I 路信号发送：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/normal_am_gnuradio_tx.jpg?raw=true">由于在前面的脚本已经进行了偏置，所以在 gnuradio 中就不用加入偏置了。</p>
+<p>接收后的信号如下：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/normal_am_gnuradio_rx.jpg?raw=true"><br>这里就无法明显区分出来载波和两个边带了，因为边带的频率是在不断变化了。</p>
+<h2 id="过调制"><a href="#过调制" class="headerlink" title="过调制"></a>过调制</h2><p>下面看看过调制的现象：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/normal_am_gnuradio_tx_overmodulation.jpg?raw=true"><br>上面的框图中直流偏置只有 0.5，运行结果如下：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/normal_am_gnuradio_tx_overmodulation_wave.jpg?raw=true"><br>可以看到，这种波形通过解调以后，必然会产生失真。</p>
+<h2 id="解调"><a href="#解调" class="headerlink" title="解调"></a>解调</h2><p>常规调幅方式效率很低，原因在于直流成分 A0 在已调信号中成为“空载波”，浪费的能量超过了有用信号。如果没有直流成分 A0 效率将会达到百分之百。但如果没有直流成分，解调后信号会发生严重的失真。只要有办法解决解调后信号的失真问题，就能大大提高调制效率。</p>
+<p>这就引出了相干解调与双边带调制。</p>
+<h2 id="非相干解调"><a href="#非相干解调" class="headerlink" title="非相干解调"></a>非相干解调</h2><p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/normal_am_envelope_detection.jpg?raw=true"><br><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/normal_am_envelope_detection2.jpg?raw=true"></p>
+<h2 id="相干解调"><a href="#相干解调" class="headerlink" title="相干解调"></a>相干解调</h2><p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/normal_dm_demodu_method.jpg?raw=true"></p>
+<p>相干解调就是使用同频同相的载波与调制信号再次混频：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/normal_am_cohernet_demodu.jpg?raw=true"><br>从最下面展开的公式有：</p>
+<ol>
+<li>直流：可以通过减去平均值滤除</li>
+<li>载波的 2 倍频：可以通过低通滤波器滤除</li>
+<li>基带和载波的 2 倍频的混频：可以通过低通滤波器滤除</li>
+</ol>
+<p>只是需要注意的是：基带和载波 2 倍频的差频是会低于载波二倍频的频率。这就需要载波的频率与基带的频率不能相离较劲，否则会导致滤波器无法滤除而形成噪音。</p>
+<figure class="highlight fortran"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">close <span class="built_in">all</span>;</span><br><span class="line">clear;</span><br><span class="line">clc;</span><br><span class="line"></span><br><span class="line">fs=<span class="number">1024</span>;</span><br><span class="line">f1=<span class="number">10</span>;</span><br><span class="line">f2=<span class="number">100</span>;</span><br><span class="line"></span><br><span class="line">t=<span class="number">0</span>:<span class="number">1</span>/fs:(fs-<span class="number">1</span>)/fs;</span><br><span class="line"></span><br><span class="line">% 产生基带信号</span><br><span class="line">base_cos = <span class="built_in">cos</span>(<span class="number">2</span>*pi*f1*t);</span><br><span class="line">% 产生载波信号</span><br><span class="line">carry_cos = <span class="built_in">cos</span>(<span class="number">2</span>*pi*f2*t);</span><br><span class="line">% 调制后的信号</span><br><span class="line">s_modulate = (<span class="number">1</span> + base_cos).* carry_cos;</span><br><span class="line">% 解调后的信号</span><br><span class="line">s_demodulate = s_modulate.* carry_cos;</span><br><span class="line"></span><br><span class="line">s_fft = fft(s_modulate);</span><br><span class="line">s_fft_abs = <span class="built_in">abs</span>(s_fft) ./ fs;</span><br><span class="line"></span><br><span class="line">s_demodu_fft = fft(s_demodulate);</span><br><span class="line">s_demodu_fft_abs = <span class="built_in">abs</span>(s_demodu_fft) ./ fs;</span><br><span class="line"></span><br><span class="line">figure;</span><br><span class="line">subplot(<span class="number">5</span>,<span class="number">1</span>,<span class="number">1</span>);</span><br><span class="line">plot(base_cos);title(<span class="string">&quot;base band&quot;</span>);</span><br><span class="line">subplot(<span class="number">5</span>,<span class="number">1</span>,<span class="number">2</span>);</span><br><span class="line">plot(carry_cos);title(<span class="string">&quot;carrier&quot;</span>);</span><br><span class="line">subplot(<span class="number">5</span>,<span class="number">1</span>,<span class="number">3</span>);</span><br><span class="line">plot(s_modulate);title(<span class="string">&quot;modulate&quot;</span>);</span><br><span class="line">subplot(<span class="number">5</span>,<span class="number">1</span>,<span class="number">4</span>);</span><br><span class="line">plot(s_fft_abs);title(<span class="string">&quot;fft&quot;</span>);</span><br><span class="line">subplot(<span class="number">5</span>,<span class="number">1</span>,<span class="number">5</span>);</span><br><span class="line">plot(s_demodu_fft_abs);title(<span class="string">&quot;demodu fft&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/normal_am_cohernet_demodu_fft.jpg?raw=true"></p>
+<h2 id="调制深度"><a href="#调制深度" class="headerlink" title="调制深度"></a>调制深度</h2><p>调制深度在公式上来说就是基带的幅度除以偏移的值乘以百分之百，那么在频谱图上，当看到双边带后又如何在对数域反算出调制深度呢？</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/depth_dB_formula.jpg?raw=true"></p>
+<h1 id="双边带调制（DSB）"><a href="#双边带调制（DSB）" class="headerlink" title="双边带调制（DSB）"></a>双边带调制（DSB）</h1><p>双边带相比单边带，那就是不加直流电压，相当于产生了过调制的现象，</p>
+<p>不加直流就不会有载波，只会有合频与差频。</p>
+<h2 id="调制"><a href="#调制" class="headerlink" title="调制"></a>调制</h2><p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/DSB_formula.jpg?raw=true"><br><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/dsb_wave.jpg?raw=true"><br>通过 matlab 也可以仿真：</p>
+<figure class="highlight fortran"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">close <span class="built_in">all</span>;</span><br><span class="line">clear;</span><br><span class="line">clc;</span><br><span class="line"></span><br><span class="line">fs=<span class="number">1024</span>;</span><br><span class="line">f1=<span class="number">10</span>;</span><br><span class="line">f2=<span class="number">100</span>;</span><br><span class="line"></span><br><span class="line">t=<span class="number">0</span>:<span class="number">1</span>/fs:(fs-<span class="number">1</span>)/fs;</span><br><span class="line"></span><br><span class="line">% 产生基带信号</span><br><span class="line">base_cos = <span class="built_in">cos</span>(<span class="number">2</span>*pi*f1*t);</span><br><span class="line">% 产生载波信号</span><br><span class="line">carry_cos = <span class="built_in">cos</span>(<span class="number">2</span>*pi*f2*t);</span><br><span class="line">% 调制后的信号</span><br><span class="line">s_modulate = (base_cos).* carry_cos;</span><br><span class="line"></span><br><span class="line">s_fft = fft(s_modulate);</span><br><span class="line">s_fft_abs = <span class="built_in">abs</span>(s_fft) ./ fs;</span><br><span class="line"></span><br><span class="line">figure;</span><br><span class="line">subplot(<span class="number">4</span>,<span class="number">1</span>,<span class="number">1</span>);</span><br><span class="line">plot(base_cos);title(<span class="string">&quot;base band&quot;</span>);</span><br><span class="line">subplot(<span class="number">4</span>,<span class="number">1</span>,<span class="number">2</span>);</span><br><span class="line">plot(carry_cos);title(<span class="string">&quot;carrier&quot;</span>);</span><br><span class="line">subplot(<span class="number">4</span>,<span class="number">1</span>,<span class="number">3</span>);</span><br><span class="line">plot(s_modulate);title(<span class="string">&quot;modulate&quot;</span>);</span><br><span class="line">subplot(<span class="number">4</span>,<span class="number">1</span>,<span class="number">4</span>);</span><br><span class="line">plot(s_fft_abs);title(<span class="string">&quot;fft&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/matlab_dsb_out.jpg?raw=true"></p>
+<h2 id="解调-1"><a href="#解调-1" class="headerlink" title="解调"></a>解调</h2><p>由于已经产生了过调制，所以无法使用包络检波的方式进行解调，而只能使用相干解调：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/dsb_demodu_method.jpg?raw=true"><br><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/dsb_demodu_method2.jpg?raw=true"><br><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/dsb_demodu_method3.jpg?raw=true"></p>
+<figure class="highlight fortran"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">close <span class="built_in">all</span>;</span><br><span class="line">clear;</span><br><span class="line">clc;</span><br><span class="line"></span><br><span class="line">fs=<span class="number">1024</span>;</span><br><span class="line">f1=<span class="number">10</span>;</span><br><span class="line">f2=<span class="number">100</span>;</span><br><span class="line"></span><br><span class="line">t=<span class="number">0</span>:<span class="number">1</span>/fs:(fs-<span class="number">1</span>)/fs;</span><br><span class="line"></span><br><span class="line">% 产生基带信号</span><br><span class="line">base_cos = <span class="built_in">cos</span>(<span class="number">2</span>*pi*f1*t);</span><br><span class="line">% 产生载波信号</span><br><span class="line">carry_cos = <span class="built_in">cos</span>(<span class="number">2</span>*pi*f2*t);</span><br><span class="line">% 调制后的信号</span><br><span class="line">s_modulate = (base_cos).* carry_cos;</span><br><span class="line">% 解调后的信号</span><br><span class="line">s_demodulate = s_modulate.* carry_cos;</span><br><span class="line"></span><br><span class="line">s_fft = fft(s_modulate);</span><br><span class="line">s_fft_abs = <span class="built_in">abs</span>(s_fft) ./ fs;</span><br><span class="line"></span><br><span class="line">s_fft_demodu = fft(s_demodulate);</span><br><span class="line">s_fft_demodu_abs = <span class="built_in">abs</span>(s_fft_demodu)./fs;</span><br><span class="line"></span><br><span class="line">figure;</span><br><span class="line">subplot(<span class="number">5</span>,<span class="number">1</span>,<span class="number">1</span>);</span><br><span class="line">plot(base_cos);title(<span class="string">&quot;base band&quot;</span>);</span><br><span class="line">subplot(<span class="number">5</span>,<span class="number">1</span>,<span class="number">2</span>);</span><br><span class="line">plot(carry_cos);title(<span class="string">&quot;carrier&quot;</span>);</span><br><span class="line">subplot(<span class="number">5</span>,<span class="number">1</span>,<span class="number">3</span>);</span><br><span class="line">plot(s_modulate);title(<span class="string">&quot;modulate&quot;</span>);</span><br><span class="line">subplot(<span class="number">5</span>,<span class="number">1</span>,<span class="number">4</span>);</span><br><span class="line">plot(s_fft_abs);title(<span class="string">&quot;fft&quot;</span>);</span><br><span class="line">subplot(<span class="number">5</span>,<span class="number">1</span>,<span class="number">5</span>);</span><br><span class="line">plot(s_fft_demodu_abs);title(<span class="string">&quot;fft demodu&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/dsb_demodulate_wave.jpg?raw=true"></p>
+<h1 id="单边带调制（SSB）"><a href="#单边带调制（SSB）" class="headerlink" title="单边带调制（SSB）"></a>单边带调制（SSB）</h1><p>虽然双边带相比普通 AM 节省了能量，但其占用了两倍带宽，而 SSB 只占用一倍带宽，提高了信道的利用率。</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/ssb_pic.jpg?raw=true"></p>
+<h2 id="调制-1"><a href="#调制-1" class="headerlink" title="调制"></a>调制</h2><p>可以使用低通或高通滤波器在 DSB 的基础上产生 SSB ，但对滤波器的设计要求较高。</p>
+<p>所以一般是通过矢量调制的方式来做到：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/ssb_method1.jpg?raw=true"><br>上图直流通过欧拉公式的乘除法就更加好理解。</p>
+<h2 id="解调-2"><a href="#解调-2" class="headerlink" title="解调"></a>解调</h2><p>解调也是通过相干解调来完成：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/ssb_demodu_method.jpg?raw=true"><br><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/ssb_memory.jpg?raw=true"></p>
+<figure class="highlight fortran"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">close <span class="built_in">all</span>;</span><br><span class="line">clear;</span><br><span class="line">clc;</span><br><span class="line"></span><br><span class="line">fs=<span class="number">1024</span>;</span><br><span class="line">f1=<span class="number">10</span>;</span><br><span class="line">f2=<span class="number">100</span>;</span><br><span class="line"></span><br><span class="line">t=<span class="number">0</span>:<span class="number">1</span>/fs:(fs-<span class="number">1</span>)/fs;</span><br><span class="line"></span><br><span class="line">% 产生基带信号</span><br><span class="line">base_signal = hilbert(<span class="built_in">cos</span>(<span class="number">2</span>*pi*f1*t));</span><br><span class="line"></span><br><span class="line">% 产生载波信号</span><br><span class="line">carry_cos = <span class="built_in">cos</span>(<span class="number">2</span>*pi*f2*t);</span><br><span class="line">carry_signal = <span class="built_in">cos</span>(<span class="number">2</span>*pi*f2*t) + <span class="built_in">sin</span>(<span class="number">2</span>*pi*f2*t)*<span class="number">1</span>i;</span><br><span class="line">% 调制后的信号</span><br><span class="line">s_modulate = (base_signal).* carry_signal;</span><br><span class="line">% 解调后的信号</span><br><span class="line">s_demodulate = s_modulate.* carry_cos;</span><br><span class="line"></span><br><span class="line">s_fft = fft(s_modulate);</span><br><span class="line">s_fft_abs = <span class="built_in">abs</span>(s_fft) ./ fs;</span><br><span class="line"></span><br><span class="line">s_fft_demodu = fft(s_demodulate);</span><br><span class="line">s_fft_demodu_abs = <span class="built_in">abs</span>(s_fft_demodu)./fs;</span><br><span class="line"></span><br><span class="line">figure;</span><br><span class="line">subplot(<span class="number">3</span>,<span class="number">1</span>,<span class="number">1</span>);</span><br><span class="line">plot(<span class="keyword">real</span>(s_modulate));title(<span class="string">&quot;modulate&quot;</span>);</span><br><span class="line">subplot(<span class="number">3</span>,<span class="number">1</span>,<span class="number">2</span>);</span><br><span class="line">plot(s_fft_abs);title(<span class="string">&quot;fft&quot;</span>);</span><br><span class="line">subplot(<span class="number">3</span>,<span class="number">1</span>,<span class="number">3</span>);</span><br><span class="line">plot(s_fft_demodu_abs);title(<span class="string">&quot;fft demodu&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/ssb_demodu_wave.jpg?raw=true"></p>
+<h1 id="残留边带调制（VSB）"><a href="#残留边带调制（VSB）" class="headerlink" title="残留边带调制（VSB）"></a>残留边带调制（VSB）</h1><p>单边带调制的滤波器法，需要理想的低通或高通滤波器，但实际中是难以实现的。如果上、下边带虽然都不是那么完整，但可以互补，合起来仍然能够得到完整的信息。</p>
+<p>从双边带出发，巧妙地设计滤波器，使上、下两块不那么完整的边带互补，这样的调制方法称为残留边带调制。</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/vsb_method.jpg?raw=true"><br><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BRF%5D/%5BDSP%5D/%5BModulation%5D/%5BAM%5D/pic/vsb_method2.jpg?raw=true"></p>
+<h1 id="一些概念的理解"><a href="#一些概念的理解" class="headerlink" title="一些概念的理解"></a>一些概念的理解</h1><h2 id="为什么-AM-调制称之为线性调制？"><a href="#为什么-AM-调制称之为线性调制？" class="headerlink" title="为什么 AM 调制称之为线性调制？"></a>为什么 AM 调制称之为线性调制？</h2><p>已调信号 s(t) 的频谱和输入基带信号 m(t) 的频谱之间满足线性搬移的关系。</p>
+<p>由于频率或相位的变化都是载波的余弦角度的变化，故调频和调相统称为角度调制。</p>
+<p>调频和调相的已调信号频谱不再是原调制信号频谱的线性搬移，而是频谱的非线性变化，会产生新的频率成分。因此调频和调相属于非线性调制。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>kcmetercec
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://kcmetercec.top/2023/07/06/rf_dsp_modulation_am_hello/" title="初步认识 AM 调制">http://kcmetercec.top/2023/07/06/rf_dsp_modulation_am_hello/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/DSP/" rel="tag"> <i class="fa fa-tag"></i> DSP</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2023/04/11/linux_ps_chore_print_tasks/" rel="prev" title="输出 Linux 中所有的 task">
+      <i class="fa fa-chevron-left"></i> 输出 Linux 中所有的 task
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2023/07/09/linux_driver_device_tree_hello/" rel="next" title="认识设备树">
+      认识设备树 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E6%95%B0%E6%B7%B7%E9%A2%91"><span class="nav-number">1.</span> <span class="nav-text">实数混频</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%90%86%E8%A7%A3%E5%85%AC%E5%BC%8F"><span class="nav-number">1.1.</span> <span class="nav-text">理解公式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E4%BE%8B"><span class="nav-number">1.2.</span> <span class="nav-text">实例</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B8%B8%E8%A7%84-AM-%E8%B0%83%E5%88%B6"><span class="nav-number">2.</span> <span class="nav-text">常规 AM 调制</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%95%E9%9F%B3%E8%B0%83%E5%88%B6"><span class="nav-number">2.1.</span> <span class="nav-text">单音调制</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#WAV-%E9%9F%B3%E9%A2%91%E8%B0%83%E5%88%B6"><span class="nav-number">2.2.</span> <span class="nav-text">WAV 音频调制</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%87%E8%B0%83%E5%88%B6"><span class="nav-number">2.3.</span> <span class="nav-text">过调制</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E8%B0%83"><span class="nav-number">2.4.</span> <span class="nav-text">解调</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9D%9E%E7%9B%B8%E5%B9%B2%E8%A7%A3%E8%B0%83"><span class="nav-number">2.5.</span> <span class="nav-text">非相干解调</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%B8%E5%B9%B2%E8%A7%A3%E8%B0%83"><span class="nav-number">2.6.</span> <span class="nav-text">相干解调</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B0%83%E5%88%B6%E6%B7%B1%E5%BA%A6"><span class="nav-number">2.7.</span> <span class="nav-text">调制深度</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%8C%E8%BE%B9%E5%B8%A6%E8%B0%83%E5%88%B6%EF%BC%88DSB%EF%BC%89"><span class="nav-number">3.</span> <span class="nav-text">双边带调制（DSB）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B0%83%E5%88%B6"><span class="nav-number">3.1.</span> <span class="nav-text">调制</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E8%B0%83-1"><span class="nav-number">3.2.</span> <span class="nav-text">解调</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8D%95%E8%BE%B9%E5%B8%A6%E8%B0%83%E5%88%B6%EF%BC%88SSB%EF%BC%89"><span class="nav-number">4.</span> <span class="nav-text">单边带调制（SSB）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B0%83%E5%88%B6-1"><span class="nav-number">4.1.</span> <span class="nav-text">调制</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E8%B0%83-2"><span class="nav-number">4.2.</span> <span class="nav-text">解调</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%AE%8B%E7%95%99%E8%BE%B9%E5%B8%A6%E8%B0%83%E5%88%B6%EF%BC%88VSB%EF%BC%89"><span class="nav-number">5.</span> <span class="nav-text">残留边带调制（VSB）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E4%BA%9B%E6%A6%82%E5%BF%B5%E7%9A%84%E7%90%86%E8%A7%A3"><span class="nav-number">6.</span> <span class="nav-text">一些概念的理解</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88-AM-%E8%B0%83%E5%88%B6%E7%A7%B0%E4%B9%8B%E4%B8%BA%E7%BA%BF%E6%80%A7%E8%B0%83%E5%88%B6%EF%BC%9F"><span class="nav-number">6.1.</span> <span class="nav-text">为什么 AM 调制称之为线性调制？</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">Qt, C++, linux, CS</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">107</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">55</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:kcmeter.cec@gmail.com" title="E-Mail → mailto:kcmeter.cec@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2021 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">206k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">3:08</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+document.querySelectorAll('.pdfobject-container').forEach(element => {
+  let url = element.dataset.target;
+  let pdfOpenParams = {
+    navpanes : 0,
+    toolbar  : 0,
+    statusbar: 0,
+    pagemode : 'thumbs',
+    view     : 'FitH'
+  };
+  let pdfOpenFragment = '#' + Object.entries(pdfOpenParams).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
+  let fullURL = `/lib/pdf/web/viewer.html?file=${encodeURIComponent(url)}${pdfOpenFragment}`;
+
+  if (NexT.utils.supportsPDFs()) {
+    element.innerHTML = `<embed class="pdfobject" src="${url + pdfOpenFragment}" type="application/pdf" style="height: ${element.dataset.height};">`;
+  } else {
+    element.innerHTML = `<iframe src="${fullURL}" style="height: ${element.dataset.height};" frameborder="0"></iframe>`;
+  }
+});
+</script>
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'f938893867df78f94802',
+      clientSecret: 'b6d8470939c53d26c98c4e3b9d4c9ceb55d6e78e',
+      repo        : 'kcmetercec.github.io',
+      owner       : 'KcMeterCEC',
+      admin       : ['KcMeterCEC'],
+      id          : '6e92d6408eefe91eae099a6cb9d4f6cf',
+        language: 'zh-CN',
+      distractionFreeMode: false
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+    </div>
+</body>
+</html>

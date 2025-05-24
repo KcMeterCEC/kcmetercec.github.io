@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="kernel version : v6.1.x (lts)  Linux 内核中的双向环形链表，巧妙的实现了将对象挂在节点上，而不是传统的将节点挂在对象上。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="认识 Linux 内核中的双向环形链表">
+<meta property="og:url" content="http://kcmetercec.top/2023/03/26/linux_kernel_ds_list/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="kernel version : v6.1.x (lts)  Linux 内核中的双向环形链表，巧妙的实现了将对象挂在节点上，而不是传统的将节点挂在对象上。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-03-25T16:00:00.000Z">
+<meta property="article:modified_time" content="2023-04-01T16:00:00.000Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="linux">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://kcmetercec.top/2023/03/26/linux_kernel_ds_list/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>认识 Linux 内核中的双向环形链表 | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112423075-1# <app_id>"></script>
+    <script data-pjax>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-112423075-1# <app_id>');
+      }
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+        <li class="menu-item menu-item-commonweal">
+
+    <a href="/404/" rel="section"><i class="fa fa-heartbeat fa-fw"></i>公益 404</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2023/03/26/linux_kernel_ds_list/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="Qt, C++, linux, CS">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          认识 Linux 内核中的双向环形链表
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-03-26 00:00:00" itemprop="dateCreated datePublished" datetime="2023-03-26T00:00:00+08:00">2023-03-26</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-04-02 00:00:00" itemprop="dateModified" datetime="2023-04-02T00:00:00+08:00">2023-04-02</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/kernel/" itemprop="url" rel="index"><span itemprop="name">kernel</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/kernel/data-struct/" itemprop="url" rel="index"><span itemprop="name">data_struct</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <ul>
+<li>kernel version : v6.1.x (lts)</li>
+</ul>
+<p>Linux 内核中的双向环形链表，巧妙的实现了将对象挂在节点上，而不是传统的将节点挂在对象上。</p>
+<span id="more"></span>
+
+<p>linux 在 <code>include/linux/list.h</code> 中提供了双向环形链表的操作函数，此代码可以移植到其他应用环境中,方便使用。</p>
+<blockquote>
+<p>在内核编程环境中，需要 <code>#include &lt;linux/list.h&gt;</code> 来包含该头文件</p>
+</blockquote>
+<p>需要注意的是：</p>
+<ol>
+<li>linux是通过<strong>将此链表嵌入在其他数据结构中， 从而将很多不同的数据结构链接起来！</strong>（而不是链表中包含数据）。</li>
+<li>函数中的参数 <code>head</code> 代表的即为链表头！</li>
+<li><code>typeof</code> 是GCC扩展的关键字, 所以不能在编译选项中添加 <code>-std=c99</code> ，而是使用 <code>-std=gnu99</code> 。<ul>
+<li>为了兼容所有编译器，我在<a target="_blank" rel="noopener" href="https://github.com/KcMeterCEC/common_code/tree/master/c/data_structure/list/circular">github</a>中移植了通用版本。</li>
+</ul>
+</li>
+</ol>
+<h1 id="认识环形链表"><a href="#认识环形链表" class="headerlink" title="认识环形链表"></a>认识环形链表</h1><h2 id="认识节点"><a href="#认识节点" class="headerlink" title="认识节点"></a>认识节点</h2><p>通过阅读代码来理解实现，那么首先来看链表中的节点是如何定义的：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> &#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> *<span class="title">next</span>, *<span class="title">prev</span>;</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p><code>list_head</code>就代表一个节点，节点包含指向上一个节点和下一个节点的前驱（prev）和后继（next）指针。</p>
+<h2 id="定义并初始化头节点"><a href="#定义并初始化头节点" class="headerlink" title="定义并初始化头节点"></a>定义并初始化头节点</h2><p>在链表中，首先需要创建的便是头节点：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LIST_HEAD_INIT(name) &#123; &amp;(name), &amp;(name) &#125;</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LIST_HEAD(name) \</span></span><br><span class="line"><span class="meta">    struct list_head name = LIST_HEAD_INIT(name)</span></span><br></pre></td></tr></table></figure>
+
+<p>宏<code>LIST_HEAD</code>便完成了定义头节点，并对其完成初始化。初始化后的头节点其前驱和后继指针都指向自己，这便形成了最初始的环（也就空链表）。</p>
+<p>除了上面的宏完成定义和初始化外，还有函数来单独初始化头节点，相当于将节点初始化为空链表了：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">INIT_LIST_HEAD</span><span class="params">(struct list_head *<span class="built_in">list</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    WRITE_ONCE(<span class="built_in">list</span>-&gt;next, <span class="built_in">list</span>);</span><br><span class="line">    WRITE_ONCE(<span class="built_in">list</span>-&gt;prev, <span class="built_in">list</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>由于是在后期对节点的更改，这里使用了<code>WRITE_ONCE</code>原子操作来避免 data race。</p>
+</blockquote>
+<h2 id="插入节点"><a href="#插入节点" class="headerlink" title="插入节点"></a>插入节点</h2><h3 id="底层操作"><a href="#底层操作" class="headerlink" title="底层操作"></a>底层操作</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> __list_add(struct list_head *<span class="keyword">new</span>,</span><br><span class="line">                  struct list_head *prev,</span><br><span class="line">                  struct list_head *next)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span> (!__list_add_valid(<span class="keyword">new</span>, prev, next))</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">    next-&gt;prev = <span class="keyword">new</span>;</span><br><span class="line">    <span class="keyword">new</span>-&gt;next = next;</span><br><span class="line">    <span class="keyword">new</span>-&gt;prev = prev;</span><br><span class="line">    WRITE_ONCE(prev-&gt;next, <span class="keyword">new</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这个函数的目的就是将节点<code>new</code>插入到节点<code>prev</code>和<code>next</code>之间。</p>
+<p>其中这里面的<code>__list_add_valid</code>则是对参数的正确性做检查：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> __must_check <span class="keyword">bool</span> <span class="title">check_data_corruption</span><span class="params">(<span class="keyword">bool</span> v)</span> </span>&#123; <span class="keyword">return</span> v; &#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> CHECK_DATA_CORRUPTION(condition, fmt, ...)             \</span></span><br><span class="line"><span class="meta">    check_data_corruption((&#123;                     \</span></span><br><span class="line"><span class="meta">        bool corruption = unlikely(condition);             \</span></span><br><span class="line"><span class="meta">        <span class="meta-keyword">if</span> (corruption) &#123;                     \</span></span><br><span class="line"><span class="meta">            <span class="meta-keyword">if</span> (IS_ENABLED(CONFIG_BUG_ON_DATA_CORRUPTION)) &#123; \</span></span><br><span class="line"><span class="meta">                pr_err(fmt, ##__VA_ARGS__);         \</span></span><br><span class="line"><span class="meta">                BUG();                     \</span></span><br><span class="line"><span class="meta">            &#125; <span class="meta-keyword">else</span>                         \</span></span><br><span class="line"><span class="meta">                WARN(1, fmt, ##__VA_ARGS__);         \</span></span><br><span class="line"><span class="meta">        &#125;                             \</span></span><br><span class="line"><span class="meta">        corruption;                         \</span></span><br><span class="line"><span class="meta">    &#125;))</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">bool</span> __list_add_valid(struct list_head *<span class="keyword">new</span>, struct list_head *prev,</span><br><span class="line">              struct list_head *next)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span> (CHECK_DATA_CORRUPTION(prev == <span class="literal">NULL</span>,</span><br><span class="line">            <span class="string">&quot;list_add corruption. prev is NULL.\n&quot;</span>) ||</span><br><span class="line">        CHECK_DATA_CORRUPTION(next == <span class="literal">NULL</span>,</span><br><span class="line">            <span class="string">&quot;list_add corruption. next is NULL.\n&quot;</span>) ||</span><br><span class="line">        CHECK_DATA_CORRUPTION(next-&gt;prev != prev,</span><br><span class="line">            <span class="string">&quot;list_add corruption. next-&gt;prev should be prev (%px), but was %px. (next=%px).\n&quot;</span>,</span><br><span class="line">            prev, next-&gt;prev, next) ||</span><br><span class="line">        CHECK_DATA_CORRUPTION(prev-&gt;next != next,</span><br><span class="line">            <span class="string">&quot;list_add corruption. prev-&gt;next should be next (%px), but was %px. (prev=%px).\n&quot;</span>,</span><br><span class="line">            next, prev-&gt;next, prev) ||</span><br><span class="line">        CHECK_DATA_CORRUPTION(<span class="keyword">new</span> == prev || <span class="keyword">new</span> == next,</span><br><span class="line">            <span class="string">&quot;list_add double add: new=%px, prev=%px, next=%px.\n&quot;</span>,</span><br><span class="line">            <span class="keyword">new</span>, prev, next))</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br><span class="line">EXPORT_SYMBOL(__list_add_valid);</span><br></pre></td></tr></table></figure>
+
+<p>上面这个函数就是为了检查以下几种异常：</p>
+<ol>
+<li><p>prev 或 next 节点是空指针</p>
+</li>
+<li><p>prev 和 next 节点并不是相邻的关系，如果继续操作则会跳过中间的节点</p>
+</li>
+<li><p>new 等于 prev 或 next 节点</p>
+</li>
+</ol>
+<p>有了前面的底层操作函数，其它的操作便可以基于此来完成了。</p>
+<h3 id="用户接口"><a href="#用户接口" class="headerlink" title="用户接口"></a>用户接口</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 将节点 new 插入到节点 head 的后面，就像是一个压栈的操作</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">list_add</span><span class="params">(struct list_head *<span class="keyword">new</span>, struct list_head *head)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    __list_add(<span class="keyword">new</span>, head, head-&gt;next);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 将节点 new 插入到节点 head 的前面，就像是插入到队列尾部</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">list_add_tail</span><span class="params">(struct list_head *<span class="keyword">new</span>, struct list_head *head)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    __list_add(<span class="keyword">new</span>, head-&gt;prev, head);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="删除节点"><a href="#删除节点" class="headerlink" title="删除节点"></a>删除节点</h2><h3 id="底层操作-1"><a href="#底层操作-1" class="headerlink" title="底层操作"></a>底层操作</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> __list_del(struct list_head * prev, struct list_head * next)</span><br><span class="line">&#123;</span><br><span class="line">    next-&gt;prev = prev;</span><br><span class="line">    WRITE_ONCE(prev-&gt;next, next);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>删除<code>prev</code>和<code>next</code>之间的所有节点，这其实可以删除 0~N 个节点，但一般都用于删除一个节点。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> __list_del_clearprev(struct list_head *entry)</span><br><span class="line">&#123;</span><br><span class="line">    __list_del(entry-&gt;prev, entry-&gt;next);</span><br><span class="line">    entry-&gt;prev = <span class="literal">NULL</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这个函数相当于将节点 entry 从链表中删除了，且 entry 的 prev 指向了空。主要是用于网络代码中使用，以高效的删除一个节点。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> __list_del_entry(struct list_head *entry)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span> (!__list_del_entry_valid(entry))</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">    __list_del(entry-&gt;prev, entry-&gt;next);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这个函数就是删除<code>entry</code>这个节点。</p>
+<h3 id="用户接口-1"><a href="#用户接口-1" class="headerlink" title="用户接口"></a>用户接口</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * These are non-NULL pointers that will result in page faults</span></span><br><span class="line"><span class="comment"> * under normal circumstances, used to verify that nobody uses</span></span><br><span class="line"><span class="comment"> * non-initialized list entries.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LIST_POISON1  ((void *) 0x100 + POISON_POINTER_DELTA)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LIST_POISON2  ((void *) 0x122 + POISON_POINTER_DELTA)</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">list_del</span><span class="params">(struct list_head *entry)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    __list_del_entry(entry);</span><br><span class="line">    entry-&gt;next = LIST_POISON1;</span><br><span class="line">    entry-&gt;prev = LIST_POISON2;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这个函数才应该是用户所使用的函数，删除节点后，将节点的前驱和后继指针都指向了一段特殊地址。如果有代码操作该特殊地址便会触发 pagefault。 </p>
+<h2 id="其它用户操作接口"><a href="#其它用户操作接口" class="headerlink" title="其它用户操作接口"></a>其它用户操作接口</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 将 old 节点替换为 new 节点</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">list_replace</span><span class="params">(struct list_head *old,</span></span></span><br><span class="line"><span class="params"><span class="function">                struct list_head *<span class="keyword">new</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">new</span>-&gt;next = old-&gt;next;</span><br><span class="line">    <span class="keyword">new</span>-&gt;next-&gt;prev = <span class="keyword">new</span>;</span><br><span class="line">    <span class="keyword">new</span>-&gt;prev = old-&gt;prev;</span><br><span class="line">    <span class="keyword">new</span>-&gt;prev-&gt;next = <span class="keyword">new</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 将 old 节点替换为 new 节点，并且将 old 节点初始化一个空链表</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">list_replace_init</span><span class="params">(struct list_head *old,</span></span></span><br><span class="line"><span class="params"><span class="function">                     struct list_head *<span class="keyword">new</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    list_replace(old, <span class="keyword">new</span>);</span><br><span class="line">    INIT_LIST_HEAD(old);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 交换 entry1 和 entry2 的位置</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">list_swap</span><span class="params">(struct list_head *entry1,</span></span></span><br><span class="line"><span class="params"><span class="function">                 struct list_head *entry2)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> *<span class="title">pos</span> =</span> entry2-&gt;prev;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">list_del</span>(entry2);</span><br><span class="line">    <span class="built_in">list_replace</span>(entry1, entry2);</span><br><span class="line">    <span class="keyword">if</span> (pos == entry1)</span><br><span class="line">        pos = entry2;</span><br><span class="line">    <span class="built_in">list_add</span>(entry1, pos);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 从链表上删除 entry 并将 entry 初始化为空链表</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">list_del_init</span><span class="params">(struct list_head *entry)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    __list_del_entry(entry);</span><br><span class="line">    INIT_LIST_HEAD(entry);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 将节点 list 从其原来的列表删除，然后放到节点 head 的后面</span></span><br><span class="line"><span class="comment">// 那就是说：将 list 节点移动到节点 head 后面</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">list_move</span><span class="params">(struct list_head *<span class="built_in">list</span>, struct list_head *head)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    __list_del_entry(<span class="built_in">list</span>);</span><br><span class="line">    list_add(<span class="built_in">list</span>, head);</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 将 list 节点移动到节点 head 前面</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">list_move_tail</span><span class="params">(struct list_head *<span class="built_in">list</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">                  struct list_head *head)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    __list_del_entry(<span class="built_in">list</span>);</span><br><span class="line">    list_add_tail(<span class="built_in">list</span>, head);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 将 first 至 last 节点之间（包含二者）的所有节点，移动到 head 节点之前</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">list_bulk_move_tail</span><span class="params">(struct list_head *head,</span></span></span><br><span class="line"><span class="params"><span class="function">                       struct list_head *first,</span></span></span><br><span class="line"><span class="params"><span class="function">                       struct list_head *last)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    first-&gt;prev-&gt;next = last-&gt;next;</span><br><span class="line">    last-&gt;next-&gt;prev = first-&gt;prev;</span><br><span class="line"></span><br><span class="line">    head-&gt;prev-&gt;next = first;</span><br><span class="line">    first-&gt;prev = head-&gt;prev;</span><br><span class="line"></span><br><span class="line">    last-&gt;next = head;</span><br><span class="line">    head-&gt;prev = last;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 当当前节点的前驱节点是头节点时，那就意味着它是第一个节点</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">int</span> <span class="title">list_is_first</span><span class="params">(<span class="keyword">const</span> struct list_head *<span class="built_in">list</span>, <span class="keyword">const</span> struct list_head *head)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">list</span>-&gt;prev == head;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 当当前节点的后继节点是头节点时，那就意味着它是最后一个节点</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">int</span> <span class="title">list_is_last</span><span class="params">(<span class="keyword">const</span> struct list_head *<span class="built_in">list</span>, <span class="keyword">const</span> struct list_head *head)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">list</span>-&gt;next == head;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 当当前节点的地址与头节点一致，那它就是头节点</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">int</span> <span class="title">list_is_head</span><span class="params">(<span class="keyword">const</span> struct list_head *<span class="built_in">list</span>, <span class="keyword">const</span> struct list_head *head)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">list</span> == head;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 当头节点的后继节点是自己时，那这就是一个空链表了</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">int</span> <span class="title">list_empty</span><span class="params">(<span class="keyword">const</span> struct list_head *head)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> READ_ONCE(head-&gt;next) == head;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 内存安全形式的删除节点和置空一个节点</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">list_del_init_careful</span><span class="params">(struct list_head *entry)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    __list_del_entry(entry);</span><br><span class="line">    WRITE_ONCE(entry-&gt;prev, entry);</span><br><span class="line">    smp_store_release(&amp;entry-&gt;next, entry);</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 确保在没有其它线程操作该链表时，判断链表是否为空</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">int</span> <span class="title">list_empty_careful</span><span class="params">(<span class="keyword">const</span> struct list_head *head)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> *<span class="title">next</span> =</span> smp_load_acquire(&amp;head-&gt;next);</span><br><span class="line">    <span class="keyword">return</span> list_is_head(next, head) &amp;&amp; (next == READ_ONCE(head-&gt;prev));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 将头节点右边的节点移动到头节点的左边</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">list_rotate_left</span><span class="params">(struct list_head *head)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> *<span class="title">first</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!list_empty(head)) &#123;</span><br><span class="line">        first = head-&gt;next;</span><br><span class="line">        list_move_tail(first, head);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 移动 head 节点到 list 节点前面，那就是说 list 节点就是第一个节点了</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">list_rotate_to_front</span><span class="params">(struct list_head *<span class="built_in">list</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">                    struct list_head *head)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    list_move_tail(head, <span class="built_in">list</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 当前链表仅有一个节点时，返回 true</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">int</span> <span class="title">list_is_singular</span><span class="params">(<span class="keyword">const</span> struct list_head *head)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> !list_empty(head) &amp;&amp; (head-&gt;next == head-&gt;prev);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="切割链表"><a href="#切割链表" class="headerlink" title="切割链表"></a>切割链表</h2><h3 id="底层操作-2"><a href="#底层操作-2" class="headerlink" title="底层操作"></a>底层操作</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 将 head 之后一直到 entry（包含 entry）的节点切割到以 list 为头节点的链表中</span></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> __list_cut_position(struct list_head *<span class="built_in">list</span>,</span><br><span class="line">        struct list_head *head, struct list_head *entry)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> *<span class="title">new_first</span> =</span> entry-&gt;next;</span><br><span class="line">    <span class="built_in">list</span>-&gt;next = head-&gt;next;</span><br><span class="line">    <span class="built_in">list</span>-&gt;next-&gt;prev = <span class="built_in">list</span>;</span><br><span class="line">    <span class="built_in">list</span>-&gt;prev = entry;</span><br><span class="line">    entry-&gt;next = <span class="built_in">list</span>;</span><br><span class="line">    head-&gt;next = new_first;</span><br><span class="line">    new_first-&gt;prev = head;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// 将 list 中的节点插入到节点 prev 和 next 之间</span></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> __list_splice(<span class="keyword">const</span> struct list_head *<span class="built_in">list</span>,</span><br><span class="line">                 struct list_head *prev,</span><br><span class="line">                 struct list_head *next)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> *<span class="title">first</span> =</span> <span class="built_in">list</span>-&gt;next;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> *<span class="title">last</span> =</span> <span class="built_in">list</span>-&gt;prev;</span><br><span class="line"></span><br><span class="line">    first-&gt;prev = prev;</span><br><span class="line">    prev-&gt;next = first;</span><br><span class="line"></span><br><span class="line">    last-&gt;next = next;</span><br><span class="line">    next-&gt;prev = last;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="用户接口-2"><a href="#用户接口-2" class="headerlink" title="用户接口"></a>用户接口</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 将 head 之后一直到 entry（包含 entry）的节点切割到以 list 为头节点的链表中</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">list_cut_position</span><span class="params">(struct list_head *<span class="built_in">list</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">        struct list_head *head, struct list_head *entry)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (list_empty(head))</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    <span class="keyword">if</span> (list_is_singular(head) &amp;&amp; !list_is_head(entry, head) &amp;&amp; (entry != head-&gt;next))</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    <span class="keyword">if</span> (list_is_head(entry, head))</span><br><span class="line">        INIT_LIST_HEAD(<span class="built_in">list</span>);</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        __list_cut_position(<span class="built_in">list</span>, head, entry);</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 将 head 之后及 entry 之前(不包含 entry)的节点移动到 list 为头节点的链表中</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">list_cut_before</span><span class="params">(struct list_head *<span class="built_in">list</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">                   struct list_head *head,</span></span></span><br><span class="line"><span class="params"><span class="function">                   struct list_head *entry)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (head-&gt;next == entry) &#123;</span><br><span class="line">        INIT_LIST_HEAD(<span class="built_in">list</span>);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">list</span>-&gt;next = head-&gt;next;</span><br><span class="line">    <span class="built_in">list</span>-&gt;next-&gt;prev = <span class="built_in">list</span>;</span><br><span class="line">    <span class="built_in">list</span>-&gt;prev = entry-&gt;prev;</span><br><span class="line">    <span class="built_in">list</span>-&gt;prev-&gt;next = <span class="built_in">list</span>;</span><br><span class="line">    head-&gt;next = entry;</span><br><span class="line">    entry-&gt;prev = head;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// 将 list 中的节点插入到节点 head 之后</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">list_splice</span><span class="params">(<span class="keyword">const</span> struct list_head *<span class="built_in">list</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">                struct list_head *head)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!list_empty(<span class="built_in">list</span>))</span><br><span class="line">        __list_splice(<span class="built_in">list</span>, head, head-&gt;next);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// 将 list 中的节点插入到节点 head 之前</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">list_splice_tail</span><span class="params">(struct list_head *<span class="built_in">list</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">                struct list_head *head)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!list_empty(<span class="built_in">list</span>))</span><br><span class="line">        __list_splice(<span class="built_in">list</span>, head-&gt;prev, head);</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 将 list 中的节点插入到节点 head 之后，并设 list 为空链表</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">list_splice_init</span><span class="params">(struct list_head *<span class="built_in">list</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">                    struct list_head *head)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!list_empty(<span class="built_in">list</span>)) &#123;</span><br><span class="line">        __list_splice(<span class="built_in">list</span>, head, head-&gt;next);</span><br><span class="line">        INIT_LIST_HEAD(<span class="built_in">list</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 将 list 中的节点插入到节点 head 之前，并设 list 为空链表</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">list_splice_tail_init</span><span class="params">(struct list_head *<span class="built_in">list</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">                     struct list_head *head)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!list_empty(<span class="built_in">list</span>)) &#123;</span><br><span class="line">        __list_splice(<span class="built_in">list</span>, head-&gt;prev, head);</span><br><span class="line">        INIT_LIST_HEAD(<span class="built_in">list</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="宏操作"><a href="#宏操作" class="headerlink" title="宏操作"></a>宏操作</h2><p>双向环形链表需要配合宏操作才能够发挥其威力。</p>
+<h3 id="反推节点的地址"><a href="#反推节点的地址" class="headerlink" title="反推节点的地址"></a>反推节点的地址</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Are two types/vars the same type (ignoring qualifiers)? */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __same_type(a, b) \</span></span><br><span class="line"><span class="meta"> __builtin_types_compatible_p(typeof(a), typeof(b))</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 将 0 地址强行转换为 type 类型，然后便可以得出 member 成员在该结构体中的偏移值</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> offsetof(TYPE, MEMBER) ((size_t) &amp;((TYPE *)0)-&gt;MEMBER)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// ptr ：当前数据成员的地址</span></span><br><span class="line"><span class="comment">// type ：当前结构体类型</span></span><br><span class="line"><span class="comment">// member ：该数据成员在结构体的名称</span></span><br><span class="line"><span class="comment">// 最开始经过类型检查后，便使用当前地址减去成员偏移，就可以得到结构体的首地址</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> container_of(ptr, type, member) (&#123;                \</span></span><br><span class="line"><span class="meta">    void *__mptr = (void *)(ptr);                    \</span></span><br><span class="line"><span class="meta">    static_assert(__same_type(*(ptr), ((type *)0)-&gt;member) ||    \</span></span><br><span class="line"><span class="meta">              __same_type(*(ptr), void),            \</span></span><br><span class="line"><span class="meta">              <span class="meta-string">&quot;pointer type mismatch in container_of()&quot;</span>);    \</span></span><br><span class="line"><span class="meta">    ((type *)(__mptr - offsetof(type, member))); &#125;)</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> list_entry(ptr, type, member) \</span></span><br><span class="line"><span class="meta">    container_of(ptr, type, member)</span></span><br></pre></td></tr></table></figure>
+
+<p>其实就是当前成员变量的地址减去其偏移地址，便可以得到结构体的首地址。</p>
+<blockquote>
+<p>唯一需要注意的是，减去偏移时指针要转换为 char 型，以进行字节型的运算</p>
+</blockquote>
+<p>示例代码如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> offsetof(type, member)  ((size_t)&amp;((type*)0)-&gt;member)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> container_of(ptr, type, member) (type*)((char*)ptr - offsetof(type, member))</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">hello</span> &#123;</span></span><br><span class="line">    <span class="keyword">char</span> a;</span><br><span class="line">    <span class="keyword">int</span> b;</span><br><span class="line">    <span class="keyword">float</span> c;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span>* argv[])</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Hello world!\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">hello</span> <span class="title">obj</span> =</span> &#123;</span><br><span class="line">        .a = <span class="number">1</span>,</span><br><span class="line">        .b = <span class="number">2</span>,</span><br><span class="line">        .c = <span class="number">3</span>,</span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;obj a = %d, b = %d, c = %f\n&quot;</span>,</span><br><span class="line">    obj.a, obj.b, obj.c);</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">hello</span>* <span class="title">ret</span> =</span> container_of(&amp;obj.c, struct hello, c);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;get value of struct, a = %d, b = %d, c = %f\n&quot;</span>,</span><br><span class="line"></span><br><span class="line">    ret-&gt;a, ret-&gt;b, ret-&gt;c);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="相关操作函数"><a href="#相关操作函数" class="headerlink" title="相关操作函数"></a>相关操作函数</h3><p>有了前面的认识，再来理解下面的宏就相对容易些了：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br><span class="line">235</span><br><span class="line">236</span><br><span class="line">237</span><br><span class="line">238</span><br><span class="line">239</span><br><span class="line">240</span><br><span class="line">241</span><br><span class="line">242</span><br><span class="line">243</span><br><span class="line">244</span><br><span class="line">245</span><br><span class="line">246</span><br><span class="line">247</span><br><span class="line">248</span><br><span class="line">249</span><br><span class="line">250</span><br><span class="line">251</span><br><span class="line">252</span><br><span class="line">253</span><br><span class="line">254</span><br><span class="line">255</span><br><span class="line">256</span><br><span class="line">257</span><br><span class="line">258</span><br><span class="line">259</span><br><span class="line">260</span><br><span class="line">261</span><br><span class="line">262</span><br><span class="line">263</span><br><span class="line">264</span><br><span class="line">265</span><br><span class="line">266</span><br><span class="line">267</span><br><span class="line">268</span><br><span class="line">269</span><br><span class="line">270</span><br><span class="line">271</span><br><span class="line">272</span><br><span class="line">273</span><br><span class="line">274</span><br><span class="line">275</span><br><span class="line">276</span><br><span class="line">277</span><br><span class="line">278</span><br><span class="line">279</span><br><span class="line">280</span><br><span class="line">281</span><br><span class="line">282</span><br><span class="line">283</span><br><span class="line">284</span><br><span class="line">285</span><br><span class="line">286</span><br><span class="line">287</span><br><span class="line">288</span><br><span class="line">289</span><br><span class="line">290</span><br><span class="line">291</span><br><span class="line">292</span><br><span class="line">293</span><br><span class="line">294</span><br><span class="line">295</span><br><span class="line">296</span><br><span class="line">297</span><br><span class="line">298</span><br><span class="line">299</span><br><span class="line">300</span><br><span class="line">301</span><br><span class="line">302</span><br><span class="line">303</span><br><span class="line">304</span><br><span class="line">305</span><br><span class="line">306</span><br><span class="line">307</span><br><span class="line">308</span><br><span class="line">309</span><br><span class="line">310</span><br><span class="line">311</span><br><span class="line">312</span><br><span class="line">313</span><br><span class="line">314</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * list_entry - 根据节点的地址及成员名，得出结构体对象的</span></span><br><span class="line"><span class="comment"> * @ptr:    the &amp;struct list_head pointer.</span></span><br><span class="line"><span class="comment"> * @type:    the type of the struct this is embedded in.</span></span><br><span class="line"><span class="comment"> * @member:    the name of the list_head within the struct.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> list_entry(ptr, type, member) \</span></span><br><span class="line"><span class="meta">    container_of(ptr, type, member)</span></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * list_first_entry - 根据头节点的地址及成员名，得出链表的第一个结构体对象的地址</span></span><br><span class="line"><span class="comment"> * @ptr:    the list head to take the element from.</span></span><br><span class="line"><span class="comment"> * @type:    the type of the struct this is embedded in.</span></span><br><span class="line"><span class="comment"> * @member:    the name of the list_head within the struct.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Note, that list is expected to be not empty.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> list_first_entry(ptr, type, member) \</span></span><br><span class="line"><span class="meta">    list_entry((ptr)-&gt;next, type, member)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * list_last_entry - 根据头节点的地址及成员名，得出链表的最后一个结构体对象的</span></span><br><span class="line"><span class="comment"> * @ptr:    the list head to take the element from.</span></span><br><span class="line"><span class="comment"> * @type:    the type of the struct this is embedded in.</span></span><br><span class="line"><span class="comment"> * @member:    the name of the list_head within the struct.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Note, that list is expected to be not empty.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> list_last_entry(ptr, type, member) \</span></span><br><span class="line"><span class="meta">    list_entry((ptr)-&gt;prev, type, member)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * list_first_entry_or_null - 从链表头获取第一个对象，如果是空链表则返回 NULL</span></span><br><span class="line"><span class="comment"> * @ptr:    the list head to take the element from.</span></span><br><span class="line"><span class="comment"> * @type:    the type of the struct this is embedded in.</span></span><br><span class="line"><span class="comment"> * @member:    the name of the list_head within the struct.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Note that if the list is empty, it returns NULL.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> list_first_entry_or_null(ptr, type, member) (&#123; \</span></span><br><span class="line"><span class="meta">    struct list_head *head__ = (ptr); \</span></span><br><span class="line"><span class="meta">    struct list_head *pos__ = READ_ONCE(head__-&gt;next); \</span></span><br><span class="line"><span class="meta">    pos__ != head__ ? list_entry(pos__, type, member) : NULL; \</span></span><br><span class="line"><span class="meta">&#125;)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * list_next_entry - 根据当前节点与节点名称，获取下一个节点关联对象的地址</span></span><br><span class="line"><span class="comment"> * @pos:    the type * to cursor</span></span><br><span class="line"><span class="comment"> * @member:    the name of the list_head within the struct.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> list_next_entry(pos, member) \</span></span><br><span class="line"><span class="meta">    list_entry((pos)-&gt;member.next, typeof(*(pos)), member)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * list_next_entry_circular - 根据当前节点与节点名称，获取下一个节点关联对象的地址</span></span><br><span class="line"><span class="comment"> * 如果当前节点是最后一个节点，则返回第一个节点</span></span><br><span class="line"><span class="comment"> * @pos:    the type * to cursor.</span></span><br><span class="line"><span class="comment"> * @head:    the list head to take the element from.</span></span><br><span class="line"><span class="comment"> * @member:    the name of the list_head within the struct.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Wraparound if pos is the last element (return the first element).</span></span><br><span class="line"><span class="comment"> * Note, that list is expected to be not empty.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> list_next_entry_circular(pos, head, member) \</span></span><br><span class="line"><span class="meta">    (list_is_last(&amp;(pos)-&gt;member, head) ? \</span></span><br><span class="line"><span class="meta">    list_first_entry(head, typeof(*(pos)), member) : list_next_entry(pos, member))   </span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * list_prev_entry - 根据当前节点与节点名称，获取上一个节点关联对象的地址</span></span><br><span class="line"><span class="comment"> * @pos:    the type * to cursor</span></span><br><span class="line"><span class="comment"> * @member:    the name of the list_head within the struct.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> list_prev_entry(pos, member) \</span></span><br><span class="line"><span class="meta">    list_entry((pos)-&gt;member.prev, typeof(*(pos)), member)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * list_prev_entry_circular - 根据当前节点与节点名称，获取上一个节点关联对象的地址</span></span><br><span class="line"><span class="comment"> * 如果当前节点是第一个节点，则返回最后一个节点</span></span><br><span class="line"><span class="comment"> * @pos:    the type * to cursor.</span></span><br><span class="line"><span class="comment"> * @head:    the list head to take the element from.</span></span><br><span class="line"><span class="comment"> * @member:    the name of the list_head within the struct.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Wraparound if pos is the first element (return the last element).</span></span><br><span class="line"><span class="comment"> * Note, that list is expected to be not empty.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> list_prev_entry_circular(pos, head, member) \</span></span><br><span class="line"><span class="meta">    (list_is_first(&amp;(pos)-&gt;member, head) ? \</span></span><br><span class="line"><span class="meta">    list_last_entry(head, typeof(*(pos)), member) : list_prev_entry(pos, member))</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * list_for_each    -    遍历当前链表，pos 则返回当前的节点</span></span><br><span class="line"><span class="comment"> * @pos:    the &amp;struct list_head to use as a loop cursor.</span></span><br><span class="line"><span class="comment"> * @head:    the head for your list.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> list_for_each(pos, head) \</span></span><br><span class="line"><span class="meta">    for (pos = (head)-&gt;next; !list_is_head(pos, (head)); pos = pos-&gt;next)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * list_for_each_rcu - Iterate over a list in an RCU-safe fashion</span></span><br><span class="line"><span class="comment"> * @pos:    the &amp;struct list_head to use as a loop cursor.</span></span><br><span class="line"><span class="comment"> * @head:    the head for your list.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> list_for_each_rcu(pos, head)          \</span></span><br><span class="line"><span class="meta">    for (pos = rcu_dereference((head)-&gt;next); \</span></span><br><span class="line"><span class="meta">         !list_is_head(pos, (head)); \</span></span><br><span class="line"><span class="meta">         pos = rcu_dereference(pos-&gt;next)) </span></span><br><span class="line"></span><br><span class="line"> <span class="comment">/**</span></span><br><span class="line"><span class="comment"> * list_for_each_continue - 从当前节点处继续往后遍历遍历链表</span></span><br><span class="line"><span class="comment"> * @pos:    the &amp;struct list_head to use as a loop cursor.</span></span><br><span class="line"><span class="comment"> * @head:    the head for your list.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Continue to iterate over a list, continuing after the current position.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> list_for_each_continue(pos, head) \</span></span><br><span class="line"><span class="meta">    for (pos = pos-&gt;next; !list_is_head(pos, (head)); pos = pos-&gt;next)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * list_for_each_prev    -    从当前节点处，继续往前遍历链表</span></span><br><span class="line"><span class="comment"> * @pos:    the &amp;struct list_head to use as a loop cursor.</span></span><br><span class="line"><span class="comment"> * @head:    the head for your list.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> list_for_each_prev(pos, head) \</span></span><br><span class="line"><span class="meta">    for (pos = (head)-&gt;prev; !list_is_head(pos, (head)); pos = pos-&gt;prev)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * list_for_each_safe - 以安全的方式对链表进行遍历，避免对当前节点执行删除操作后，便无法继续往后遍历了</span></span><br><span class="line"><span class="comment"> * @pos:    the &amp;struct list_head to use as a loop cursor.</span></span><br><span class="line"><span class="comment"> * @n:        another &amp;struct list_head to use as temporary storage</span></span><br><span class="line"><span class="comment"> * @head:    the head for your list.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> list_for_each_safe(pos, n, head) \</span></span><br><span class="line"><span class="meta">    for (pos = (head)-&gt;next, n = pos-&gt;next; \</span></span><br><span class="line"><span class="meta">         !list_is_head(pos, (head)); \</span></span><br><span class="line"><span class="meta">         pos = n, n = pos-&gt;next)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * list_for_each_prev_safe - 以安全的方式对链表进行遍历，避免对当前节点执行删除操作后，便无法继续往后遍历了</span></span><br><span class="line"><span class="comment"> * @pos:    the &amp;struct list_head to use as a loop cursor.</span></span><br><span class="line"><span class="comment"> * @n:        another &amp;struct list_head to use as temporary storage</span></span><br><span class="line"><span class="comment"> * @head:    the head for your list.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> list_for_each_prev_safe(pos, n, head) \</span></span><br><span class="line"><span class="meta">    for (pos = (head)-&gt;prev, n = pos-&gt;prev; \</span></span><br><span class="line"><span class="meta">         !list_is_head(pos, (head)); \</span></span><br><span class="line"><span class="meta">         pos = n, n = pos-&gt;prev)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * list_entry_is_head - 判断当前对象是否在头节点</span></span><br><span class="line"><span class="comment"> * @pos:    the type * to cursor</span></span><br><span class="line"><span class="comment"> * @head:    the head for your list.</span></span><br><span class="line"><span class="comment"> * @member:    the name of the list_head within the struct.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> list_entry_is_head(pos, head, member)                \</span></span><br><span class="line"><span class="meta">    (&amp;pos-&gt;member == (head))</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * list_for_each_entry    -    这个是以对象的形式对链表进行正向遍历</span></span><br><span class="line"><span class="comment"> * @pos:    the type * to use as a loop cursor.</span></span><br><span class="line"><span class="comment"> * @head:    the head for your list.</span></span><br><span class="line"><span class="comment"> * @member:    the name of the list_head within the struct.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> list_for_each_entry(pos, head, member)                \</span></span><br><span class="line"><span class="meta">    for (pos = list_first_entry(head, typeof(*pos), member);    \</span></span><br><span class="line"><span class="meta">         !list_entry_is_head(pos, head, member);            \</span></span><br><span class="line"><span class="meta">         pos = list_next_entry(pos, member))</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * list_for_each_entry_reverse - 这个是以对象的形式对链表进行反向遍历</span></span><br><span class="line"><span class="comment"> * @pos:    the type * to use as a loop cursor.</span></span><br><span class="line"><span class="comment"> * @head:    the head for your list.</span></span><br><span class="line"><span class="comment"> * @member:    the name of the list_head within the struct.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> list_for_each_entry_reverse(pos, head, member)            \</span></span><br><span class="line"><span class="meta">    for (pos = list_last_entry(head, typeof(*pos), member);        \</span></span><br><span class="line"><span class="meta">         !list_entry_is_head(pos, head, member);             \</span></span><br><span class="line"><span class="meta">         pos = list_prev_entry(pos, member))</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * list_prepare_entry - 提取对象，为 list_for_each_entry_continue 做准备</span></span><br><span class="line"><span class="comment"> * @pos:    the type * to use as a start point</span></span><br><span class="line"><span class="comment"> * @head:    the head of the list</span></span><br><span class="line"><span class="comment"> * @member:    the name of the list_head within the struct.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Prepares a pos entry for use as a start point in list_for_each_entry_continue().</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> list_prepare_entry(pos, head, member) \</span></span><br><span class="line"><span class="meta">    ((pos) ? : list_entry(head, typeof(*pos), member))</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * list_for_each_entry_continue - 以对象的方式，继续向后遍历</span></span><br><span class="line"><span class="comment"> * @pos:    the type * to use as a loop cursor.</span></span><br><span class="line"><span class="comment"> * @head:    the head for your list.</span></span><br><span class="line"><span class="comment"> * @member:    the name of the list_head within the struct.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Continue to iterate over list of given type, continuing after</span></span><br><span class="line"><span class="comment"> * the current position.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> list_for_each_entry_continue(pos, head, member)         \</span></span><br><span class="line"><span class="meta">    for (pos = list_next_entry(pos, member);            \</span></span><br><span class="line"><span class="meta">         !list_entry_is_head(pos, head, member);            \</span></span><br><span class="line"><span class="meta">         pos = list_next_entry(pos, member))</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * list_for_each_entry_continue_reverse - 以对象的方式，继续向前遍历</span></span><br><span class="line"><span class="comment"> * @pos:    the type * to use as a loop cursor.</span></span><br><span class="line"><span class="comment"> * @head:    the head for your list.</span></span><br><span class="line"><span class="comment"> * @member:    the name of the list_head within the struct.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Start to iterate over list of given type backwards, continuing after</span></span><br><span class="line"><span class="comment"> * the current position.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> list_for_each_entry_continue_reverse(pos, head, member)        \</span></span><br><span class="line"><span class="meta">    for (pos = list_prev_entry(pos, member);            \</span></span><br><span class="line"><span class="meta">         !list_entry_is_head(pos, head, member);            \</span></span><br><span class="line"><span class="meta">         pos = list_prev_entry(pos, member))</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * list_for_each_entry_from - 从当前节点，继续向后遍历</span></span><br><span class="line"><span class="comment"> * @pos:    the type * to use as a loop cursor.</span></span><br><span class="line"><span class="comment"> * @head:    the head for your list.</span></span><br><span class="line"><span class="comment"> * @member:    the name of the list_head within the struct.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Iterate over list of given type, continuing from current position.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> list_for_each_entry_from(pos, head, member)             \</span></span><br><span class="line"><span class="meta">    for (; !list_entry_is_head(pos, head, member);            \</span></span><br><span class="line"><span class="meta">         pos = list_next_entry(pos, member))</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * list_for_each_entry_from_reverse - 从当前节点，继续向前遍历</span></span><br><span class="line"><span class="comment"> * @pos:    the type * to use as a loop cursor.</span></span><br><span class="line"><span class="comment"> * @head:    the head for your list.</span></span><br><span class="line"><span class="comment"> * @member:    the name of the list_head within the struct.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Iterate backwards over list of given type, continuing from current position.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> list_for_each_entry_from_reverse(pos, head, member)        \</span></span><br><span class="line"><span class="meta">    for (; !list_entry_is_head(pos, head, member);            \</span></span><br><span class="line"><span class="meta">         pos = list_prev_entry(pos, member))</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * list_for_each_entry_safe - 以安全的方式向后遍历，避免当前对象被删除而无法遍历</span></span><br><span class="line"><span class="comment"> * @pos:    the type * to use as a loop cursor.</span></span><br><span class="line"><span class="comment"> * @n:        another type * to use as temporary storage</span></span><br><span class="line"><span class="comment"> * @head:    the head for your list.</span></span><br><span class="line"><span class="comment"> * @member:    the name of the list_head within the struct.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> list_for_each_entry_safe(pos, n, head, member)            \</span></span><br><span class="line"><span class="meta">    for (pos = list_first_entry(head, typeof(*pos), member),    \</span></span><br><span class="line"><span class="meta">        n = list_next_entry(pos, member);            \</span></span><br><span class="line"><span class="meta">         !list_entry_is_head(pos, head, member);             \</span></span><br><span class="line"><span class="meta">         pos = n, n = list_next_entry(n, member))</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * list_for_each_entry_safe_continue - 以安全的方式，继续向后遍历</span></span><br><span class="line"><span class="comment"> * @pos:    the type * to use as a loop cursor.</span></span><br><span class="line"><span class="comment"> * @n:        another type * to use as temporary storage</span></span><br><span class="line"><span class="comment"> * @head:    the head for your list.</span></span><br><span class="line"><span class="comment"> * @member:    the name of the list_head within the struct.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Iterate over list of given type, continuing after current point,</span></span><br><span class="line"><span class="comment"> * safe against removal of list entry.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> list_for_each_entry_safe_continue(pos, n, head, member)         \</span></span><br><span class="line"><span class="meta">    for (pos = list_next_entry(pos, member),                 \</span></span><br><span class="line"><span class="meta">        n = list_next_entry(pos, member);                \</span></span><br><span class="line"><span class="meta">         !list_entry_is_head(pos, head, member);                \</span></span><br><span class="line"><span class="meta">         pos = n, n = list_next_entry(n, member))</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * list_for_each_entry_safe_from - 以安全的方式，从当前节点向后遍历</span></span><br><span class="line"><span class="comment"> * @pos:    the type * to use as a loop cursor.</span></span><br><span class="line"><span class="comment"> * @n:        another type * to use as temporary storage</span></span><br><span class="line"><span class="comment"> * @head:    the head for your list.</span></span><br><span class="line"><span class="comment"> * @member:    the name of the list_head within the struct.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Iterate over list of given type from current point, safe against</span></span><br><span class="line"><span class="comment"> * removal of list entry.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> list_for_each_entry_safe_from(pos, n, head, member)             \</span></span><br><span class="line"><span class="meta">    for (n = list_next_entry(pos, member);                    \</span></span><br><span class="line"><span class="meta">         !list_entry_is_head(pos, head, member);                \</span></span><br><span class="line"><span class="meta">         pos = n, n = list_next_entry(n, member))</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * list_for_each_entry_safe_reverse - 以安全的方式向前遍历，避免当前对象被删除而无法遍历</span></span><br><span class="line"><span class="comment"> * @pos:    the type * to use as a loop cursor.</span></span><br><span class="line"><span class="comment"> * @n:        another type * to use as temporary storage</span></span><br><span class="line"><span class="comment"> * @head:    the head for your list.</span></span><br><span class="line"><span class="comment"> * @member:    the name of the list_head within the struct.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Iterate backwards over list of given type, safe against removal</span></span><br><span class="line"><span class="comment"> * of list entry.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> list_for_each_entry_safe_reverse(pos, n, head, member)        \</span></span><br><span class="line"><span class="meta">    for (pos = list_last_entry(head, typeof(*pos), member),        \</span></span><br><span class="line"><span class="meta">        n = list_prev_entry(pos, member);            \</span></span><br><span class="line"><span class="meta">         !list_entry_is_head(pos, head, member);             \</span></span><br><span class="line"><span class="meta">         pos = n, n = list_prev_entry(n, member))</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * list_safe_reset_next - reset a stale list_for_each_entry_safe loop</span></span><br><span class="line"><span class="comment"> * @pos:    the loop cursor used in the list_for_each_entry_safe loop</span></span><br><span class="line"><span class="comment"> * @n:        temporary storage used in list_for_each_entry_safe</span></span><br><span class="line"><span class="comment"> * @member:    the name of the list_head within the struct.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * list_safe_reset_next is not safe to use in general if the list may be</span></span><br><span class="line"><span class="comment"> * modified concurrently (eg. the lock is dropped in the loop body). An</span></span><br><span class="line"><span class="comment"> * exception to this is if the cursor element (pos) is pinned in the list,</span></span><br><span class="line"><span class="comment"> * and list_safe_reset_next is called after re-taking the lock and before</span></span><br><span class="line"><span class="comment"> * completing the current iteration of the loop body.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> list_safe_reset_next(pos, n, member)                \</span></span><br><span class="line"><span class="meta">    n = list_next_entry(pos, member)         </span></span><br></pre></td></tr></table></figure>
+
+
+
+<h1 id="链表的演化"><a href="#链表的演化" class="headerlink" title="链表的演化"></a>链表的演化</h1><p>以上是双向环形链表的实现，它还可以很方便的演化为以下几种数据结构：</p>
+<ul>
+<li><p>去掉前驱指针，就是单向循环链表</p>
+</li>
+<li><p>对接口进行进一步封装，只允许头的取出和尾的插入操作，就是 FIFO</p>
+</li>
+<li><p>对接口进行进一步封装，只允许头的取出和插入操作，就是栈</p>
+</li>
+</ul>
+<p>由于上面的链表实现方式可以被插入到任意一种数据结构中，还有一种妙用：一个数据结构根据用途插入多个链表节点！</p>
+<blockquote>
+<p>相当于是以不同的角度来看这个数据结构</p>
+</blockquote>
+<h1 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h1><p>下面编写一个简单的内核模块，来简单的使用一下链表，模块代码如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> pr_fmt(fmt) <span class="meta-string">&quot;[list]: &quot;</span> fmt</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/init.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/module.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/list.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/slab.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ITEM_COUNT  (10)</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">item</span> &#123;</span></span><br><span class="line">    <span class="keyword">int</span> val;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> <span class="title">node</span>;</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">LIST_HEAD(item_head);</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">show_list</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    pr_info(<span class="string">&quot;I have these items:\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">item</span>* <span class="title">get_item</span>;</span></span><br><span class="line">    list_for_each_entry(get_item, &amp;item_head, node) &#123;</span><br><span class="line">        pr_info(<span class="string">&quot;val: %d\n&quot;</span>, get_item-&gt;val);</span><br><span class="line">    &#125;</span><br><span class="line">    pr_info(<span class="string">&quot;\n&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> __init <span class="title">list_init</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    pr_info(<span class="string">&quot;%s -&gt; %d\n&quot;</span>, __func__, __LINE__);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; ITEM_COUNT; ++i) &#123;</span><br><span class="line">        <span class="class"><span class="keyword">struct</span> <span class="title">item</span>* <span class="title">new_item</span> =</span> (struct item* )kmalloc(<span class="keyword">sizeof</span>(struct item), GFP_KERNEL);</span><br><span class="line">        <span class="keyword">if</span> (!new_item) &#123;</span><br><span class="line">            pr_err(<span class="string">&quot;Can&#x27;t malloc memory!\n&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        new_item-&gt;val = i;</span><br><span class="line"></span><br><span class="line">        list_add(&amp;(new_item-&gt;node), &amp;item_head);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    show_list();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line">module_init(list_init);</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> __exit <span class="title">list_exit</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    pr_info(<span class="string">&quot;%s -&gt; %d\n&quot;</span>, __func__, __LINE__);</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">item</span>* <span class="title">get_item</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">item</span>* <span class="title">tmp_item</span>;</span></span><br><span class="line">    list_for_each_entry_safe(get_item, tmp_item, &amp;item_head, node) &#123;</span><br><span class="line">        pr_info(<span class="string">&quot;delete item : %d\n&quot;</span>, get_item-&gt;val);</span><br><span class="line"></span><br><span class="line">        list_del(&amp;(get_item-&gt;node));</span><br><span class="line">        show_list();</span><br><span class="line"></span><br><span class="line">        kfree(get_item);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">module_exit(list_exit);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">MODULE_AUTHOR(<span class="string">&quot;kcmetercec &lt;kcmeter.ece@gmail.com&gt;&quot;</span>);</span><br><span class="line">MODULE_LICENSE(<span class="string">&quot;GPL v2&quot;</span>);</span><br><span class="line">MODULE_DESCRIPTION(<span class="string">&quot;A simple demo which uses list&quot;</span>);</span><br><span class="line">MODULE_ALIAS(<span class="string">&quot;list demo&quot;</span>);</span><br><span class="line">MODULE_VERSION(<span class="string">&quot;ver1.0&quot;</span>);</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+
+<p>对应的 Makefile 如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">KVERS = $(shell uname -r)</span><br><span class="line"></span><br><span class="line">obj-m += <span class="built_in">list</span>.o</span><br><span class="line"></span><br><span class="line">EXTRA_CFLAGS = -<span class="built_in">std</span>=gnu99</span><br><span class="line"></span><br><span class="line">build: kernel_modules</span><br><span class="line"></span><br><span class="line">kernel_modules:</span><br><span class="line">        make -C /lib/modules/$(KVERS)/build M=$(CURDIR) modules</span><br><span class="line"></span><br><span class="line">clean:</span><br><span class="line">        make -C /lib/modules/$(KVERS)/build M=$(CURDIR) clean</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+
+<p>需要注意的是：上面使用了 gnu99 编译选项。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>kcmetercec
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://kcmetercec.top/2023/03/26/linux_kernel_ds_list/" title="认识 Linux 内核中的双向环形链表">http://kcmetercec.top/2023/03/26/linux_kernel_ds_list/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux/" rel="tag"> <i class="fa fa-tag"></i> linux</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2023/03/24/linux_driver_module_hello/" rel="prev" title="如何编写一个简单的内核模块？">
+      <i class="fa fa-chevron-left"></i> 如何编写一个简单的内核模块？
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2023/04/06/linux_mm_hardware_mmu/" rel="next" title="理解 MMU 最基本原理">
+      理解 MMU 最基本原理 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AE%A4%E8%AF%86%E7%8E%AF%E5%BD%A2%E9%93%BE%E8%A1%A8"><span class="nav-number">1.</span> <span class="nav-text">认识环形链表</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%A4%E8%AF%86%E8%8A%82%E7%82%B9"><span class="nav-number">1.1.</span> <span class="nav-text">认识节点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9A%E4%B9%89%E5%B9%B6%E5%88%9D%E5%A7%8B%E5%8C%96%E5%A4%B4%E8%8A%82%E7%82%B9"><span class="nav-number">1.2.</span> <span class="nav-text">定义并初始化头节点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8F%92%E5%85%A5%E8%8A%82%E7%82%B9"><span class="nav-number">1.3.</span> <span class="nav-text">插入节点</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BA%95%E5%B1%82%E6%93%8D%E4%BD%9C"><span class="nav-number">1.3.1.</span> <span class="nav-text">底层操作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%A8%E6%88%B7%E6%8E%A5%E5%8F%A3"><span class="nav-number">1.3.2.</span> <span class="nav-text">用户接口</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%A0%E9%99%A4%E8%8A%82%E7%82%B9"><span class="nav-number">1.4.</span> <span class="nav-text">删除节点</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BA%95%E5%B1%82%E6%93%8D%E4%BD%9C-1"><span class="nav-number">1.4.1.</span> <span class="nav-text">底层操作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%A8%E6%88%B7%E6%8E%A5%E5%8F%A3-1"><span class="nav-number">1.4.2.</span> <span class="nav-text">用户接口</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B6%E5%AE%83%E7%94%A8%E6%88%B7%E6%93%8D%E4%BD%9C%E6%8E%A5%E5%8F%A3"><span class="nav-number">1.5.</span> <span class="nav-text">其它用户操作接口</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%87%E5%89%B2%E9%93%BE%E8%A1%A8"><span class="nav-number">1.6.</span> <span class="nav-text">切割链表</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BA%95%E5%B1%82%E6%93%8D%E4%BD%9C-2"><span class="nav-number">1.6.1.</span> <span class="nav-text">底层操作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%A8%E6%88%B7%E6%8E%A5%E5%8F%A3-2"><span class="nav-number">1.6.2.</span> <span class="nav-text">用户接口</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%8F%E6%93%8D%E4%BD%9C"><span class="nav-number">1.7.</span> <span class="nav-text">宏操作</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%8D%E6%8E%A8%E8%8A%82%E7%82%B9%E7%9A%84%E5%9C%B0%E5%9D%80"><span class="nav-number">1.7.1.</span> <span class="nav-text">反推节点的地址</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%B8%E5%85%B3%E6%93%8D%E4%BD%9C%E5%87%BD%E6%95%B0"><span class="nav-number">1.7.2.</span> <span class="nav-text">相关操作函数</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%93%BE%E8%A1%A8%E7%9A%84%E6%BC%94%E5%8C%96"><span class="nav-number">2.</span> <span class="nav-text">链表的演化</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B"><span class="nav-number">3.</span> <span class="nav-text">示例</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">Qt, C++, linux, CS</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">107</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">55</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:kcmeter.cec@gmail.com" title="E-Mail → mailto:kcmeter.cec@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2021 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">206k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">3:08</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+document.querySelectorAll('.pdfobject-container').forEach(element => {
+  let url = element.dataset.target;
+  let pdfOpenParams = {
+    navpanes : 0,
+    toolbar  : 0,
+    statusbar: 0,
+    pagemode : 'thumbs',
+    view     : 'FitH'
+  };
+  let pdfOpenFragment = '#' + Object.entries(pdfOpenParams).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
+  let fullURL = `/lib/pdf/web/viewer.html?file=${encodeURIComponent(url)}${pdfOpenFragment}`;
+
+  if (NexT.utils.supportsPDFs()) {
+    element.innerHTML = `<embed class="pdfobject" src="${url + pdfOpenFragment}" type="application/pdf" style="height: ${element.dataset.height};">`;
+  } else {
+    element.innerHTML = `<iframe src="${fullURL}" style="height: ${element.dataset.height};" frameborder="0"></iframe>`;
+  }
+});
+</script>
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'f938893867df78f94802',
+      clientSecret: 'b6d8470939c53d26c98c4e3b9d4c9ceb55d6e78e',
+      repo        : 'kcmetercec.github.io',
+      owner       : 'KcMeterCEC',
+      admin       : ['KcMeterCEC'],
+      id          : '550b5565c78a694990af08675e43f5b3',
+        language: 'zh-CN',
+      distractionFreeMode: false
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+    </div>
+</body>
+</html>

@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="虽然 C++20 已经提供了 std::format 这种格式化库，但直到 C++23 才支持 std::print 这种便利库。 又由于目前 gcc 对 C++23 支持还不完整，尤其是在嵌入式上。所以仍然是需要以 fmt 库 为基本使用工具。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="认识 fmt">
+<meta property="og:url" content="http://kcmetercec.top/2024/10/21/professional_cpp_fmt/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="虽然 C++20 已经提供了 std::format 这种格式化库，但直到 C++23 才支持 std::print 这种便利库。 又由于目前 gcc 对 C++23 支持还不完整，尤其是在嵌入式上。所以仍然是需要以 fmt 库 为基本使用工具。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-10-20T16:00:00.000Z">
+<meta property="article:modified_time" content="2024-10-20T16:00:00.000Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="cpp">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://kcmetercec.top/2024/10/21/professional_cpp_fmt/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>认识 fmt | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112423075-1# <app_id>"></script>
+    <script data-pjax>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-112423075-1# <app_id>');
+      }
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+        <li class="menu-item menu-item-commonweal">
+
+    <a href="/404/" rel="section"><i class="fa fa-heartbeat fa-fw"></i>公益 404</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2024/10/21/professional_cpp_fmt/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="Qt, C++, linux, CS">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          认识 fmt
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-10-21 00:00:00" itemprop="dateCreated datePublished" datetime="2024-10-21T00:00:00+08:00">2024-10-21</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/cpp/" itemprop="url" rel="index"><span itemprop="name">cpp</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/cpp/professional/" itemprop="url" rel="index"><span itemprop="name">professional</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.3k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>虽然 C++20 已经提供了 <code>std::format</code> 这种格式化库，但直到 C++23 才支持 <code>std::print</code> 这种便利库。</p>
+<p>又由于目前 gcc 对 C++23 支持还不完整，尤其是在嵌入式上。所以仍然是需要以 <a target="_blank" rel="noopener" href="https://github.com/fmtlib/fmt">fmt 库</a> 为基本使用工具。</p>
+<span id="more"></span>
+
+<h1 id="包含-fmt-库"><a href="#包含-fmt-库" class="headerlink" title="包含 fmt 库"></a>包含 fmt 库</h1><p><a target="_blank" rel="noopener" href="https://fmt.dev/11.0/get-started/">Get Started</a>中已经详细的描述了如何包含 fmt 到项目中去，为了增加项目的独立性，个人更倾向于使用<code>FetchContent</code>或<code>Embedded</code>的方式包含该库。</p>
+<p>除了上面说的方法，还有一个简单粗暴的办法：</p>
+<ol>
+<li><p>下载源码，将文件夹<code>inculde/fmt</code>和<code>src</code>拷贝至项目中</p>
+</li>
+<li><p>将<code>fmt/core.h</code>，<code>fmt/format.h</code>，<code>fmt/forat-inl.h</code>，<code>src/format.cc</code>添加至编译文件中</p>
+</li>
+<li><p>将<code>fmt</code>路径添加到项目包含路径中</p>
+</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">对于 Visual Studio，为了能够顺利编译 fmt 库。</span><br><span class="line"></span><br><span class="line">需要在&quot;属性&quot;-&gt; &quot;C/C++&quot; -&gt; &quot;命令行&quot; -&gt; &quot;附加选项&quot; 中添加 `/utf-8` 指定编码方式</span><br></pre></td></tr></table></figure>
+
+<h1 id="基本语法"><a href="#基本语法" class="headerlink" title="基本语法"></a>基本语法</h1><p><code>fmt::format</code>和<code>fmt::print</code>语法一致，在字符串中使用花括号<code>&#123;&#125;</code>表示格式化输出部分，如果想输出花括号，则使用两个花括号<code>&#123;&#123;&#125;&#125;</code>。</p>
+<p>替换字段<code>&#123;&#125;</code>的语法如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">replacement_field ::= &quot;&#123;&quot; [arg_id] [&quot;:&quot; (format_spec | chrono_format_spec)] &quot;&#125;&quot;</span><br><span class="line">arg_id            ::= integer | identifier</span><br><span class="line">integer           ::= digit+</span><br><span class="line">digit             ::= &quot;0&quot;...&quot;9&quot;</span><br><span class="line">identifier        ::= id_start id_continue*</span><br><span class="line">id_start          ::= &quot;a&quot;...&quot;z&quot; | &quot;A&quot;...&quot;Z&quot; | &quot;_&quot;</span><br><span class="line">id_continue       ::= id_start | digit</span><br></pre></td></tr></table></figure>
+
+<h2 id="arg-id"><a href="#arg-id" class="headerlink" title="arg_id"></a>arg_id</h2><p><code>arg_id</code>指的是要输出部分对应后面输入参数的顺序，默认为<code>0~9</code>这样的顺序：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">fmt::<span class="built_in">println</span>(<span class="string">&quot;&#123;&#125;&#123;&#125;&#123;&#125;\n&quot;</span>, <span class="string">&quot;0&quot;</span>, <span class="string">&quot;1&quot;</span>, <span class="string">&quot;2&quot;</span>);</span><br><span class="line"><span class="comment">// 等价于</span></span><br><span class="line">fmt::<span class="built_in">println</span>(<span class="string">&quot;&#123;0&#125;&#123;1&#125;&#123;2&#125;\n&quot;</span>, <span class="string">&quot;0&quot;</span>, <span class="string">&quot;1&quot;</span>, <span class="string">&quot;2&quot;</span>);</span><br><span class="line"></span><br><span class="line">fmt::format(<span class="string">&quot;&#123;0&#125;, &#123;1&#125;, &#123;2&#125;&quot;</span>, <span class="string">&#x27;a&#x27;</span>, <span class="string">&#x27;b&#x27;</span>, <span class="string">&#x27;c&#x27;</span>);</span><br><span class="line"><span class="comment">// Result: &quot;a, b, c&quot;</span></span><br><span class="line">fmt::format(<span class="string">&quot;&#123;&#125;, &#123;&#125;, &#123;&#125;&quot;</span>, <span class="string">&#x27;a&#x27;</span>, <span class="string">&#x27;b&#x27;</span>, <span class="string">&#x27;c&#x27;</span>);</span><br><span class="line"><span class="comment">// Result: &quot;a, b, c&quot;</span></span><br><span class="line">fmt::format(<span class="string">&quot;&#123;2&#125;, &#123;1&#125;, &#123;0&#125;&quot;</span>, <span class="string">&#x27;a&#x27;</span>, <span class="string">&#x27;b&#x27;</span>, <span class="string">&#x27;c&#x27;</span>);</span><br><span class="line"><span class="comment">// Result: &quot;c, b, a&quot;</span></span><br><span class="line">fmt::format(<span class="string">&quot;&#123;0&#125;&#123;1&#125;&#123;0&#125;&quot;</span>, <span class="string">&quot;abra&quot;</span>, <span class="string">&quot;cad&quot;</span>);  <span class="comment">// arguments&#x27; indices can be repeated</span></span><br><span class="line"><span class="comment">// Result: &quot;abracadabra&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>如果在<code>arg_id</code>后需要增加其他描述，那需要以冒号<code>:</code>分隔<code>arg_id</code>和<code>format_spec</code>。</p>
+<h2 id="format-spec"><a href="#format-spec" class="headerlink" title="format_spec"></a>format_spec</h2><p><code>format_spec</code>描述参数的表示方式，包含长度、对其、空白填充、精度、进制等。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">format_spec ::= [[fill]align][sign][&quot;#&quot;][&quot;0&quot;][width][&quot;.&quot; precision][&quot;L&quot;][type]</span><br><span class="line">fill        ::= &lt;a character other than &#x27;&#123;&#x27; or &#x27;&#125;&#x27;&gt;</span><br><span class="line">align       ::= &quot;&lt;&quot; | &quot;&gt;&quot; | &quot;^&quot;</span><br><span class="line">sign        ::= &quot;+&quot; | &quot;-&quot; | &quot; &quot;</span><br><span class="line">width       ::= integer | &quot;&#123;&quot; [arg_id] &quot;&#125;&quot;</span><br><span class="line">precision   ::= integer | &quot;&#123;&quot; [arg_id] &quot;&#125;&quot;</span><br><span class="line">type        ::= &quot;a&quot; | &quot;A&quot; | &quot;b&quot; | &quot;B&quot; | &quot;c&quot; | &quot;d&quot; | &quot;e&quot; | &quot;E&quot; | &quot;f&quot; | &quot;F&quot; |</span><br><span class="line">                &quot;g&quot; | &quot;G&quot; | &quot;o&quot; | &quot;p&quot; | &quot;s&quot; | &quot;x&quot; | &quot;X&quot; | &quot;?&quot;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p><code>fill</code>表示填充的字符，除了花括号以外，其他字符都可以使用（需要指定宽度才有意义）</p>
+</li>
+<li><p><code>align</code>指定对齐方式（需要指定宽度才有意义）：</p>
+<ul>
+<li><p><code>&lt;</code>：左对齐，默认值</p>
+</li>
+<li><p><code>&gt;</code>：右对齐，对于数值而言，它是默认值</p>
+</li>
+<li><p><code>^</code>：居中对齐</p>
+</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">fmt::format(<span class="string">&quot;&#123;:&lt;30&#125;&quot;</span>, <span class="string">&quot;left aligned&quot;</span>);</span><br><span class="line"><span class="comment">// Result: &quot;left aligned                  &quot;</span></span><br><span class="line">fmt::format(<span class="string">&quot;&#123;:&gt;30&#125;&quot;</span>, <span class="string">&quot;right aligned&quot;</span>);</span><br><span class="line"><span class="comment">// Result: &quot;                 right aligned&quot;</span></span><br><span class="line">fmt::format(<span class="string">&quot;&#123;:^30&#125;&quot;</span>, <span class="string">&quot;centered&quot;</span>);</span><br><span class="line"><span class="comment">// Result: &quot;           centered           &quot;</span></span><br><span class="line">fmt::format(<span class="string">&quot;&#123;:*^30&#125;&quot;</span>, <span class="string">&quot;centered&quot;</span>);  <span class="comment">// use &#x27;*&#x27; as a fill char</span></span><br><span class="line"><span class="comment">// Result: &quot;***********centered***********&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 宽度也可以设置为参数</span></span><br><span class="line">fmt::format(<span class="string">&quot;&#123;:&lt;&#123;&#125;&#125;&quot;</span>, <span class="string">&quot;left aligned&quot;</span>, <span class="number">30</span>);</span><br><span class="line"><span class="comment">// Result: &quot;left aligned </span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p><code>sign</code>仅在浮点数或有符号整数有效：</p>
+<ul>
+<li><p><code>+</code>：在数值为非负时加上<code>+</code>号，在数值为负数时加上<code>-</code>号</p>
+</li>
+<li><p><code>-</code>：只有在数字为负数时，才加上<code>-</code>号，它是默认值</p>
+</li>
+<li><p><code> </code>：在数值为非负数时，加上空格，在数值为负数时加上<code>-</code>号</p>
+</li>
+</ul>
+</li>
+<li><p><code>#</code>用于对显示格式的切换，仅对整数和浮点数合法：</p>
+<ul>
+<li>对于<code>#b or #B</code>二进制、<code>#o</code>8进制、<code>#x or #X</code>16进制，会输出对应的前缀</li>
+</ul>
+</li>
+<li><p><code>width</code>指定显示的最小位数，如果在<code>width</code>前面加<code>0</code>，则会在符号和数值之间填充0.</p>
+<ul>
+<li>当使用对齐方式时，前面加<code>0</code>的方式就会被忽略</li>
+</ul>
+</li>
+<li><p><code>precision</code>指定小数精度：</p>
+<ul>
+<li><p>对于<code>f or F</code>显示格式，指定小数点后面的位数</p>
+</li>
+<li><p>对于<code>g or G</code>显示格式，指定除小数点外的位数之和</p>
+</li>
+</ul>
+</li>
+<li><p><code>type</code>用于指定具体显示格式：</p>
+<ul>
+<li><p>对于字符串有：</p>
+<ul>
+<li><p><code>s</code>：字符串显示，默认值</p>
+</li>
+<li><p><code>?</code>：调试显示，字符串被引号包含，且里面的特殊字符将不会被转义</p>
+</li>
+</ul>
+</li>
+<li><p>对于字符有：</p>
+<ul>
+<li><p><code>c</code>：字符显示，默认值</p>
+</li>
+<li><p><code>?</code>：调试显示，字符被引号包含，且特殊字符不会被转义</p>
+</li>
+</ul>
+</li>
+<li><p>对于整数有：</p>
+<ul>
+<li><p><code>b</code>或<code>B</code>：以二进制显示，如果加上<code>#</code>则会分别加上<code>0b</code>和<code>0B</code>前缀</p>
+</li>
+<li><p><code>c</code>：以字符显示</p>
+</li>
+<li><p><code>d</code>：以十进制显示</p>
+</li>
+<li><p><code>o</code>：以八进制显示</p>
+</li>
+<li><p><code>x</code>或<code>X</code>：以 16 进制显示，如果加上<code>#</code>则会分别加上<code>0x</code>和<code>0X</code>前缀</p>
+</li>
+</ul>
+</li>
+<li><p>对于浮点数有：</p>
+<ul>
+<li><p><code>a</code>或<code>A</code>：以 16 进制显示浮点数</p>
+</li>
+<li><p><code>e</code>或<code>E</code>：以科学计数法表示浮点数</p>
+</li>
+<li><p><code>f</code>或<code>F</code>：以固定精度显示浮点数</p>
+</li>
+<li><p><code>g</code>或<code>G</code>：对浮点数进行四舍五入</p>
+</li>
+</ul>
+</li>
+<li><p>对于指针有：<code>fmt::print(&quot;&#123;:p&#125;&quot;, fmt::ptr(p));</code></p>
+<ul>
+<li><code>p</code>：以 16 进制的方式显示指针，默认值。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">fmt::format(<span class="string">&quot;&#123;:.&#123;&#125;f&#125;&quot;</span>, <span class="number">3.14</span>, <span class="number">1</span>);</span><br><span class="line"><span class="comment">// Result: &quot;3.1&quot;</span></span><br><span class="line"></span><br><span class="line">fmt::format(<span class="string">&quot;&#123;:+f&#125;; &#123;:+f&#125;&quot;</span>, <span class="number">3.14</span>, <span class="number">-3.14</span>);  <span class="comment">// show it always</span></span><br><span class="line"><span class="comment">// Result: &quot;+3.140000; -3.140000&quot;</span></span><br><span class="line">fmt::format(<span class="string">&quot;&#123;: f&#125;; &#123;: f&#125;&quot;</span>, <span class="number">3.14</span>, <span class="number">-3.14</span>);  <span class="comment">// show a space for positive numbers</span></span><br><span class="line"><span class="comment">// Result: &quot; 3.140000; -3.140000&quot;</span></span><br><span class="line">fmt::format(<span class="string">&quot;&#123;:-f&#125;; &#123;:-f&#125;&quot;</span>, <span class="number">3.14</span>, <span class="number">-3.14</span>);  <span class="comment">// show only the minus -- same as &#x27;&#123;:f&#125;; &#123;:f&#125;&#x27;</span></span><br><span class="line"><span class="comment">// Result: &quot;3.140000; -3.140000&quot;</span></span><br><span class="line"></span><br><span class="line">fmt::format(<span class="string">&quot;int: &#123;0:d&#125;;  hex: &#123;0:x&#125;;  oct: &#123;0:o&#125;; bin: &#123;0:b&#125;&quot;</span>, <span class="number">42</span>);</span><br><span class="line"><span class="comment">// Result: &quot;int: 42;  hex: 2a;  oct: 52; bin: 101010&quot;</span></span><br><span class="line"><span class="comment">// with 0x or 0 or 0b as prefix:</span></span><br><span class="line">fmt::format(<span class="string">&quot;int: &#123;0:d&#125;;  hex: &#123;0:#x&#125;;  oct: &#123;0:#o&#125;;  bin: &#123;0:#b&#125;&quot;</span>, <span class="number">42</span>);</span><br><span class="line"><span class="comment">// Result: &quot;int: 42;  hex: 0x2a;  oct: 052;  bin: 0b101010&quot;</span></span><br><span class="line"></span><br><span class="line">fmt::format(<span class="string">&quot;&#123;:#04x&#125;&quot;</span>, <span class="number">0</span>);</span><br><span class="line"><span class="comment">// Result: &quot;0x00&quot;</span></span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>kcmetercec
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://kcmetercec.top/2024/10/21/professional_cpp_fmt/" title="认识 fmt">http://kcmetercec.top/2024/10/21/professional_cpp_fmt/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/cpp/" rel="tag"> <i class="fa fa-tag"></i> cpp</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/09/17/linux_fs_training/" rel="prev" title="Linux文件系统基本脉络">
+      <i class="fa fa-chevron-left"></i> Linux文件系统基本脉络
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/12/19/linux_make_swupdate/" rel="next" title="Swupdate 的简易使用">
+      Swupdate 的简易使用 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8C%85%E5%90%AB-fmt-%E5%BA%93"><span class="nav-number">1.</span> <span class="nav-text">包含 fmt 库</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E8%AF%AD%E6%B3%95"><span class="nav-number">2.</span> <span class="nav-text">基本语法</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#arg-id"><span class="nav-number">2.1.</span> <span class="nav-text">arg_id</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#format-spec"><span class="nav-number">2.2.</span> <span class="nav-text">format_spec</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">Qt, C++, linux, CS</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">107</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">55</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:kcmeter.cec@gmail.com" title="E-Mail → mailto:kcmeter.cec@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2021 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">206k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">3:08</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+document.querySelectorAll('.pdfobject-container').forEach(element => {
+  let url = element.dataset.target;
+  let pdfOpenParams = {
+    navpanes : 0,
+    toolbar  : 0,
+    statusbar: 0,
+    pagemode : 'thumbs',
+    view     : 'FitH'
+  };
+  let pdfOpenFragment = '#' + Object.entries(pdfOpenParams).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
+  let fullURL = `/lib/pdf/web/viewer.html?file=${encodeURIComponent(url)}${pdfOpenFragment}`;
+
+  if (NexT.utils.supportsPDFs()) {
+    element.innerHTML = `<embed class="pdfobject" src="${url + pdfOpenFragment}" type="application/pdf" style="height: ${element.dataset.height};">`;
+  } else {
+    element.innerHTML = `<iframe src="${fullURL}" style="height: ${element.dataset.height};" frameborder="0"></iframe>`;
+  }
+});
+</script>
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'f938893867df78f94802',
+      clientSecret: 'b6d8470939c53d26c98c4e3b9d4c9ceb55d6e78e',
+      repo        : 'kcmetercec.github.io',
+      owner       : 'KcMeterCEC',
+      admin       : ['KcMeterCEC'],
+      id          : 'dfe6d6724edd789dc0963debef338ee5',
+        language: 'zh-CN',
+      distractionFreeMode: false
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+    </div>
+</body>
+</html>

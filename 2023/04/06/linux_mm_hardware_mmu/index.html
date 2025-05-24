@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="对于内存管理知识而言，MMU基本原理是这类知识的基础，需要掌握。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="理解 MMU 最基本原理">
+<meta property="og:url" content="http://kcmetercec.top/2023/04/06/linux_mm_hardware_mmu/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="对于内存管理知识而言，MMU基本原理是这类知识的基础，需要掌握。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmm%5D/hardware/mmu/pic/mmu_translate.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmm%5D/hardware/mmu/pic/mmu_section.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmm%5D/hardware/mmu/pic/mmu_large_page.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmm%5D/hardware/mmu/pic/mmu_small_page.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmm%5D/hardware/mmu/pic/mmu_tiny_page.jpg?raw=true">
+<meta property="article:published_time" content="2023-04-05T16:00:00.000Z">
+<meta property="article:modified_time" content="2023-04-06T16:00:00.000Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="linux">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmm%5D/hardware/mmu/pic/mmu_translate.jpg?raw=true">
+
+<link rel="canonical" href="http://kcmetercec.top/2023/04/06/linux_mm_hardware_mmu/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>理解 MMU 最基本原理 | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112423075-1# <app_id>"></script>
+    <script data-pjax>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-112423075-1# <app_id>');
+      }
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+        <li class="menu-item menu-item-commonweal">
+
+    <a href="/404/" rel="section"><i class="fa fa-heartbeat fa-fw"></i>公益 404</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2023/04/06/linux_mm_hardware_mmu/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="Qt, C++, linux, CS">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          理解 MMU 最基本原理
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-04-06 00:00:00" itemprop="dateCreated datePublished" datetime="2023-04-06T00:00:00+08:00">2023-04-06</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-04-07 00:00:00" itemprop="dateModified" datetime="2023-04-07T00:00:00+08:00">2023-04-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/mm/" itemprop="url" rel="index"><span itemprop="name">mm</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/mm/hardware/" itemprop="url" rel="index"><span itemprop="name">hardware</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.3k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>对于内存管理知识而言，MMU基本原理是这类知识的基础，需要掌握。</p>
+<span id="more"></span>
+
+<h1 id="MMU的作用"><a href="#MMU的作用" class="headerlink" title="MMU的作用"></a>MMU的作用</h1><p>内存管理单元（Memory Management Unit）简称MMU，负责将虚拟地址映射到物理地址，并具有内存访问权限检查的功能。</p>
+<p>它具有如下好处：</p>
+<ul>
+<li>让应用程序可以分段加载，这样可以让多个程序（程序之和大于内存）并发地在内存中运行<ul>
+<li>仅将要运行的部分装入内存，其他部分用到的时候再载入。</li>
+<li>当内存不够用时，将暂时不用的部分再重新调出到硬盘</li>
+</ul>
+</li>
+<li>应用程序不用关心实际物理内存，相互虚拟地址互不干扰<ul>
+<li>每个应用程序都可以在逻辑上认为自己独占内存</li>
+</ul>
+</li>
+<li>应用程序之间的地址隔离，不能越权访问，很好的保护了程序空间</li>
+</ul>
+<p>而对于这些功能的满足都是基于硬件来实现的。</p>
+<h1 id="地址转换概念"><a href="#地址转换概念" class="headerlink" title="地址转换概念"></a>地址转换概念</h1><h2 id="相关概念"><a href="#相关概念" class="headerlink" title="相关概念"></a>相关概念</h2><ul>
+<li>虚拟地址空间： 在使用了MMU之后，应用程序逻辑上可以使用的内存不与实际的物理内存大小相关。<ul>
+<li>比如在32位的CPU中，逻辑上可以使用 0 ~ 0XFFFFFFFF 的内存空间，这个空间就是虚拟地址空间 <ul>
+<li>需要注意的是： 这里所指的内存空间是CPU总线可以理论访问的地址范围，其中<strong>包括了I/O设备、内存条、预留空间等！</strong></li>
+</ul>
+</li>
+<li>虚拟地址空间对应的地址就是虚拟地址(VA, Virtual Address)</li>
+</ul>
+</li>
+<li>物理地址空间：硬件上实实在在存在的内存大小就是物理地址空间<ul>
+<li>需要注意的是： 这里所指的内存空间是CPU总线可以实际访问的地址范围，其中<strong>包括了I/O设备、内存条、预留空间等！</strong><ul>
+<li>物理地址空间对应的地址就是物理地址(PA, Physical Address)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>变换后的虚拟地址(MVA, Modified Virtual Address): 在虚拟地址向物理地址转换中间的地址</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">虽然内存空间包括I/O设备、内存条等等，其加起来可能远远不及4G。但是依然需要为每个进程建立覆盖4GB的页表！！</span><br><span class="line"></span><br><span class="line">只有这样MMU才可以对每个内存访问进行无死角的监控！不然来个MMU都不认识的虚拟地址，你要人家怎么办？</span><br></pre></td></tr></table></figure>
+
+<h2 id="地址转换概念-1"><a href="#地址转换概念-1" class="headerlink" title="地址转换概念"></a>地址转换概念</h2><p>虽然虚拟地址大于物理地址，但程序总是要在实实在在的物理地址上运行的。于是将虚拟地址空间和物理地址空间划分为<strong>同样大小</strong>的空间（也叫段或页），这样虚拟和物理之间建立映射关系。但是由于虚拟地址空间大于物理地址空间，那么虚拟地址空间分得的页多于物理地址空间，所以就会出现：</p>
+<ul>
+<li>几个虚拟地址空间映射页到同一个物理地址空间页<ul>
+<li>多个进程使用内存的内容一致</li>
+<li>多个进程分时使用相同的物理内存，物理内存对于不同进程进行置换</li>
+</ul>
+</li>
+<li>一些虚拟地址空间页没有映射到物理地址空间页上<ul>
+<li>当这些虚拟地址空间被访问时，MMU 会觉察并通知 CPU 进行重映射到物理页<ul>
+<li>MMU硬件会由于没有映射到物理地址而产生 page fault，CPU 会接收此信号并做处理</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="相互之间的视角"><a href="#相互之间的视角" class="headerlink" title="相互之间的视角"></a>相互之间的视角</h2><ol>
+<li>CPU能看到的是虚拟地址(VA)<ul>
+<li>无论I/O还是内存条都是虚拟地址，所以在 Linux 驱动中要访问外设硬件时，也必须经过映射</li>
+</ul>
+</li>
+<li>cache 和 MMU 看到的是转换后的虚拟地址(MVA)，通过此值转换为PA</li>
+<li>实际设备在没有IOMMU的情况下看到的是物理地址(PA)，VA 和 MVA 对其都不可见<ul>
+<li>一般情况下实际设备当然只关心物理地址，人家怎么知道你虚拟地址要怎么映射？<ul>
+<li>但有IOMMU就不一样了，其对应的物理地址依然可以不连续。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h1 id="地址转换过程"><a href="#地址转换过程" class="headerlink" title="地址转换过程"></a>地址转换过程</h1><h2 id="转换概览"><a href="#转换概览" class="headerlink" title="转换概览"></a>转换概览</h2><p>虚拟地址到物理地址转换的办法：</p>
+<ul>
+<li>用确定的数学公式进行转换</li>
+<li>用表格存储虚拟地址对应的物理地址（ARM使用此种方式）<ul>
+<li>一个条目（Entry）存储了一段虚拟地址对应的物理地址及其访问权限，或下一级页表的地址</li>
+<li>许多条目组成了页表（Page table），页表可能会有多级</li>
+</ul>
+</li>
+</ul>
+<p>ARM CPU 具体转换流程：</p>
+<ol>
+<li>根据给定的虚拟地址找到一级页表中的条目</li>
+<li>如果此条目是段描述符，则返回物理地址，转换结束</li>
+<li>如果此条目是二级页表描述符，继续利用虚拟地址在二级页表中找到下一个条目</li>
+<li>如果第二个条目是页描述符，则返回物理地址，转换结束</li>
+<li>其他情况出错(如果有3级及以上，以此推理)</li>
+</ol>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmm%5D/hardware/mmu/pic/mmu_translate.jpg?raw=true"><br>在 32 位 CPU 中，虚拟地址空间达到 4GB，一级页表使用 4096 个描述符来分段，每个描述符对应 1MB 的虚拟空间。<br>也就是说，一级页表占用 MVA [31:20] 地址范围来对应每一个描述符。</p>
+<ul>
+<li>当使用段描述符时，对应的MVA[19:0]位就是对应物理基准地址。</li>
+<li>当使用多级页表的情况下，MVA[19:0]又会从中分配出一段以代表二级页表的偏移。</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">也就是说在寻找物理地址的过程中，都是通过一个页表基地址再加上 MVA 中取出一段作为偏移来层层索引到最终地址的。</span><br></pre></td></tr></table></figure>
+
+<h2 id="一级描述符的内容"><a href="#一级描述符的内容" class="headerlink" title="一级描述符的内容"></a>一级描述符的内容</h2><p>每个描述符占用 32 位，分别描述了描述符类型，描述符地址，对应的内存权限等。</p>
+<p>一级描述符低两位代表了描述符的类型。</p>
+<h2 id="段-Section-描述符"><a href="#段-Section-描述符" class="headerlink" title="段(Section)描述符"></a>段(Section)描述符</h2><ul>
+<li>MVA 通过其 [31:20] 位加上页表基地址首先找到其对应的段描述符，一共有4096个段描述符</li>
+<li>段描述符其 [31:20] 为段的基地址，其索引到物理内存以 1M 为分段的起始地址。 </li>
+<li>其剩余的 [19:0] 位对应的就是物理地址在1M空间的偏移，对应 MVA [19:0] 位（<code>4096*1MB = 4GB</code>）。</li>
+</ul>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmm%5D/hardware/mmu/pic/mmu_section.jpg?raw=true"></p>
+<h3 id="粗页表-Coarse-page-table-描述符"><a href="#粗页表-Coarse-page-table-描述符" class="headerlink" title="粗页表(Coarse page table)描述符"></a>粗页表(Coarse page table)描述符</h3><ul>
+<li>MVA通过其 [31:20] 位加上页表基地址首先找到其对应的粗页表描述符，一共有 4096 个粗页表</li>
+<li>粗页表 [31:10] 为粗页表基地址，与MVA的 [19:12] 组合，对应索引到二级页表的基地址</li>
+<li>每二级页表条目为 256 个，每个条目就可以表示 4KB 的物理地址空间,对应MVA [11:0] (<code>4096*256*4KB=4GB</code>)</li>
+</ul>
+<h3 id="细页表-Fine-page-table-描述符"><a href="#细页表-Fine-page-table-描述符" class="headerlink" title="细页表(Fine page table)描述符"></a>细页表(Fine page table)描述符</h3><ul>
+<li>MVA 通过其 [31:20] 位加上页表基地址首先找到其对应的细页表描述符，一共有4096个细页表</li>
+<li>细页表 [31:12] 为细页表基地址，与 MVA [19:10] 组合，对应索引到二级页表的基地址</li>
+<li>每个二级页表条目为 1024 个，每个条目可以表示1KB的物理地址空间,对应MVA [9:0] (<code>4096*1024*1KB=4GB</code>)</li>
+</ul>
+<h2 id="二级描述符内容"><a href="#二级描述符内容" class="headerlink" title="二级描述符内容"></a>二级描述符内容</h2><p>当一级描述符为粗页表或者为细页表时，就会需要有二级描述符，二级描述符用于描述1MB的空间，二级描述符分为如下几种：</p>
+<h3 id="大页描述符"><a href="#大页描述符" class="headerlink" title="大页描述符"></a>大页描述符</h3><ul>
+<li>大页描述符[31:16]为大页基地址(Large page base address)</li>
+<li>其[15:0]对应64KB的物理地址空间偏移</li>
+<li>在粗页表中，二级页表条目只能表示4KB的物理空间，所以有连续16个条目保存同一个大页表描述符</li>
+<li>在细页表中，二级页表条目只能表示1KB的物理空间，所以有连续64个条目保存同一个大页表描述符</li>
+</ul>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmm%5D/hardware/mmu/pic/mmu_large_page.jpg?raw=true"></p>
+<h3 id="小页描述符"><a href="#小页描述符" class="headerlink" title="小页描述符"></a>小页描述符</h3><ul>
+<li>小页描述符 [31:12] 为小页基地址(Small page base address)</li>
+<li>其 [11:0] 对应4KB的物理地址空间偏移</li>
+<li>在粗页表中，每个条目正好4KB，则一个条目正好对应一个小页描述符</li>
+<li>在细页表中，每个条目1KB，则需要4个连续的条目表示同一个小页描述符</li>
+</ul>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmm%5D/hardware/mmu/pic/mmu_small_page.jpg?raw=true"></p>
+<h3 id="极小页描述符"><a href="#极小页描述符" class="headerlink" title="极小页描述符"></a>极小页描述符</h3><ul>
+<li>极小页描述符 [31:10] 为极小页基地址(Tiny page base address)</li>
+<li>其 [9:0] 对应1KB物理地址空间偏移</li>
+<li>极小页描述符通过细页表一个条目与之一一对应</li>
+</ul>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5BLinux%5D/%5Bmm%5D/hardware/mmu/pic/mmu_tiny_page.jpg?raw=true"></p>
+<h1 id="多进程下的页表"><a href="#多进程下的页表" class="headerlink" title="多进程下的页表"></a>多进程下的页表</h1><p>在有操作系统的情况下，都是多个进程并发运行，而不同的进程具有不同的页表。<br>这些页表都是保存在内存中的，CPU在运行不同的进程时，都会调取对应的<strong>一级页表基地址</strong>到 MMU 的基地址寄存器，<br>接下来的转换过程便是 MMU 硬件来自动完成的过程。</p>
+<p>在进程切换时，除了要修改页表基地址，一般情况下还要无效 TLB 和 Cache，具体情况需要根据硬件而定。</p>
+<h1 id="内存的权限检查"><a href="#内存的权限检查" class="headerlink" title="内存的权限检查"></a>内存的权限检查</h1><p>MMU通过读取页描述符中的对应位来确定当前的访问是否具有对应的权限。</p>
+<p>内存的访问权限检查可以概括为以下两点：</p>
+<ol>
+<li>“域”决定是否对某块内存进行权限检查</li>
+<li>“AP”决定如何对某块内存进行权限检查</li>
+</ol>
+<p>在Linux中，可以抽象为以下两种权限：</p>
+<ol>
+<li>是否对该处内存具有RWX权限</li>
+<li>此处内存是仅仅内核态(管理者模式)能够访问，还是内核态和用户态(用户模式)都可以访问</li>
+</ol>
+<h1 id="TLB的作用"><a href="#TLB的作用" class="headerlink" title="TLB的作用"></a>TLB的作用</h1><p>转译查找缓存(Translation Lookaside Buffers, TLB)就是部分页表的一个快速缓存(类似于cache)，避免每次MMU都要从主存中获取页表内容。</p>
+<p>当CPU发出一个虚拟地址时，MMU首先访问TLB，如果TLB中含有对应的描述符，则直接利用此描述符进行转换和权限检查。否则MMU<br>访问主存中的页表进行转换和权限检查，并将这次获取的描述符放入TLB，以便下次使用。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">使用TLB需要保证TLB与主存的一致性，在启动MMU之前需要使无效整个TLB，启动后再打开此功能。</span><br></pre></td></tr></table></figure>
+
+<h1 id="Linux-中的页表"><a href="#Linux-中的页表" class="headerlink" title="Linux 中的页表"></a>Linux 中的页表</h1><p>Linux 默认使用 3 级页表，以更好的节省页表对内存的消耗（尤其是 64 位处理器），其 3 级页表称作：</p>
+<ul>
+<li><p>页总目录PGD（Page Global Directory）</p>
+</li>
+<li><p>页中间目录PMD（Page Middle Derectory）</p>
+</li>
+<li><p>页表PT（Page Table）</p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>kcmetercec
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://kcmetercec.top/2023/04/06/linux_mm_hardware_mmu/" title="理解 MMU 最基本原理">http://kcmetercec.top/2023/04/06/linux_mm_hardware_mmu/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux/" rel="tag"> <i class="fa fa-tag"></i> linux</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2023/03/26/linux_kernel_ds_list/" rel="prev" title="认识 Linux 内核中的双向环形链表">
+      <i class="fa fa-chevron-left"></i> 认识 Linux 内核中的双向环形链表
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2023/04/10/linux_ps_chore_process_name_length/" rel="next" title="Linux 进程的名称最长是多少个字符？">
+      Linux 进程的名称最长是多少个字符？ <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#MMU%E7%9A%84%E4%BD%9C%E7%94%A8"><span class="nav-number">1.</span> <span class="nav-text">MMU的作用</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9C%B0%E5%9D%80%E8%BD%AC%E6%8D%A2%E6%A6%82%E5%BF%B5"><span class="nav-number">2.</span> <span class="nav-text">地址转换概念</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%B8%E5%85%B3%E6%A6%82%E5%BF%B5"><span class="nav-number">2.1.</span> <span class="nav-text">相关概念</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9C%B0%E5%9D%80%E8%BD%AC%E6%8D%A2%E6%A6%82%E5%BF%B5-1"><span class="nav-number">2.2.</span> <span class="nav-text">地址转换概念</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%B8%E4%BA%92%E4%B9%8B%E9%97%B4%E7%9A%84%E8%A7%86%E8%A7%92"><span class="nav-number">2.3.</span> <span class="nav-text">相互之间的视角</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9C%B0%E5%9D%80%E8%BD%AC%E6%8D%A2%E8%BF%87%E7%A8%8B"><span class="nav-number">3.</span> <span class="nav-text">地址转换过程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BD%AC%E6%8D%A2%E6%A6%82%E8%A7%88"><span class="nav-number">3.1.</span> <span class="nav-text">转换概览</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E7%BA%A7%E6%8F%8F%E8%BF%B0%E7%AC%A6%E7%9A%84%E5%86%85%E5%AE%B9"><span class="nav-number">3.2.</span> <span class="nav-text">一级描述符的内容</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%AE%B5-Section-%E6%8F%8F%E8%BF%B0%E7%AC%A6"><span class="nav-number">3.3.</span> <span class="nav-text">段(Section)描述符</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B2%97%E9%A1%B5%E8%A1%A8-Coarse-page-table-%E6%8F%8F%E8%BF%B0%E7%AC%A6"><span class="nav-number">3.3.1.</span> <span class="nav-text">粗页表(Coarse page table)描述符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BB%86%E9%A1%B5%E8%A1%A8-Fine-page-table-%E6%8F%8F%E8%BF%B0%E7%AC%A6"><span class="nav-number">3.3.2.</span> <span class="nav-text">细页表(Fine page table)描述符</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E7%BA%A7%E6%8F%8F%E8%BF%B0%E7%AC%A6%E5%86%85%E5%AE%B9"><span class="nav-number">3.4.</span> <span class="nav-text">二级描述符内容</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%A7%E9%A1%B5%E6%8F%8F%E8%BF%B0%E7%AC%A6"><span class="nav-number">3.4.1.</span> <span class="nav-text">大页描述符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B0%8F%E9%A1%B5%E6%8F%8F%E8%BF%B0%E7%AC%A6"><span class="nav-number">3.4.2.</span> <span class="nav-text">小页描述符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9E%81%E5%B0%8F%E9%A1%B5%E6%8F%8F%E8%BF%B0%E7%AC%A6"><span class="nav-number">3.4.3.</span> <span class="nav-text">极小页描述符</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%9A%E8%BF%9B%E7%A8%8B%E4%B8%8B%E7%9A%84%E9%A1%B5%E8%A1%A8"><span class="nav-number">4.</span> <span class="nav-text">多进程下的页表</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E7%9A%84%E6%9D%83%E9%99%90%E6%A3%80%E6%9F%A5"><span class="nav-number">5.</span> <span class="nav-text">内存的权限检查</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#TLB%E7%9A%84%E4%BD%9C%E7%94%A8"><span class="nav-number">6.</span> <span class="nav-text">TLB的作用</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Linux-%E4%B8%AD%E7%9A%84%E9%A1%B5%E8%A1%A8"><span class="nav-number">7.</span> <span class="nav-text">Linux 中的页表</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">Qt, C++, linux, CS</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">107</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">55</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:kcmeter.cec@gmail.com" title="E-Mail → mailto:kcmeter.cec@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2021 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">206k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">3:08</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+document.querySelectorAll('.pdfobject-container').forEach(element => {
+  let url = element.dataset.target;
+  let pdfOpenParams = {
+    navpanes : 0,
+    toolbar  : 0,
+    statusbar: 0,
+    pagemode : 'thumbs',
+    view     : 'FitH'
+  };
+  let pdfOpenFragment = '#' + Object.entries(pdfOpenParams).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
+  let fullURL = `/lib/pdf/web/viewer.html?file=${encodeURIComponent(url)}${pdfOpenFragment}`;
+
+  if (NexT.utils.supportsPDFs()) {
+    element.innerHTML = `<embed class="pdfobject" src="${url + pdfOpenFragment}" type="application/pdf" style="height: ${element.dataset.height};">`;
+  } else {
+    element.innerHTML = `<iframe src="${fullURL}" style="height: ${element.dataset.height};" frameborder="0"></iframe>`;
+  }
+});
+</script>
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'f938893867df78f94802',
+      clientSecret: 'b6d8470939c53d26c98c4e3b9d4c9ceb55d6e78e',
+      repo        : 'kcmetercec.github.io',
+      owner       : 'KcMeterCEC',
+      admin       : ['KcMeterCEC'],
+      id          : 'f90cbc1af0a82a69927a8e76109d864b',
+        language: 'zh-CN',
+      distractionFreeMode: false
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+    </div>
+</body>
+</html>

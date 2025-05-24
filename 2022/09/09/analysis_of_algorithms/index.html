@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习书籍：Algorithms 4th Edition  我们在编写一段代码时，在需要其频繁运行或处理一大堆数据时，总会有一些疑问：  这段代码的单次运行时间有多长，能否再优化？ 这段代码会占用多少内存，是否会触发 Stack overflow 或 Out of memory？  如果仅仅是凭感觉来估算，真实解决往往是大相径庭，我们需要科学方法来量化代码的时间及空间复杂度。  实际上，代码的准确">
+<meta property="og:type" content="article">
+<meta property="og:title" content="如何分析一个算法？">
+<meta property="og:url" content="http://kcmetercec.top/2022/09/09/analysis_of_algorithms/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="学习书籍：Algorithms 4th Edition  我们在编写一段代码时，在需要其频繁运行或处理一大堆数据时，总会有一些疑问：  这段代码的单次运行时间有多长，能否再优化？ 这段代码会占用多少内存，是否会触发 Stack overflow 或 Out of memory？  如果仅仅是凭感觉来估算，真实解决往往是大相径庭，我们需要科学方法来量化代码的时间及空间复杂度。  实际上，代码的准确">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5Blanguage%5D/%5BWhat%5Dc_cpp--base/algorithm/analyze_algorithm/pic/three_sum_result.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5Blanguage%5D/%5BWhat%5Dc_cpp--base/algorithm/analyze_algorithm/pic/three_sum_linear_log.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5Blanguage%5D/%5BWhat%5Dc_cpp--base/algorithm/analyze_algorithm/pic/three_sum_equation.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5Blanguage%5D/%5BWhat%5Dc_cpp--base/algorithm/analyze_algorithm/pic/2level_for.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5Blanguage%5D/%5BWhat%5Dc_cpp--base/algorithm/analyze_algorithm/pic/3level_for.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5Blanguage%5D/%5BWhat%5Dc_cpp--base/algorithm/analyze_algorithm/pic/3level_for_list.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5Blanguage%5D/%5BWhat%5Dc_cpp--base/algorithm/analyze_algorithm/pic/3level_for_sum.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5Blanguage%5D/%5BWhat%5Dc_cpp--base/algorithm/analyze_algorithm/pic/3level_for_result.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5Blanguage%5D/%5BWhat%5Dc_cpp--base/algorithm/analyze_algorithm/pic/3level_for_formula_expand.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5Blanguage%5D/%5BWhat%5Dc_cpp--base/algorithm/analyze_algorithm/pic/3level_for_formula_tilde.jpg?raw=true">
+<meta property="og:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5Blanguage%5D/%5BWhat%5Dc_cpp--base/algorithm/analyze_algorithm/pic/algorithm_complex.jpg?raw=true">
+<meta property="article:published_time" content="2022-09-08T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-10-08T16:00:00.000Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="cpp">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://github.com/KcMeterCEC/explore/blob/master/%5Blanguage%5D/%5BWhat%5Dc_cpp--base/algorithm/analyze_algorithm/pic/three_sum_result.jpg?raw=true">
+
+<link rel="canonical" href="http://kcmetercec.top/2022/09/09/analysis_of_algorithms/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>如何分析一个算法？ | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112423075-1# <app_id>"></script>
+    <script data-pjax>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-112423075-1# <app_id>');
+      }
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+        <li class="menu-item menu-item-commonweal">
+
+    <a href="/404/" rel="section"><i class="fa fa-heartbeat fa-fw"></i>公益 404</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2022/09/09/analysis_of_algorithms/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="Qt, C++, linux, CS">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          如何分析一个算法？
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-09 00:00:00" itemprop="dateCreated datePublished" datetime="2022-09-09T00:00:00+08:00">2022-09-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-10-09 00:00:00" itemprop="dateModified" datetime="2022-10-09T00:00:00+08:00">2022-10-09</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/cpp/" itemprop="url" rel="index"><span itemprop="name">cpp</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/cpp/Algorithms/" itemprop="url" rel="index"><span itemprop="name">Algorithms</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <ul>
+<li>学习书籍：<a target="_blank" rel="noopener" href="https://algs4.cs.princeton.edu/home/">Algorithms 4th Edition</a></li>
+</ul>
+<p>我们在编写一段代码时，在需要其频繁运行或处理一大堆数据时，总会有一些疑问：</p>
+<ol>
+<li>这段代码的单次运行时间有多长，能否再优化？</li>
+<li>这段代码会占用多少内存，是否会触发 Stack overflow 或 Out of memory？</li>
+</ol>
+<p>如果仅仅是凭感觉来估算，真实解决往往是大相径庭，我们需要科学方法来量化代码的时间及空间复杂度。</p>
+<blockquote>
+<p>实际上，代码的准确执行时间是无法计算的，这根据运行的软硬件环境都有关系。<br>但是不管环境如何，其趋势是可预测的。</p>
+</blockquote>
+<span id="more"></span>
+
+<h1 id="科学方法"><a href="#科学方法" class="headerlink" title="科学方法"></a>科学方法</h1><h2 id="观察"><a href="#观察" class="headerlink" title="观察"></a>观察</h2><p>分析一段代码的运行时间，那么就需要一定数量的样本输入，多个样本的输入对应多个运行时间，最后就可以画出一条曲线。</p>
+<h3 id="测试代码"><a href="#测试代码" class="headerlink" title="测试代码"></a>测试代码</h3><p>按照书籍上的代码来依次分析示例文件中的整数：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> edu.princeton.cs.algs4.In;</span><br><span class="line"><span class="keyword">import</span> edu.princeton.cs.algs4.Stopwatch;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Hello</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">count</span><span class="params">(<span class="keyword">int</span>[] a)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> n = a.length;</span><br><span class="line">        <span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; ++i) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = i + <span class="number">1</span>; j &lt; n; ++j) &#123;</span><br><span class="line">                <span class="keyword">for</span> (<span class="keyword">int</span> k = j + <span class="number">1</span>; k &lt; n; ++k) &#123;</span><br><span class="line">                    <span class="keyword">if</span> (a[i] + a[j] + a[k] == <span class="number">0</span>) &#123;</span><br><span class="line">                        count += <span class="number">1</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> count;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;working directory: &quot;</span> + System.getProperty(<span class="string">&quot;user.dir&quot;</span>));</span><br><span class="line">        <span class="keyword">if</span> (args.length == <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        System.out.println(<span class="string">&quot;analyze file: &quot;</span> + args[<span class="number">0</span>]);</span><br><span class="line"></span><br><span class="line">        In in = <span class="keyword">new</span> In(args[<span class="number">0</span>]);</span><br><span class="line">        <span class="keyword">int</span>[] a = in.readAllInts();</span><br><span class="line"></span><br><span class="line">        Stopwatch timer = <span class="keyword">new</span> Stopwatch();</span><br><span class="line">        <span class="keyword">int</span> count = count(a);</span><br><span class="line">        System.out.println(<span class="string">&quot;elapsed time = &quot;</span> + timer.elapsedTime());</span><br><span class="line">        System.out.println(<span class="string">&quot;count = &quot;</span> + count);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>测试文件与对应的输出时间关系如下表：</p>
+<table>
+<thead>
+<tr>
+<th>文件名称</th>
+<th>数量</th>
+<th>执行时间(秒)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1Kints.txt</td>
+<td>1000</td>
+<td>0.159</td>
+</tr>
+<tr>
+<td>2Kints.txt</td>
+<td>2000</td>
+<td>1.198</td>
+</tr>
+<tr>
+<td>4Kints.txt</td>
+<td>4000</td>
+<td>9.157</td>
+</tr>
+<tr>
+<td>8Kints.txt</td>
+<td>8000</td>
+<td>72.616</td>
+</tr>
+<tr>
+<td>16Kints.txt</td>
+<td>16000</td>
+<td>562.817</td>
+</tr>
+<tr>
+<td>32Kints.txt</td>
+<td>32000</td>
+<td>4584.773</td>
+</tr>
+<tr>
+<td>1Mints.txt</td>
+<td>1000000</td>
+<td></td>
+</tr>
+</tbody></table>
+<p>上面这段代码，执行时间主要在 for 循环上，是一个 <code>n * n * n</code> 的循环。也就是说其代码的时间复杂度是 <code>O(n^3)</code>，可以预测其时间会比较长。</p>
+<p>但是，对于 java 的这个测试结果，我试过 maven 和 Intellij 构建，得到的时间都相差不大，这么长的时间实在是让我目瞪口呆……</p>
+<p>为了做一下对比，我决定使用 c++ 来跑一下这个测试，看看时间差异有多大。</p>
+<p>c++ 代码如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;cstdlib&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fstream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;vector&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;array&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;chrono&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">count</span><span class="params">(<span class="keyword">const</span> std::vector&lt;<span class="keyword">int</span>&gt;&amp; a)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> n = a.<span class="built_in">size</span>();</span><br><span class="line">    <span class="keyword">int</span> cnt = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; ++i) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j = i + <span class="number">1</span>; j &lt; n; ++j) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> k = j + <span class="number">1</span>; k &lt; n; ++k) &#123;</span><br><span class="line">                <span class="keyword">if</span> (a[i] + a[j] + a[k] == <span class="number">0</span>) &#123;</span><br><span class="line">                    cnt += <span class="number">1</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> cnt;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;Input file name: &quot;</span>;</span><br><span class="line"></span><br><span class="line">    std::string file_name;</span><br><span class="line">    std::cin &gt;&gt; file_name;</span><br><span class="line"></span><br><span class="line">    <span class="function">std::ifstream <span class="title">istrm</span><span class="params">(file_name)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!istrm.<span class="built_in">is_open</span>()) &#123;</span><br><span class="line">        std::cout &lt;&lt; <span class="string">&quot;Can&#x27;t open file &quot;</span> &lt;&lt; file_name &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    std::vector&lt;<span class="keyword">int</span>&gt; bag;</span><br><span class="line">    std::array&lt;<span class="keyword">char</span>, 15&gt; tmp&#123;&#125;;</span><br><span class="line">    <span class="keyword">while</span> (!istrm.<span class="built_in">eof</span>()) &#123;</span><br><span class="line">        istrm.<span class="built_in">getline</span>(&amp;tmp[<span class="number">0</span>], tmp.<span class="built_in">size</span>());</span><br><span class="line">        <span class="keyword">int</span> value = std::<span class="built_in">atoi</span>(tmp.<span class="built_in">data</span>());</span><br><span class="line">        bag.<span class="built_in">push_back</span>(value);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;I have read &quot;</span> &lt;&lt; bag.<span class="built_in">size</span>() &lt;&lt; <span class="string">&quot; integers\n&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">auto</span> start = std::chrono::high_resolution_clock::<span class="built_in">now</span>();</span><br><span class="line">    <span class="keyword">int</span> cnt = <span class="built_in">count</span>(bag);</span><br><span class="line">    <span class="keyword">auto</span> stop = std::chrono::high_resolution_clock::<span class="built_in">now</span>();</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;result: &quot;</span> &lt;&lt; cnt &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">long</span> <span class="keyword">long</span> elapsed = std::chrono::duration_cast&lt;std::chrono::milliseconds&gt;(stop - start).<span class="built_in">count</span>();</span><br><span class="line">    <span class="keyword">double</span> took = elapsed / <span class="number">1000.0</span>;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;function `count` took &quot;</span></span><br><span class="line">        &lt;&lt; took</span><br><span class="line">        &lt;&lt; <span class="string">&quot; seconds\n&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>文件名称</th>
+<th>数量</th>
+<th>c++ 执行时间（秒）</th>
+<th>java 执行时间（秒）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1Kints.txt</td>
+<td>1000</td>
+<td>0.033</td>
+<td>0.159</td>
+</tr>
+<tr>
+<td>2Kints.txt</td>
+<td>2000</td>
+<td>0.277</td>
+<td>1.198</td>
+</tr>
+<tr>
+<td>4Kints.txt</td>
+<td>4000</td>
+<td>2.192</td>
+<td>9.157</td>
+</tr>
+<tr>
+<td>8Kints.txt</td>
+<td>8000</td>
+<td>17.608</td>
+<td>72.616</td>
+</tr>
+<tr>
+<td>16Kints.txt</td>
+<td>16000</td>
+<td>140.416</td>
+<td>562.817</td>
+</tr>
+<tr>
+<td>32Kints.txt</td>
+<td>32000</td>
+<td>1128.04</td>
+<td>4584.773</td>
+</tr>
+<tr>
+<td>1Mints.txt</td>
+<td>1000000</td>
+<td></td>
+<td></td>
+</tr>
+</tbody></table>
+<p>可以看出来：c++ 的运行效率（未开优化）大约是 java 的 4 倍，c++ 还是香啊……</p>
+<p>接下来，使用 excel 进行绘图，结果如下：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5Blanguage%5D/%5BWhat%5Dc_cpp--base/algorithm/analyze_algorithm/pic/three_sum_result.jpg?raw=true"><br>可以看到，虽然执行时间差异大，但是它们的趋势都是一样的。也就是说都可以用同样的公式来进行量化。</p>
+<p>由于其代码时间复杂度是<code>O(n^3)</code>，那么可以计算其系数：</p>
+<blockquote>
+<p>n^3 x a = time</p>
+</blockquote>
+<p>那么以 c++ 为例，可以算出 a 大约为 (0.033 / 1000^3) ≈ 3.3 x 10^(-11)</p>
+<p>那么就可以推算出来，一百万个输入大约需要 382 天！如果是 java 来算就需要大约 1528 天！</p>
+<p>这样一比较，就可以感性的认识到，代码时间复杂度<code>O(n^3)</code>是多么的丧心病狂！</p>
+<h3 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h3><p>前面是几个文件的测试结果，那我们参考书籍提供的<code>DoublingTest</code>类，完成可以生成多个结果的代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> edu.princeton.cs.algs4.Stopwatch;</span><br><span class="line"><span class="keyword">import</span> edu.princeton.cs.algs4.StdRandom;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">count</span><span class="params">(<span class="keyword">int</span>[] a)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> n = a.length;</span><br><span class="line">        <span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; ++i) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = i + <span class="number">1</span>; j &lt; n; ++j) &#123;</span><br><span class="line">                <span class="keyword">for</span> (<span class="keyword">int</span> k = j + <span class="number">1</span>; k &lt; n; ++k) &#123;</span><br><span class="line">                    <span class="keyword">if</span> (a[i] + a[j] + a[k] == <span class="number">0</span>) &#123;</span><br><span class="line">                        count += <span class="number">1</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> count;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">double</span> <span class="title">timeTrial</span><span class="params">(<span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span>[] a = <span class="keyword">new</span> <span class="keyword">int</span>[n];</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; ++i) &#123;</span><br><span class="line">            a[i] = StdRandom.uniformInt(-<span class="number">1000000</span>, <span class="number">1000000</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        Stopwatch timer = <span class="keyword">new</span> Stopwatch();</span><br><span class="line">        count(a);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> timer.elapsedTime();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> n = <span class="number">250</span>; <span class="keyword">true</span>; n += n) &#123;</span><br><span class="line">            System.out.printf(<span class="string">&quot;%7d %7.5f\n&quot;</span> , n , timeTrial(n));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其输出结果如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"> 250 0.01000</span><br><span class="line"> 500 0.02500</span><br><span class="line">1000 0.21100</span><br><span class="line">2000 1.41800</span><br><span class="line">4000 9.48900</span><br><span class="line">8000 74.05500</span><br></pre></td></tr></table></figure>
+
+<p>将这个结果绘制为图标也是和之前一致的：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5Blanguage%5D/%5BWhat%5Dc_cpp--base/algorithm/analyze_algorithm/pic/three_sum_linear_log.jpg?raw=true"><br>从右边的对数曲线，可以得出其公式为：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5Blanguage%5D/%5BWhat%5Dc_cpp--base/algorithm/analyze_algorithm/pic/three_sum_equation.jpg?raw=true"><br>上面是对数，转化为线性后，加减就变成了乘除，就是和之前的公式一致了。</p>
+<h2 id="数学模型"><a href="#数学模型" class="headerlink" title="数学模型"></a>数学模型</h2><p>代码的运行时间由两个主要因素决定：</p>
+<ol>
+<li><p>每个语句的执行时间</p>
+</li>
+<li><p>每个语句的执行频率</p>
+</li>
+</ol>
+<h3 id="计算执行次数"><a href="#计算执行次数" class="headerlink" title="计算执行次数"></a>计算执行次数</h3><p>上面的测试代码主要是<code>count()</code>函数的耗时，那么就来尝试以数学的方法来计算其执行频率，以 cpp 代码为例：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">count</span><span class="params">(<span class="keyword">const</span> std::vector&lt;<span class="keyword">int</span>&gt;&amp; a)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> n = a.<span class="built_in">size</span>();</span><br><span class="line">    <span class="keyword">int</span> cnt = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; ++i) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j = i + <span class="number">1</span>; j &lt; n; ++j) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> k = j + <span class="number">1</span>; k &lt; n; ++k) &#123;</span><br><span class="line">                <span class="keyword">if</span> (a[i] + a[j] + a[k] == <span class="number">0</span>) &#123;</span><br><span class="line">                    cnt += <span class="number">1</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> cnt;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>最开始的创建两个局部变量，它们的频率都是 1，这个是没有疑问的，重点是在于下面的 <code>for</code>循环语句（或者说是里面的<code>if</code>语句）的执行次数。</p>
+<p>由于上面是 3 层循环，对于我这种数学渣理解起来有点困难，那么我们先将 3 层循环简化为 2 层循环：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">count2</span><span class="params">(<span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">uint32_t</span> run_cnt = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; ++i) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j = i + <span class="number">1</span>; j &lt; n; ++j) &#123;</span><br><span class="line">            run_cnt += <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; __func__ &lt;&lt; <span class="string">&quot;: &quot;</span> &lt;&lt; run_cnt &lt;&lt; <span class="string">&quot; times\n&quot;</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>下面先列举出规律：</p>
+<table>
+<thead>
+<tr>
+<th>i 的值</th>
+<th>内层执行次数</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0</td>
+<td>n - 1</td>
+</tr>
+<tr>
+<td>1</td>
+<td>n - 2</td>
+</tr>
+<tr>
+<td>2</td>
+<td>n - 3</td>
+</tr>
+<tr>
+<td>…</td>
+<td>…</td>
+</tr>
+<tr>
+<td>n - 2</td>
+<td>2</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+</tr>
+</tbody></table>
+<p>那么总的执行次数就是内层执行次数之和（外层相对于内层每次执行次数就是 1）：</p>
+<blockquote>
+<p>1 + 2 + .…+(n-2) + (n-1)</p>
+</blockquote>
+<p>那么就可以简化公式：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5Blanguage%5D/%5BWhat%5Dc_cpp--base/algorithm/analyze_algorithm/pic/2level_for.jpg?raw=true">那么假设 n 为 10，最终两层<code>for</code>循环执行次数就是 45 次，实测结果也是一致的。</p>
+<p>下面再来看有三层<code>for</code>循环的情况，为了便于分析，同样也是以第二层和第三层<code>for</code>循环作为分析对象：</p>
+<table>
+<thead>
+<tr>
+<th>i 的值</th>
+<th>j 的值</th>
+<th>第三层执行次数</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0</td>
+<td>1</td>
+<td>n - 2</td>
+</tr>
+<tr>
+<td>1</td>
+<td>2</td>
+<td>n - 3</td>
+</tr>
+<tr>
+<td>…</td>
+<td>…</td>
+<td>…</td>
+</tr>
+<tr>
+<td>n-4</td>
+<td>n-3</td>
+<td>2</td>
+</tr>
+<tr>
+<td>n-3</td>
+<td>n-2</td>
+<td>1</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody></table>
+<p>当<code>i</code>的值为 0 时，<code>j</code>的值将从 1~(n-1)，其执行次数是：</p>
+<blockquote>
+<p>1 + 2 + … + (n-3) + (n-2)</p>
+</blockquote>
+<p>其公式为：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5Blanguage%5D/%5BWhat%5Dc_cpp--base/algorithm/analyze_algorithm/pic/3level_for.jpg?raw=true">那么依次计算当<code>i</code>的值增加时，第三层的执行次数为：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5Blanguage%5D/%5BWhat%5Dc_cpp--base/algorithm/analyze_algorithm/pic/3level_for_list.jpg?raw=true">那么将这些执行次数求和：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5Blanguage%5D/%5BWhat%5Dc_cpp--base/algorithm/analyze_algorithm/pic/3level_for_sum.jpg?raw=true"><br>最终推导：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5Blanguage%5D/%5BWhat%5Dc_cpp--base/algorithm/analyze_algorithm/pic/3level_for_result.jpg?raw=true">至此，结果就推导出来了。</p>
+<p>我顺便还查看了<a target="_blank" rel="noopener" href="https://github.com/reneargento/algorithms-sedgewick-wayne/">github</a>上对此公式的解释：</p>
+<blockquote>
+<p>Counting argument:<br>When choosing the first element there are N possibilities.<br>When choosing the second element there are N - 1 possibilities.<br>When choosing the third element there are N - 2 possibilities.</p>
+</blockquote>
+<blockquote>
+<p>This is a total of N(N - 1)(N - 2). If the order of items mattered, this would be the result.<br>However, the order of items does not matter. For 3 items there is a total of 3! possible orderings.<br>3! = 6</p>
+</blockquote>
+<blockquote>
+<p>So, the number of triples that can be chosen from N items is equal to:<br>N(N - 1)(N - 2) / 6</p>
+</blockquote>
+<p>他的这个算法则是简单易懂：如果 3 层<code>for</code>循环的<code>i,j,k</code>可以随意组合，那么其执行次数就应该是<code>N(N-1)(N-2)</code>，<br>但是由于其顺序是必然的<code>i&gt;j&gt;k</code>，那么这 3 个组合只会有 6 种中的一种，所以需要总次数除以 6.</p>
+<h3 id="与-O-n-3"><a href="#与-O-n-3" class="headerlink" title="与 O(n^3)"></a>与 O(n^3)</h3><p>前面推导的公式进行展开就是：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5Blanguage%5D/%5BWhat%5Dc_cpp--base/algorithm/analyze_algorithm/pic/3level_for_formula_expand.jpg?raw=true">这个结果虽然很精准，但是在表示代码执行复杂度的时候会有点麻烦。如果遇到了更为复杂的代码，那其精确的公式会更加复杂。</p>
+<blockquote>
+<p>目前只是计算了最内层<code>for</code>的执行复杂度，而内部的<code>cnt+1</code>则更是一个不确定的执行时间，这完全根据输入的值而定。<br>所以，在工程应用中来评估代码执行复杂度，往往都是看执行时间最长的、完全可预测的那段。也就是抓住主要矛盾，忽略次要矛盾。</p>
+</blockquote>
+<p>这种复杂的表达方式会干扰我们对代码执行效率的分析，所以我们要抓住主要矛盾，忽略次要矛盾。</p>
+<p>从公式的展开结果可以推测，3 阶的<code>n</code>应该是最为主要的，其次的 2 阶、1 阶、系数都是次要的。</p>
+<p>为了能够验证这个推测，可以通过<code>octave</code>来绘制：</p>
+<figure class="highlight matlab"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">clear all;</span><br><span class="line">clc;</span><br><span class="line"></span><br><span class="line">set(<span class="number">0</span>, <span class="string">&quot;defaulttextfontsize&quot;</span>, <span class="number">36</span>);  <span class="comment">% title</span></span><br><span class="line">set(<span class="number">0</span>, <span class="string">&quot;defaultaxesfontsize&quot;</span>, <span class="number">24</span>);  <span class="comment">% axes labels</span></span><br><span class="line"></span><br><span class="line">point = [<span class="number">1</span>: <span class="number">2000</span>];</span><br><span class="line">formula_1 = (point.^<span class="number">3</span> / <span class="number">6</span>)</span><br><span class="line">formula_2 = (point.^<span class="number">3</span> / <span class="number">6</span> - point.^<span class="number">2</span> / <span class="number">2</span>)</span><br><span class="line">formula_3 = (point.^<span class="number">3</span> / <span class="number">6</span> - point.^<span class="number">2</span> / <span class="number">2</span> + point./<span class="number">3</span>)</span><br><span class="line"></span><br><span class="line">grid on;</span><br><span class="line"><span class="built_in">hold</span> on;</span><br><span class="line"></span><br><span class="line">title(<span class="string">&quot;compare formulas&quot;</span>);</span><br><span class="line">xlabel(<span class="string">&quot;points&quot;</span>);</span><br><span class="line">ylabel(<span class="string">&quot;result&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="built_in">plot</span>(point, formula_1);</span><br><span class="line"><span class="built_in">plot</span>(point, formula_2);</span><br><span class="line"><span class="built_in">plot</span>(point, formula_3);</span><br><span class="line"><span class="built_in">legend</span>(<span class="string">&quot;n^3/6&quot;</span>, <span class="string">&quot;n^3/6 - n^2/2&quot;</span>, <span class="string">&quot;n^3/6 - n^2/2 + n/3&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="built_in">hold</span> off;</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5Blanguage%5D/%5BWhat%5Dc_cpp--base/algorithm/analyze_algorithm/pic/3level_for_formula_tilde.jpg?raw=true"><br>从绘制结果可以看出来，果然是高阶的影响最大，次阶几乎没有影响。</p>
+<p>虽然说高阶下还有个除以 6 的运算，但是其增长趋势和<code>n^3</code>是一模一样的，所以除以 6 也是可以省略的，最终计算其代码运行复杂度就是以 O(n^3) 来表示了。</p>
+<p>所以，对于精确公式的估计方式如下表：</p>
+<table>
+<thead>
+<tr>
+<th>精确的公式</th>
+<th>近似的公式</th>
+<th>增长趋势</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>N^3/6 - N^2/2 + N/3</td>
+<td>N^3/6</td>
+<td>N^3</td>
+</tr>
+<tr>
+<td>N^2/2 - N/2</td>
+<td>N^2/2</td>
+<td>N^2</td>
+</tr>
+<tr>
+<td>lgN+1</td>
+<td>lgN</td>
+<td>lgN</td>
+</tr>
+<tr>
+<td>3</td>
+<td>~3</td>
+<td>1</td>
+</tr>
+</tbody></table>
+<h2 id="常用的时间复杂度"><a href="#常用的时间复杂度" class="headerlink" title="常用的时间复杂度"></a>常用的时间复杂度</h2><p>下面便是代码中常会遇到的时间复杂度：</p>
+<p><img src="https://github.com/KcMeterCEC/explore/blob/master/%5Blanguage%5D/%5BWhat%5Dc_cpp--base/algorithm/analyze_algorithm/pic/algorithm_complex.jpg?raw=true"><br>从这个趋势和左侧的数值可以看出来各种时间复杂度的执行时间差异是多么的大。</p>
+<p>octave 测试代码如下：</p>
+<figure class="highlight matlab"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line">clear all;</span><br><span class="line">clc;</span><br><span class="line">close all;</span><br><span class="line"></span><br><span class="line">set(<span class="number">0</span>, <span class="string">&quot;defaulttextfontsize&quot;</span>, <span class="number">36</span>);  <span class="comment">% title</span></span><br><span class="line">set(<span class="number">0</span>, <span class="string">&quot;defaultaxesfontsize&quot;</span>, <span class="number">24</span>);  <span class="comment">% axes labels</span></span><br><span class="line"></span><br><span class="line">points = [<span class="number">1</span>:<span class="number">1</span>:<span class="number">15</span>];</span><br><span class="line"></span><br><span class="line">ratio = <span class="number">1e-6</span>;</span><br><span class="line"></span><br><span class="line">algo_1 = <span class="built_in">ones</span>(<span class="number">1</span>, <span class="built_in">length</span>(points));# O(<span class="number">1</span>)</span><br><span class="line">algo_2 = <span class="built_in">log10</span>(points); # O(<span class="built_in">log</span>(N))</span><br><span class="line">algo_3 = points; # O(N)</span><br><span class="line">algo_4 = points .* <span class="built_in">log10</span>(points); # O(N * <span class="built_in">log</span>(N))</span><br><span class="line"></span><br><span class="line">algo_5 = points .^ <span class="number">2</span>; # O(N^<span class="number">2</span>)</span><br><span class="line">algo_6 = points .^ <span class="number">3</span>; # O(N^<span class="number">3</span>)</span><br><span class="line">algo_7 = <span class="number">2</span> .^ points; # O(<span class="number">2</span>^N)</span><br><span class="line">algo_8 = <span class="built_in">factorial</span>(points); # O(N!)</span><br><span class="line"></span><br><span class="line">grid on;</span><br><span class="line"><span class="built_in">hold</span> on;</span><br><span class="line"></span><br><span class="line">title(<span class="string">&quot;compare formulas&quot;</span>);</span><br><span class="line">xlabel(<span class="string">&quot;points&quot;</span>);</span><br><span class="line">ylabel(<span class="string">&quot;result&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="built_in">plot</span>(points, algo_1);</span><br><span class="line"><span class="built_in">plot</span>(points, algo_2);</span><br><span class="line"><span class="built_in">plot</span>(points, algo_3);</span><br><span class="line"><span class="built_in">plot</span>(points, algo_4);</span><br><span class="line"><span class="built_in">legend</span>(<span class="string">&quot;O(1)&quot;</span>, <span class="string">&quot;O(log(N))&quot;</span>, <span class="string">&quot;O(N)&quot;</span>, <span class="string">&quot;O(Nlog(N))&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="built_in">hold</span> off;</span><br><span class="line"></span><br><span class="line"><span class="built_in">figure</span>;</span><br><span class="line">grid on;</span><br><span class="line"><span class="built_in">hold</span> on;</span><br><span class="line"></span><br><span class="line"><span class="built_in">plot</span>(points, algo_5);</span><br><span class="line"><span class="built_in">plot</span>(points, algo_6);</span><br><span class="line"><span class="built_in">plot</span>(points, algo_7);</span><br><span class="line"><span class="built_in">legend</span>(<span class="string">&quot;O(N^2)&quot;</span>,<span class="string">&quot;O(N^3)&quot;</span>,<span class="string">&quot;O(2^N)&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="built_in">hold</span> off;</span><br><span class="line"></span><br><span class="line"><span class="built_in">figure</span>;</span><br><span class="line">grid on;</span><br><span class="line"><span class="built_in">hold</span> on;</span><br><span class="line"></span><br><span class="line"><span class="built_in">plot</span>(points, algo_8);</span><br><span class="line"><span class="built_in">legend</span>(<span class="string">&quot;O(N!)&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="built_in">hold</span> off;</span><br></pre></td></tr></table></figure>
+
+<h3 id="常量时间复杂度-O-1"><a href="#常量时间复杂度-O-1" class="headerlink" title="常量时间复杂度 O(1)"></a>常量时间复杂度 O(1)</h3><p>常量时间复杂度是指代码运行固定的语句数量，与输入参数的个数没有任何关系，所以其运行时间是固定的。</p>
+<blockquote>
+<p>当然这并不意味着 O(1) 就是运行时间短的代码，要看具体做什么工作。</p>
+<p>比如之前我就看到过一万行的<code>main</code>函数……</p>
+</blockquote>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">a = b + c;</span><br></pre></td></tr></table></figure>
+
+<h3 id="对数时间复杂度-O-log-N"><a href="#对数时间复杂度-O-log-N" class="headerlink" title="对数时间复杂度 O(log(N))"></a>对数时间复杂度 O(log(N))</h3><p>代码的运行时间与输入参数的个数呈对数关系，一般情况下其比 O(1) 会慢一点。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> i = <span class="number">1</span>;</span><br><span class="line"><span class="keyword">while</span> (i &lt; n) &#123;</span><br><span class="line">  i = i * <span class="number">2</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="线性时间复杂度-O-N"><a href="#线性时间复杂度-O-N" class="headerlink" title="线性时间复杂度 O(N)"></a>线性时间复杂度 O(N)</h3><p>代码的运行时间随着输入参数个数的增加而线性的增加，就是一个一次函数，一般情况下比 O(log(N) 慢。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">double</span> max = a[<span class="number">0</span>];</span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt; N; ++i) &#123;</span><br><span class="line">    <span class="keyword">if</span> (a[i] &gt; max) &#123;</span><br><span class="line">        max = a[i];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="线性对数时间复杂度-O-Nlog-N"><a href="#线性对数时间复杂度-O-Nlog-N" class="headerlink" title="线性对数时间复杂度 O(Nlog(N))"></a>线性对数时间复杂度 O(Nlog(N))</h3><p>代码的运行时间随着输入参数个数的增加以 N * log(N) 的时间增加，显然它会比 O(N) 和O(log(N)) 都慢。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> i = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span>(<span class="keyword">int</span> j = <span class="number">1</span>; j &lt; n; ++j) &#123;</span><br><span class="line">    <span class="keyword">while</span> (i &lt; n) &#123;</span><br><span class="line">        i = i * <span class="number">2</span>;</span><br><span class="line">      &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="平方时间复杂度-O-N-2"><a href="#平方时间复杂度-O-N-2" class="headerlink" title="平方时间复杂度 O(N^2)"></a>平方时间复杂度 O(N^2)</h3><p>代码的运行时间随着输入参数个数的增加以 N^2 的时间增加。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">count2</span><span class="params">(<span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">uint32_t</span> run_cnt = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; ++i) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j = i + <span class="number">1</span>; j &lt; n; ++j) &#123;</span><br><span class="line">            run_cnt += <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; __func__ &lt;&lt; <span class="string">&quot;: &quot;</span> &lt;&lt; run_cnt &lt;&lt; <span class="string">&quot; times\n&quot;</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="立方时间复杂度-O-N-3"><a href="#立方时间复杂度-O-N-3" class="headerlink" title="立方时间复杂度 O(N^3)"></a>立方时间复杂度 O(N^3)</h3><p>代码的运行时间随着输入参数个数的增加以 N^3 的时间增加。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">count</span><span class="params">(<span class="keyword">const</span> std::vector&lt;<span class="keyword">int</span>&gt;&amp; a)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> n = a.<span class="built_in">size</span>();</span><br><span class="line">    <span class="keyword">int</span> cnt = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; ++i) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j = i + <span class="number">1</span>; j &lt; n; ++j) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> k = j + <span class="number">1</span>; k &lt; n; ++k) &#123;</span><br><span class="line">                <span class="keyword">if</span> (a[i] + a[j] + a[k] == <span class="number">0</span>) &#123;</span><br><span class="line">                    cnt += <span class="number">1</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> cnt;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="指数时间复杂度-O-2-N"><a href="#指数时间复杂度-O-2-N" class="headerlink" title="指数时间复杂度 O(2^N)"></a>指数时间复杂度 O(2^N)</h3><p>代码的运行时间随着输入参数个数的增加以 2^N 的时间增加，运行时间是极长的。</p>
+<h3 id="阶层时间复杂度-O-N"><a href="#阶层时间复杂度-O-N" class="headerlink" title="阶层时间复杂度 O(N!)"></a>阶层时间复杂度 O(N!)</h3><p>这个是最恐怖的时间复杂度了，随着输入参数的增加，运行时间可以到天荒地老……</p>
+<h1 id="优化测试代码"><a href="#优化测试代码" class="headerlink" title="优化测试代码"></a>优化测试代码</h1><p>目前已经知道了测试代码的时间复杂度是 O(N^3)，并且有了对前面常用的时间复杂度的认识。</p>
+<p>那么要优化测试代码，就是尽量选择时间复杂度低于 O(N^3) 的算法就可以了。</p>
+<h2 id="两层-for-循环优化"><a href="#两层-for-循环优化" class="headerlink" title="两层 for 循环优化"></a>两层 for 循环优化</h2><p>现在先简化一下模型，对两层<code>for</code>循环的代码（代码时间复杂度为 O(N^2)）进行分析：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">count</span><span class="params">(<span class="keyword">const</span> std::vector&lt;<span class="keyword">int</span>&gt;&amp; a)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> n = a.<span class="built_in">size</span>();</span><br><span class="line">    <span class="keyword">int</span> cnt = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; ++i) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j = i + <span class="number">1</span>; j &lt; n; ++j) &#123;</span><br><span class="line">            <span class="keyword">if</span> (a[i] + a[j] == <span class="number">0</span>) &#123;</span><br><span class="line">                cnt += <span class="number">1</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> cnt;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到，既然<code>a[i] + a[j]</code>等于 0，那就意味着<code>a[i]</code>是<code>a[j]</code>的负数。</p>
+<p>那么就可以对内层的<code>for</code>循环进行优化：</p>
+<blockquote>
+<p>查找<code>a[i]</code>的负数<code>a[j]</code>如果存在满足条件的<code>a[j]</code>则<code>cnt += 1</code></p>
+</blockquote>
+<p>对于查找方法，需要细化如下：</p>
+<ol>
+<li><p>在整个循环之外，先对输入的数据源进行排序</p>
+</li>
+<li><p>在内层<code>for</code>循环对下标为<strong>i+1 至 n-1</strong>的数据进行二分查找，寻找符合条件的值（i 及 i 以前的数据是不需要查找的）</p>
+</li>
+</ol>
+<h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><p>现在先以前面<code>O(N^2)</code>复杂度的代码运行，查看运行时间：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Input file name: 32Kints.txt</span><br><span class="line">I have read 32000 integers</span><br><span class="line">result: 273</span><br><span class="line">function `count` took 0.069 seconds</span><br></pre></td></tr></table></figure>
+
+<h3 id="c-优化"><a href="#c-优化" class="headerlink" title="c++ 优化"></a>c++ 优化</h3><p>下面是以 c++ 的方式来实现上面的优化代码：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">count</span><span class="params">(std::vector&lt;<span class="keyword">int</span>&gt;&amp; a)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> cnt = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    std::<span class="built_in">stable_sort</span>(a.<span class="built_in">begin</span>(), a.<span class="built_in">end</span>());</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span> it = a.<span class="built_in">cbegin</span>(); it != a.<span class="built_in">cend</span>() - <span class="number">1</span>; ++it) &#123;</span><br><span class="line">        <span class="keyword">int</span> current_val = *it;</span><br><span class="line">        <span class="keyword">if</span> (std::<span class="built_in">binary_search</span>(it + <span class="number">1</span>, a.<span class="built_in">cend</span>(), -current_val)) &#123;</span><br><span class="line">            cnt += <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> cnt;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>书籍中使用的是归并排序，所以这里 c++ 也使用<code>std::stable_sort</code>来一一对应。</p>
+<p>运行时间如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Input file name: 1Mints.txt</span><br><span class="line">I have read 1000000 integers</span><br><span class="line">result: 249838</span><br><span class="line">function `count` took 0.1 seconds</span><br></pre></td></tr></table></figure>
+
+<h3 id="java-优化"><a href="#java-优化" class="headerlink" title="java 优化"></a>java 优化</h3><p>这我就直接搬书上的代码来测试了：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> edu.princeton.cs.algs4.In;</span><br><span class="line"><span class="keyword">import</span> edu.princeton.cs.algs4.Stopwatch;</span><br><span class="line"><span class="keyword">import</span> edu.princeton.cs.algs4.BinarySearch;</span><br><span class="line"><span class="keyword">import</span> java.util.Arrays;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">count</span><span class="params">(<span class="keyword">int</span>[] a)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> n = a.length;</span><br><span class="line">        <span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">        Arrays.sort(a);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; ++i) &#123;</span><br><span class="line">            <span class="keyword">if</span> (BinarySearch.indexOf(a, -a[i]) &gt; i) &#123;</span><br><span class="line">                count += <span class="number">1</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> count;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;working directory: &quot;</span> + System.getProperty(<span class="string">&quot;user.dir&quot;</span>));</span><br><span class="line">        <span class="keyword">if</span> (args.length == <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        System.out.println(<span class="string">&quot;analyze file: &quot;</span> + args[<span class="number">0</span>]);</span><br><span class="line"></span><br><span class="line">        In in = <span class="keyword">new</span> In(args[<span class="number">0</span>]);</span><br><span class="line">        <span class="keyword">int</span>[] a = in.readAllInts();</span><br><span class="line"></span><br><span class="line">        Stopwatch timer = <span class="keyword">new</span> Stopwatch();</span><br><span class="line">        <span class="keyword">int</span> count = count(a);</span><br><span class="line">        System.out.println(<span class="string">&quot;elapsed time = &quot;</span> + timer.elapsedTime());</span><br><span class="line">        System.out.println(<span class="string">&quot;count = &quot;</span> + count);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>运行时间如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">working directory: D:\lab\java\ij_hello</span><br><span class="line">analyze file: 1Mints.txt</span><br><span class="line">elapsed time = 0.229</span><br><span class="line">count = 249838</span><br></pre></td></tr></table></figure>
+
+<p>归并排序的代码时间复杂度是<code>O(Nlog(N))</code>，二分查找的代码时间复杂度是<code>O(log(N))</code>，所以两层 for 循环的代码时间复杂度就是<code>O(Nlog(N))</code>。</p>
+<h2 id="三层-for-循环优化"><a href="#三层-for-循环优化" class="headerlink" title="三层 for 循环优化"></a>三层 for 循环优化</h2><p>三层 for 循环优化的思路和两层 for 循环优化一致，相当于<code>a[k] = -(a[i] + a[j])</code>，那么代码就呼之欲出了。</p>
+<h3 id="c-优化-1"><a href="#c-优化-1" class="headerlink" title="c++ 优化"></a>c++ 优化</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">count</span><span class="params">(std::vector&lt;<span class="keyword">int</span>&gt;&amp; a)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> n = a.<span class="built_in">size</span>();</span><br><span class="line">    <span class="keyword">int</span> cnt = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    std::<span class="built_in">stable_sort</span>(a.<span class="built_in">begin</span>(), a.<span class="built_in">end</span>());</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; ++i) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j = i + <span class="number">1</span>; j &lt; n; ++j) &#123;</span><br><span class="line">            <span class="keyword">if</span> (std::<span class="built_in">binary_search</span>(a.<span class="built_in">cbegin</span>() + j + <span class="number">1</span>, a.<span class="built_in">cend</span>(), -(a[i] + a[j]))) &#123;</span><br><span class="line">                cnt += <span class="number">1</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> cnt;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>运行时间如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Input file name: 32Kints.txt</span><br><span class="line">I have read 32000 integers</span><br><span class="line">result: 2052358</span><br><span class="line">function `count` took 8.445 seconds</span><br></pre></td></tr></table></figure>
+
+<h3 id="java-优化-1"><a href="#java-优化-1" class="headerlink" title="java 优化"></a>java 优化</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">count</span><span class="params">(<span class="keyword">int</span>[] a)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> n = a.length;</span><br><span class="line">    <span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    Arrays.sort(a);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; ++i) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j = i + <span class="number">1</span>; j &lt; n; ++j) &#123;</span><br><span class="line">            <span class="keyword">if</span> (BinarySearch.indexOf(a, -(a[i] + a[j])) &gt; j) &#123;</span><br><span class="line">                count += <span class="number">1</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> count;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>运行时间如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">working directory: D:\lab\java\ij_hello</span><br><span class="line">analyze file: 32Kints.txt</span><br><span class="line">elapsed time = 19.039</span><br><span class="line">count = 2052358</span><br></pre></td></tr></table></figure>
+
+<p>对于上面的代码：</p>
+<ul>
+<li><p>归并排序的时间复杂度是<code>O(Nlog(N))</code></p>
+</li>
+<li><p>两层<code>for</code>循环的次数是<code>N(N-1)/2</code></p>
+</li>
+<li><p>最内层的二分查找时间复杂度是<code>O(log(N))</code></p>
+</li>
+</ul>
+<p>结合来就是<code>Nlog(N) + N(N-1)/2 * log(N)</code>那么就可以简化为<code>O(N^2log(N))</code>。</p>
+<p>可以看到，经过优化后的代码执行速度比原来快了 100 多倍！</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>kcmetercec
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://kcmetercec.top/2022/09/09/analysis_of_algorithms/" title="如何分析一个算法？">http://kcmetercec.top/2022/09/09/analysis_of_algorithms/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/cpp/" rel="tag"> <i class="fa fa-tag"></i> cpp</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/09/03/rf_smith_chart_draw/" rel="prev" title="如何绘制 smith chart？">
+      <i class="fa fa-chevron-left"></i> 如何绘制 smith chart？
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/10/02/linux_driver_chip_rotary_encoder/" rel="next" title="如何编写一个旋转编码器的驱动？">
+      如何编写一个旋转编码器的驱动？ <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%A7%91%E5%AD%A6%E6%96%B9%E6%B3%95"><span class="nav-number">1.</span> <span class="nav-text">科学方法</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%82%E5%AF%9F"><span class="nav-number">1.1.</span> <span class="nav-text">观察</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E4%BB%A3%E7%A0%81"><span class="nav-number">1.1.1.</span> <span class="nav-text">测试代码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E6%9E%90"><span class="nav-number">1.1.2.</span> <span class="nav-text">分析</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E5%AD%A6%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.2.</span> <span class="nav-text">数学模型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%A1%E7%AE%97%E6%89%A7%E8%A1%8C%E6%AC%A1%E6%95%B0"><span class="nav-number">1.2.1.</span> <span class="nav-text">计算执行次数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8E-O-n-3"><span class="nav-number">1.2.2.</span> <span class="nav-text">与 O(n^3)</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B8%B8%E7%94%A8%E7%9A%84%E6%97%B6%E9%97%B4%E5%A4%8D%E6%9D%82%E5%BA%A6"><span class="nav-number">1.3.</span> <span class="nav-text">常用的时间复杂度</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B8%B8%E9%87%8F%E6%97%B6%E9%97%B4%E5%A4%8D%E6%9D%82%E5%BA%A6-O-1"><span class="nav-number">1.3.1.</span> <span class="nav-text">常量时间复杂度 O(1)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AF%B9%E6%95%B0%E6%97%B6%E9%97%B4%E5%A4%8D%E6%9D%82%E5%BA%A6-O-log-N"><span class="nav-number">1.3.2.</span> <span class="nav-text">对数时间复杂度 O(log(N))</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E6%80%A7%E6%97%B6%E9%97%B4%E5%A4%8D%E6%9D%82%E5%BA%A6-O-N"><span class="nav-number">1.3.3.</span> <span class="nav-text">线性时间复杂度 O(N)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E6%80%A7%E5%AF%B9%E6%95%B0%E6%97%B6%E9%97%B4%E5%A4%8D%E6%9D%82%E5%BA%A6-O-Nlog-N"><span class="nav-number">1.3.4.</span> <span class="nav-text">线性对数时间复杂度 O(Nlog(N))</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B9%B3%E6%96%B9%E6%97%B6%E9%97%B4%E5%A4%8D%E6%9D%82%E5%BA%A6-O-N-2"><span class="nav-number">1.3.5.</span> <span class="nav-text">平方时间复杂度 O(N^2)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AB%8B%E6%96%B9%E6%97%B6%E9%97%B4%E5%A4%8D%E6%9D%82%E5%BA%A6-O-N-3"><span class="nav-number">1.3.6.</span> <span class="nav-text">立方时间复杂度 O(N^3)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8C%87%E6%95%B0%E6%97%B6%E9%97%B4%E5%A4%8D%E6%9D%82%E5%BA%A6-O-2-N"><span class="nav-number">1.3.7.</span> <span class="nav-text">指数时间复杂度 O(2^N)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%98%B6%E5%B1%82%E6%97%B6%E9%97%B4%E5%A4%8D%E6%9D%82%E5%BA%A6-O-N"><span class="nav-number">1.3.8.</span> <span class="nav-text">阶层时间复杂度 O(N!)</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E6%B5%8B%E8%AF%95%E4%BB%A3%E7%A0%81"><span class="nav-number">2.</span> <span class="nav-text">优化测试代码</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%A4%E5%B1%82-for-%E5%BE%AA%E7%8E%AF%E4%BC%98%E5%8C%96"><span class="nav-number">2.1.</span> <span class="nav-text">两层 for 循环优化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">2.1.1.</span> <span class="nav-text">参考</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#c-%E4%BC%98%E5%8C%96"><span class="nav-number">2.1.2.</span> <span class="nav-text">c++ 优化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#java-%E4%BC%98%E5%8C%96"><span class="nav-number">2.1.3.</span> <span class="nav-text">java 优化</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E5%B1%82-for-%E5%BE%AA%E7%8E%AF%E4%BC%98%E5%8C%96"><span class="nav-number">2.2.</span> <span class="nav-text">三层 for 循环优化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#c-%E4%BC%98%E5%8C%96-1"><span class="nav-number">2.2.1.</span> <span class="nav-text">c++ 优化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#java-%E4%BC%98%E5%8C%96-1"><span class="nav-number">2.2.2.</span> <span class="nav-text">java 优化</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">Qt, C++, linux, CS</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">107</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">55</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:kcmeter.cec@gmail.com" title="E-Mail → mailto:kcmeter.cec@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2021 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">206k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">3:08</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+document.querySelectorAll('.pdfobject-container').forEach(element => {
+  let url = element.dataset.target;
+  let pdfOpenParams = {
+    navpanes : 0,
+    toolbar  : 0,
+    statusbar: 0,
+    pagemode : 'thumbs',
+    view     : 'FitH'
+  };
+  let pdfOpenFragment = '#' + Object.entries(pdfOpenParams).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
+  let fullURL = `/lib/pdf/web/viewer.html?file=${encodeURIComponent(url)}${pdfOpenFragment}`;
+
+  if (NexT.utils.supportsPDFs()) {
+    element.innerHTML = `<embed class="pdfobject" src="${url + pdfOpenFragment}" type="application/pdf" style="height: ${element.dataset.height};">`;
+  } else {
+    element.innerHTML = `<iframe src="${fullURL}" style="height: ${element.dataset.height};" frameborder="0"></iframe>`;
+  }
+});
+</script>
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'f938893867df78f94802',
+      clientSecret: 'b6d8470939c53d26c98c4e3b9d4c9ceb55d6e78e',
+      repo        : 'kcmetercec.github.io',
+      owner       : 'KcMeterCEC',
+      admin       : ['KcMeterCEC'],
+      id          : 'cbb7b9c5b8a81879d1d99a068e73f93c',
+        language: 'zh-CN',
+      distractionFreeMode: false
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+    </div>
+</body>
+</html>

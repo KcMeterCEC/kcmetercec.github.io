@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="重新整理引导的构建相关知识。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="认识 bootloader">
+<meta property="og:url" content="http://kcmetercec.top/2024/02/04/linux_make_yocto_bootloader/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="重新整理引导的构建相关知识。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-02-03T16:00:00.000Z">
+<meta property="article:modified_time" content="2024-07-03T16:00:00.000Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="yocto">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://kcmetercec.top/2024/02/04/linux_make_yocto_bootloader/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>认识 bootloader | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112423075-1# <app_id>"></script>
+    <script data-pjax>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-112423075-1# <app_id>');
+      }
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+        <li class="menu-item menu-item-commonweal">
+
+    <a href="/404/" rel="section"><i class="fa fa-heartbeat fa-fw"></i>公益 404</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2024/02/04/linux_make_yocto_bootloader/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="Qt, C++, linux, CS">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          认识 bootloader
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-02-04 00:00:00" itemprop="dateCreated datePublished" datetime="2024-02-04T00:00:00+08:00">2024-02-04</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-07-04 00:00:00" itemprop="dateModified" datetime="2024-07-04T00:00:00+08:00">2024-07-04</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/make/" itemprop="url" rel="index"><span itemprop="name">make</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/make/yocto/" itemprop="url" rel="index"><span itemprop="name">yocto</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>5.5k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>5 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>重新整理引导的构建相关知识。</p>
+<span id="more"></span>
+
+<h1 id="bootloader-的职责"><a href="#bootloader-的职责" class="headerlink" title="bootloader 的职责"></a>bootloader 的职责</h1><p>bootloader 主要就是用于依次做两件事：</p>
+<ol>
+<li>初始化系统的硬件环境</li>
+<li>载入内核</li>
+</ol>
+<p>在系统最开始上电时，能用的资源只有：</p>
+<ol>
+<li>一个单核</li>
+<li>有限的内部 SRAM</li>
+<li>一个 boot ROM</li>
+</ol>
+<h1 id="启动顺序"><a href="#启动顺序" class="headerlink" title="启动顺序"></a>启动顺序</h1><p>对于现代 SOC 而言，其通常的启动顺序如下。</p>
+<h2 id="初始阶段：ROM-code"><a href="#初始阶段：ROM-code" class="headerlink" title="初始阶段：ROM code"></a>初始阶段：ROM code</h2><p><code>ROM code</code>便是 SOC 启动时的初始代码，它通过单核运行。</p>
+<p>根据启动配置引脚从对应的接口载入代码到内部 SRAM 中，然后运行该代码。</p>
+<blockquote>
+<p>由于 SRAM 中运行的代码是第二阶段运行的代码，所以它也叫做 SPL（secondary program loader）</p>
+</blockquote>
+<p>ROM code 读取 SPL 有多种方式，但从数据的角度讲有两种：</p>
+<ol>
+<li><p>ROM code 不支持文件系统，只能在设备存储底层固定位置偏移处进行读取</p>
+</li>
+<li><p>ROM code 支持文件系统，根据设置中的文件名获取</p>
+</li>
+</ol>
+<blockquote>
+<p>bbb 上的 AM335X 则可以支持两种方式的读出 SPL</p>
+</blockquote>
+<h3 id="imx8mm的-ROM-code"><a href="#imx8mm的-ROM-code" class="headerlink" title="imx8mm的 ROM code"></a>imx8mm的 ROM code</h3><p>imx8mm 上电后最开始当然也是先运行 ROM code，它根据寄存器<code>BOOT_MODE[1:0]</code>、eFUSEs 状态 和 GPIO 的设定来决定启动的行为。</p>
+<p>ROM code 还可以从启动设备的代码中获取配置信息，根据该配置来配置 DDR 等外设。</p>
+<p>ROM code 还可以对启动代码进行验证，如果是未经授权的代码则不会被执行。</p>
+<h3 id="imx8mm-的-BOOT-MODE-寄存器"><a href="#imx8mm-的-BOOT-MODE-寄存器" class="headerlink" title="imx8mm 的 BOOT_MODE 寄存器"></a>imx8mm 的 BOOT_MODE 寄存器</h3><p>BOOT_MODE 寄存器的[1:0] 两位是在上电时，根据管脚<code>BOOT_MODE0</code>和<code>BOOT_MODE1</code>来决定的：</p>
+<table>
+<thead>
+<tr>
+<th>BOOT_MODE[1:0]</th>
+<th>Boot Type</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>00</td>
+<td>Boot From Fuses</td>
+</tr>
+<tr>
+<td>01</td>
+<td>Serial Downloader</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Internal Boot</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Reserved</td>
+</tr>
+</tbody></table>
+<p><strong>Boot From Fuses：</strong></p>
+<p>ROM code 从 eFUSE 读取的 <code>BT_FUSE_SEL</code>来决定如何启动，GPIO 配置会被忽略：</p>
+<ul>
+<li>BT_FUSE_SEL = 0：通过<code>Serial Downloader</code>启动</li>
+<li>BT_FUSE_SEL = 1：通过 eFUSE 的设定的启动设备启动</li>
+</ul>
+<p>在产品出厂时，一般会选择这种模式来启动：</p>
+<blockquote>
+<p>由于一开始 BT_FUSE_SEL = 0，会通过<code>Serial Downloader</code>模式启动。这部分代码启动后完成多个镜像的烧写，然后配置  BT_FUSE_SEL = 1，并设置对应启动设备。</p>
+<p>下次再次启动设备时，ROM code 就会从指定的启动设备启动。</p>
+</blockquote>
+<p><strong>Serial Downloader：</strong></p>
+<p>这里的<code>Serial Downloader</code>其实指的就是通过 USB 来启动设备。</p>
+<p>如果在<code>USDHC2</code>端口上有 SD 卡/EMMC，那么 ROM code 会先尝试从它们启动。</p>
+<blockquote>
+<p>可以通过配置 fuse 来关闭这种启动。</p>
+</blockquote>
+<p><strong>Internal Boot：</strong></p>
+<p>ROM code 会从 GPIO 指定的引脚来确定启动设备，如果启动失败会尝试<code>Serial Downloader</code>。</p>
+<p>如果<code>BT_FUSE_SEL = 1</code>，则会从 eFUSE 设定的设备启动。</p>
+<p>管脚<code>SAI1_RXD0~7,SAI1_TXD0~7</code>依次决定了<code>BOOT_CFG</code>寄存器的 0~15 位。</p>
+<p>其中，<code>BOOT_CFG</code>的 12~14 位用于选择启动设备：</p>
+<table>
+<thead>
+<tr>
+<th>BOOT_CFG[14:12]</th>
+<th>Boot device</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>001</td>
+<td>SD/eSD</td>
+</tr>
+<tr>
+<td>010</td>
+<td>MMC/eMMC</td>
+</tr>
+<tr>
+<td>011</td>
+<td>NAND</td>
+</tr>
+<tr>
+<td>100</td>
+<td>Serial NOR boot via FlexSPI</td>
+</tr>
+<tr>
+<td>110</td>
+<td>Serial(SPI) NOR</td>
+</tr>
+</tbody></table>
+<p>当选择对应设备时，<code>BOOT_CFG</code>的 0~11，15 用于指定设备的配置细节。比如操作频率，等待时间等。</p>
+<p>米尔科技将<code>BOOT_CFG</code>的 0~13 位以及 <code>BOOT_MODE0</code>和<code>BOOT_MODE1</code>都引了到拨码开关 SW1,2。那么就可以灵活的配置其启动模式。</p>
+<h2 id="第二阶段：SPL"><a href="#第二阶段：SPL" class="headerlink" title="第二阶段：SPL"></a>第二阶段：SPL</h2><p>SPL 的主要目标就是初始化 SDRAM ，然后将下一阶段的 bootloader 拷贝进 SDRAM，跳转后运行。</p>
+<blockquote>
+<p>SDRAM 的 bootloader 属于第三阶段，所以也叫做 TPL（Tertiary Program Loader）。</p>
+</blockquote>
+<p>imx8mm 具有 256 + 32 KB 的 SRAM，其中 256 KB 用于载入 SPL，而 32 KB 是备用区。</p>
+<ul>
+<li>256KB SRAM 的地址范围是 0x00910000 ~ 0x0091FFFF</li>
+<li>32KB SRAM 的起始地址是 0x0090000</li>
+</ul>
+<blockquote>
+<p> 所以 imx8mm 的 SPL 大小不能超过 256 KB.</p>
+</blockquote>
+<p>bbb 上的 AM335X 的 SPL 大小不能超过 128KB。</p>
+<h2 id="第三阶段：TPL"><a href="#第三阶段：TPL" class="headerlink" title="第三阶段：TPL"></a>第三阶段：TPL</h2><p>第三阶段的 bootloader 就可以与用户交互，并具备了诊断硬件的功能。</p>
+<p>最终还是为了将内核和文件系统载入进 SDRAM，然后跳转去运行内核。</p>
+<p>一旦进入到内核，该阶段 bootloader 所占用的内存就被释放了。</p>
+<blockquote>
+<p>在有了设备树后，需要传递给内核的参数基本上由设备树来设定了。</p>
+<p>bootloader 只需要告诉内核，设备树所位于的地址。</p>
+</blockquote>
+<h1 id="设备树复习"><a href="#设备树复习" class="headerlink" title="设备树复习"></a>设备树复习</h1><p>现在再回过头来看设备树，其实它也就是一个配置文件而已，只是配置的目标是硬件，并且符合<a href="%5BDeviceTree%5D(https://www.devicetree.org/)">设备树标准</a>。</p>
+<blockquote>
+<p>而面对已有的设备，需要修改设备树。那么就可以参考其对应文档的说明，文档位于<code>Documentation/devicetree/bindings</code></p>
+</blockquote>
+<h2 id="设备树基础"><a href="#设备树基础" class="headerlink" title="设备树基础"></a>设备树基础</h2><p>设备树的起始源文件存储于：</p>
+<ul>
+<li>Linux：<code>arch/$&#123;ARCH&#125;/boot/dts</code></li>
+<li>U-boot：<code>arch/$&#123;ARCH&#125;/dts</code></li>
+</ul>
+<p>设备树从根节点开始，向下以树的形式扩展子节点，节点的内容由<code>属性=值</code>的方式组成。</p>
+<p>简单的示例如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">/dts-v1/;</span><br><span class="line">/&#123;</span><br><span class="line">    model = <span class="string">&quot;TI AM335x BeagleBone&quot;</span>;</span><br><span class="line">    compatible = <span class="string">&quot;ti,am33xx&quot;</span>;</span><br><span class="line">    <span class="meta">#address-cells = <span class="meta-string">&lt;1&gt;</span>;</span></span><br><span class="line">    <span class="meta">#size-cells = <span class="meta-string">&lt;1&gt;</span>;</span></span><br><span class="line">    cpus &#123;</span><br><span class="line">        <span class="meta">#address-cells = <span class="meta-string">&lt;1&gt;</span>;</span></span><br><span class="line">        <span class="meta">#size-cells = <span class="meta-string">&lt;0&gt;</span>;</span></span><br><span class="line">        cpu@<span class="number">0</span> &#123;</span><br><span class="line">            compatible = <span class="string">&quot;arm,cortex-a8&quot;</span>;</span><br><span class="line">            <span class="comment">// 指定节点的类型</span></span><br><span class="line">            device_type = <span class="string">&quot;cpu&quot;</span>;</span><br><span class="line">            reg = &lt;<span class="number">0</span>&gt;;</span><br><span class="line">        &#125;;</span><br><span class="line">    &#125;;</span><br><span class="line">    memory@<span class="number">0x80000000</span> &#123;</span><br><span class="line">        <span class="comment">// 指定节点的类型</span></span><br><span class="line">        device_type = <span class="string">&quot;memory&quot;</span>;</span><br><span class="line">        <span class="comment">// 起始地址和大小</span></span><br><span class="line">        reg = &lt;<span class="number">0x80000000</span> <span class="number">0x20000000</span>&gt;; <span class="comment">/* 512 MB */</span></span><br><span class="line">    &#125;;</span><br><span class="line">&#125;;        </span><br></pre></td></tr></table></figure>
+
+<h2 id="reg-属性"><a href="#reg-属性" class="headerlink" title="reg 属性"></a>reg 属性</h2><p>reg 属性中值的规则由其父节点的<code>#address-cells</code>和<code>#size-cells</code>来确定：</p>
+<ul>
+<li><code>#address-cells</code>：代表由多少个 cells 来表示一个完整的地址</li>
+<li><code>#size-cells</code>：代表由多少个 cells 来表示大小</li>
+</ul>
+<p>比如上面的 cpu节点，由于只需要表示地址而无需表示大小，所以：</p>
+<blockquote>
+<p>#address-cells = &lt;1&gt;;</p>
+<p>#size-cells = &lt;0&gt;;</p>
+</blockquote>
+<p>而对于 32 位内存空间，就需要一个 cell 表示地址，一个 cell 表示大小，所以：</p>
+<blockquote>
+<p>#address-cells = &lt;1&gt;;<br>#size-cells = &lt;1&gt;;</p>
+<p>// 起始地址是 0x80000000 ，大小是 0x20000000，也就是 512 MB</p>
+<p>reg = &lt;0x80000000 0x20000000&gt;; /* 512 MB */</p>
+</blockquote>
+<p>而如果是 64 位地址空间，那么就必然需要两个 cell 表示地址，两个 cell 表示大小：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">/&#123;</span><br><span class="line">    <span class="meta">#address-cells = <span class="meta-string">&lt;2&gt;</span>;</span></span><br><span class="line">    <span class="meta">#size-cells = <span class="meta-string">&lt;2&gt;</span>;</span></span><br><span class="line">    memory@<span class="number">80000000</span> &#123;</span><br><span class="line">        device_type = <span class="string">&quot;memory&quot;</span>;</span><br><span class="line">        <span class="comment">// 前两个 cells 表示起始地址，后两个 cells 表示大小</span></span><br><span class="line">        reg = &lt;<span class="number">0x00000000</span> <span class="number">0x80000000</span> <span class="number">0</span> <span class="number">0x80000000</span>&gt;;</span><br><span class="line">    &#125;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h2 id="label-和中断"><a href="#label-和中断" class="headerlink" title="label 和中断"></a>label 和中断</h2><p>通常一个节点的名称是包含其字符串和地址，很多时候我们需要引用这个节点或对其内容进行修改或增加，那么为其添加一个 label ，以便于以后引用方便。这个 label 就被称为 <code>phandles</code>：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">/dts-v1/;</span><br><span class="line">&#123;    </span><br><span class="line">    intc: interrupt-controller@<span class="number">48200000</span> &#123;</span><br><span class="line">        compatible = <span class="string">&quot;ti,am33xx-intc&quot;</span>;</span><br><span class="line">        interrupt-controller;</span><br><span class="line">        <span class="meta">#interrupt-cells = <span class="meta-string">&lt;1&gt;</span>;</span></span><br><span class="line">        reg = &lt;<span class="number">0x48200000</span> <span class="number">0x1000</span>&gt;;</span><br><span class="line">    &#125;;</span><br><span class="line">    lcdc: lcdc@<span class="number">4830e000</span> &#123;</span><br><span class="line">        compatible = <span class="string">&quot;ti,am33xx-tilcdc&quot;</span>;</span><br><span class="line">        reg = &lt;<span class="number">0x4830e000</span> <span class="number">0x1000</span>&gt;;</span><br><span class="line">        interrupt-parent = &lt;&amp;intc&gt;;</span><br><span class="line">        interrupts = &lt;<span class="number">36</span>&gt;;</span><br><span class="line">        ti,hwmods = <span class="string">&quot;lcdc&quot;</span>;</span><br><span class="line">        status = <span class="string">&quot;disabled&quot;</span>;</span><br><span class="line">    &#125;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>上面为中断控制器设定了<code>intc</code>为其<code>phandle</code>，所以在 lcdc 节点中就可以通过<code>&amp;intc</code>的方式来引用。</p>
+<p>中断控制器中的<code>#interrupt-cells = &lt;1&gt;;</code>代表使用该中断控制器的节点需要在其<code>interrupts</code>属性中填入一个值即可。</p>
+<h2 id="设备树包含"><a href="#设备树包含" class="headerlink" title="设备树包含"></a>设备树包含</h2><p>设备树的公有部分的文件后缀是<code>.dtsi</code>，以被其他设备树文件以<code>/include/</code>的方式包含：</p>
+<blockquote>
+<p>/include/ “vexpress-v2m.dtsi”</p>
+</blockquote>
+<p>除了上面这种方式，设备树还可以包含 c 头文件，以获取其文件内部的宏定义：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;dt-bindings/gpio/gpio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;dt-bindings/pinctrl/am33xx.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;dt-bindings/clock/am3.h&gt;</span></span></span><br></pre></td></tr></table></figure>
+
+<h2 id="编译设备树"><a href="#编译设备树" class="headerlink" title="编译设备树"></a>编译设备树</h2><p>使用设备树编译器<code>dtc</code>，将设备树源文件<code>dts</code>，编译为设备树二进制文件<code>dtb</code>：</p>
+<blockquote>
+<p>$ dtc simpledts-1.dts -o simpledts-1.dtb</p>
+</blockquote>
+<h1 id="U-Boot"><a href="#U-Boot" class="headerlink" title="U-Boot"></a>U-Boot</h1><p>为了使这个步骤尽量简单，我们不使用[原本的U-boot](<a target="_blank" rel="noopener" href="https://www.denx.de/wiki/U-Boot">WebHome &lt; U-Boot &lt; DENX</a>)，而是使用<a target="_blank" rel="noopener" href="https://github.com/MYiR-Dev/myir-imx-uboot">米尔科技的 U-boot 分支</a>。</p>
+<h2 id="imx8mm-在-ROM-code-之后的启动流程"><a href="#imx8mm-在-ROM-code-之后的启动流程" class="headerlink" title="imx8mm 在 ROM code 之后的启动流程"></a>imx8mm 在 ROM code 之后的启动流程</h2><p>前面说过，在 ROM code 之后便是根据配置选择启动设备，从中读出代码，代码依次分为这么几部分：</p>
+<ol>
+<li><p><a target="_blank" rel="noopener" href="https://source.codeaurora.org/external/imx/imx-atf/">i.MX ARM Trusted firmware</a>：用于配置是否使用安全启动</p>
+</li>
+<li><p>imx-uboot：uboot 就分为了 SPL 和 TPL</p>
+<blockquote>
+<p>U-boot 的 falcon 模式可以直接从 SPL 装载内核然后运行，节约开机时间</p>
+</blockquote>
+</li>
+<li><p>controller firmware：用于 uboot 的 SPL 调用，来初始化 ddr</p>
+</li>
+</ol>
+<h2 id="编译-imx-atf"><a href="#编译-imx-atf" class="headerlink" title="编译 imx-atf"></a>编译 imx-atf</h2><p>首先需要将交叉编译工具链，加入当前 SHELL 的环境变量中：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">export PATH=/home/cec/x-tools/aarch64-unknown-linux-gnu/bin:$&#123;PATH&#125;</span><br></pre></td></tr></table></figure>
+
+<p>由于 imx-atf 使用的是 Makefile 编译，并且查看其源文件也可以看到它会使用变量<code>CROSS_COMPILE</code>，所以需要设定变量：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">export CROSS_COMPILE=aarch64-unknown-linux-gnu-</span><br><span class="line"><span class="meta">#</span><span class="bash"> 按照惯例，先 clean 一次</span></span><br><span class="line">make clean</span><br></pre></td></tr></table></figure>
+
+<p>然后可以使用<code>make help</code>查看编译说明：</p>
+<blockquote>
+<p>usage: make PLAT=&lt;a70x0|a70x0_amc|a80x0|a80x0_mcbin|fvp|hikey|hikey960|imx8dx|imx8dxl|imx8mm|imx8mn|imx8mp|imx8mq|imx8qm|imx8qx|juno|k3|ls1043|mt6795|mt8173|poplar|qemu|rk3328|rk3368|rk3399|rpi3|sgi575|sgm775|stm32mp1|sun50i_a64|sun50i_h6|synquacer|tegra|uniphier|warp7|zynqmp&gt; [OPTIONS] [TARGET]</p>
+<p>PLAT is used to specify which platform you wish to build.<br>If no platform is specified, PLAT defaults to: fvp</p>
+</blockquote>
+<p>可以看到需要为其指定 SOC，那么我们自然是指定 <code>imx8mm</code>：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">make PLAT=imx8mm</span><br></pre></td></tr></table></figure>
+
+<p>最后生成文件<code>build/imx8mm/release/bl31.bin</code>。</p>
+<h2 id="编译-U-boot"><a href="#编译-U-boot" class="headerlink" title="编译 U-boot"></a>编译 U-boot</h2><p>编译 U-boot 的步骤和编译内核都差不多：</p>
+<ol>
+<li>使用一个最接近当前硬件的配置</li>
+<li>使用<code>menuconfig</code>进行进一步细节配置</li>
+<li>使用<code>make</code>编译</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 按照惯例先 clean 一次</span></span><br><span class="line">make distclean</span><br><span class="line"><span class="meta">#</span><span class="bash"> 指定配置文件</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 对于 bbb 而言，就是 am335x_evm_defconfig</span></span><br><span class="line">make myd_imx8mm_defconfig</span><br><span class="line"><span class="meta">#</span><span class="bash"> 开始编译</span></span><br><span class="line">make -j8</span><br></pre></td></tr></table></figure>
+
+<p>然后会生成以下几个文件：</p>
+<ul>
+<li><code>u-boot</code>：U-boot 的 ELF 目标文件，里面包含了调试信息</li>
+<li><code>u-boot.map</code>：符号表</li>
+<li><code>u-boot.bin</code>：去掉调试信息的二进制文件</li>
+<li><code>u-boot.img</code>：在 <code>u-boot.bin</code>之上包含 U-boot 头信息</li>
+<li><code>u-boot.srec</code>：U-boot 的 SRC 格式，可以通过串口传输</li>
+<li><code>spl/u-boot-spl.bin</code>：SPL 阶段运行的代码</li>
+</ul>
+<blockquote>
+<p>对于 bbb 而言，如果是以文件系统的方式启动 SPL，它需要的 SPL 叫做 MLO，这也会在编译 uboot 时顺带编译了。</p>
+</blockquote>
+<h2 id="启动-U-boot"><a href="#启动-U-boot" class="headerlink" title="启动 U-boot"></a>启动 U-boot</h2><p>查看脚本文件<code>make-uboot-emmc.sh</code>内容：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">cp myir-imx-uboot/tools/mkimage                      ./imx-mkimage/iMX8M/mkimage_uboot</span><br><span class="line">cp myir-imx-uboot/arch/arm/dts/myb-imx8mm-base.dtb   ./imx-mkimage/iMX8M/fsl-imx8mm-ddr4-evk.dtb</span><br><span class="line">cp myir-imx-uboot/spl/u-boot-spl.bin                 ./imx-mkimage/iMX8M/</span><br><span class="line">cp myir-imx-uboot/u-boot-nodtb.bin                   ./imx-mkimage/iMX8M/</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> firmware-imx-8.7</span> </span><br><span class="line">cp firmware-imx-8.7/firmware/ddr/synopsys/ddr4_dmem_1d.bin                     ./imx-mkimage/iMX8M/</span><br><span class="line">cp firmware-imx-8.7/firmware/ddr/synopsys/ddr4_dmem_2d.bin                     ./imx-mkimage/iMX8M/</span><br><span class="line">cp firmware-imx-8.7/firmware/ddr/synopsys/ddr4_imem_1d.bin                     ./imx-mkimage/iMX8M/</span><br><span class="line">cp firmware-imx-8.7/firmware/ddr/synopsys/ddr4_imem_2d.bin                     ./imx-mkimage/iMX8M/</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash"> imx8mm-atf</span></span><br><span class="line">cp imx-atf/build/imx8mm/release/bl31.bin                                    ./imx-mkimage/iMX8M/</span><br><span class="line"></span><br><span class="line">cd imx-mkimage</span><br><span class="line">make SOC=iMX8MM clean</span><br><span class="line">make SOC=iMX8MM flash_ddr4_evk</span><br></pre></td></tr></table></figure>
+
+<p>可以看到，其主要是将之前编译的文件拷贝到<code>imx-mkimage</code>文件夹中，然后运行<code>make</code>开始制作。</p>
+<p><a target="_blank" rel="noopener" href="https://source.codeaurora.org/external/imx/imx-mkimage">imx-mkimage</a>是 IMX 做的打包工具，最终生成文件<code>flash.bin</code>。</p>
+<p>那这个<code>flash.bin</code>应该放在哪里，在<code>imx_linux_users_guide</code>中有说明：</p>
+<blockquote>
+<p> Execute the following command to copy the U-Boot image to the SD/MMC card:</p>
+<blockquote>
+<p>$ sudo dd if=<U-Boot image> of=/dev/sdx bs=1k seek=<offset> conv=fsync</p>
+</blockquote>
+<p>Where offset is:</p>
+<ul>
+<li>1 - for i.MX 6 or i.MX 7</li>
+<li>33 - for i.MX 8QuadMax A0, i.MX 8QuadXPlus A0, and i.MX 8M Quad</li>
+<li>32 - for i.MX 8QuadXPlus B0, i.MX 8QuadMax B0, i.MX 8DualX, i.MX 8DXL,i.MX 8M Nano, i.MX 8M Mini, and i.MX 8M Plus</li>
+</ul>
+<p>The first 16 KB of the SD/MMC card, which includes the partition table, is reserved.</p>
+</blockquote>
+<p>由于我们使用的是 IMX8MM，按照上面说明<code>seek</code>应该是<code>32</code>。</p>
+<blockquote>
+<p> 但实际测试发现需要设置<code>33</code>才行，米尔的手册上面也是 33……</p>
+</blockquote>
+<p>最后就是熟悉的启动输出了：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line">U-Boot SPL 2019.04-g65e4ca0a-dirty (Sep 03 2021 - 17:02:00 +0800)</span><br><span class="line">power_bd71837_init</span><br><span class="line">DDRINFO: start DRAM init</span><br><span class="line">DDRINFO:ddrphy calibration done</span><br><span class="line">DDRINFO: ddrmix config done</span><br><span class="line">Normal Boot</span><br><span class="line">Trying to boot from MMC1</span><br><span class="line"></span><br><span class="line">U-Boot 2019.04-g65e4ca0a-dirty (Sep 03 2021 - 17:02:00 +0800)</span><br><span class="line"></span><br><span class="line">CPU:   Freescale i.MX8MMQ rev1.0 1800 MHz (running at 1200 MHz)</span><br><span class="line">CPU:   Commercial temperature grade (0C to 95C)CPU Temperature (43000C) has beyond alert (85000C), close to critical (95000C) at 43C</span><br><span class="line">Reset cause: POR</span><br><span class="line">Model: MYD i.MX8MM  board</span><br><span class="line">DRAM:  2 GiB</span><br><span class="line">MMC:   FSL_SDHC: 1, FSL_SDHC: 2</span><br><span class="line">Loading Environment from MMC... Run CMD11 1.8V switch</span><br><span class="line">*** Warning - bad CRC, using default environment</span><br><span class="line"></span><br><span class="line">In:    serial</span><br><span class="line">Out:   serial</span><br><span class="line">Err:   serial</span><br><span class="line"></span><br><span class="line"> BuildInfo:</span><br><span class="line">  - ATF f1a195b</span><br><span class="line">  - U-Boot 2019.04-g65e4ca0a-dirty</span><br><span class="line"></span><br><span class="line">Run CMD11 1.8V switch</span><br><span class="line">switch to partitions #0, OK</span><br><span class="line">mmc1 is current device</span><br><span class="line">flash target is MMC:1</span><br><span class="line">Run CMD11 1.8V switch</span><br><span class="line">Net:   </span><br><span class="line">Error: ethernet@30be0000 address not set.</span><br><span class="line"></span><br><span class="line">eth-1: ethernet@30be0000</span><br><span class="line">Fastboot: Normal</span><br><span class="line">Normal Boot</span><br><span class="line">Hit any key to stop autoboot:  0 </span><br><span class="line">Run CMD11 1.8V switch</span><br><span class="line">switch to partitions #0, OK</span><br><span class="line">mmc1 is current device</span><br><span class="line">Run CMD11 1.8V switch</span><br><span class="line">** Unrecognized filesystem type **</span><br><span class="line"></span><br><span class="line">Booting from net ...</span><br><span class="line"></span><br><span class="line">Error: ethernet@30be0000 address not set.</span><br><span class="line"></span><br><span class="line">WARN: Cannot load the DT</span><br><span class="line">u-boot=&gt; </span><br></pre></td></tr></table></figure>
+
+<h2 id="复习-U-boot-的基础知识"><a href="#复习-U-boot-的基础知识" class="headerlink" title="复习  U-boot 的基础知识"></a>复习  U-boot 的基础知识</h2><h3 id="环境变量"><a href="#环境变量" class="headerlink" title="环境变量"></a>环境变量</h3><p>U-boot 使用<code>name=value</code>的形式来表示环境变量，一些环境变量是最开始在头文件中已经配置了默认值。在启动后读入内存，便可以被修改了。</p>
+<blockquote>
+<p>对环境变量的操作都在<code>env</code>命令中</p>
+</blockquote>
+<p>如何找到环境变量在代码中的位置？</p>
+<p>以 AM335 为例，可以搜索其对应的 config 文件，比如<code>am335x_evm_defconfig</code>，就可以找到其维护说明文件：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">AM335X BOARD</span><br><span class="line">M:    Tom Rini &lt;trini@konsulko.com&gt;</span><br><span class="line">S:    Maintained</span><br><span class="line">F:    board/ti/am335x/</span><br><span class="line">F:    include/configs/am335x_evm.h</span><br><span class="line">F:    configs/am335x_boneblack_vboot_defconfig</span><br><span class="line">F:    configs/am335x_evm_defconfig</span><br><span class="line">F:    configs/am335x_evm_spiboot_defconfig</span><br></pre></td></tr></table></figure>
+
+<p>然后可以看到其配置文件是 <code>am335x_evm.h</code>，搜索该文件的名字<code>am335x_evm</code>，可以看到对应的配置使能：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">config SYS_CONFIG_NAME</span><br><span class="line">    default &quot;am335x_evm&quot;</span><br></pre></td></tr></table></figure>
+
+<p>所以虽然在代码中没有明确搜到<code>#include &quot;am335x_evm.h&quot;</code>这种代码，但是可以看到是根据配置自动生成的中间代码：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> include/config.h</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> Prior to Kconfig, it was generated by mkconfig. Now it is created here.</span></span><br><span class="line">define filechk_config_h</span><br><span class="line">    (echo &quot;/* Automatically generated - do not edit */&quot;;        \</span><br><span class="line">    for i in $$(echo $(CONFIG_SYS_EXTRA_OPTIONS) | sed &#x27;s/,/ /g&#x27;); do \</span><br><span class="line">        echo \#define CONFIG_$$i                \</span><br><span class="line">        | sed &#x27;/=/ &#123;s/=/    /;q; &#125; ; &#123; s/$$/    1/; &#125;&#x27;; \</span><br><span class="line">    done;                                \</span><br><span class="line">    echo \#define CONFIG_BOARDDIR board/$(if $(VENDOR),$(VENDOR)/)$(BOARD);\</span><br><span class="line">    echo \#include \&lt;config_uncmd_spl.h\&gt;;                \</span><br><span class="line">    echo \#include \&lt;configs/$(CONFIG_SYS_CONFIG_NAME).h\&gt;;        \</span><br><span class="line">    echo \#include \&lt;asm/config.h\&gt;;                \</span><br><span class="line">    echo \#include \&lt;linux/kconfig.h\&gt;;                \</span><br><span class="line">    echo \#include \&lt;config_fallbacks.h\&gt;;)</span><br><span class="line">endef</span><br></pre></td></tr></table></figure>
+
+<p>该文件中定义的宏<code>CONFIG_EXTRA_ENV_SETTINGS</code>，就会被包含在<code>default_environment</code>中。</p>
+<p>最后该只读字符串就会在<code>env_init()</code>被赋值到全局地址：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (ret == -ENOENT) &#123;</span><br><span class="line">    gd-&gt;env_addr = (ulong)&amp;default_environment[<span class="number">0</span>];</span><br><span class="line">    gd-&gt;env_valid = ENV_VALID;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>该函数会被放入初始化列表<code>init_sequence_f</code>中进行调用。</p>
+<p>需要注意的是：如果在 u-boot 中定义了环境变量<code>bootargs</code>，那么它就会在启动时，将该变量内容覆盖到设备树中的 bootargs！</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">fdt_chosen</span><span class="params">(<span class="keyword">void</span> *fdt)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">int</span>   nodeoffset;</span><br><span class="line">    <span class="keyword">int</span>   err;</span><br><span class="line">    <span class="keyword">char</span>  *str;        <span class="comment">/* used to set string properties */</span></span><br><span class="line"></span><br><span class="line">    err = fdt_check_header(fdt);</span><br><span class="line">    <span class="keyword">if</span> (err &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;fdt_chosen: %s\n&quot;</span>, fdt_strerror(err));</span><br><span class="line">        <span class="keyword">return</span> err;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* find or create &quot;/chosen&quot; node. */</span></span><br><span class="line">    nodeoffset = fdt_find_or_add_subnode(fdt, <span class="number">0</span>, <span class="string">&quot;chosen&quot;</span>);</span><br><span class="line">    <span class="keyword">if</span> (nodeoffset &lt; <span class="number">0</span>)</span><br><span class="line">        <span class="keyword">return</span> nodeoffset;</span><br><span class="line"></span><br><span class="line">    str = env_get(<span class="string">&quot;bootargs&quot;</span>);</span><br><span class="line">    <span class="keyword">if</span> (str) &#123;</span><br><span class="line">        err = fdt_setprop(fdt, nodeoffset, <span class="string">&quot;bootargs&quot;</span>, str,</span><br><span class="line">                  <span class="built_in">strlen</span>(str) + <span class="number">1</span>);</span><br><span class="line">        <span class="keyword">if</span> (err &lt; <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;WARNING: could not set bootargs %s.\n&quot;</span>,</span><br><span class="line">                   fdt_strerror(err));</span><br><span class="line">            <span class="keyword">return</span> err;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> fdt_fixup_stdout(fdt, nodeoffset);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="载入内核"><a href="#载入内核" class="headerlink" title="载入内核"></a>载入内核</h3><p>对于 u-boot 而言有多种方式可以载入内核，比如：</p>
+<p>通过 <code>mmc</code> 载入并读取：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 扫描 mmc</span></span><br><span class="line">mmc rescan</span><br><span class="line"><span class="meta">#</span><span class="bash"> 从 mmc0 的第一个分区读取文件 uImage 到物理内存 0x82000000 处</span></span><br><span class="line">fatload mmc 0:1 82000000 uImage</span><br><span class="line"><span class="meta">#</span><span class="bash"> 分析文件</span></span><br><span class="line">iminfo 82000000</span><br></pre></td></tr></table></figure>
+
+<p>通过<code>tftp</code>读取：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 设置本机和服务端（PC）的地址</span></span><br><span class="line">setenv ipaddr 192.168.159.42</span><br><span class="line">setenv serverip 192.168.159.99</span><br><span class="line"><span class="meta">#</span><span class="bash"> tftp 读取 uImage 到 0x82000000</span></span><br><span class="line">tftp 82000000 uImage</span><br></pre></td></tr></table></figure>
+
+<h2 id="启动内核"><a href="#启动内核" class="headerlink" title="启动内核"></a>启动内核</h2><p>使用<code>bootm</code>启动内核，其语法如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">bootm &lt;address of kernel&gt; [address of ramdisk] [address of </span><br><span class="line">dtb]</span><br></pre></td></tr></table></figure>
+
+<p>其中<code>address of kernel</code>是必须的，后面两项不是必须的。</p>
+<p>如果没有<code>address of ramdisk</code>但是有<code>address of dtb</code>，那么使用短横线代替即可:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">=&gt; bootm 82000000 – 83000000</span><br></pre></td></tr></table></figure>
+
+<p>除了在调试阶段需要手动输入这些命令，实际使用阶段是经过脚本来完成，比如 imx8mm 默认环境变量如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line">mmcdev=1</span><br><span class="line">mmcpart=1</span><br><span class="line">loadaddr=0x40480000</span><br><span class="line">script=boot.scr</span><br><span class="line">bootscript=echo Running bootscript from mmc ...; source</span><br><span class="line">image=Image</span><br><span class="line">fdt_addr=0x43000000</span><br><span class="line">fdt_file=myb-imx8mm-lcd-hontron-7.dtb</span><br><span class="line">boot_fdt=try</span><br><span class="line">console=ttymxc1,115200 earlycon=ec_imx6q,0x30890000,115200</span><br><span class="line">mmcroot=/dev/mmcblk1p2 rootwait rw</span><br><span class="line"></span><br><span class="line">mmcargs=setenv bootargs $&#123;jh_clk&#125; console=$&#123;console&#125; root=$&#123;mmcroot&#125;</span><br><span class="line">loadfdt=fatload mmc $&#123;mmcdev&#125;:$&#123;mmcpart&#125; $&#123;fdt_addr&#125; $&#123;fdt_file&#125;</span><br><span class="line"></span><br><span class="line">loadbootscript=fatload mmc $&#123;mmcdev&#125;:$&#123;mmcpart&#125; $&#123;loadaddr&#125; $&#123;script&#125;;</span><br><span class="line">loadimage=fatload mmc $&#123;mmcdev&#125;:$&#123;mmcpart&#125; $&#123;loadaddr&#125; $&#123;image&#125;</span><br><span class="line"></span><br><span class="line">mmcboot=\</span><br><span class="line">echo Booting from mmc ...;\</span><br><span class="line">run mmcargs;\</span><br><span class="line">if test $&#123;boot_fdt&#125; = yes || test $&#123;boot_fdt&#125; = try;\</span><br><span class="line">then if run loadfdt;\</span><br><span class="line">     then booti $&#123;loadaddr&#125; - $&#123;fdt_addr&#125;;\</span><br><span class="line">     else echo WARN: Cannot load the DT;\</span><br><span class="line">     fi;\</span><br><span class="line">else echo wait for boot;\</span><br><span class="line">fi;\</span><br><span class="line"></span><br><span class="line">bootcmd=\</span><br><span class="line">mmc dev $&#123;mmcdev&#125;;\</span><br><span class="line">if mmc rescan;\ # 扫描 mmc，发现有 mmc</span><br><span class="line">then if run loadbootscript;\ </span><br><span class="line">     then run bootscript;\ # 如果从 mmc 读取文件成功，则运行启动脚本</span><br><span class="line">     else if run loadimage;\ # 或者从 mmc 读取指定名称文件</span><br><span class="line">          then run mmcboot;\ # 读取成功则运行启动脚本</span><br><span class="line">          else run netboot;\ # 然后会尝试通过网络启动</span><br><span class="line">          fi;\ </span><br><span class="line">     fi;\ </span><br><span class="line">else booti $&#123;loadaddr&#125; - $&#123;fdt_addr&#125;;\ </span><br><span class="line">fi\</span><br></pre></td></tr></table></figure>
+
+<p><code>bootcmd</code>将会是 U-boot 启动以后自动执行的命令。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>kcmetercec
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://kcmetercec.top/2024/02/04/linux_make_yocto_bootloader/" title="认识 bootloader">http://kcmetercec.top/2024/02/04/linux_make_yocto_bootloader/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/yocto/" rel="tag"> <i class="fa fa-tag"></i> yocto</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/01/17/linux_make_yocto_toolchain/" rel="prev" title="认识交叉编译器">
+      <i class="fa fa-chevron-left"></i> 认识交叉编译器
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/02/19/linux_make_yocto_kernel/" rel="next" title="编译内核">
+      编译内核 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#bootloader-%E7%9A%84%E8%81%8C%E8%B4%A3"><span class="nav-number">1.</span> <span class="nav-text">bootloader 的职责</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8%E9%A1%BA%E5%BA%8F"><span class="nav-number">2.</span> <span class="nav-text">启动顺序</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9D%E5%A7%8B%E9%98%B6%E6%AE%B5%EF%BC%9AROM-code"><span class="nav-number">2.1.</span> <span class="nav-text">初始阶段：ROM code</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#imx8mm%E7%9A%84-ROM-code"><span class="nav-number">2.1.1.</span> <span class="nav-text">imx8mm的 ROM code</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#imx8mm-%E7%9A%84-BOOT-MODE-%E5%AF%84%E5%AD%98%E5%99%A8"><span class="nav-number">2.1.2.</span> <span class="nav-text">imx8mm 的 BOOT_MODE 寄存器</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E9%98%B6%E6%AE%B5%EF%BC%9ASPL"><span class="nav-number">2.2.</span> <span class="nav-text">第二阶段：SPL</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%B8%89%E9%98%B6%E6%AE%B5%EF%BC%9ATPL"><span class="nav-number">2.3.</span> <span class="nav-text">第三阶段：TPL</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AE%BE%E5%A4%87%E6%A0%91%E5%A4%8D%E4%B9%A0"><span class="nav-number">3.</span> <span class="nav-text">设备树复习</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BE%E5%A4%87%E6%A0%91%E5%9F%BA%E7%A1%80"><span class="nav-number">3.1.</span> <span class="nav-text">设备树基础</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#reg-%E5%B1%9E%E6%80%A7"><span class="nav-number">3.2.</span> <span class="nav-text">reg 属性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#label-%E5%92%8C%E4%B8%AD%E6%96%AD"><span class="nav-number">3.3.</span> <span class="nav-text">label 和中断</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BE%E5%A4%87%E6%A0%91%E5%8C%85%E5%90%AB"><span class="nav-number">3.4.</span> <span class="nav-text">设备树包含</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%96%E8%AF%91%E8%AE%BE%E5%A4%87%E6%A0%91"><span class="nav-number">3.5.</span> <span class="nav-text">编译设备树</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#U-Boot"><span class="nav-number">4.</span> <span class="nav-text">U-Boot</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#imx8mm-%E5%9C%A8-ROM-code-%E4%B9%8B%E5%90%8E%E7%9A%84%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B"><span class="nav-number">4.1.</span> <span class="nav-text">imx8mm 在 ROM code 之后的启动流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%96%E8%AF%91-imx-atf"><span class="nav-number">4.2.</span> <span class="nav-text">编译 imx-atf</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%96%E8%AF%91-U-boot"><span class="nav-number">4.3.</span> <span class="nav-text">编译 U-boot</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8-U-boot"><span class="nav-number">4.4.</span> <span class="nav-text">启动 U-boot</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%8D%E4%B9%A0-U-boot-%E7%9A%84%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86"><span class="nav-number">4.5.</span> <span class="nav-text">复习  U-boot 的基础知识</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F"><span class="nav-number">4.5.1.</span> <span class="nav-text">环境变量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BD%BD%E5%85%A5%E5%86%85%E6%A0%B8"><span class="nav-number">4.5.2.</span> <span class="nav-text">载入内核</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8%E5%86%85%E6%A0%B8"><span class="nav-number">4.6.</span> <span class="nav-text">启动内核</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">Qt, C++, linux, CS</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">107</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">55</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:kcmeter.cec@gmail.com" title="E-Mail → mailto:kcmeter.cec@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2021 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">206k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">3:08</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+document.querySelectorAll('.pdfobject-container').forEach(element => {
+  let url = element.dataset.target;
+  let pdfOpenParams = {
+    navpanes : 0,
+    toolbar  : 0,
+    statusbar: 0,
+    pagemode : 'thumbs',
+    view     : 'FitH'
+  };
+  let pdfOpenFragment = '#' + Object.entries(pdfOpenParams).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
+  let fullURL = `/lib/pdf/web/viewer.html?file=${encodeURIComponent(url)}${pdfOpenFragment}`;
+
+  if (NexT.utils.supportsPDFs()) {
+    element.innerHTML = `<embed class="pdfobject" src="${url + pdfOpenFragment}" type="application/pdf" style="height: ${element.dataset.height};">`;
+  } else {
+    element.innerHTML = `<iframe src="${fullURL}" style="height: ${element.dataset.height};" frameborder="0"></iframe>`;
+  }
+});
+</script>
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'f938893867df78f94802',
+      clientSecret: 'b6d8470939c53d26c98c4e3b9d4c9ceb55d6e78e',
+      repo        : 'kcmetercec.github.io',
+      owner       : 'KcMeterCEC',
+      admin       : ['KcMeterCEC'],
+      id          : 'f4f6ea1d1ac38d81b78d00281132501f',
+        language: 'zh-CN',
+      distractionFreeMode: false
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+    </div>
+</body>
+</html>

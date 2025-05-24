@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"kcmetercec.top","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="kernel version : v6.1.x (lts)  进程或线程对于 kernel 来说，都是 task_struct 结构体来描述，所以这里指的是输出所有的 task。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="输出 Linux 中所有的 task">
+<meta property="og:url" content="http://kcmetercec.top/2023/04/11/linux_ps_chore_print_tasks/index.html">
+<meta property="og:site_name" content="explorer">
+<meta property="og:description" content="kernel version : v6.1.x (lts)  进程或线程对于 kernel 来说，都是 task_struct 结构体来描述，所以这里指的是输出所有的 task。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-04-10T16:00:00.000Z">
+<meta property="article:modified_time" content="2023-04-12T16:00:00.000Z">
+<meta property="article:author" content="kcmetercec">
+<meta property="article:tag" content="linux">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://kcmetercec.top/2023/04/11/linux_ps_chore_print_tasks/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>输出 Linux 中所有的 task | explorer</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112423075-1# <app_id>"></script>
+    <script data-pjax>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-112423075-1# <app_id>');
+      }
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="explorer" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">explorer</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">万丈高楼平地起，勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+        <li class="menu-item menu-item-commonweal">
+
+    <a href="/404/" rel="section"><i class="fa fa-heartbeat fa-fw"></i>公益 404</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://kcmetercec.top/2023/04/11/linux_ps_chore_print_tasks/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+      <meta itemprop="name" content="kcmetercec">
+      <meta itemprop="description" content="Qt, C++, linux, CS">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="explorer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          输出 Linux 中所有的 task
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-04-11 00:00:00" itemprop="dateCreated datePublished" datetime="2023-04-11T00:00:00+08:00">2023-04-11</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-04-13 00:00:00" itemprop="dateModified" datetime="2023-04-13T00:00:00+08:00">2023-04-13</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/ps/" itemprop="url" rel="index"><span itemprop="name">ps</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/ps/chore/" itemprop="url" rel="index"><span itemprop="name">chore</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>681</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <ul>
+<li>kernel version : v6.1.x (lts)</li>
+</ul>
+<p>进程或线程对于 kernel 来说，都是 <code>task_struct</code> 结构体来描述，所以这里指的是输出所有的 task。</p>
+<span id="more"></span>
+
+<h1 id="task-struct-的双向链表"><a href="#task-struct-的双向链表" class="headerlink" title="task_struct 的双向链表"></a>task_struct 的双向链表</h1><p>还是继续来看，<code>task_struct</code>的结构体定义：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> &#123;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_THREAD_INFO_IN_TASK</span></span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * For reasons of header soup (see current_thread_info()), this</span></span><br><span class="line"><span class="comment">     * must be the first element of task_struct.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">thread_info</span>        <span class="title">thread_info</span>;</span></span><br><span class="line">    <span class="comment">//...</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span>            rt_priority;</span><br><span class="line">    <span class="comment">//...</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sched_info</span>        <span class="title">sched_info</span>;</span></span><br><span class="line">    <span class="comment">//...</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span>        <span class="title">tasks</span>;</span></span><br><span class="line">    <span class="comment">//...</span></span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * executable name, excluding path.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * - normally initialized setup_new_exec()</span></span><br><span class="line"><span class="comment">     * - access it with [gs]et_task_comm()</span></span><br><span class="line"><span class="comment">     * - lock it with task_lock()</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">char</span>                comm[TASK_COMM_LEN];</span><br><span class="line">    <span class="comment">//...</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>该结构体中就具有双向链表节点<code>tasks</code>，所以通过它就将所有的 task 都链接了起来，那么问题来了：这个链表的头在哪里？</p>
+<h2 id="0-号进程"><a href="#0-号进程" class="headerlink" title="0 号进程"></a>0 号进程</h2><p>Linux kernel 会以全局变量的方式创建 0 号进程”swapper“，该进程在启动后才会去创建 PID 为 1 的”init”进程，所以该进程便是所有 tasks 的头节点，可以通过它来遍历所有的 task。</p>
+<blockquote>
+<p>由于是全局变量，所以该进程是不能被杀死或停止的。</p>
+</blockquote>
+<p><code>swapper</code>进程的精妙之处在于，它的优先级是最低的，当整个系统没有 task 在运行时，便会运行该进程，该进程可以管理一些资源，且可以让 CPU 进入浅度睡眠以省电。</p>
+<p>0 号进程的定义位于<code>init/init_task.c</code>中。</p>
+<h2 id="内核模块来输出-tasks"><a href="#内核模块来输出-tasks" class="headerlink" title="内核模块来输出 tasks"></a>内核模块来输出 tasks</h2><p>模块代码如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> pr_fmt(fmt) <span class="meta-string">&quot;tasks:&quot;</span> fmt</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/init.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/module.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/list.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/sched/task.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/pid.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/sched.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">print_tasks</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span>* <span class="title">current_entry</span> =</span> <span class="literal">NULL</span>;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span>* <span class="title">next_entry</span> =</span> <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    pr_info(<span class="string">&quot;pid = %d, name = %s\n&quot;</span>,</span><br><span class="line">            task_pid_nr(&amp;init_task),</span><br><span class="line">            init_task.comm);</span><br><span class="line"></span><br><span class="line">    list_for_each_entry_safe(current_entry, next_entry,</span><br><span class="line">                             &amp;(init_task.tasks), tasks) &#123;</span><br><span class="line">        pr_info(<span class="string">&quot;pid = %d, name = %s\n&quot;</span>,</span><br><span class="line">                task_pid_nr(current_entry),</span><br><span class="line">                current_entry-&gt;comm);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> __init <span class="title">tasks_init</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    pr_info(<span class="string">&quot;Hello world!\n&quot;</span>);</span><br><span class="line">    print_tasks();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line">module_init(tasks_init);</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> __exit <span class="title">tasks_exit</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    pr_info(<span class="string">&quot;Bye!\n&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line">module_exit(tasks_exit);</span><br><span class="line"></span><br><span class="line">MODULE_AUTHOR(<span class="string">&quot;kcmetercec &lt;kcmeter.cec@gmail.com&gt;&quot;</span>);</span><br><span class="line">MODULE_LICENSE(<span class="string">&quot;GPL v2&quot;</span>);</span><br><span class="line">MODULE_DESCRIPTION(<span class="string">&quot;A simple demo which prints tasks&quot;</span>);</span><br><span class="line">MODULE_ALIAS(<span class="string">&quot;print tasks demo&quot;</span>);</span><br><span class="line">MODULE_VERSION(<span class="string">&quot;ver1.0&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<p>对应的 Makefile 如下：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">KVERS = <span class="variable">$(<span class="built_in">shell</span> uname -r)</span></span><br><span class="line"></span><br><span class="line">obj-m += print_tasks.o</span><br><span class="line"></span><br><span class="line">EXTRA_CFLAGS = -std=gnu99</span><br><span class="line"></span><br><span class="line"><span class="section">build: kernel_modules</span></span><br><span class="line"></span><br><span class="line"><span class="section">kernel_modules:</span></span><br><span class="line">        make -C /lib/modules/<span class="variable">$(KVERS)</span>/build M=<span class="variable">$(CURDIR)</span> modules</span><br><span class="line"></span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">        make -C /lib/modules/<span class="variable">$(KVERS)</span>/build M=<span class="variable">$(CURDIR)</span> clean</span><br></pre></td></tr></table></figure>
+
+<h1 id="哈希表"><a href="#哈希表" class="headerlink" title="哈希表"></a>哈希表</h1><p>前面以双向链表的方式组织 tasks 是为了遍历所有的 tasks，而如果要快速通过 PID 来找到一个 tasks 就不能用遍历的方式，而是要使用哈希表的方式，这样时间复杂度就由 O（n）降低到了 O（1）。</p>
+<h2 id="认识-Linux-中的哈希表实现"><a href="#认识-Linux-中的哈希表实现" class="headerlink" title="认识 Linux 中的哈希表实现"></a>认识 Linux 中的哈希表实现</h2><h3 id="节点的定义"><a href="#节点的定义" class="headerlink" title="节点的定义"></a>节点的定义</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">hlist_head</span> &#123;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">hlist_node</span> *<span class="title">first</span>;</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">hlist_node</span> &#123;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">hlist_node</span> *<span class="title">next</span>, **<span class="title">pprev</span>;</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>头节点只包含一个指针，是为了在哈希表中节省内存（相比双向链表而言）。</p>
+<h3 id="节点的定义和初始化"><a href="#节点的定义和初始化" class="headerlink" title="节点的定义和初始化"></a>节点的定义和初始化</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> HLIST_HEAD_INIT &#123; .first = NULL &#125;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> HLIST_HEAD(name) struct hlist_head name = &#123;  .first = NULL &#125;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INIT_HLIST_HEAD(ptr) ((ptr)-&gt;first = NULL)</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">INIT_HLIST_NODE</span><span class="params">(struct hlist_node *h)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	h-&gt;next = <span class="literal">NULL</span>;</span><br><span class="line">	h-&gt;pprev = <span class="literal">NULL</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="相关操作"><a href="#相关操作" class="headerlink" title="相关操作"></a>相关操作</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * hlist_unhashed - Has node been removed from list and reinitialized?</span></span><br><span class="line"><span class="comment"> * @h: Node to be checked</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Not that not all removal functions will leave a node in unhashed</span></span><br><span class="line"><span class="comment"> * state.  For example, hlist_nulls_del_init_rcu() does leave the</span></span><br><span class="line"><span class="comment"> * node in unhashed state, but hlist_nulls_del() does not.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">int</span> <span class="title">hlist_unhashed</span><span class="params">(<span class="keyword">const</span> struct hlist_node *h)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">return</span> !h-&gt;pprev;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * hlist_unhashed_lockless - Version of hlist_unhashed for lockless use</span></span><br><span class="line"><span class="comment"> * @h: Node to be checked</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * This variant of hlist_unhashed() must be used in lockless contexts</span></span><br><span class="line"><span class="comment"> * to avoid potential load-tearing.  The READ_ONCE() is paired with the</span></span><br><span class="line"><span class="comment"> * various WRITE_ONCE() in hlist helpers that are defined below.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">int</span> <span class="title">hlist_unhashed_lockless</span><span class="params">(<span class="keyword">const</span> struct hlist_node *h)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">return</span> !READ_ONCE(h-&gt;pprev);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 当头节点指向的下一个节点为 NULL 时，则代表当前链表为空</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">int</span> <span class="title">hlist_empty</span><span class="params">(<span class="keyword">const</span> struct hlist_head *h)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">return</span> !READ_ONCE(h-&gt;first);</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 删除当前节点</span></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> __hlist_del(struct hlist_node *n)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">hlist_node</span> *<span class="title">next</span> =</span> n-&gt;next;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">hlist_node</span> **<span class="title">pprev</span> =</span> n-&gt;pprev;</span><br><span class="line"></span><br><span class="line">	WRITE_ONCE(*pprev, next);</span><br><span class="line">	<span class="keyword">if</span> (next)</span><br><span class="line">		WRITE_ONCE(next-&gt;pprev, pprev);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 删除当前节点，并将后继和前驱节点设定为特定值</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">hlist_del</span><span class="params">(struct hlist_node *n)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	__hlist_del(n);</span><br><span class="line">	n-&gt;next = LIST_POISON1;</span><br><span class="line">	n-&gt;pprev = LIST_POISON2;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 删除当前节点，并将后继和前驱节点设定为 NULL</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">hlist_del_init</span><span class="params">(struct hlist_node *n)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">if</span> (!hlist_unhashed(n)) &#123;</span><br><span class="line">		__hlist_del(n);</span><br><span class="line">		INIT_HLIST_NODE(n);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 将节点 n 增加到头节点 h 的后面</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">hlist_add_head</span><span class="params">(struct hlist_node *n, struct hlist_head *h)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">hlist_node</span> *<span class="title">first</span> =</span> h-&gt;first;</span><br><span class="line">	WRITE_ONCE(n-&gt;next, first);</span><br><span class="line">	<span class="keyword">if</span> (first)</span><br><span class="line">		WRITE_ONCE(first-&gt;pprev, &amp;n-&gt;next);</span><br><span class="line">	WRITE_ONCE(h-&gt;first, n);</span><br><span class="line">	WRITE_ONCE(n-&gt;pprev, &amp;h-&gt;first);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 将节点 n 增加到节点 next 的前面</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">hlist_add_before</span><span class="params">(struct hlist_node *n,</span></span></span><br><span class="line"><span class="params"><span class="function">				    struct hlist_node *next)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	WRITE_ONCE(n-&gt;pprev, next-&gt;pprev);</span><br><span class="line">	WRITE_ONCE(n-&gt;next, next);</span><br><span class="line">	WRITE_ONCE(next-&gt;pprev, &amp;n-&gt;next);</span><br><span class="line">	WRITE_ONCE(*(n-&gt;pprev), n);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 将节点 n 增加到节点 prev 的后面</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">hlist_add_behind</span><span class="params">(struct hlist_node *n,</span></span></span><br><span class="line"><span class="params"><span class="function">				    struct hlist_node *prev)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	WRITE_ONCE(n-&gt;next, prev-&gt;next);</span><br><span class="line">	WRITE_ONCE(prev-&gt;next, n);</span><br><span class="line">	WRITE_ONCE(n-&gt;pprev, &amp;prev-&gt;next);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (n-&gt;next)</span><br><span class="line">		WRITE_ONCE(n-&gt;next-&gt;pprev, &amp;n-&gt;next);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 构建一个环形的链表</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">hlist_add_fake</span><span class="params">(struct hlist_node *n)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	n-&gt;pprev = &amp;n-&gt;next;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 检查是否是环形链表</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">bool</span> <span class="title">hlist_fake</span><span class="params">(struct hlist_node *h)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">return</span> h-&gt;pprev == &amp;h-&gt;next;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 检查当前链表是否只含有一个节点</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">bool</span></span></span><br><span class="line"><span class="function"><span class="title">hlist_is_singular_node</span><span class="params">(struct hlist_node *n, struct hlist_head *h)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">return</span> !n-&gt;next &amp;&amp; n-&gt;pprev == &amp;h-&gt;first;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 将链表 old 移动到新的 new</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">hlist_move_list</span><span class="params">(struct hlist_head *old,</span></span></span><br><span class="line"><span class="params"><span class="function">				   struct hlist_head *<span class="keyword">new</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">new</span>-&gt;first = old-&gt;first;</span><br><span class="line">	<span class="keyword">if</span> (<span class="keyword">new</span>-&gt;first)</span><br><span class="line">		<span class="keyword">new</span>-&gt;first-&gt;pprev = &amp;<span class="keyword">new</span>-&gt;first;</span><br><span class="line">	old-&gt;first = <span class="literal">NULL</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 根据节点反推结构体地址</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> hlist_entry(ptr, type, member) container_of(ptr,type,member)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 正向遍历链表</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> hlist_for_each(pos, head) \</span></span><br><span class="line"><span class="meta">	for (pos = (head)-&gt;first; pos ; pos = pos-&gt;next)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 安全的方式正向遍历链表</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> hlist_for_each_safe(pos, n, head) \</span></span><br><span class="line"><span class="meta">	for (pos = (head)-&gt;first; pos &amp;&amp; (&#123; n = pos-&gt;next; 1; &#125;); \</span></span><br><span class="line"><span class="meta">	     pos = n)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 安全的方式获取结构体</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> hlist_entry_safe(ptr, type, member) \</span></span><br><span class="line"><span class="meta">	(&#123; typeof(ptr) ____ptr = (ptr); \</span></span><br><span class="line"><span class="meta">	   ____ptr ? hlist_entry(____ptr, type, member) : NULL; \</span></span><br><span class="line"><span class="meta">	&#125;)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 安全的方式从头遍历结构体</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> hlist_for_each_entry(pos, head, member)				\</span></span><br><span class="line"><span class="meta">	for (pos = hlist_entry_safe((head)-&gt;first, typeof(*(pos)), member);\</span></span><br><span class="line"><span class="meta">	     pos;							\</span></span><br><span class="line"><span class="meta">	     pos = hlist_entry_safe((pos)-&gt;member.next, typeof(*(pos)), member))</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 安全的方式继续遍历结构体</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> hlist_for_each_entry_continue(pos, member)			\</span></span><br><span class="line"><span class="meta">	for (pos = hlist_entry_safe((pos)-&gt;member.next, typeof(*(pos)), member);\</span></span><br><span class="line"><span class="meta">	     pos;							\</span></span><br><span class="line"><span class="meta">	     pos = hlist_entry_safe((pos)-&gt;member.next, typeof(*(pos)), member))</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 安全的方式从当前位置遍历结构体</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> hlist_for_each_entry_from(pos, member)				\</span></span><br><span class="line"><span class="meta">	for (; pos;							\</span></span><br><span class="line"><span class="meta">	     pos = hlist_entry_safe((pos)-&gt;member.next, typeof(*(pos)), member))</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 安全的方式继续遍历结构体</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> hlist_for_each_entry_safe(pos, n, head, member) 		\</span></span><br><span class="line"><span class="meta">	for (pos = hlist_entry_safe((head)-&gt;first, typeof(*pos), member);\</span></span><br><span class="line"><span class="meta">	     pos &amp;&amp; (&#123; n = pos-&gt;member.next; 1; &#125;);			\</span></span><br><span class="line"><span class="meta">	     pos = hlist_entry_safe(n, typeof(*pos), member))</span></span><br></pre></td></tr></table></figure>
+
+<p>以上的 hlist 其实是一个单链表，为了高效操作插入和删除的操作，所以使用了 <code>pprev</code> 二级指针来指向前一个节点。</p>
+<h2 id="根据-pid-找到-task-struct"><a href="#根据-pid-找到-task-struct" class="headerlink" title="根据 pid 找到 task_struct"></a>根据 pid 找到 task_struct</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">struct task_struct *<span class="title">find_get_task_by_vpid</span><span class="params">(<span class="keyword">pid_t</span> nr)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> *<span class="title">task</span>;</span></span><br><span class="line"></span><br><span class="line">	rcu_read_lock();</span><br><span class="line">	task = find_task_by_vpid(nr);</span><br><span class="line">	<span class="keyword">if</span> (task)</span><br><span class="line">		get_task_struct(task);</span><br><span class="line">	rcu_read_unlock();</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> task;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Must be called under rcu_read_lock().</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function">struct task_struct *<span class="title">find_task_by_pid_ns</span><span class="params">(<span class="keyword">pid_t</span> nr, struct pid_namespace *ns)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	RCU_LOCKDEP_WARN(!rcu_read_lock_held(),</span><br><span class="line">			 <span class="string">&quot;find_task_by_pid_ns() needs rcu_read_lock() protection&quot;</span>);</span><br><span class="line">	<span class="keyword">return</span> pid_task(find_pid_ns(nr, ns), PIDTYPE_PID);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">struct task_struct *<span class="title">find_task_by_vpid</span><span class="params">(<span class="keyword">pid_t</span> vnr)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">return</span> find_task_by_pid_ns(vnr, task_active_pid_ns(current));</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">struct pid *<span class="title">find_pid_ns</span><span class="params">(<span class="keyword">int</span> nr, struct pid_namespace *ns)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">return</span> idr_find(&amp;ns-&gt;idr, nr);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * idr_find() - Return pointer for given ID.</span></span><br><span class="line"><span class="comment"> * @idr: IDR handle.</span></span><br><span class="line"><span class="comment"> * @id: Pointer ID.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Looks up the pointer associated with this ID.  A %NULL pointer may</span></span><br><span class="line"><span class="comment"> * indicate that @id is not allocated or that the %NULL pointer was</span></span><br><span class="line"><span class="comment"> * associated with this ID.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * This function can be called under rcu_read_lock(), given that the leaf</span></span><br><span class="line"><span class="comment"> * pointers lifetimes are correctly managed.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Return: The pointer associated with this ID.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">idr_find</span><span class="params">(<span class="keyword">const</span> struct idr *idr, <span class="keyword">unsigned</span> <span class="keyword">long</span> id)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">return</span> radix_tree_lookup(&amp;idr-&gt;idr_rt, id - idr-&gt;idr_base);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">struct task_struct *<span class="title">pid_task</span><span class="params">(struct pid *pid, <span class="keyword">enum</span> pid_type type)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> *<span class="title">result</span> =</span> <span class="literal">NULL</span>;</span><br><span class="line">	<span class="keyword">if</span> (pid) &#123;</span><br><span class="line">		<span class="class"><span class="keyword">struct</span> <span class="title">hlist_node</span> *<span class="title">first</span>;</span></span><br><span class="line">		first = rcu_dereference_check(hlist_first_rcu(&amp;pid-&gt;tasks[type]),</span><br><span class="line">					      lockdep_tasklist_lock_is_held());</span><br><span class="line">		<span class="keyword">if</span> (first)</span><br><span class="line">			result = hlist_entry(first, struct task_struct, pid_links[(type)]);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>kcmetercec
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://kcmetercec.top/2023/04/11/linux_ps_chore_print_tasks/" title="输出 Linux 中所有的 task">http://kcmetercec.top/2023/04/11/linux_ps_chore_print_tasks/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux/" rel="tag"> <i class="fa fa-tag"></i> linux</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2023/04/10/linux_ps_chore_process_name_length/" rel="prev" title="Linux 进程的名称最长是多少个字符？">
+      <i class="fa fa-chevron-left"></i> Linux 进程的名称最长是多少个字符？
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2023/07/06/rf_dsp_modulation_am_hello/" rel="next" title="初步认识 AM 调制">
+      初步认识 AM 调制 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#task-struct-%E7%9A%84%E5%8F%8C%E5%90%91%E9%93%BE%E8%A1%A8"><span class="nav-number">1.</span> <span class="nav-text">task_struct 的双向链表</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#0-%E5%8F%B7%E8%BF%9B%E7%A8%8B"><span class="nav-number">1.1.</span> <span class="nav-text">0 号进程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E6%A8%A1%E5%9D%97%E6%9D%A5%E8%BE%93%E5%87%BA-tasks"><span class="nav-number">1.2.</span> <span class="nav-text">内核模块来输出 tasks</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%93%88%E5%B8%8C%E8%A1%A8"><span class="nav-number">2.</span> <span class="nav-text">哈希表</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%A4%E8%AF%86-Linux-%E4%B8%AD%E7%9A%84%E5%93%88%E5%B8%8C%E8%A1%A8%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.1.</span> <span class="nav-text">认识 Linux 中的哈希表实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%8A%82%E7%82%B9%E7%9A%84%E5%AE%9A%E4%B9%89"><span class="nav-number">2.1.1.</span> <span class="nav-text">节点的定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%8A%82%E7%82%B9%E7%9A%84%E5%AE%9A%E4%B9%89%E5%92%8C%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="nav-number">2.1.2.</span> <span class="nav-text">节点的定义和初始化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%B8%E5%85%B3%E6%93%8D%E4%BD%9C"><span class="nav-number">2.1.3.</span> <span class="nav-text">相关操作</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B9%E6%8D%AE-pid-%E6%89%BE%E5%88%B0-task-struct"><span class="nav-number">2.2.</span> <span class="nav-text">根据 pid 找到 task_struct</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="kcmetercec"
+      src="https://avatars.githubusercontent.com/u/16881795?s=400&u=f62971f44f59d17d823044e709d4668debec7c02&v=4">
+  <p class="site-author-name" itemprop="name">kcmetercec</p>
+  <div class="site-description" itemprop="description">Qt, C++, linux, CS</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">107</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">55</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/KcMeterCEC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;KcMeterCEC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:kcmeter.cec@gmail.com" title="E-Mail → mailto:kcmeter.cec@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2021 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">kcmetercec</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">206k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">3:08</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+document.querySelectorAll('.pdfobject-container').forEach(element => {
+  let url = element.dataset.target;
+  let pdfOpenParams = {
+    navpanes : 0,
+    toolbar  : 0,
+    statusbar: 0,
+    pagemode : 'thumbs',
+    view     : 'FitH'
+  };
+  let pdfOpenFragment = '#' + Object.entries(pdfOpenParams).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
+  let fullURL = `/lib/pdf/web/viewer.html?file=${encodeURIComponent(url)}${pdfOpenFragment}`;
+
+  if (NexT.utils.supportsPDFs()) {
+    element.innerHTML = `<embed class="pdfobject" src="${url + pdfOpenFragment}" type="application/pdf" style="height: ${element.dataset.height};">`;
+  } else {
+    element.innerHTML = `<iframe src="${fullURL}" style="height: ${element.dataset.height};" frameborder="0"></iframe>`;
+  }
+});
+</script>
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'f938893867df78f94802',
+      clientSecret: 'b6d8470939c53d26c98c4e3b9d4c9ceb55d6e78e',
+      repo        : 'kcmetercec.github.io',
+      owner       : 'KcMeterCEC',
+      admin       : ['KcMeterCEC'],
+      id          : '1f1fcd5f0e6fbfd2a645832af85c3e13',
+        language: 'zh-CN',
+      distractionFreeMode: false
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+    </div>
+</body>
+</html>
